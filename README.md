@@ -1,35 +1,86 @@
-Sistema de Incidencias AAUD
+📌 Sistema de Incidencias AAUD
+📖 Descripción
 
-Descripción
+Sistema web para la gestión de incidencias, inventario y de funcionarios de la AAUD.
+Permite la autenticación de usuarios, la creación, seguimiento y visualización de incidencias.
 
-Sistema web para la gestión de incidencias con autenticación, creación y visualización de incidencias, utilizando React, Express y SQL Server.
+El sistema está desarrollado en React (frontend) y Express con SQL Server (backend).
 
-Instalación
+⚙️ Instalación
+🔹 1. Clonar el repositorio
+git clone https://github.com/HiSoyRicky/SistemaAAUD.git
+cd SistemaAAUD
 
-Clonar el repositorio.
+🔹 2. Instalar dependencias
+npm install
 
-Instalar dependencias: npm install.
+🔹 3. Configurar la base de datos
 
-Configurar la base de datos ejecutando el script server/Soporte AAUD.sql en SQL Server.
+Importar el script SQL ubicado en:
 
-Crear un archivo .env con las variables de entorno (ver .env de ejemplo).
+server/Soporte AAUD.sql
 
-Iniciar el backend: npm run server.
 
-Iniciar el frontend: npm run dev.
+en SQL Server para crear las tablas necesarias.
 
-Uso
+🔹 4. Variables de entorno
 
-Acceder a http://localhost:5173 para el frontend.
+Crear un archivo .env en la raíz del proyecto con la siguiente estructura (ejemplo):
 
-Iniciar sesión con las credenciales de ejemplo (admin/admin123).
+PORT=3000
+SQL_USER=tu_usuario_sql
+SQL_PASSWORD=tu_password_sql
+SQL_DATABASE=Soporte_AAUD
+SQL_SERVER=localhost
 
-Crear y visualizar incidencias en el dashboard.
 
-Tecnologías
+(Ajustar según tu configuración de SQL Server)
 
-Frontend: React, Vite, Tailwind CSS, React Router
+🔹 5. Iniciar el backend
+npm run server
 
-Backend: Express, SQL Server
+🔹 6. Iniciar el frontend
+npm run dev
 
-Dependencias: axios, mssql, cors, dotenv
+🚀 Uso
+
+Acceder al frontend en:
+👉 http://localhost:5173
+
+Iniciar sesión con credenciales de prueba:
+
+Usuario: admin
+Contraseña: admin123
+
+
+Crear, editar y visualizar incidencias en el dashboard.
+
+🛠️ Tecnologías
+🔹 Frontend
+
+React
+ + Vite
+
+Tailwind CSS
+
+React Router
+
+🔹 Backend
+
+Express
+
+SQL Server
+
+🔹 Dependencias principales
+
+axios
+
+mssql
+
+cors
+
+dotenv
+
+👨‍💻 Autor
+
+Desarrollado por Ricky ✨
