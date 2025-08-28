@@ -1,3 +1,0 @@
-Que actualice automatico el servidor desde el CMD en la carpeta donde esta instalado todo ejecutarlo.
-Inicializar el server.js y vite.config.js
- npm run dev
