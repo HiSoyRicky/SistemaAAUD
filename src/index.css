@@ -1,0 +1,44 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0px;
+}
+
+input,
+textarea {
+  margin: 5px 0;
+  padding: 5px;
+  width: 300px;
+}
+
+button {
+  cursor: pointer;
+  padding: 6px 12px;
+  margin-top: 10px;
+}
+
+nav a {
+  text-decoration: none;
+  color: blue;
+}
+
+nav button {
+  background: none;
+  border: none;
+  color: blue;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td[colspan] {
+  text-align: center;
+}

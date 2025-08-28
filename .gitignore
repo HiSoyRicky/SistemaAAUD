@@ -1,0 +1,20 @@
+# Ignorar node_modules en todos lados
+node_modules/
+
+# Ignorar .env en raíz (frontend)
+.env
+
+# Ignorar .env en backend (si está en /server/)
+server/.env
+
+# Ignorar fotos personales subidas por los usuarios
+server/public/fotos_personal
+
+# Ignorar Notas
+Notas/
+
+# Ignorar archivos de estructura generados
+docs/estructura.txt
+
+# Ignorar database-project
+database-project/

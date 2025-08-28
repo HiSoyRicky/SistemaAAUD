@@ -1,0 +1,24 @@
+/* src/styles/global.css */
+
+/* Importa la fuente antes de usarla */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+/* Directivas de Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globales */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #f9fafb;
+    /* o el fondo que uses */
+    margin: 0;
+    padding: 0;
+}

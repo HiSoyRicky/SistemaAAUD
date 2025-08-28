@@ -1,0 +1,10 @@
+﻿id,nombre_completo,username,password,email,id_rol,active
+1,Administrador,admin,$2b$10$UXkbi7jF1bxQp7U871sam.GfmC5nr91PQAc/MClssQeO/tb7tiN.m,NULL,1,1
+2,Trabajador AAUD,trabajador,$2b$10$ylomhiI0auoDRvAnMAJFeezPe4KIPUY7U4uX5ne4avAzsCu.yafo.,NULL,4,1
+3,Leovigildo Chanis,lchanis,$2b$10$bHu1Tzxg4pUEqZ.sKcXSa.5CT0pgZVkjEMb8JB4wfRpW5tdFA5iLO,lchanis@aaud.gob.pa,2,1
+4,Ricardo Vargas,rvargas,$2b$10$hiiwsqk0jSXUlF/NWIqi.en05i4aOqeMcXpuvN2d60tcEm9ncSRCC,rvargas@aaud.gob.pa,2,1
+5,Harold Hunt,hhunt,$2b$10$o8csrdIoWDpWKVMyhuTPWuVmoricglhZe8tc0DtVS.SrKXbGvpShq,"hhunt@aaud.gob.pa
+",2,1
+6,Fernando Fanilla,ffanilla,$2b$10$V1ojc.qR8AU0LuKecEZgk.crx5EyVlRofynE6S8YDNX8dX3qwuxiO,ffanilla@aaud.gob.pa,2,1
+7,Aura Bethancourt,abethancourt,$2b$10$9RwQrQCX9Y6gYdTFqOYDyeABC7SwAinaeF/w5BliJnq2trO3qbgW.,NULL,3,1
+8,Orlando Sanjur,osanjur,$2b$10$DZNRq1g3LNstx2M5BaUoJ.PAEEvhiniUpSQcWR0HSpMBXWflCFVj.,osanjur,2,1

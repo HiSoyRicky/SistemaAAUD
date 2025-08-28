@@ -1,0 +1,231 @@
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import { formatDateToDDMMYYYY } from './formatDate';
+
+export async function exportIncidentsToExcel(incidents) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Incidencias');
+
+    // Define las columnas (usa header y key para exceljs)
+    const columns = [
+        { header: 'ID', key: 'id', width: 7.5 },
+        { header: 'Usuario', key: 'usuario', width: 25 },
+        { header: 'Correo', key: 'correo', width: 25 },
+        { header: 'Ubicación', key: 'ubicacion', width: 20 },
+        { header: 'Departamento', key: 'departamento', width: 20 },
+        { header: 'Categoría', key: 'categoria', width: 25 },
+        { header: 'Detalle de categoría', key: 'detalle_categoria', width: 30 },
+        { header: 'Descripción', key: 'descripcion', width: 40 },
+        { header: 'Día de creación', key: 'dia_creacion', width: 16 },
+        { header: 'Fecha de creación', key: 'fecha_creacion', width: 25 },
+        { header: 'Estado', key: 'estado', width: 12 },
+        { header: 'Técnico', key: 'tecnico', width: 25 },
+        { header: 'Fecha de solución', key: 'fecha_solucion', width: 20 },
+        { header: 'Solución', key: 'solucion', width: 40 },
+    ];
+
+    worksheet.columns = columns;
+
+    // Mapea incidentes a objetos con claves matching keys de columnas
+    const rows = incidents.map((incident) => {
+        const fechaCreacion = new Date(incident.creation_date);
+        const fechaCreacionStr = formatDateToDDMMYYYY(fechaCreacion.toISOString()); // 'DD/MM/YYYY'
+
+        // Hora en formato HH:mm:ss, opcional incluir segundos si quieres
+        const horaCreacionStr = fechaCreacion.toLocaleTimeString('es-PA', { hour12: true });
+
+        return {
+            id: incident.id.toString().padStart(6, '0'),
+            usuario: incident.reporter_name || `Usuario ID: ${incident.id_user}`,
+            correo: incident.reporter_email || 'N/A',
+            ubicacion: incident.ubication_name || 'N/A',
+            departamento: incident.department_name || 'N/A',
+            categoria: getCategoryName(incident.id_category),
+            detalle_categoria: incident.other_category_detail || 'N/A',
+            descripcion: incident.description,
+            dia_creacion: fechaCreacionStr, // solo DD/MM/YYYY
+            fecha_creacion: `${fechaCreacionStr} ${horaCreacionStr}`, // DD/MM/YYYY HH:mm:ss
+            estado: getStatusName(incident.id_status),
+            tecnico: incident.technician_full_name || (incident.id_technician ? `ID: ${incident.id_technician}` : 'N/A'),
+            fecha_solucion: incident.solution_date
+                ? (() => {
+                    const fSol = new Date(incident.solution_date);
+                    const fSolStr = formatDateToDDMMYYYY(fSol.toISOString());
+                    const hSolStr = fSol.toLocaleTimeString('es-PA', { hour12: false });
+                    return `${fSolStr} ${hSolStr}`;
+                })()
+                : 'N/A',
+            solucion: incident.solution || 'N/A',
+        };
+    });
+
+    // Añadir filas a la worksheet
+    rows.forEach(row => worksheet.addRow(row));
+
+    // Centrar encabezados
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Ajustar alineación y wrapText para filas excepto la 1
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber !== 1) {
+            row.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            const descripcionCol = worksheet.getColumn('descripcion').number;
+            const solucionCol = worksheet.getColumn('solucion').number;
+            const colDia = worksheet.getColumn('dia_creacion').number;
+            const colEstado = worksheet.getColumn('estado').number;
+            const colFechaCreacion = worksheet.getColumn('fecha_creacion').number;
+            const colFechaSolucion = worksheet.getColumn('fecha_solucion').number;
+
+            row.getCell(descripcionCol).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+            row.getCell(solucionCol).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+            row.getCell(colDia).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            row.getCell(colEstado).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            row.getCell(colFechaCreacion).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            row.getCell(colFechaSolucion).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        }
+    });
+
+    // Agregar tabla completa para filtros y estilo
+    worksheet.addTable({
+        name: 'IncidenciasTable',
+        ref: 'A1',
+        headerRow: true,
+        totalsRow: false,
+        style: {
+            theme: 'TableStyleMedium9',
+            showRowStripes: true,
+        },
+        columns: columns.map(col => ({ name: col.header, filterButton: true })),
+        rows: rows.map(r => columns.map(c => r[c.key])),
+    });
+
+    // Generar y descargar archivo
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    const hoyStr = formatDateToDDMMYYYY(new Date().toISOString());
+    const nombreArchivo = `incidencias.${hoyStr.replace(/\//g, '-')}.xlsx`;
+
+    saveAs(blob, nombreArchivo);
+}
+
+// Funciones auxiliares
+function getCategoryName(id) {
+    switch (id) {
+        case 1: return 'Problemas con el internet';
+        case 2: return 'Problemas con el equipo';
+        case 3: return 'Problemas con un programa';
+        case 4: return 'Otro';
+        default: return 'Desconocida';
+    }
+}
+
+function getStatusName(id) {
+    switch (id) {
+        case 1: return 'Pendiente';
+        case 2: return 'Asignado';
+        case 3: return 'Resuelto';
+        default: return 'Desconocido';
+    }
+}
+
+export async function exportInventoryToExcel(devices) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Inventario');
+
+    // Definir columnas
+    const columns = [
+        { header: 'Marbete', key: 'tag', width: 12 },
+        { header: 'Ubicación', key: 'ubication', width: 18 },
+        { header: 'Dirección', key: 'direccion', width: 26 },
+        { header: 'Departamento', key: 'departamento', width: 25 },
+        { header: 'Usuario', key: 'usuario', width: 32 },
+        { header: 'Descripción', key: 'descripcion', width: 22 },
+        { header: 'Marca', key: 'marca', width: 24 },
+        { header: 'Modelo', key: 'modelo', width: 15 },
+        { header: 'Serie', key: 'serie', width: 32 },
+        { header: 'IP', key: 'ip', width: 13 },
+        { header: 'Estado', key: 'estado', width: 12 },
+        { header: 'Fecha de Traslado', key: 'fecha_traslado', width: 20 },
+        { header: 'Observación', key: 'observacion', width: 36 },
+        { header: 'Emisor', key: 'emisor', width: 25 },
+        { header: 'Receptor', key: 'receptor', width: 25 },
+    ];
+    worksheet.columns = columns;
+    // Mapea inventario a filas
+    const rows = devices.map((item) => {
+        return {
+            tag: item.tag || 'N/A',
+            ubication: item.ubication || 'N/A',
+            departamento: item.department || 'N/A',
+            usuario: item.user,
+            descripcion: item.device || 'N/A',
+            marca: item.brand || 'N/A',
+            modelo: item.model || 'N/A',
+            serie: item.serie || 'S/S',
+            ip: item.ip,
+            estado: item.status || 'Desconocido',
+            fecha_traslado: item.transferDate
+                ? formatDateToDDMMYYYY(new Date(item.transferDate).toISOString())
+                : '',
+            observacion: item.observation,
+            emisor: item.emisor,
+            receptor: item.receptor,
+        };
+    });
+
+    // Agregar filas
+    rows.forEach(row => worksheet.addRow(row));
+
+    // Encabezados centrados
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Ajustes de alineación en filas
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber !== 1) {
+            row.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            const colEstado = worksheet.getColumn('estado').number;
+            const colFecha = worksheet.getColumn('fecha_traslado').number;
+
+            row.getCell(colEstado).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            row.getCell(colFecha).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        }
+    });
+
+    // Agregar tabla con filtros
+    worksheet.addTable({
+        name: 'InventarioTable',
+        ref: 'A1',
+        headerRow: true,
+        totalsRow: false,
+        style: {
+            theme: 'TableStyleMedium9',
+            showRowStripes: true,
+        },
+        columns: columns.map(col => ({ name: col.header, filterButton: true })),
+        rows: rows.map(r => columns.map(c => r[c.key])),
+    });
+
+    // Descargar archivo
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    const hoyStr = formatDateToDDMMYYYY(new Date().toISOString());
+    const nombreArchivo = `inventario.${hoyStr.replace(/\//g, '-')}.xlsx`;
+
+    saveAs(blob, nombreArchivo);
+}
+
+// Función auxiliar para estados del inventario
+function getInventoryStatusName(id) {
+    switch (id) {
+        case 1: return 'Buen estado';
+        case 2: return 'Mal estado';
+        case 3: return 'Para descarte';
+        case 4: return 'Descartado';
+        case 5: return 'Nuevo';
+        default: return 'Desconocido';
+    }
+}
