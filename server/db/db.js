@@ -1,6 +1,6 @@
 // server/db.js
 const sql = require('mssql');
-require('dotenv').config({ path: __dirname + '/../.env' });
+require('dotenv').config();
 
 // Validar variables de entorno
 const { DB_USER, DB_PASSWORD, DB_SERVER, DB_NAME } = process.env;
