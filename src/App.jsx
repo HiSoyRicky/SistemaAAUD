@@ -1,8 +1,6 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Header from './components/Header';
-import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
 import IncidentsPage from './pages/incidents/IncidentsPage'; // Esta será tu página principal con el formulario y la tabla
 import NotFoundPage from './pages/NotFoundPage';
@@ -13,6 +11,8 @@ import IncidentDetails from './pages/incidents/IncidentDetails';
 import SelectorPage from './pages/SelectorPage';
 import InventoryPage from './pages/inventory/InventoryPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminRoute from '../server/routes/AAUD/AdminRoute';
+import AdminPage from "./pages/admin/AdminPage";
 
 // Componente para proteger rutas
 const PrivateRoute = ({ children, allowedUserTypes }) => {
@@ -104,6 +104,15 @@ function App() {
           <PrivateRoute allowedUserTypes={['admin']}>
             <AdminUsersPage />
           </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
         }
       />
 

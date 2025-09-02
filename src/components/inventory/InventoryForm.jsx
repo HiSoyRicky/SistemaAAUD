@@ -13,7 +13,7 @@ export default function InventoryForm({ onSubmit, onCancel, initialData = {} }) 
     const [formData, setFormData] = useState({
         tag: initialData.tag || '',
         serie: initialData.serie || '',
-        nombre_equipo: initialData.nombre_equipo || '',
+        id_device: initialData.id_device || '',
         descripcion: initialData.descripcion || '',
         id_ubication: initialData.id_ubication || '',
         id_department: initialData.id_department || '',
@@ -122,11 +122,11 @@ export default function InventoryForm({ onSubmit, onCancel, initialData = {} }) 
                     <div className="col-span-2">
                         <SelectField
                             label="Nombre del equipo *"
-                            name="nombre_equipo"
-                            value={formData.nombre_equipo}
+                            name="id_device"
+                            value={formData.id_device}
                             onChange={handleChange}
                             options={(devices || []).map((d) => ({ id: d.id, name: d.name }))}
-                            error={errors.nombre_equipo}
+                            error={errors.id_device}
                         />
                     </div>
 

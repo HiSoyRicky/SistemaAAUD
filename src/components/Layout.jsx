@@ -35,11 +35,11 @@ function Layout({ children }) {
             allowed: ['admin', 'tecnico', 'secretaria'],
         },
         {
-            icon: <span>👤</span>,
-            label: 'Usuarios',
-            path: '/admin/usuarios',
-            allowed: ['admin'],   // 👈 solo admins
-        },
+            icon: <span>🛠</span>,
+            label: 'Admin Panel',
+            path: '/admin',
+            allowed: ['admin'],
+        }
     ];
 
     const filteredMenuItems = menuItems.filter(item => item.allowed.includes(userType));
