@@ -6,9 +6,6 @@ const router = express.Router();
 const getToner = require('./getToner');
 const postToner = require('./postToner');
 
-
-
-
 // Usar las rutas
 router.use(getToner);
 router.use(postToner);
