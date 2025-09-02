@@ -5,7 +5,7 @@ const sql = require('mssql');
 
 // 🔹 Agregar movimiento (entrada/salida)
 router.post("/movement", async (req, res) => {
-    const { id_toner, movement_type, quantity, user_id, notes } = req.body;
+    const { id_toner, movement_type, quantity, movement_date, id_user, notes } = req.body;
     try {
         const pool = await getPoolDB();
 
@@ -14,11 +14,12 @@ router.post("/movement", async (req, res) => {
             .input("id_toner", sql.Int, id_toner)
             .input("movement_type", sql.NVarChar, movement_type)
             .input("quantity", sql.Int, quantity)
-            .input("user_id", sql.Int, user_id)
+            .input("movement_date", sql.DateTime, movement_date)
+            .input("id_user", sql.Int, id_user)
             .input("notes", sql.NVarChar, notes)
             .query(`
-                INSERT INTO toner_movements (id_toner, movement_type, quantity, user_id, notes)
-                VALUES (@id_toner, @movement_type, @quantity, @user_id, @notes)
+                INSERT INTO toner_movements (id_toner, movement_type, quantity, movement_date, id_user, notes)
+                VALUES (@id_toner, @movement_type, @quantity, @movement_date, @id_user, @notes)
             `);
 
         // Actualizamos stock en toners

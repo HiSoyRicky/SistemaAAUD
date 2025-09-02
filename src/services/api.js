@@ -95,3 +95,9 @@ export async function fetchStatuses() {
     const res = await api.get(`/api/statuses`);
     return res.data;
 }
+
+export async function fetchToners() {
+    const res = await api.get(`/api/toners`);
+    return res.data;
+}
+
