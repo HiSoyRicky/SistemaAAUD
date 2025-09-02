@@ -6,7 +6,7 @@ const { getPoolDB } = require('../../../db/db');
 router.get('/', async (req, res) => {
     try {
         const pool = await getPoolDB();
-        const result = await pool.request().query(`
+        const result = await pool.request().quesry(`
             SELECT id, name
             FROM ubications
             ORDER BY name

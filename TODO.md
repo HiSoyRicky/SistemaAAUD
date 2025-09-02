@@ -59,5 +59,3 @@ Prioridad baja / nice-to-have:
  Migrations DB.
 
  Documentación (README con cómo ejecutar local + screenshots).
-
-## ❌ Descartadas

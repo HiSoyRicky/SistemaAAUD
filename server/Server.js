@@ -30,6 +30,7 @@ const errorHandler = require('./middleware/errorHandler');
 const departmentsRouter = require('./routes/AAUD/departments');
 const ubicationsRouter = require('./routes/AAUD/ubications');
 const usersRouter = require('./routes/users');
+const tonersRouter = require('./routes/AAUD/toners');
 
 //Incidencias
 const incidentsRouter = require('./routes/incidents');
@@ -52,6 +53,7 @@ app.use('/api', authRouter);
 app.use('/api/departments', departmentsRouter);
 app.use('/api/ubications', ubicationsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/toners', tonersRouter);
 
 //Incidencias
 app.use('/api/incidents', incidentsRouter);
