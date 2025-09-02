@@ -2,7 +2,7 @@
 node_modules/
 
 # Ignorar archivos .env en todos lados
-**/.env
+.env
 
 # Ignorar fotos personales subidas por los usuarios
 server/public/fotos_personal
@@ -12,3 +12,6 @@ Notas/
 
 # Ignorar archivos de estructura generados
 docs/estructura.txt
+
+# Ignorar archivos de tareas pendientes
+TODO.md

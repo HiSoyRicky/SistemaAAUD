@@ -25,11 +25,39 @@
 - [ ] 006988: Agregar Docking Station de Chanis.
 - [ ] Nueva columna: fecha de ingreso de los equipos (Inventario AAUD).
 
-## ✅ Completadas
-- [x] Configuración inicial de frontend con Vite y React
-- [x] Configuración de backend con Express y SQL Server
-- [x] Integración de autenticación con contexto en React
-- [x] Protección de rutas con `ProtectedRoute`
-- [x] Diseño base con Tailwind y componentes comunes (Header, Footer, Layout)
+
+Checklist práctica (para que la uses punto por punto)
+
+Prioridad alta (hacer hoy/esta semana):
+
+ Reescribir queries para que usen parámetros.
+
+ Asegurar hashing de contraseñas y revisar flujo de auth.
+
+ Añadir middleware de validación (express-validator / Joi).
+
+ Añadir helmet y CORS con whitelist.
+
+ Añadir error handler global.
+
+Prioridad media:
+
+ ESLint + Prettier config y script npm run lint.
+
+ Configurar logger (winston/pino).
+
+ Implementar paginación servidor.
+
+ Añadir tests básicos.
+
+Prioridad baja / nice-to-have:
+
+ Docker + docker-compose.
+
+ CI (GitHub Actions): lint, test, build.
+
+ Migrations DB.
+
+ Documentación (README con cómo ejecutar local + screenshots).
 
 ## ❌ Descartadas
