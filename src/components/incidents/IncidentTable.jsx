@@ -41,7 +41,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedIncidents = incidents.slice(startIndex, endIndex);
-    const [showExtraColumns, setShowExtraColumns] = React.useState(true);
+    const [showExtraColumns, setShowExtraColumns] = React.useState(false);
     const thClass = "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider";
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
 

@@ -136,42 +136,37 @@ export async function exportInventoryToExcel(devices) {
 
     // Definir columnas
     const columns = [
-        { header: 'Marbete', key: 'tag', width: 12 },
+        { header: 'Marbete', key: 'tag', width: 14 },
         { header: 'Ubicación', key: 'ubication', width: 18 },
-        { header: 'Dirección', key: 'direccion', width: 26 },
         { header: 'Departamento', key: 'departamento', width: 25 },
         { header: 'Usuario', key: 'usuario', width: 32 },
         { header: 'Descripción', key: 'descripcion', width: 22 },
         { header: 'Marca', key: 'marca', width: 24 },
-        { header: 'Modelo', key: 'modelo', width: 15 },
+        { header: 'Modelo', key: 'modelo', width: 30 },
         { header: 'Serie', key: 'serie', width: 32 },
-        { header: 'IP', key: 'ip', width: 13 },
+        { header: 'IP', key: 'ip', width: 15 },
         { header: 'Estado', key: 'estado', width: 12 },
         { header: 'Fecha de Traslado', key: 'fecha_traslado', width: 20 },
         { header: 'Observación', key: 'observacion', width: 36 },
-        { header: 'Emisor', key: 'emisor', width: 25 },
-        { header: 'Receptor', key: 'receptor', width: 25 },
     ];
     worksheet.columns = columns;
     // Mapea inventario a filas
     const rows = devices.map((item) => {
         return {
             tag: item.tag || 'N/A',
-            ubication: item.ubication || 'N/A',
-            departamento: item.department || 'N/A',
-            usuario: item.user,
-            descripcion: item.device || 'N/A',
-            marca: item.brand || 'N/A',
-            modelo: item.model || 'N/A',
+            ubication: item.ubication_name || 'N/A',
+            departamento: item.department_name || 'N/A',
+            usuario: item.user || 'N/A',
+            descripcion: item.device_name || 'N/A',
+            marca: item.brand_name || 'N/A',
+            modelo: item.model_name || 'N/A',
             serie: item.serie || 'S/S',
             ip: item.ip,
-            estado: item.status || 'Desconocido',
+            estado: item.status_name || 'Desconocido',
             fecha_traslado: item.transferDate
                 ? formatDateToDDMMYYYY(new Date(item.transferDate).toISOString())
                 : '',
-            observacion: item.observation,
-            emisor: item.emisor,
-            receptor: item.receptor,
+            observacion: item.observation || 'N/A',
         };
     });
 
@@ -186,9 +181,11 @@ export async function exportInventoryToExcel(devices) {
         if (rowNumber !== 1) {
             row.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
 
+            const colTag = worksheet.getColumn('tag').number;
             const colEstado = worksheet.getColumn('estado').number;
             const colFecha = worksheet.getColumn('fecha_traslado').number;
 
+            row.getCell(colTag).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             row.getCell(colEstado).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             row.getCell(colFecha).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         }

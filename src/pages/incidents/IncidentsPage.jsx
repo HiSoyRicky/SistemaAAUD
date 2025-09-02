@@ -211,7 +211,7 @@ function IncidentsPage() {
     );
 
     return (
-        <div className="container mx-auto p-4">
+        <div className="p-15">
             {message && <SuccessMessage message={message} type={messageType} />}
 
             {['admin', 'tecnico', 'secretaria'].includes(userType) && (
