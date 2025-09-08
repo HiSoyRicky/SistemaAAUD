@@ -1,10 +1,8 @@
 // server/routes/auth.js
 const express = require('express');
 const router = express.Router();
-const { getPoolDB } = require('../db/db');
-const sql = require('mssql'); // ✅ Faltaba esto
 const bcrypt = require('bcrypt');
-
+const { pool } = require('../db/db');
 
 router.post('/register', async (req, res) => {
     const { username, password, nombre_completo, id_rol } = req.body;
@@ -14,14 +12,13 @@ router.post('/register', async (req, res) => {
     }
 
     try {
-        const pool = await getPoolDB();
-
         // Verificar si el usuario ya existe
-        const existe = await pool.request()
-            .input('username', sql.NVarChar, username)
-            .query('SELECT id FROM users WHERE username = @username');
+        const existeQuery = await pool.query(
+            'SELECT id FROM users WHERE username = $1',
+            [username]
+        );
 
-        if (existe.recordset.length > 0) {
+        if (existeQuery.rows.length > 0) {
             return res.status(409).json({ error: 'El usuario ya existe' });
         }
 
@@ -29,16 +26,11 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Insertar en la base de datos
-        await pool.request()
-            .input('username', sql.NVarChar, username)
-            .input('password', sql.NVarChar, hashedPassword)
-            .input('nombre_completo', sql.NVarChar, nombre_completo)
-            .input('id_rol', sql.Int, id_rol)
-            .input('active', sql.Int, 1)
-            .query(`
-                INSERT INTO users (username, password, nombre_completo, id_rol, active)
-                VALUES (@username, @password, @nombre_completo, @id_rol, @active)
-            `);
+        await pool.query(
+            `INSERT INTO users (username, password, nombre_completo, id_rol, active)
+             VALUES ($1, $2, $3, $4, 1)`,
+            [username, hashedPassword, nombre_completo, id_rol]
+        );
 
         res.json({ mensaje: 'Usuario registrado exitosamente' });
     } catch (err) {
@@ -55,16 +47,16 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
         }
 
-        const pool = await getPoolDB();
-        const result = await pool.request()
-            .input('username', sql.NVarChar, username)
-            .query('SELECT id, nombre_completo, id_rol, password FROM users WHERE username = @username AND active = 1');
+        const result = await pool.query(
+            'SELECT id, nombre_completo, id_rol, password FROM users WHERE username = $1 AND active = 1',
+            [username]
+        );
 
-        if (result.recordset.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
         }
 
-        const user = result.recordset[0];
+        const user = result.rows[0];
 
         // Comparar password con bcrypt
         const isPasswordValid = await bcrypt.compare(password, user.password);

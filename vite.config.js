@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_URL = process.env.VITE_API_URL;
+const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
 
 module.exports = defineConfig({
     plugins: [react()],

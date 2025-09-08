@@ -21,7 +21,7 @@ async function getIncidentByToken(token) {
     try {
         const decoded = jwt.verify(token, secretKey);
         const { id, email } = decoded;
-        const pool = await getPoolDB();
+        
         const result = await pool.request()
             .input('id', sql.Int, id)
             .input('email', sql.NVarChar, email)

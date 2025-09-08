@@ -1,14 +1,12 @@
 // server/routes/incidencias/getIncident.js
 const express = require('express');
 const router = express.Router();
-const sql = require('mssql');
-const { getPoolDB } = require('../../db/db');
+const { pool } = require('../../db/db');
 
 // Endpoint para obtener todas las incidencias
 router.get('/', async (req, res) => {
     try {
-        const pool = await getPoolDB();
-        const result = await pool.request().query(`
+        const result = await pool.query(`
             SELECT
                 i.id,
                 i.id_user,
@@ -27,16 +25,14 @@ router.get('/', async (req, res) => {
                 i.id_technician
             FROM
                 BD_Incidents i
-            LEFT JOIN
-                users t ON i.id_technician = t.id
+            LEFT JOIN users t ON i.id_technician = t.id
             LEFT JOIN ubications u ON i.id_ubication = u.id
             LEFT JOIN departments d ON i.id_department = d.id
         `);
-        res.json(result.recordset);
+        res.json(result.rows);
     } catch (err) {
         console.error('❌ Error en la conexión SQL:', err.message);
-        console.error(err);
-        res.status(500).send('Error en la conexión SQL Server');
+        res.status(500).json({ error: 'Error en la conexión PostgreSQL', details: err.message });
     }
 });
 
@@ -46,10 +42,7 @@ router.get('/:id', async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
     try {
-        const pool = await getPoolDB();
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .query(`
+        const result = await pool.query(`
                 SELECT
                     i.id,
                     i.reporter_name,
@@ -73,14 +66,14 @@ router.get('/:id', async (req, res) => {
                 JOIN ubication u ON i.id_ubication = u.id
                 JOIN department d ON i.id_department = d.id
                 JOIN category c ON i.id_category = c.id
-                WHERE i.id = @id
-            `);
+                WHERE i.id = $1
+             `, [id]);
 
-        if (result.recordset.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Incidencia no encontrada' });
         }
 
-        res.json(result.recordset[0]);
+        res.json(result.rows[0]);
     } catch (err) {
         console.error('Error al obtener incidencia:', err);
         res.status(500).json({ error: 'Error interno del servidor' });

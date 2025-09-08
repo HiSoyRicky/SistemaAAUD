@@ -32,6 +32,7 @@
     "moment-timezone": "^0.6.0",
     "mssql": "^11.0.1",
     "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0",
