@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT
-                i.id,
+                i.id AS id_incident,
                 i.id_user,
                 i.reporter_name,
                 i.email AS reporter_email,
@@ -44,7 +44,7 @@ router.get('/:id', async (req, res) => {
     try {
         const result = await pool.query(`
                 SELECT
-                    i.id,
+                    i.id AS id_incident,
                     i.reporter_name,
                     i.email AS reporter_email,
                     u.name AS ubication_name,

@@ -16,7 +16,6 @@ export default function Dashboard() {
   const [showTable, setShowTable] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { userType } = useAuth();
 
   const loadIncidences = async () => {
     setLoadingIncidences(true);
@@ -40,15 +39,15 @@ export default function Dashboard() {
   // Conteos por estado
   const totalIncidences = incidences.length;
   const pendientes = incidences.filter(i => i.id_status === 1).length;
-  const resueltas = incidences.filter(i => i.id_status === 3).length;
   const enProceso = incidences.filter(i => i.id_status === 2).length;
+  const resueltas = incidences.filter(i => i.id_status === 3).length;
 
 
   // Datos para gráfica
   const chartData = [
     { name: 'Pendiente', Cantidad: pendientes },
+    { name: 'Proceso', Cantidad: enProceso },
     { name: 'Resuelta', Cantidad: resueltas },
-    { name: 'En Proceso', Cantidad: enProceso },
   ];
 
   return (
@@ -80,7 +79,7 @@ export default function Dashboard() {
           {/* Estadísticas en Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white shadow rounded p-4 flex flex-col items-center justify-center text-center">
-              <h3 className="text-gray-500 mb-2">Total Incidencias</h3>
+              <h3 className="text-gray-500 mb-2">Total incidencias</h3>
               <p className="text-2xl font-bold text-gray-800">{totalIncidences}</p>
             </div>
             <div className="bg-white shadow rounded p-4 flex flex-col items-center justify-center text-center">
@@ -88,7 +87,7 @@ export default function Dashboard() {
               <p className="text-2xl font-bold text-yellow-500">{pendientes}</p>
             </div>
             <div className="bg-white shadow rounded p-4 flex flex-col items-center justify-center text-center">
-              <h3 className="text-gray-500 mb-2">En Proceso</h3>
+              <h3 className="text-gray-500 mb-2">Proceso</h3>
               <p className="text-2xl font-bold text-blue-500">{enProceso}</p>
             </div>
             <div className="bg-white shadow rounded p-4 flex flex-col items-center justify-center text-center">

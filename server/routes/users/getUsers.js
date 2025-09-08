@@ -1,12 +1,12 @@
 // server/routes/usuarios/getUsers.js
 const express = require('express');
 const router = express.Router();
-const { poolDB } = require('../../db/db');
+const { pool } = require('../../db/db');
 
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
     try {
-        const result = await poolDB.query(`
+        const result = await pool.query(`
             SELECT 
             id, 
             nombre_completo AS full_name, 
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 router.get('/technicians', async (req, res) => {
     try {
         
-        const result = await poolDB.query(`
+        const result = await pool.query(`
             SELECT id, username, nombre_completo
             FROM users
             WHERE id_rol = 2 AND active = 1
@@ -42,7 +42,7 @@ router.get('/technicians', async (req, res) => {
 router.get('/roles', async (req, res) => {
     try {
         
-        const result = await poolDB.query(`
+        const result = await pool.query(`
             SELECT id, name AS role_name
             FROM roles
         `);

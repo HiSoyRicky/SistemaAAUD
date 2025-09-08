@@ -1,7 +1,7 @@
 // server/utils/imapClient.js
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { getPoolDB } from './db/db';
+import { pool } from './db/db';
 import { io } from '../server';
 import dotenv from 'dotenv';
 import sendMail from './mailer';
@@ -68,7 +68,7 @@ async function procesarRespuestasTecnicos() {
                 console.log(`Correo de: ${emailRemitente} para incidencia #${idIncidencia}`);
 
                 // Consultar técnico asignado y datos del reporter
-                const pool = await getPoolDB();
+                
                 const techResult = await pool.request()
                     .input('id', idIncidencia)
                     .query(`
@@ -78,15 +78,15 @@ async function procesarRespuestasTecnicos() {
                         WHERE i.id = @id
                     `);
 
-                if (techResult.recordset.length === 0 || !techResult.recordset[0].technician_email) {
+                if (techResult.rows.length === 0 || !techResult.rows[0].technician_email) {
                     console.log(`Incidencia #${idIncidencia} no encontrada o sin técnico asignado.`);
                     await client.messageFlagsAdd(message.uid, ['\\Seen']);
                     continue;
                 }
 
-                const technicianEmail = techResult.recordset[0].technician_email.toLowerCase();
-                const reporterEmail = techResult.recordset[0].reporter_email;
-                const reporterName = techResult.recordset[0].reporter_name;
+                const technicianEmail = techResult.rows[0].technician_email.toLowerCase();
+                const reporterEmail = techResult.rows[0].reporter_email;
+                const reporterName = techResult.rows[0].reporter_name;
 
                 if (emailRemitente !== technicianEmail) {
                     console.log(`Remitente ${emailRemitente} no coincide con técnico asignado ${technicianEmail} para incidencia #${idIncidencia}.`);
@@ -120,8 +120,8 @@ async function procesarRespuestasTecnicos() {
                         WHERE i.id = @id
                     `);
 
-                if (updatedIncidentResult.recordset.length > 0) {
-                    const updatedIncident = updatedIncidentResult.recordset[0];
+                if (updatedIncidentResult.rows.length > 0) {
+                    const updatedIncident = updatedIncidentResult.rows[0];
                     console.log(`Emitiendo incidentUpdated para incidencia #${idIncidencia}`);
                     io.to(`incident_${idIncidencia}`).emit('incidentUpdated', updatedIncident);
                 } else {

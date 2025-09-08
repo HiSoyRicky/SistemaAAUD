@@ -32,14 +32,14 @@ export const onIncidentDeleted = (callback) => {
     socket.on('incidentDeleted', callback);
 };
 
-export const joinIncidentRoom = (incidentId) => {
-    socket.emit('joinIncidentRoom', incidentId);
-    console.log(`Unido a la sala de incidencia: incident_${incidentId}`);
+export const joinIncidentRoom = (id_incident) => {
+    socket.emit('joinIncidentRoom', id_incident);
+    console.log(`Unido a la sala de incidencia: incident_${id_incident}`);
 };
 
-export const leaveIncidentRoom = (incidentId) => {
-    socket.emit('leaveIncidentRoom', incidentId);
-    console.log(`Abandonada la sala de incidencia: incident_${incidentId}`);
+export const leaveIncidentRoom = (id_incident) => {
+    socket.emit('leaveIncidentRoom', id_incident);
+    console.log(`Abandonada la sala de incidencia: incident_${id_incident}`);
 };
 
 export { socket };

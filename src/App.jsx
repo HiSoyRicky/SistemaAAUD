@@ -116,6 +116,14 @@ function App() {
         }
       />
 
+      {/* Redirección automática de "/" hacia "/login" */}
+      <Route
+        path="/"
+        element={
+          <Navigate
+            to="/login"
+            replace />}
+      />
 
       {/* Ruta 404 */}
       <Route

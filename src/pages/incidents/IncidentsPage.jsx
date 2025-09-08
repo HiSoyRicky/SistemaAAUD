@@ -16,17 +16,16 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 // Componente principal de la página de incidentes
 function IncidentsPage() {
-    const { userType, loggedUserName, loggedUserId} = useAuth();
+    const { userType, loggedUserName, loggedUserId } = useAuth();
     const [incidents, setIncidents] = useState([]);
     const [technicians, setTechnicians] = useState([]);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showResolveModal, setShowResolveModal] = useState(false);
     const [selectedIncidentId, setSelectedIncidentId] = useState(null);
     const [currentIncidentToResolve, setCurrentIncidentToResolve] = useState(null);
-    const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState('');
     const [showIncidentForm, setShowIncidentForm] = useState(false);
     const [incidentToEdit, setIncidentToEdit] = useState(null);
+    const [notification, setNotification] = useState({ message: '', type: '' });
 
     useEffect(() => {
         if (userType) {
@@ -68,6 +67,11 @@ function IncidentsPage() {
             };
         }
     }, [userType]);
+
+    const showNotification = (msg, type) => {
+        setNotification({ message: msg, type });
+        setTimeout(() => setNotification({ message: '', type: '' }), 5000);
+    };
 
     const fetchIncidents = async () => {
         try {
@@ -114,7 +118,7 @@ function IncidentsPage() {
         }
     };
 
-    const handleDeleteIncident = async (incidentId) => {
+    const handleDeleteIncident = async (id_incident) => {
         const password = prompt('Por favor, ingresa tu contraseña para confirmar la eliminación:');
         if (!password) {
             showNotification('Eliminación cancelada: contraseña no proporcionada', 'warning');
@@ -124,7 +128,7 @@ function IncidentsPage() {
         try {
             const token = localStorage.getItem('token');
             // Envía la contraseña junto con la petición DELETE (en body o headers)
-            await axios.delete(`${API_URL}/api/incidents/${incidentId}`, {
+            await axios.delete(`${API_URL}/api/incidents/${id_incident}`, {
                 headers: { Authorization: `Bearer ${token}` },
                 data: { password }
             });
@@ -135,23 +139,14 @@ function IncidentsPage() {
         }
     };
 
-    const showNotification = (msg, type) => {
-        setMessage(msg);
-        setMessageType(type);
-        setTimeout(() => {
-            setMessage('');
-            setMessageType('');
-        }, 10000);
-    };
-
-    const handleOpenAssignModal = (incidentId) => {
-        console.log('Abriendo modal para incidencia:', incidentId);
-        setSelectedIncidentId(incidentId);
+    const handleOpenAssignModal = (id_incident) => {
+        console.log('Abriendo modal para incidencia:', id_incident);
+        setSelectedIncidentId(id_incident);
         setShowAssignModal(true);
     };
 
-    const handleOpenResolveModal = (incidentId) => {
-        setCurrentIncidentToResolve(incidentId);
+    const handleOpenResolveModal = (id_incident) => {
+        setCurrentIncidentToResolve(id_incident);
         setShowResolveModal(true);
     };
 
@@ -186,12 +181,15 @@ function IncidentsPage() {
                     solution: solutionText,
                     solution_date: new Date().toISOString(),
                 });
-                showNotification('Incidencia resuelta correctamente', 'success');
+                setNotification({ message: 'Incidencia resuelta correctamente', type: 'success' });
                 setShowResolveModal(false);
                 setCurrentIncidentToResolve(null);
             } catch (error) {
                 console.error('Error al resolver incidencia:', error);
-                showNotification('Error al resolver incidencia: ' + (error.response?.data?.error || error.message), 'error');
+                setNotification({
+                    message: 'Error al resolver incidencia: ' + (error.response?.data?.error || error.message),
+                    type: 'error',
+                });
             }
         }
     };
@@ -212,7 +210,13 @@ function IncidentsPage() {
 
     return (
         <div className="p-15">
-            {message && <SuccessMessage message={message} type={messageType} />}
+            {notification.message && (
+                <SuccessMessage
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification({ message: '', type: '' })}
+                />
+            )}
 
             {['admin', 'tecnico', 'secretaria'].includes(userType) && (
                 <div className="mb-6 flex justify-center">
@@ -294,7 +298,7 @@ function IncidentsPage() {
 
             {showAssignModal && (
                 <AssignTechnicianModal
-                    incidentId={selectedIncidentId}
+                    id_incident={selectedIncidentId}
                     technicians={technicians}
                     onClose={() => {
                         console.log('Cerrando modal de asignación');
@@ -307,7 +311,7 @@ function IncidentsPage() {
 
             {showResolveModal && (
                 <ResolveIncidentModal
-                    incidentId={currentIncidentToResolve}
+                    id_incident={currentIncidentToResolve}
                     onClose={() => setShowResolveModal(false)}
                     onConfirm={submitSolution}
                 />

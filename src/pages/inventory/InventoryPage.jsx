@@ -23,18 +23,14 @@ function InventoryPage() {
     const [editingDevice, setEditingDevice] = useState(null);
     const printRef = useRef();
     const { addNotification } = useNotifications();
-    const [loading, setLoading] = useState(false);
-    const [unidadDestino, setUnidadDestino] = useState('');
 
     const loadDevices = async () => {
         try {
-            setLoading(true); // Inicia animación
             const data = await apiFetchDevices(search);
             setDevices(data);
         } catch (error) {
             console.error('Error al obtener dispositivos:', error);
         } finally {
-            setLoading(false); // Termina animación
         }
     };
 
@@ -127,14 +123,14 @@ function InventoryPage() {
         ubication: '',
         department: '',
         status: '',
-        transferDate: ''
+        transferdate: ''
     });
 
     const filteredDevices = devices.filter(d => {
         const matchesUbication = !filters.ubication || d.ubication_name === filters.ubication;
         const matchesDepartment = !filters.department || d.department_name === filters.department;
         const matchesTransferDate =
-            (!filters.transferDate || new Date(d.transferDate) >= new Date(filters.transferDate));
+            (!filters.transferdate || new Date(d.transferdate) >= new Date(filters.transferdate));
         return matchesUbication && matchesDepartment && matchesTransferDate;
     });
 
@@ -160,38 +156,6 @@ function InventoryPage() {
                         >
                             <Search size={16} /> Buscar
                         </button>
-                        <button
-                            onClick={loadDevices}
-                            className={`bg-gray-500 text-white px-2 h-8 rounded flex items-center gap-1 text-sm transition-all duration-300 ${loading ? "opacity-70 cursor-not-allowed" : ""
-                                }`}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <svg
-                                    className="animate-spin h-5 w-5 text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                    ></path>
-                                </svg>
-                            ) : (
-                                "🔄 Refrescar"
-                            )}
-                        </button>
-
 
                     </div>
 
@@ -204,15 +168,6 @@ function InventoryPage() {
                             Exportar a Excel
                         </button>
                     )}
-
-                    <div className="flex gap-2 mb-2 flex-wrap">
-                        <input
-                            type="date"
-                            value={filters.transferDate}
-                            onChange={e => setFilters(prev => ({ ...prev, transferDate: e.target.value }))}
-                            className="border px-2 h-8 rounded text-sm"
-                        />
-                    </div>
 
                 </div>
 

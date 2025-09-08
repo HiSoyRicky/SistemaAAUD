@@ -1,9 +1,9 @@
 // server/routes/usuarios/postUser.js
 const express = require('express');
 const router = express.Router();
-const { getPoolDB } = require('../../db/db');
+const { pool } = require('../../db/db');
 const bcrypt = require('bcrypt');
-const sql = require('mssql');
+
 
 // Crear un nuevo usuario
 router.post('/', async (req, res) => {
@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const pool = await getPoolDB();
+        
         await pool.request()
             .input('username', sql.NVarChar, username)
             .input('password', sql.NVarChar, hashedPassword)

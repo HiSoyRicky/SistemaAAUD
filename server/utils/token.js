@@ -1,7 +1,7 @@
 // server/utils/token.js
 const jwt = require('jsonwebtoken');
-const sql = require('mssql');
-const { getPoolDB } = require('../db/db');
+
+const { pool } = require('../db/db');
 const e = require('express');
 
 const secretKey = process.env.JWT_SECRET || 'clave_super_secreta';
@@ -52,12 +52,12 @@ async function getIncidentByToken(token) {
                 WHERE i.id = @id AND i.email = @email
             `);
 
-        if (result.recordset.length === 0) {
+        if (result.rows.length === 0) {
             console.log('No incident found for id:', id, 'and email:', email);
             return null;
         }
 
-        return result.recordset[0];
+        return result.rows[0];
     } catch (err) {
         console.error('Error validating token:', err);
         throw err;

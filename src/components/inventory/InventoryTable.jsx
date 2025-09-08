@@ -1,7 +1,7 @@
 // src/components/inventory/InventoryTable.jsx
 import React, { useState } from 'react';
 import { formatDateToDDMMYYYY } from '../../utils/formatDate';
-import { Printer, Edit } from 'lucide-react';
+import { Printer, Pencil } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 
 function InventoryTable({ inventory, onPrint, onEdit }) {
@@ -46,6 +46,13 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
         });
     });
 
+    // 🔹 Ordenar por Marbete (tag) ascendente
+    const sortedInventory = [...filteredInventory].sort((a, b) => {
+        if (a.tag < b.tag) return -1;
+        if (a.tag > b.tag) return 1;
+        return 0;
+    });
+
     const options = {
         ubication_name: [...new Set(filteredInventory.map(i => i.ubication_name))],
         department_name: [...new Set(filteredInventory.map(i => i.department_name))],
@@ -56,12 +63,11 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
         status_name: [...new Set(filteredInventory.map(i => i.status_name))]
     };
 
-
     // ahora paginar sobre filteredInventory en vez de inventory
-    const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
+    const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedItems = filteredInventory.slice(startIndex, endIndex);
+    const paginatedItems = sortedInventory.slice(startIndex, endIndex);
 
     return (
         <div className="bg-white rounded-lg shadow-md p-1">
@@ -81,10 +87,12 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                     Quitar filtros
                 </button>
             </div>
+
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            {/* Encabezados de la tabla */}
                             <th className={`${tdClass} border`}>Marbete</th>
                             <th className={tdClass}>
                                 <span>Ubicación</span>
@@ -177,10 +185,12 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                             </th>
                         </tr>
                     </thead>
+
+                    {/* Cuerpo de la tabla */}
                     <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedItems.length === 0 ? (
                             <tr>
-                                <td colSpan="13" className="px-6 py-4 text-center text-sm text-gray-500">
+                                <td colSpan="13" className="px-6 py-4 whitespace-normal text-center text-sm text-gray-500">
                                     No hay dispositivos para mostrar.
                                 </td>
                             </tr>
@@ -197,39 +207,39 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     <td className={`${thClass} border`}>{item.serie}</td>
                                     {showExtraColumns && (<td className={`${thClass} border`}>{item.ip ? item.ip : 'N/A'}</td>)}
                                     <td className={`${thClass} border`}>{item.status_name}</td>
-                                    {showExtraColumns && <td className={`${thClass} border`}>{item.transferDate ? formatDateToDDMMYYYY(item.transferDate) : 'N/A'}</td>}
+                                    {showExtraColumns && <td className={`${thClass} border`}>{item.transferdate ? formatDateToDDMMYYYY(item.transferdate) : 'N/A'}</td>}
                                     {showExtraColumns && <td className={`${thClass} border`}>{item.observation || 'N/A'}</td>}
 
                                     {/* Acciones */}
                                     <td className={`${thClass} border`}>
-                                        <div className="flex justify-center items-center h-full gap-2">
+                                        <div className="flex justify-center items-center h-full gap-2 ">
                                             <button
                                                 title={`Ver detalles de ${item.tag}`}
                                                 onClick={() => alert(`Ver detalles de ${item.tag}`)}
-                                                className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                className="text-gray-600 hover:text-gray-800"
                                             >
-                                                Ver
+                                                🔍
                                             </button>
 
                                             {userType === 'admin' && (
                                                 <button
                                                     title="Editar equipo"
                                                     onClick={() => item && onEdit(item)}
-                                                    className="p-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                                    className="text-blue-600 hover:text-blue-800"
                                                 >
-                                                    <Edit size={16} />
+                                                    <Pencil className="w-5 h-5" />
                                                 </button>
                                             )}
 
                                             <button
+                                                title="Imprimir equipo"
                                                 onClick={() => onPrint(item)}
-                                                className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                className="text-red-600 hover:text-red-800"
                                             >
                                                 <Printer size={16} />
                                             </button>
                                         </div>
                                     </td>
-
                                 </tr>
                             ))
                         )}

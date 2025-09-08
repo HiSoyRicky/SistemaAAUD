@@ -1,19 +1,7 @@
 // server/routes/inventory/updateInventory.js
 const express = require('express');
 const router = express.Router();
-const { getPoolDB } = require('../../db/db');
-
-async function getId(pool, table, name, fieldName) {
-    if (!name) throw new Error(`${fieldName} es obligatorio`);
-    const result = await pool.request()
-        .input('name', name)
-        .query(`SELECT id FROM ${table} WHERE name = @name`);
-
-    if (!result.recordset[0]) {
-        throw new Error(`${fieldName} "${name}" no existe en la base de datos`);
-    }
-    return result.recordset[0].id;
-}
+const { pool } = require('../../db/db');
 
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
@@ -28,53 +16,67 @@ router.put('/:id', async (req, res) => {
         serie,
         ip,
         id_status,
-        transferDate,
+        transferdate,
         observation
     } = req.body;
 
+    // Validaciones básicas
+    if (isNaN(parseInt(id))) return res.status(400).json({ error: 'ID inválido' });
+    if (id_ubication && isNaN(parseInt(id_ubication))) return res.status(400).json({ error: 'Ubicación inválida' });
+    if (id_department && isNaN(parseInt(id_department))) return res.status(400).json({ error: 'Departamento inválido' });
+    if (id_device && isNaN(parseInt(id_device))) return res.status(400).json({ error: 'Dispositivo inválido' });
+    if (id_brand && isNaN(parseInt(id_brand))) return res.status(400).json({ error: 'Marca inválida' });
+    if (id_model && isNaN(parseInt(id_model))) return res.status(400).json({ error: 'Modelo inválido' });
+    if (id_status && isNaN(parseInt(id_status))) return res.status(400).json({ error: 'Estado inválido' });
+
     try {
-        const pool = await getPoolDB();
 
         // Preparar la query de actualización
         const query = `
             UPDATE BD_Inventory
             SET 
-                tag = @tag,
-                id_ubication = @id_ubication,
-                id_department = @id_department,
-                [user] = @user,
-                id_device = @id_device,
-                id_brand = @id_brand,
-                id_model = @id_model,
-                serie = @serie,
-                ip = @ip,
-                id_status = @id_status,
-                transferDate = @transferDate,
-                observation = @observation
-            WHERE id = @id
+                tag = $1,
+                id_ubication = $2,
+                id_department = $3,
+                "user" = $4,
+                id_device = $5,
+                id_brand = $6,
+                id_model = $7,
+                serie = $8,
+                ip = $9,
+                id_status = $10,
+                "transferdate" = $11,
+                observation = $12
+            WHERE id = $13
+            RETURNING *;
         `;
 
-        const request = pool.request();
-        request.input('id', id);
-        request.input('tag', tag);
-        request.input('id_ubication', id_ubication);
-        request.input('id_department', id_department);
-        request.input('user', user || '');
-        request.input('id_device', id_device);
-        request.input('id_brand', id_brand);
-        request.input('id_model', id_model);
-        request.input('serie', serie);
-        request.input('ip', ip || '');
-        request.input('id_status', id_status);
-        request.input('transferDate', transferDate ? new Date(transferDate) : null);
-        request.input('observation', observation || null);
+        const values = [
+            tag ?? null,
+            id_ubication ?? null,
+            id_department ?? null,
+            user ?? null,
+            id_device ?? null,
+            id_brand ?? null,
+            id_model ?? null,
+            serie ?? null,
+            ip ?? null,
+            id_status ?? null,
+            transferdate || null,
+            observation ?? null,
+            id
+        ];
 
-        await request.query(query);
-        res.json({ message: 'Equipo actualizado correctamente' });
+        const result = await pool.query(query, values);
 
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'No se encontró el equipo con el ID proporcionado' });
+        }
+
+        res.json({ message: 'Equipo actualizado correctamente', updatedItem: result.rows[0] });
     } catch (err) {
         console.error('Error en UPDATE Inventario:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Error interno del servidor', details: err.message });
     }
 });
 

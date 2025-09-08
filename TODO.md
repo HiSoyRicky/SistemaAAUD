@@ -4,6 +4,17 @@
 - [ ] Sistema de Inventario de Toners
 - [ ] Menú de admin para crear/editar departamentos, ubicaciones y todas las tablas
 
+🖥️ Aplicaciones adicionales recomendadas
+
+Nativefier: Convierte aplicaciones web en aplicaciones de escritorio nativas. 
+Reddit
+
+Komodo IDE: IDE con soporte para desarrollo remoto, incluyendo FTP y SFTP. 
+Reddit
+
+Bootstrap Studio: Herramienta de diseño visual para crear sitios web con Bootstrap. 
+Reddit
+
 ## 📌 Pendientes
 
 ### 1. Funcionalidades Generales

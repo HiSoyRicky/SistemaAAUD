@@ -1,7 +1,7 @@
 // server/routes/inventory/postInventory.js
 const express = require('express');
 const router = express.Router();
-const sql = require('mssql');
+
 
 router.post('/', async (req, res) => {
     const {
@@ -16,14 +16,14 @@ router.post('/', async (req, res) => {
         serie,
         ip,
         id_status,
-        transferDate,
+        transferdate,
         observation
     } = req.body;
 
     try {
-        const pool = await getPoolDB();
+        
 
-        const transferDateObj = transferDate ? new Date(transferDate) : new Date();
+        const transferDateObj = transferdate ? new Date(transferdate) : new Date();
 
         const result = await pool.request()
             .input('tag', sql.NVarChar, tag)
@@ -37,16 +37,16 @@ router.post('/', async (req, res) => {
             .input('serie', sql.NVarChar, serie)
             .input('ip', sql.NVarChar, ip)
             .input('id_status', sql.Int, id_status)
-            .input('transferDate', sql.DateTime, transferDateObj)
+            .input('transferdate', sql.DateTime, transferDateObj)
             .input('observation', sql.NVarChar, observation || '')
             .query(`
                 INSERT INTO inventory
-                (tag, id_ubication, id_direction, id_deparment, [user], id_device, id_brand, id_model, serie, ip, id_status, transferDate, observation)
+                (tag, id_ubication, id_direction, id_deparment, [user], id_device, id_brand, id_model, serie, ip, id_status, transferdate, observation)
                 OUTPUT INSERTED.id
-                VALUES (@tag, @id_ubication, @id_direction, @id_deparment, @user, @id_device, @id_brand, @id_model, @serie, @ip, @id_status, @transferDate, @observation)
+                VALUES (@tag, @id_ubication, @id_direction, @id_deparment, @user, @id_device, @id_brand, @id_model, @serie, @ip, @id_status, @transferdate, @observation)
             `);
 
-        const insertedId = result.recordset[0].id;
+        const insertedId = result.rows[0].id;
 
         res.status(201).json({
             success: true,

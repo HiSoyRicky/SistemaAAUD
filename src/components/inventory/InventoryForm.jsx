@@ -22,9 +22,9 @@ export default function InventoryForm({ onSubmit, onCancel, initialData = {} }) 
         id_status: initialData.id_status || '',
         user: initialData.user || '',
         ip: initialData.ip || '',
-        transferDate: initialData.transferDate ? formatDateToDDMMYYYY(initialData.transferDate) : '',
-        transferDateInput: initialData.transferDate
-            ? new Date(initialData.transferDate).toISOString().split('T')[0]
+        transferdate: initialData.transferdate ? formatDateToDDMMYYYY(initialData.transferdate) : '',
+        transferDateInput: initialData.transferdate
+            ? new Date(initialData.transferdate).toISOString().split('T')[0]
             : ''
     });
     const [errors, setErrors] = useState({});
@@ -41,7 +41,7 @@ export default function InventoryForm({ onSubmit, onCancel, initialData = {} }) 
             setFormData((prev) => ({
                 ...prev,
                 transferDateInput: value,
-                transferDate: date ? formatDateToDDMMYYYY(date) : ''
+                transferdate: date ? formatDateToDDMMYYYY(date) : ''
             }));
         } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
@@ -72,13 +72,13 @@ export default function InventoryForm({ onSubmit, onCancel, initialData = {} }) 
         setErrors(newErrors);
 
         if (Object.keys(newErrors).length === 0) {
-            const transferDate = formData.transferDateInput
+            const transferdate = formData.transferDateInput
                 ? new Date(formData.transferDateInput + 'T00:00:00Z').toISOString()
                 : null;
 
             onSubmit({
                 ...formData,
-                transferDate
+                transferdate
             });
         }
     };
@@ -196,7 +196,7 @@ export default function InventoryForm({ onSubmit, onCancel, initialData = {} }) 
                     {/* Fecha de Traslado */}
                     <div>
                         <label className="block text-sm font-medium mb-1">
-                            Fecha de Traslado: {formData.transferDate || 'N/A'}
+                            Fecha de Traslado: {formData.transferdate || 'N/A'}
                         </label>
                         <input
                             type="date"

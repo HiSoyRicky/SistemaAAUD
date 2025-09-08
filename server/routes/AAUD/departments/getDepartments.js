@@ -1,11 +1,11 @@
 // server/routes/departamentos.js
 const express = require('express');
 const router = express.Router();
-const { poolDB } = require('../../../db');
+const { pool } = require('../../../db/db');
 
 router.get('/', async (req, res) => {
     try {
-        const result = await poolDB.query(`
+        const result = await pool.query(`
         SELECT id, name, id_ubication, id_direction
             FROM departments
             ORDER BY name

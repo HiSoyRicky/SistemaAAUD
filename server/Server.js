@@ -79,8 +79,8 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
 
   // Unirse a una sala por ID
-  socket.on('joinIncidentRoom', (incidentId) => {
-    socket.join(`incident_${incidentId}`);
+  socket.on('joinIncidentRoom', (id_incident) => {
+    socket.join(`incident_${id_incident}`);
   });
 
   // Unirse a una sala por token público

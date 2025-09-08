@@ -19,9 +19,9 @@ function EditEquipmentModal({ device = {}, onClose, onConfirm }) {
         serie: device.serie || '',
         ip: device.ip || '',
         id_status: device.id_status || null,
-        transferDate: device.transferDate ? formatDateToDDMMYYYY(device.transferDate) : '', // Para mostrar
-        transferDateInput: device.transferDate
-            ? new Date(device.transferDate).toISOString().split('T')[0] // Para el input
+        transferdate: device.transferdate ? formatDateToDDMMYYYY(device.transferdate) : '', // Para mostrar
+        transferDateInput: device.transferdate
+            ? new Date(device.transferdate).toISOString().split('T')[0] // Para el input
             : '',
         observation: device.observation || ''
     });
@@ -60,7 +60,7 @@ function EditEquipmentModal({ device = {}, onClose, onConfirm }) {
             setFormData((prev) => ({
                 ...prev,
                 transferDateInput: value,
-                transferDate: value ? formatDateToDDMMYYYY(value) : ''
+                transferdate: value ? formatDateToDDMMYYYY(value) : ''
             }));
         } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
@@ -94,7 +94,7 @@ function EditEquipmentModal({ device = {}, onClose, onConfirm }) {
         if (Object.keys(newErrors).length === 0) {
             onConfirm({
                 ...formData,
-                transferDate: formData.transferDateInput || null // sin convertir a UTC
+                transferdate: formData.transferDateInput || null // sin convertir a UTC
             });
         }
     };
@@ -307,7 +307,7 @@ function EditEquipmentModal({ device = {}, onClose, onConfirm }) {
                         {/* Fecha de Traslado */}
                         <div>
                             <label htmlFor="transferDateInput" className="block text-sm font-bold text-gray-700 mb-1">
-                                Fecha de Traslado: {formData.transferDate || 'N/A'}
+                                Fecha de Traslado: {formData.transferdate || 'N/A'}
                             </label>
                             <input
                                 id="transferDateInput"

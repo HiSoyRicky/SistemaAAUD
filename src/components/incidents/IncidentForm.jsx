@@ -6,25 +6,20 @@ import { toast } from 'react-toastify';
 
 function IncidentForm({ onSubmit }) {
     const { loggedUserId, loggedUserName, logout } = useAuth();
-    const [reporter_name, setReporter_name] = useState('');
-    const [description, setDescription] = useState('');
-    const [category, setCategory] = useState('');
-    const [otherCategory, setOtherCategory] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [errors, setErrors] = useState({});
-    const [incidentId, setIncidentId] = useState(null);
+    const [id_incident, setIncidentId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [email, setEmail] = useState('');
 
     // Estado para manejar la selección de ubicación y departamento
     const [formData, setFormData] = useState({
-        reporter_name: loggedUserName || '',
+        reporter_name: '',
         email: '',
         id_ubication: null,
         id_department: null,
         id_device: '',
         description: '',
-        category: '',
+        id_category: '',
         other_category_detail: '',
     });
 
@@ -32,14 +27,15 @@ function IncidentForm({ onSubmit }) {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!reporter_name.trim()) {
+        if (!formData.reporter_name.trim()) {
             newErrors.reporter_name = "El nombre es obligatorio";
-        } else if (reporter_name.trim().length < 4) {
+        } else if (formData.reporter_name.trim().length < 4) {
             newErrors.reporter_name = "El nombre debe tener al menos 4 caracteres";
-        } else if (reporter_name.trim().length > 30) {
+        } else if (formData.reporter_name.trim().length > 30) {
             newErrors.reporter_name = "El nombre no puede superar los 30 caracteres";
         }
-        if (email && !/^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+
+        if (formData.email && !/^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
             newErrors.email = "El formato del correo electrónico es inválido";
         }
         if (!formData.id_ubication) {
@@ -48,14 +44,14 @@ function IncidentForm({ onSubmit }) {
         if (!formData.id_department) {
             newErrors.id_department = "Seleccione un departamento";
         }
-        if (description.length < 10) {
+        if (formData.description.length < 10) {
             newErrors.description = "La descripción debe tener al menos 10 caracteres";
         }
-        if (!category) {
-            newErrors.category = "Seleccione una categoría";
+        if (!formData.id_category) {
+            newErrors.id_category = "Seleccione una categoría";
         }
-        if (category === "4" && !otherCategory.trim()) {
-            newErrors.otherCategory = "Especifique la categoría personalizada";
+        if (!formData.id_category === "4" && !formData.other_category_detail.trim()) {
+            newErrors.other_category_detail = "Especifique la categoría personalizada";
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -92,8 +88,8 @@ function IncidentForm({ onSubmit }) {
             id_department: formData.id_department,
             id_device: formData.id_device ? parseInt(formData.id_device) : null,
             description: formData.description,
-            category: parseInt(formData.category),
-            other_category_detail: formData.category === '4' ? formData.other_category_detail : null,
+            id_category: parseInt(formData.id_category),
+            other_category_detail: formData.id_category === '4' ? formData.other_category_detail : null,
             status: 1,
             solution: '',
             solution_date: null,
@@ -104,7 +100,7 @@ function IncidentForm({ onSubmit }) {
             console.log('Enviando datos al servidor:', incidentData);
             const response = await onSubmit(incidentData);
             console.log('Respuesta del servidor:', response);
-            const incidentIdFromResponse = response?.id || response?.data?.id;
+            const incidentIdFromResponse = response?.id_incident || response?.data?.id_incident;
             if (incidentIdFromResponse) {
                 setIncidentId(incidentIdFromResponse);
                 setShowModal(true);
@@ -123,22 +119,18 @@ function IncidentForm({ onSubmit }) {
         }
     };
 
+    // Reset del formulario
     const handleNewIncident = () => {
         setShowModal(false);
         setIncidentId(null);
-        setReporter_name('');
-        setEmail('');
-        setDescription('');
-        setCategory('');
-        setOtherCategory('');
         setFormData({
-            reporter_name: loggedUserName || '',
+            reporter_name: '',
             email: '',
             id_ubication: null,
             id_department: null,
             id_device: '',
             description: '',
-            category: '',
+            id_category: '',
             other_category_detail: '',
         });
         setErrors({});
@@ -162,8 +154,8 @@ function IncidentForm({ onSubmit }) {
                         id="reporter_name"
                         name="reporter_name"
                         type="text"
-                        value={reporter_name}
-                        onChange={(e) => setReporter_name(e.target.value)}
+                        value={formData.reporter_name}
+                        onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         placeholder="Ingrese su nombre"
                     />
@@ -179,8 +171,8 @@ function IncidentForm({ onSubmit }) {
                         id="email"
                         name="email"
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={formData.email}
+                        onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         placeholder="ejemplo@aaud.gob.pa"
                     />
@@ -201,11 +193,12 @@ function IncidentForm({ onSubmit }) {
 
                 {/* Categoría */}
                 <div className="mb-4">
-                    <label htmlFor="category" className="block text-gray-700 text-sm font-bold mb-2">Categoría:</label>
+                    <label htmlFor="id_category" className="block text-gray-700 text-sm font-bold mb-2">Categoría:</label>
                     <select
-                        id="category"
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
+                        id="id_category"
+                        name="id_category"
+                        value={formData.id_category}
+                        onChange={handleChange}
                         className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     >
                         <option value="" disabled>Escoge una categoría</option>
@@ -214,21 +207,21 @@ function IncidentForm({ onSubmit }) {
                         <option value="3">Problemas con un programa</option>
                         <option value="4">Otro</option>
                     </select>
-                    {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+                    {errors.id_category && <p className="text-red-500 text-sm mt-1">{errors.id_category}</p>}
                 </div>
 
-                {category === "4" && (
+                {formData.id_category === "4" && (
                     <div className="mb-4">
-                        <label htmlFor="otherCategory" className="block text-gray-700 text-sm font-bold mb-2">Especifique otra categoría:</label>
+                        <label htmlFor="other_category_detail" className="block text-gray-700 text-sm font-bold mb-2">Especifique otra categoría:</label>
                         <input
                             type="text"
-                            id="otherCategory"
-                            value={otherCategory}
-                            onChange={(e) => setOtherCategory(e.target.value)}
+                            id="other_category_detail"
+                            value={formData.other_category_detail}
+                            onChange={handleChange}
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             placeholder="Ej: Problema con la impresora"
                         />
-                        {errors.otherCategory && <p className="text-red-500 text-sm mt-1">{errors.otherCategory}</p>}
+                        {errors.other_category_detail && <p className="text-red-500 text-sm mt-1">{errors.other_category_detail}</p>}
                     </div>
                 )}
 
@@ -236,9 +229,10 @@ function IncidentForm({ onSubmit }) {
                     <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">Descripción:</label>
                     <textarea
                         id="description"
+                        name="description"
                         rows="4"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        value={formData.description}
+                        onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         placeholder="Describe la incidencia detalladamente..."
                     ></textarea>
@@ -267,7 +261,7 @@ function IncidentForm({ onSubmit }) {
                         ) : (
                             <p className="mb-6">
                                 <span className="font-medium">Su número de incidencia es:</span>
-                                {incidentId ? `#${incidentId.toString().padStart(6, '0')}` : 'No disponible'}
+                                {id_incident ? `#${id_incident.toString().padStart(6, '0')}` : 'No disponible'}
                             </p>
                         )}
                         <p className="mb-0">¿Deseas reportar otra incidencia o cerrar sesión?</p>

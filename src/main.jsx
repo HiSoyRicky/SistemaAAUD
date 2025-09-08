@@ -7,8 +7,13 @@ import './index.css';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
 import NotificationsContainer from './components/NotificationsContainer.jsx';
+// Importar CSS de Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
+// Importar JS de Bootstrap (opcional, para modales, dropdowns, etc.)
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 class ErrorBoundary extends Component {
+
   state = { hasError: false, error: null };
 
   static getDerivedStateFromError(error) {
@@ -19,6 +24,8 @@ class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary capturó:', error, errorInfo);
   }
+
+
 
   render() {
     if (this.state.hasError) {
@@ -33,6 +40,7 @@ class ErrorBoundary extends Component {
             Recargar página
           </button>
         </div>
+
       );
     }
     return this.props.children;

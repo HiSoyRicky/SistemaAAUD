@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { getPoolDB } = require('../../../db/db');
-const sql = require('mssql');
+const { pool } = require('../../../db/db');
+
 
 // 🔹 Agregar movimiento (entrada/salida)
 router.post("/movement", async (req, res) => {
     const { id_toner, movement_type, quantity, movement_date, id_user, notes } = req.body;
     try {
-        const pool = await getPoolDB();
+        
 
         // Insertamos el movimiento
         await pool.request()

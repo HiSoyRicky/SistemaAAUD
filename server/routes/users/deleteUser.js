@@ -1,8 +1,8 @@
 // server/routes/usuarios/deleteUser.js
 const express = require('express');
 const router = express.Router();
-const { getPoolDB } = require('../../db/db');
-const sql = require('mssql');
+const { pool } = require('../../db/db');
+
 
 // Eliminar un usuario
 router.delete('/:id', async (req, res) => {
@@ -13,7 +13,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     try {
-        const pool = await getPoolDB();
+        
         await pool.request()
             .input('id', sql.Int, userId)
             .query('UPDATE users SET active = 0 WHERE id = @id');

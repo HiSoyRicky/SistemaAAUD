@@ -1,8 +1,7 @@
 // server/routes/incidents/postIncident.js
 const express = require('express');
 const router = express.Router();
-const sql = require('mssql');
-const { getPoolDB } = require('../../db/db');
+const { pool } = require('../../db/db');
 const sendMail = require('../../utils/mailer');
 const { generarTokenIncidencia } = require('../../utils/token');
 const frontendUrl = process.env.FRONTEND_BASE_URL;
@@ -14,7 +13,7 @@ router.post('/', async (req, res) => {
         id_ubication,
         id_department,
         description,
-        category,
+        id_category,
         other_category_detail,
         status,
         solution,
@@ -29,7 +28,6 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        const pool = await getPoolDB();
 
         const statusMap = {
             'Pendiente': 1,
@@ -48,32 +46,33 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Fecha de solución inválida' });
         }
 
-        const result = await pool.request()
-            .input('id_user', sql.Int, userIdNum)
-            .input('reporter_name', sql.NVarChar, reporter_name)
-            .input('email', sql.NVarChar, email || null)
-            .input('id_ubication', sql.Int, id_ubication)
-            .input('id_department', sql.Int, id_department)
-            .input('description', sql.NVarChar, description)
-            .input('id_category', sql.Int, category)
-            .input('other_category_detail', sql.NVarChar, other_category_detail || null)
-            .input('id_status', sql.Int, id_status)
-            .input('creation_date', sql.DateTime, creationDate)
-            .input('solution_date', sql.DateTime, solutionDate || null)
-            .input('solution', sql.NVarChar, solution || '')
-            .query(`
-                INSERT INTO BD_Incidents (id_user, reporter_name, email, id_ubication, id_department, description, id_category, other_category_detail, id_status, creation_date, solution_date, solution)
-                OUTPUT INSERTED.id
-                VALUES (@id_user, @reporter_name, @email, @id_ubication, @id_department, @description, @id_category, @other_category_detail, @id_status, @creation_date, @solution_date, @solution)
-            `);
+        // Insertar incidencia y retornar id
+        const insertResult = await pool.query(
+            `INSERT INTO BD_Incidents
+        (id_user, reporter_name, email, id_ubication, id_department, description, id_category, other_category_detail, id_status, creation_date, solution_date, solution)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+       RETURNING bd_incidents.id;`,
+            [
+                id_user,
+                reporter_name,
+                email || null,
+                id_ubication,
+                id_department,
+                description,
+                id_category,
+                other_category_detail || null,
+                id_status,
+                creationDate,
+                solutionDate || null,
+                solution || ''
+            ]
+        );
 
-        const insertedId = result.recordset[0].id;
+        const insertedId = insertResult.rows[0].id;
 
-        const newIncidentResult = await pool.request()
-            .input('id', sql.Int, insertedId)
-            .query(`
+        const newIncidentResult = await pool.query(`
                 SELECT
-                    i.id,
+                    i.id AS id_incident,
                     i.id_user,
                     i.reporter_name,
                     i.email AS reporter_email,
@@ -92,23 +91,21 @@ router.post('/', async (req, res) => {
                 LEFT JOIN users t ON i.id_technician = t.id
                 LEFT JOIN ubications u ON i.id_ubication = u.id
                 LEFT JOIN departments d ON i.id_department = d.id
-                WHERE i.id = @id
-            `);
+                WHERE i.id = $1
+            `, [insertedId]);
 
-        const newIncident = newIncidentResult.recordset[0];
+        const newIncident = newIncidentResult.rows[0];
 
-        const metaResult = await pool.request()
-            .input('id', sql.Int, insertedId)
-            .query(`
+        const metaResult = await pool.query(`
                 SELECT u.name AS ubication_name, d.name AS department_name, c.name AS category_name
                 FROM BD_Incidents i
                 JOIN ubications u ON i.id_ubication = u.id
                 JOIN departments d ON i.id_department = d.id
                 JOIN categories c ON i.id_category = c.id
-                WHERE i.id = @id
-            `);
+                WHERE i.id = $1
+            `, [insertedId]);
 
-        const { ubication_name, department_name, category_name } = metaResult.recordset[0];
+        const { ubication_name, department_name, category_name } = metaResult.rows[0];
 
         const token = generarTokenIncidencia(insertedId, email);
         const publicViewUrl = `${frontendUrl}/incidencias/view?token=${token}`;

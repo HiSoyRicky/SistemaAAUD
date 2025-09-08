@@ -1,7 +1,7 @@
 // src/components/incidents/AssignTechnicianModal.jsx
 import React, { useState } from 'react';
 
-function AssignTechnicianModal({ incidentId, technicians, onClose, onConfirm }) {
+function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm }) {
     const [selectedTechnician, setSelectedTechnician] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -16,7 +16,7 @@ function AssignTechnicianModal({ incidentId, technicians, onClose, onConfirm }) 
         setIsSubmitting(true);
 
         try {
-            console.log('Asignando técnico:', selectedTechnician, 'a la incidencia:', incidentId);
+            console.log('Asignando técnico:', selectedTechnician, 'a la incidencia:', id_incident);
             await onConfirm(selectedTechnician);
             onClose();
         } catch (error) {
@@ -27,7 +27,7 @@ function AssignTechnicianModal({ incidentId, technicians, onClose, onConfirm }) 
         }
     };
 
-    console.log('Renderizando AssignTechnicianModal con props:', { incidentId, technicians });
+    console.log('Renderizando AssignTechnicianModal con props:', { id_incident, technicians });
 
     // Validar technicians
     const validTechnicians = Array.isArray(technicians) ? technicians : [];
@@ -35,7 +35,7 @@ function AssignTechnicianModal({ incidentId, technicians, onClose, onConfirm }) 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-                <h3 className="text-lg font-bold mb-4">Asignar Técnico a Incidencia #{incidentId || 'N/A'}</h3>
+                <h3 className="text-lg font-bold mb-4">Asignar Técnico a Incidencia #{id_incident || 'N/A'}</h3>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label htmlFor="technicianSelect" className="block text-gray-700 text-sm font-bold mb-2">

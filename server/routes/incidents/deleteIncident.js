@@ -1,8 +1,8 @@
 // server/routes/incidencias/deleteIncidencia.js
 const express = require('express');
 const router = express.Router();
-const sql = require('mssql');
-const { getPoolDB } = require('../../db/db');
+
+const { pool } = require('../../db/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -26,7 +26,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (!password) return res.status(400).json({ error: 'Contraseña requerida' });
 
     try {
-        const pool = await getPoolDB();
+        
         const userId = req.user?.id;
         if (!userId) return res.status(401).json({ error: 'No autenticado' });
 
@@ -34,11 +34,11 @@ router.delete('/:id', verifyToken, async (req, res) => {
             .input('userId', sql.Int, userId)
             .query('SELECT password_hash FROM users WHERE id = @userId');
 
-        if (userResult.recordset.length === 0) {
+        if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        const storedHash = userResult.recordset[0].password_hash;
+        const storedHash = userResult.rows[0].password_hash;
 
         const passwordMatch = await bcrypt.compare(password, storedHash);
 

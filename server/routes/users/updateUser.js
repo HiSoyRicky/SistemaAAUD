@@ -1,9 +1,9 @@
 // server/routes/usuarios/updateUser.js
 const express = require('express');
 const router = express.Router();
-const { getPoolDB } = require('../../db/db');
+const { pool } = require('../../db/db');
 const bcrypt = require('bcrypt');
-const sql = require('mssql');
+
 
 
 // Actualizar un usuario
@@ -17,7 +17,7 @@ router.put('/:id', async (req, res) => {
     }
 
     try {
-        const pool = await getPoolDB();
+        
         await pool.request()
             .input('id', sql.Int, userId)
             .input('username', sql.NVarChar, username)
@@ -57,7 +57,7 @@ router.put('/:id/password', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const pool = await getPoolDB();
+        
         await pool.request()
             .input('id', sql.Int, userId)
             .input('password', sql.NVarChar, hashedPassword)

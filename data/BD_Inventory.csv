@@ -1,4 +1,4 @@
-﻿id,tag,id_ubication,id_direction,id_department,user,id_device,id_brand,id_model,serie,ip,id_status,transferDate,observation
+﻿id,tag,id_ubication,id_direction,id_department,user,id_device,id_brand,id_model,serie,ip,id_status,transferdate,observation
 1,000032,14,6,28,,22,8,226,S/S,,1,,
 2,000063,14,5,24,,22,25,147,BAUHR0HLUYG34J,,1,,
 3,000129,14,1,28,,22,8,226,S/S,,1,,

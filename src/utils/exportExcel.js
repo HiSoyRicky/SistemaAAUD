@@ -137,15 +137,15 @@ export async function exportInventoryToExcel(devices) {
     // Definir columnas
     const columns = [
         { header: 'Marbete', key: 'tag', width: 14 },
-        { header: 'Ubicación', key: 'ubication', width: 18 },
+        { header: 'Ubicación', key: 'ubication', width: 20 },
         { header: 'Departamento', key: 'departamento', width: 25 },
         { header: 'Usuario', key: 'usuario', width: 32 },
         { header: 'Descripción', key: 'descripcion', width: 22 },
-        { header: 'Marca', key: 'marca', width: 24 },
+        { header: 'Marca', key: 'marca', width: 18 },
         { header: 'Modelo', key: 'modelo', width: 30 },
         { header: 'Serie', key: 'serie', width: 32 },
         { header: 'IP', key: 'ip', width: 15 },
-        { header: 'Estado', key: 'estado', width: 12 },
+        { header: 'Estado', key: 'estado', width: 18 },
         { header: 'Fecha de Traslado', key: 'fecha_traslado', width: 20 },
         { header: 'Observación', key: 'observacion', width: 36 },
     ];
@@ -156,17 +156,17 @@ export async function exportInventoryToExcel(devices) {
             tag: item.tag || 'N/A',
             ubication: item.ubication_name || 'N/A',
             departamento: item.department_name || 'N/A',
-            usuario: item.user || 'N/A',
+            usuario: item.user,
             descripcion: item.device_name || 'N/A',
             marca: item.brand_name || 'N/A',
             modelo: item.model_name || 'N/A',
             serie: item.serie || 'S/S',
             ip: item.ip,
             estado: item.status_name || 'Desconocido',
-            fecha_traslado: item.transferDate
-                ? formatDateToDDMMYYYY(new Date(item.transferDate).toISOString())
+            transferdate: item.transferdate
+                ? formatDateToDDMMYYYY(new Date(item.transferdate).toISOString())
                 : '',
-            observacion: item.observation || 'N/A',
+            observacion: item.observation,
         };
     });
 

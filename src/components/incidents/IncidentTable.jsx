@@ -29,10 +29,9 @@ const getCategoryName = (id_category) => {
 };
 
 function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onEdit }) {
-    if (!Array.isArray(incidents)) {
-        incidents = [];
-    }
-    const itemsPerPage = 5;
+    if (!Array.isArray(incidents)) incidents = [];
+
+    const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = React.useState(1);
     const formatId = (id) => id.toString().padStart(6, '0');
 
@@ -42,8 +41,9 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
     const endIndex = startIndex + itemsPerPage;
     const paginatedIncidents = incidents.slice(startIndex, endIndex);
     const [showExtraColumns, setShowExtraColumns] = React.useState(false);
-    const thClass = "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider";
+
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
+    const thClass = "px-4 py-0 text-center text-sm text-gray-700 border";
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
@@ -100,27 +100,18 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
 
                             // Mapeo de incidentes paginados
                             paginatedIncidents.map((incident) => (
-                                <tr key={incident.id}>
+                                <tr key={incident.id_incident}>
                                     {showExtraColumns && (
                                         <>
                                             {/* ID de la incidencia */}
-                                            <td className="px-6 py-4 whitespace-nowrap text-center font-medium text-gray-900">{formatId(incident.id)}</td>
+                                            <td className={`${thClass} border`}>{formatId(incident.id_incident)}</td>
                                         </>
                                     )}
-                                    {/* Información del usuario que reporta la incidencia */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-gray-500">{incident.reporter_name}</td>
-
-                                    {/* Correo del usuario que reporta la incidencia */}
-                                    <td className="px-6 py-4 text-center text-gray-500">{incident.reporter_email || 'S/C'}</td>
-
-                                    {/* Ubicación de la incidencia */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-gray-500">{incident.ubication_name || `ID: ${incident.id_ubication}`}</td>
-
-                                    {/* Departamento de la incidencia */}
-                                    <td className="px-6 py-4 text-center text-gray-500">{incident.department_name || `ID: ${incident.id_department}`}</td>
-
-                                    {/* Categoría de la incidencia */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                                    <td className={`${thClass} border`}>{incident.reporter_name}</td>
+                                    <td className={`${thClass} border`}>{incident.reporter_email || 'S/C'}</td>
+                                    <td className={`${thClass} border`}>{incident.ubication_name || `ID: ${incident.id_ubication}`}</td>
+                                    <td className={`${thClass} border`}>{incident.department_name || `ID: ${incident.id_department}`}</td>
+                                    <td className={`${thClass} border`}>
                                         {incident.id_category === 4 ? (
                                             <div className="whitespace-pre-wrap">
                                                 <strong>Otro:</strong><br />
@@ -130,21 +121,15 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             getCategoryName(incident.id_category)
                                         )}
                                     </td>
-
-                                    {/* Descripción de la incidencia */}
-                                    <td className="px-6 py-4 text-sm text-gray-500 max-w-lg whitespace-pre-wrap">{incident.description}</td>
-
-                                    {/* Fecha de creación de la incidencia */}
-                                    <td className="px-6 py-4 text-sm text-gray-500 text-center">
+                                    <td className={`${thClass} border`}>{incident.description}</td>
+                                    <td className={`${thClass} border`}>
                                         <div className="flex flex-col">
                                             <span>{formatDateToDDMMYYYY(incident.creation_date)}</span>
                                             <span className="text-xs text-gray-400">{new Date(incident.creation_date).toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
                                     </td>
-
-                                    {/* Estado de la incidencia */}
                                     <td
-                                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-center ${incident.id_status === 1 ? 'text-red-600' :
+                                        className={`${thClass} border ${incident.id_status === 1 ? 'text-red-600' :
                                             incident.id_status === 2 ? 'text-yellow-600' :
                                                 incident.id_status === 3 ? 'text-green-600' :
                                                     'text-gray-500'
@@ -156,12 +141,12 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                         <>
 
                                             {/* Técnico asignado */}
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            <td className={`${thClass} border`}>
                                                 {incident.technician_full_name || (incident.id_technician ? `ID: ${incident.id_technician}` : <span title="Sin asignar">N/A</span>)}
                                             </td>
 
                                             {/* Fecha de solución */}
-                                            <td className="px-6 py-4 text-sm text-gray-500 text-center">
+                                            <td className={`${thClass} border`}>
                                                 {incident.solution_date ? (
                                                     <div className="flex flex-col">
                                                         <span>{formatDateToDDMMYYYY(incident.solution_date)}</span>
@@ -175,16 +160,15 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             </td>
 
                                             {/* Solución de la incidencia */}
-                                            <td className="px-6 py-4 text-sm text-gray-500 text-center max-w-lg break-words whitespace-pre-wrap"> {incident.solution || <span title="Sin resolver">N/A</span>} </td>
+                                            <td className={`${thClass} border`}> {incident.solution || <span title="Sin resolver">N/A</span>} </td>
                                         </>
                                     )}
 
                                     {/* Acciones según el tipo de usuario */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                        <div className="grid grid-cols-2 gap-2 justify-items-center">
+                                    <td className={`${thClass} border`}>
+                                        <div className="flex justify-center items-center h-full gap-2">
                                             {/* Botón Ver detalles */}
                                             <button
-                                                onClick={toggleExtraColumns}
                                                 className="text-gray-600 hover:text-gray-800"
                                                 title={showExtraColumns ? "Ocultar columnas" : "Mostrar columnas"}
                                             >
@@ -194,7 +178,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             {/* Botón Asignar técnico */}
                                             {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
                                                 <button
-                                                    onClick={() => onAssign && onAssign(incident.id)}
+                                                   onClick={() => onAssign && onAssign(incident.id_incident)}
                                                     className="text-yellow-600 hover:text-yellow-800"
                                                     title="Asignar técnico"
                                                 >
@@ -205,7 +189,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             {/* Botón Resolver */}
                                             {userType === 'tecnico' && incident.id_status !== 3 && (
                                                 <button
-                                                    onClick={() => onResolve && onResolve(incident.id)}
+                                                    onClick={() => onResolve && onResolve(incident.id_incident)}
                                                     className="text-green-600 hover:text-green-800"
                                                     title="Resolver"
                                                 >
@@ -227,7 +211,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             {/* Botón Eliminar */}
                                             {userType === 'admin' && (
                                                 <button
-                                                    onClick={() => onDelete && onDelete(incident.id)}
+                                                    onClick={() => onDelete && onDelete(incident.id_incident)}
                                                     className="text-red-600 hover:text-red-800"
                                                     title="Eliminar"
                                                 >
@@ -275,12 +259,10 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                         }, [])
                         .map((item, index) =>
                             item === "..." ? (
-                                <span key={`dots-${index}`} className="px-2">
-                                    ...
-                                </span>
+                                <span key={`dots-${index}`} className="px-2">...</span>
                             ) : (
                                 <button
-                                    key={item}
+                                    key={`page-${item}-${index}`}
                                     onClick={() => handlePageChange(item)}
                                     className={`px-3 py-1 rounded ${currentPage === item
                                         ? "bg-blue-500 text-white"
@@ -302,6 +284,15 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                     </button>
                 </div>
             )}
+
+            <div className="mt-2 flex justify-center">
+                <button
+                    onClick={toggleExtraColumns}
+                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                    {showExtraColumns ? 'Ocultar columnas extra' : 'Mostrar columnas extra'}
+                </button>
+            </div>
         </div>
     )
 }

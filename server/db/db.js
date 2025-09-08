@@ -9,7 +9,7 @@ if (!DB_USER || !DB_PASSWORD || !DB_SERVER || !DB_NAME || !DB_PORT) {
     throw new Error("❌ Faltan variables de entorno para la conexión a la base de datos");
 }
 
-const poolDB = new Pool({
+const pool = new Pool({
     user: DB_USER,
     password: DB_PASSWORD,
     host: DB_SERVER,
@@ -18,9 +18,9 @@ const poolDB = new Pool({
 });
 
 // Manejo de errores global de conexión
-poolDB.on('error', (err) => {
+pool.on('error', (err) => {
     console.error('❌ Error inesperado en la conexión a PostgreSQL', err);
     process.exit(-1);
 });
 
-module.exports = { poolDB };
+module.exports = { pool };

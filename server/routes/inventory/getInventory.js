@@ -1,20 +1,20 @@
-//server/routes/inventory/getInventory.js
+// server/routes/inventory/getInventory.js
 const express = require('express');
 const router = express.Router();
-const { getPoolDB } = require('../../db/db');
+const { pool } = require('../../db/db');
 
 router.get('/', async (req, res) => {
     const { search } = req.query;
-    const pool = await getPoolDB();
+    let params = [];
 
     let query = `
         SELECT 
             inv.id,
             inv.tag,
-            inv.[user] AS [user],
+            inv."user",
             inv.serie,
             inv.ip,
-            inv.transferDate,
+            inv.transferdate,
             inv.observation,
 
             ubi.id AS id_ubication,
@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
 
             sta.id AS id_status,
             sta.name AS status_name
-        FROM SistemaAAUD.dbo.BD_Inventory inv
+        FROM BD_Inventory inv
         LEFT JOIN ubications ubi ON inv.id_ubication = ubi.id
         LEFT JOIN departments dep ON inv.id_department = dep.id
         LEFT JOIN devices dev ON inv.id_device = dev.id
@@ -45,29 +45,24 @@ router.get('/', async (req, res) => {
 
     if (search) {
         query += `
-            WHERE inv.serie LIKE @s
-            OR inv.tag LIKE @s
-            OR dev.name LIKE @s
-            OR bra.name LIKE @s
-            OR mod.name LIKE @s
-            OR dep.name LIKE @s
-            OR ubi.name LIKE @s
-            OR inv.[user] LIKE @s
+            WHERE inv.serie ILIKE $1
+            OR inv.tag ILIKE $1
+            OR dev.name ILIKE $1
+            OR bra.name ILIKE $1
+            OR mod.name ILIKE $1
+            OR dep.name ILIKE $1
+            OR ubi.name ILIKE $1
+            OR inv."user" ILIKE $1
         `;
+        params.push(`%${search}%`);
     }
 
     try {
-        const request = pool.request();
-
-        if (search) {
-            request.input('s', `%${search}%`);
-        }
-
-        const result = await request.query(query);
-        res.json(result.recordset);
+        const result = await pool.query(query, params);
+        res.json(result.rows);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al obtener dispositivos' });
+        console.error('❌ Error al obtener dispositivos:', err.message);
+        res.status(500).json({ error: 'Error al obtener dispositivos', details: err.message });
     }
 });
 
