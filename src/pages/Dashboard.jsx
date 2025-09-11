@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import useAuth from "../hooks/useAuth";
-import { fetchIncidences } from "../services/api";
+import { Incidents } from "../services/api";
 import IncidentTable from "../components/incidents/IncidentTable";
 import InventoryTable from "../components/inventory/InventoryTable";
-import { fetchDevice } from "../services/api";
+import { Inventory } from "../services/api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
@@ -19,14 +19,14 @@ export default function Dashboard() {
 
   const loadIncidences = async () => {
     setLoadingIncidences(true);
-    const data = await fetchIncidences();
+    const data = await Incidents.fetchAll();
     setIncidences(Array.isArray(data) ? data : []);
     setLoadingIncidences(false);
   };
 
   const loadDevices = async () => {
     setLoadingDevices(true);
-    const data = await fetchDevice();
+    const data = await Inventory.fetchDevices();
     setDevices(Array.isArray(data) ? data : []);
     setLoadingDevices(false);
   };

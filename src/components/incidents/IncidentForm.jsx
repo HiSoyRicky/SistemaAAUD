@@ -225,20 +225,6 @@ function IncidentForm({ onSubmit }) {
                     </div>
                 )}
 
-                <div className="mb-4">
-                    <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">Descripción:</label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="4"
-                        value={formData.description}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="Describe la incidencia detalladamente..."
-                    ></textarea>
-                    {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                </div>
-
                 {errors.submit && <p className="text-red-500 text-sm mb-4">{errors.submit}</p>}
 
                 <button
@@ -251,7 +237,7 @@ function IncidentForm({ onSubmit }) {
             </form>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-gray-800 bg-opacity-40 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md text-center shadow-lg">
                         <h2 className="text-xl font-bold mb-2">
                             {errors.submit ? 'Error al reportar incidencia' : '¡Incidencia reportada!'}

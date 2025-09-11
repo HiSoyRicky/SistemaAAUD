@@ -1,5 +1,6 @@
 // src/components/ChangePasswordForm.jsx
 import React, { useState } from 'react';
+import { Users } from '../services/api';
 
 function ChangePasswordForm({ userId, onLogout }) {
     const [newPassword, setNewPassword] = useState('');
@@ -22,32 +23,16 @@ function ChangePasswordForm({ userId, onLogout }) {
         }
 
         try {
-            const response = await fetch(`/users/${userId}/password`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ newPassword }),
-            });
-
-            if (!response.ok) {
-                const data = await response.json();
-                setError(data.error || 'Error al actualizar contraseña');
-                return;
-            }
-
+            await Users.updatePassword(userId, newPassword);
             setSuccess('Contraseña actualizada correctamente');
             setNewPassword('');
             setConfirmPassword('');
 
-            // Opcional: forzar logout para que vuelva a loguearse con la nueva contraseña
             if (onLogout) {
-                setTimeout(() => {
-                    onLogout();
-                }, 2000);
+                setTimeout(() => onLogout(), 2000);
             }
         } catch (err) {
-            setError('Error de conexión con el servidor');
+            setError(err.response?.data?.error || 'Error al actualizar contraseña');
         }
     };
 

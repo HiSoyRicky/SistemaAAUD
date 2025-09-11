@@ -25,6 +25,6 @@ module.exports = defineConfig({
                 changeOrigin: true,
                 ws: true,
             },
-    },
-}
+        },
+    }
 });

@@ -1,17 +1,16 @@
 // src/pages/inventory/InventoryPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Tag } from 'lucide-react';
+import { toast } from 'react-toastify';
 import useAuth from '../../hooks/useAuth';
-import { fetchDevice as apiFetchDevices, updateDevice } from '../../services/api';
+import { Inventory } from '../../services/api';
 import InventoryTable from '../../components/inventory/InventoryTable';
 import TransferPrint from '../../components/TransferPrint';
-import EditEquipmentModal from '../../components/inventory/EditEquipmentModal';
 import { useReactToPrint } from "react-to-print";
 import { useNotifications } from '../../context/NotificationContext';
 import { exportInventoryToExcel } from '../../utils/exportExcel';
-import { addDevice } from '../../services/api';
-import InventoryForm from '../../components/inventory/InventoryForm';
 import UbiDepSelector from '../../components/UbiDepSelector';
+import InventoryFormModal from '../../components/inventory/InventoryForm';
 
 function InventoryPage() {
     const { authData, userType, loggedUserName } = useAuth();
@@ -26,7 +25,7 @@ function InventoryPage() {
 
     const loadDevices = async () => {
         try {
-            const data = await apiFetchDevices(search);
+            const data = await Inventory.fetchDevices(search);
             setDevices(data);
         } catch (error) {
             console.error('Error al obtener dispositivos:', error);
@@ -78,14 +77,14 @@ function InventoryPage() {
     };
 
 
-    const handleEdit = (device) => {
+    const editDevice = (device) => {
         console.log('Equipo seleccionado para editar:', device);
         setEditingDevice(device);
     };
 
-    const handleEditConfirm = async (updatedData) => {
+    const editDeviceConfirm = async (updatedData) => {
         try {
-            await updateDevice(editingDevice.id, updatedData);
+            await Inventory.updateDevice(editingDevice.id, updatedData);
             setDevices(devices.map(device =>
                 device.id === editingDevice.id ? { ...device, ...updatedData } : device
             ));
@@ -99,10 +98,10 @@ function InventoryPage() {
 
     const handleAddDevice = async (formData) => {
         if (window.confirm('¿Estás seguro de que deseas agregar este dispositivo?')) {
+            setShowInventoryForm(false);
             try {
-                const result = await addDevice(formData);
+                const result = await Inventory.addDevice(formData);
                 setDevices([...devices, { id: result.id, ...formData }]);
-                setShowInventoryForm(false);
                 toast.success('Dispositivo agregado con éxito');
             } catch (error) {
                 console.error('Error al agregar dispositivo:', error);
@@ -110,6 +109,7 @@ function InventoryPage() {
             }
         }
     };
+
 
     const handleExportDevices = () => {
         exportInventoryToExcel(devices);
@@ -234,24 +234,28 @@ function InventoryPage() {
             <InventoryTable
                 inventory={filteredDevices}
                 onPrint={handlePreparePrint}
-                onEdit={handleEdit}
+                onEdit={editDevice}
                 authData={authData}
             />
 
-            {/* Modal de edición */}
+            {/* Modal para editrar equipo */}
             {editingDevice && (
-                <EditEquipmentModal
-                    device={editingDevice}
-                    onClose={() => setEditingDevice(null)}
-                    onConfirm={handleEditConfirm}
+                <InventoryFormModal
+                    initialData={editingDevice}
+                    onCancel={() => setEditingDevice(null)}
+                    onSubmit={(data) => editDeviceConfirm(data)}
                 />
             )}
 
+            {/* Modal para agregar nuevo equipo */}
             {showInventoryForm && (
-                <InventoryForm
-                    onSubmit={handleAddDevice}
-                    onCancel={() => setShowInventoryForm(false)}
-                />
+                <div className="fixed inset-0 bg-gray-800 bg-opacity-40 flex items-center justify-center z-50 transition-opacity duration-200">
+                    <InventoryFormModal
+                        initialData={{}}
+                        onCancel={() => setShowInventoryForm(false)}
+                        onSubmit={(data) => handleAddDevice(data)}
+                    />
+                </div>
             )}
 
             {selectedDevice && (
