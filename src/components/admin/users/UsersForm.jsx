@@ -14,8 +14,8 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                 </label>
                 <input
                     type="text"
-                    value={form.full_name}
-                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                    value={form.nombre_completo}
+                    onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })}
                     className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                 />
@@ -45,7 +45,6 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
                 />
             </div>
 

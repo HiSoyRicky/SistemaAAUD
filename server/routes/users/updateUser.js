@@ -1,10 +1,8 @@
 // server/routes/usuarios/updateUser.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../db/db');
+const { pool } = require('../../db/db'); // tu pool de pg
 const bcrypt = require('bcrypt');
-
-
 
 // Actualizar un usuario
 router.put('/:id', async (req, res) => {
@@ -17,24 +15,19 @@ router.put('/:id', async (req, res) => {
     }
 
     try {
-        
-        await pool.request()
-            .input('id', sql.Int, userId)
-            .input('username', sql.NVarChar, username)
-            .input('nombre_completo', sql.NVarChar, nombre_completo)
-            .input('email', sql.NVarChar, email)
-            .input('id_rol', sql.Int, id_rol)
-            .input('active', sql.Bit, active)
-            .query(`
-                UPDATE users
-                SET 
-                    username = @username, 
-                    nombre_completo = @nombre_completo,
-                    email = @email, 
-                    id_rol = @id_rol, 
-                    active = @active
-                WHERE id = @id
-            `);
+        const query = `
+            UPDATE users
+            SET 
+                username = $1,
+                nombre_completo = $2,
+                email = $3,
+                id_rol = $4,
+                active = $5
+            WHERE id = $6
+        `;
+        const values = [username, nombre_completo, email || null, id_rol, active, userId];
+
+        await pool.query(query, values);
 
         res.json({ message: 'Usuario actualizado correctamente' });
     } catch (err) {
@@ -48,6 +41,9 @@ router.put('/:id/password', async (req, res) => {
     const userId = parseInt(req.params.id, 10);
     const { newPassword } = req.body;
 
+    console.log('ID usuario:', userId);
+    console.log('Nueva contraseña recibida:', newPassword);
+
     if (isNaN(userId)) {
         return res.status(400).json({ error: 'ID de usuario inválido' });
     }
@@ -57,11 +53,13 @@ router.put('/:id/password', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
-        await pool.request()
-            .input('id', sql.Int, userId)
-            .input('password', sql.NVarChar, hashedPassword)
-            .query('UPDATE users SET password = @password WHERE id = @id');
+
+        const query = 'UPDATE users SET password = $1 WHERE id = $2';
+        const values = [hashedPassword, userId];
+
+        await pool.query(query, values);
+
+        console.log('Contraseña actualizada correctamente');
 
         res.json({ message: 'Contraseña actualizada correctamente' });
     } catch (error) {
@@ -69,7 +67,5 @@ router.put('/:id/password', async (req, res) => {
         res.status(500).json({ error: 'Error al actualizar contraseña', details: error.message });
     }
 });
-
-
 
 module.exports = router;

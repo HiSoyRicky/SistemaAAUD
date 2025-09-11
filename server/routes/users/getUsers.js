@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
         const result = await pool.query(`
             SELECT 
             id, 
-            nombre_completo AS full_name, 
+            nombre_completo, 
             username, 
             email, 
             id_rol, 
