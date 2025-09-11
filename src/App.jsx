@@ -1,6 +1,8 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import LoginPage from './pages/LoginPage';
 import IncidentsPage from './pages/incidents/IncidentsPage'; // Esta será tu página principal con el formulario y la tabla
 import NotFoundPage from './pages/NotFoundPage';
@@ -10,9 +12,15 @@ import useAuth from './hooks/useAuth';
 import IncidentDetails from './pages/incidents/IncidentDetails';
 import SelectorPage from './pages/SelectorPage';
 import InventoryPage from './pages/inventory/InventoryPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminRoute from '../server/routes/AAUD/AdminRoute';
 import AdminPage from "./pages/admin/AdminPage";
+import DevicesManager from "./components/admin/DevicesManager";
+import UsersManager from "./components/admin/UsersManager";
+import UbicationsManager from "./components/admin/UbicationsManager";
+import DepartmentsManager from "./components/admin/DepartmentManager";
+import BrandsManager from "./components/admin/BrandsManager";
+import ModelsManager from './components/admin/ModelsManager';
+import TonersManager from './components/admin/TonersManager';
 
 // Componente para proteger rutas
 const PrivateRoute = ({ children, allowedUserTypes }) => {
@@ -44,6 +52,7 @@ function App() {
   }
 
   return (
+    <>
     <Routes>
       {/* Login público */}
       <Route path="/login" element={<LoginPage />} />
@@ -99,15 +108,6 @@ function App() {
       />
 
       <Route
-        path="/admin/usuarios"
-        element={
-          <PrivateRoute allowedUserTypes={['admin']}>
-            <AdminUsersPage />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
         path="/admin"
         element={
           <AdminRoute>
@@ -125,6 +125,18 @@ function App() {
             replace />}
       />
 
+      <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>}>
+        <Route path="devices" element={<DevicesManager />} />
+        <Route path="users" element={<UsersManager />} />
+        <Route path="ubications" element={<UbicationsManager />} />
+        <Route path="models" element={<ModelsManager/>} />
+        <Route path="brands" element={<BrandsManager />} />
+        <Route path="departments" element={<DepartmentsManager />} />
+        <Route path="statuses" element={<div>Estados</div>} />
+        <Route path="toners" element={<TonersManager />} />
+        <Route index element={<div>Selecciona una opción</div>} /> {/* default /admin */}
+      </Route>
+
       {/* Ruta 404 */}
       <Route
         path="*"
@@ -134,6 +146,8 @@ function App() {
       />
 
     </Routes>
+    <ToastContainer position="top-right" autoClose={3000} />
+    </>
   );
 }
 
