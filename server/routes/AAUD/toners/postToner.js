@@ -1,39 +1,48 @@
 const express = require("express");
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { pool } = require("../../../db/db");
 
+// 🔹 Crear tóner
+router.post("/", async (req, res) => {
+    const { id_printer_model, id_toner_model, id_color, stock, status } = req.body;
 
-// 🔹 Agregar movimiento (entrada/salida)
-router.post("/movement", async (req, res) => {
-    const { id_toner, movement_type, quantity, movement_date, id_user, notes } = req.body;
+    if (!id_printer_model || !id_toner_model || !id_color) {
+        return res.status(400).json({ error: "Faltan datos requeridos" });
+    }
+
     try {
-        
-
-        // Insertamos el movimiento
-        await pool.request()
-            .input("id_toner", sql.Int, id_toner)
-            .input("movement_type", sql.NVarChar, movement_type)
-            .input("quantity", sql.Int, quantity)
-            .input("movement_date", sql.DateTime, movement_date)
-            .input("id_user", sql.Int, id_user)
-            .input("notes", sql.NVarChar, notes)
-            .query(`
-                INSERT INTO toner_movements (id_toner, movement_type, quantity, movement_date, id_user, notes)
-                VALUES (@id_toner, @movement_type, @quantity, @movement_date, @id_user, @notes)
-            `);
-
-        // Actualizamos stock en toners
-        const factor = movement_type === "Entrada" ? 1 : -1;
-        await pool.request()
-            .input("id_toner", sql.Int, id_toner)
-            .input("quantity", sql.Int, quantity * factor)
-            .query(`
-                UPDATE toners SET stock = stock + @quantity, last_update = GETDATE()
-                WHERE id = @id_toner
-            `);
-
-        res.json({ message: "Movimiento registrado y stock actualizado" });
+        const result = await pool.query(
+            `INSERT INTO toners (id_printer_model, id_toner_model, id_color, stock, status, last_update)
+             VALUES ($1, $2, $3, $4, $5, NOW())
+             RETURNING id`,
+            [id_printer_model, id_toner_model, id_color, stock || 0, status || 'Disponible']
+        );
+        res.json({ id: result.rows[0].id, message: "Tóner creado correctamente" });
     } catch (err) {
+        console.error("Error al crear tóner:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 🔹 Crear modelo de tóner
+router.post("/toner_models", async (req, res) => {
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+        return res.status(400).json({ error: "El nombre es requerido" });
+    }
+
+    try {
+        // ⚠️ No incluimos ID, PostgreSQL lo genera automáticamente
+        const result = await pool.query(
+            `INSERT INTO toner_models (name) 
+             VALUES ($1) 
+             RETURNING id, name`,
+            [name.trim()]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error al crear modelo de tóner:", err);
         res.status(500).json({ error: err.message });
     }
 });
