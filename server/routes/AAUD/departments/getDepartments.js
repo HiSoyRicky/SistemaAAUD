@@ -6,9 +6,14 @@ const { pool } = require('../../../db/db');
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(`
-        SELECT id, name, id_ubication, id_direction
-            FROM departments
-            ORDER BY name
+        SELECT 
+            d.id, 
+            d.name, 
+            d.id_ubication, 
+            u.name AS ubication_name
+            FROM departments d
+            LEFT JOIN ubications u ON d.id_ubication = u.id
+            ORDER BY d.id
     `);
         res.json(result.rows);
     } catch (error) {
