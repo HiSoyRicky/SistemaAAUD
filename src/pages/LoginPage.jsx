@@ -1,8 +1,8 @@
 // src/pages/LoginPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
-import LogoAAUDCPS from '../assets/images/AAUDCPS.png'; // Asegúrate de que la ruta sea correcta
+import useAuth from '@/hooks/useAuth';
+import LogoAAUDCPS from '@/assets/images/AAUDCPS.png'; // Asegúrate de que la ruta sea correcta
 
 function LoginPage() {
   const [username, setUsername] = useState('');

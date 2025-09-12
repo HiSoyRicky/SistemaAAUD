@@ -11,7 +11,7 @@ server/public/fotos_personal
 Notas/
 
 # Ignorar archivos de estructura generados
-docs/estructura.txt
+docs/tree.txt
 
 # Ignorar archivos de tareas pendientes
 TODO.md

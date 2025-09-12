@@ -1,6 +1,5 @@
-// Página Web de Incidencia AAUD
+// Sistema AAUD
 // server/Server.js
-// Descripción: Lógica de la aplicación para gestionar incidencias
 // Autor: Ricardo Vargas
 // Fecha de inicio 07/07/2025
 const express = require('express');

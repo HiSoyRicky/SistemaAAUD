@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import useAuth from '../hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 
 // Íconos simulados
 const GridIcon = () => <span>📊</span>;

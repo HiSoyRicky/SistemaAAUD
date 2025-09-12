@@ -1,6 +1,6 @@
 // src/components/UbiDepSelector.jsx
 import React, { useEffect } from 'react';
-import { useUbicationDepartments } from '../utils/useUbicationDepartments';
+import { useUbicationDepartments } from '@/utils/useUbicationDepartments';
 
 function UbiDepSelector({ id_ubication, id_department, onChange, errors = {}, mode = "incident" }) {
     const {

@@ -1,6 +1,6 @@
 // src/components/ChangePasswordForm.jsx
 import React, { useState } from 'react';
-import { Users } from '../services/api';
+import { Users } from '@/services/api';
 
 function ChangePasswordForm({ userId, onLogout }) {
     const [newPassword, setNewPassword] = useState('');

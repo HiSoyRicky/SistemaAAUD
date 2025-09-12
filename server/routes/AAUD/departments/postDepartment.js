@@ -9,7 +9,7 @@ router.post('/', async (req, res) => {
 
     try {
         const result = await pool.query(
-            'INSERT INTO department (name, id_ubication) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO departments (name, id_ubication) VALUES ($1, $2) RETURNING id',
             [name, id_ubication]
         );
         res.json({ message: 'Departamento creado', created: result.rows[0] });

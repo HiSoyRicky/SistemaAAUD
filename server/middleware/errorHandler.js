@@ -1,4 +1,3 @@
-// server/middleware/errorHandler.js
 function errorHandler(err, req, res, next) {
     console.error(`[${new Date().toISOString()}]`, err);
 

@@ -1,6 +1,6 @@
 // src/components/SummaryCards.jsx
 import React from 'react';
-import useAuth from '../hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 
 function SummaryCards({ incidents, userType, loggedUserId }) {
     const total = incidents.length;

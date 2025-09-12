@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import logoAAUD from '../assets/images/AAUDCPS.png';
+import logoAAUD from '@/assets/images/AAUDCPS.png';
 
 const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, setDevice, departments = [] }, ref) {
 

@@ -4,26 +4,50 @@
 
 const fs = require("fs");
 const path = require("path");
-const dirTree = require("directory-tree");
 
+// Carpetas o archivos a ignorar (expresiones regulares)
 const ignore = [/node_modules/, /\.git/, /\.vscode/, /dist/, /build/, /fotos_personal/];
 
-const tree = dirTree(".", { exclude: ignore });
-
-function printTree(node, prefix = "") {
-    let output = `${prefix}${node.name}\n`;
-    if (node.children) {
-        node.children.forEach((child, index) => {
-            const isLast = index === node.children.length - 1;
-            const newPrefix = prefix + (isLast ? "    " : "│   ");
-            output += prefix + (isLast ? "└── " : "├── ") + printTree(child, newPrefix);
-        });
-    }
-    return output;
+function shouldIgnore(name) {
+    return ignore.some((pattern) => pattern.test(name));
 }
 
-const treeText = printTree(tree);
+function generateTree(dir, prefix = "", isLast = true) {
+    const basename = path.basename(dir);
+    if (shouldIgnore(basename)) return "";
 
-fs.writeFileSync("docs/estructura.txt", treeText);
+    const connector = prefix ? (isLast ? "└── " : "├── ") : "";
+    let tree = prefix + connector + basename + "\n";
 
-console.log("✅ Archivo estructura.txt generado con éxito.");
+    const newPrefix = prefix + (isLast ? "    " : "│   ");
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+        .filter(entry => !shouldIgnore(entry.name));
+
+    entries.forEach((entry, index) => {
+        const fullPath = path.join(dir, entry.name);
+        const isLastEntry = index === entries.length - 1;
+
+        if (entry.isDirectory()) {
+            tree += generateTree(fullPath, newPrefix, isLastEntry);
+        } else {
+            const connector = isLastEntry ? "└── " : "├── ";
+            tree += newPrefix + connector + entry.name + "\n";
+        }
+    });
+
+    return tree;
+}
+
+// Generar árbol desde la raíz del proyecto
+const rootDir = process.cwd();
+const output = generateTree(rootDir);
+
+// Crear carpeta docs si no existe
+const docsPath = path.join(rootDir, "docs");
+if (!fs.existsSync(docsPath)) {
+    fs.mkdirSync(docsPath);
+}
+
+// Guardar resultado
+fs.writeFileSync(path.join(docsPath, "tree.txt"), output, "utf8");
+console.log("📂 Árbol de directorios generado en docs/tree.txt");

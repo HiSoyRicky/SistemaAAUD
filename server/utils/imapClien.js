@@ -1,4 +1,3 @@
-// server/utils/imapClient.js
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { pool } from './db/db';
