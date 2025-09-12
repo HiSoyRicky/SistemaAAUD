@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Importar rutas específicas
-const getIncident = require('./getIncident');
+const getIncident = require('./getIncidents');
 const postIncident = require('./postIncident');
 const updateIncident = require('./updateIncident');
 const deleteIncident = require('./deleteIncident');

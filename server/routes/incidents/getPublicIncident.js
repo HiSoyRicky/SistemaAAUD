@@ -10,20 +10,24 @@ router.get('/public/:token', async (req, res, next) => {
 
     try {
         const incident = await getIncidentByToken(token);
+
         if (!incident) {
-            throw new AppError(
-                'Token inválido o expirado',
-                404,
-                'INVALID_TOKEN',
-                { help: 'Solicita un nuevo enlace o verifica que no haya caducado' }
-            );
+            return res.status(404).json({
+                success: false,
+                code: 'INVALID_TOKEN',
+                message: 'Token inválido o expirado. Solicita un nuevo enlace.',
+                data: null
+            });
         }
         res.json({ success: true, data: incident });
     } catch (err) {
         if (err.name === 'JsonWebTokenError') {
-            err.status = 400;
-            err.message = 'El enlace de la incidencia no es válido o ha caducado.';
-            err.code = 'INVALID_TOKEN';
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_TOKEN',
+                message: 'El enlace de la incidencia no es válido o ha caducado.',
+                data: null
+            });
         }
         next(err);
     }
