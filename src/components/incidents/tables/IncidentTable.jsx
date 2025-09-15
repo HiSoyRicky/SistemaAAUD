@@ -164,7 +164,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
 
                                     {/* Acciones según el tipo de usuario */}
                                     <td className={`${thClass} border`}>
-                                        <div className="flex items-center justify-center h-full gap-2">
+                                        <div className="flex items-center justify-center">
                                             {/* Botón Ver detalles */}
                                             <button
                                                 className="text-gray-600 hover:text-gray-800"

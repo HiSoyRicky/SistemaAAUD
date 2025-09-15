@@ -96,9 +96,9 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative">
-                <h3 className="text-2xl font-bold mb-6 text-center">
+                <h3 className="mb-6 text-2xl font-bold text-center">
                     {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo'}
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -169,7 +169,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 
                     {/* Fecha de Traslado */}
                     <div>
-                        <label className="block text-sm font-medium mb-1">
+                        <label className="block mb-1 text-sm font-medium">
                             Fecha de Traslado: {formData.transferdate || 'N/A'}
                         </label>
                         <input
@@ -177,7 +177,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                             name="transferDateInput"
                             value={formData.transferDateInput}
                             onChange={handleChange}
-                            className="w-full border px-3 py-2 rounded"
+                            className="w-full px-3 py-2 border rounded"
                         />
                     </div>
 
@@ -188,13 +188,13 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 transition"
+                            className="px-4 py-2 transition bg-gray-300 rounded hover:bg-gray-400"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
-                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                            className="px-4 py-2 text-white transition bg-blue-500 rounded hover:bg-blue-600"
                         >
                             Guardar
                         </button>
@@ -209,7 +209,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 function InputField({ label, name, value, onChange, error }) {
     return (
         <div>
-            <label className="block text-sm font-medium mb-1">{label}</label>
+            <label className="block mb-1 text-sm font-medium">{label}</label>
             <input
                 id={name}
                 name={name}
@@ -218,7 +218,7 @@ function InputField({ label, name, value, onChange, error }) {
                 onChange={onChange}
                 className={`w-full border px-3 py-2 rounded ${error ? 'border-red-500' : 'border-gray-300'}`}
             />
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
         </div>
     );
 }
@@ -226,13 +226,13 @@ function InputField({ label, name, value, onChange, error }) {
 function TextAreaField({ label, name, value, onChange }) {
     return (
         <div>
-            <label className="block text-sm font-medium mb-1">{label}</label>
+            <label className="block mb-1 text-sm font-medium">{label}</label>
             <textarea
                 id={name}
                 name={name}
                 value={value}
                 onChange={onChange}
-                className="w-full border px-3 py-2 rounded"
+                className="w-full px-3 py-2 border rounded"
                 rows={3}
             />
         </div>
@@ -242,7 +242,7 @@ function TextAreaField({ label, name, value, onChange }) {
 function SelectField({ label, name, value, onChange, options = [], disabled = false, error }) {
     return (
         <div>
-            <label className="block text-sm font-medium mb-1">{label}</label>
+            <label className="block mb-1 text-sm font-medium">{label}</label>
             <select
                 id={name}
                 name={name}
@@ -258,7 +258,7 @@ function SelectField({ label, name, value, onChange, options = [], disabled = fa
                     </option>
                 ))}
             </select>
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
         </div>
     );
 }

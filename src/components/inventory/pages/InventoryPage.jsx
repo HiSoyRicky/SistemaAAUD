@@ -37,6 +37,20 @@ function InventoryPage() {
         loadDevices();
     }, [search]);
 
+    useEffect(() => {
+        const loadDevices = async () => {
+            try {
+                // Trae TODOS los dispositivos, no uses search aquí
+                const data = await Inventory.fetchDevices("");
+                setDevices(data);
+            } catch (error) {
+                console.error('Error al obtener dispositivos:', error);
+            }
+        };
+        loadDevices();
+    }, []);
+
+
     const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: "Traslado de dispositivo",
@@ -85,9 +99,7 @@ function InventoryPage() {
     const editDeviceConfirm = async (updatedData) => {
         try {
             await Inventory.updateDevice(editingDevice.id, updatedData);
-            setDevices(devices.map(device =>
-                device.id === editingDevice.id ? { ...device, ...updatedData } : device
-            ));
+            setDevices(devices.map(device => device.id === editingDevice.id ? { ...device, ...updatedData } : device));
             setEditingDevice(null);
             addNotification('Dispositivo actualizado con éxito ✅', 'success');
         } catch (error) {
@@ -110,7 +122,6 @@ function InventoryPage() {
         }
     };
 
-
     const handleExportDevices = () => {
         exportInventoryToExcel(devices);
     };
@@ -127,22 +138,36 @@ function InventoryPage() {
     });
 
     const filteredDevices = devices.filter(d => {
+        const searchWords = search.toLowerCase().split(" ").filter(w => w.trim() !== "");
+
+        // Buscar que cada palabra esté en **algún campo**
+        const matchesSearch = searchWords.every(word =>
+            (d.ubication_name?.toLowerCase() || "").includes(word) ||
+            (d.tag?.toLowerCase() || "").includes(word) ||
+            (d.department_name?.toLowerCase() || "").includes(word) ||
+            (d.user?.toLowerCase() || "").includes(word) ||
+            (d.device_name?.toLowerCase() || "").includes(word) ||
+            (d.brand_name?.toLowerCase() || "").includes(word) ||
+            (d.model_name?.toLowerCase() || "").includes(word) ||
+            (d.serie?.toLowerCase() || "").includes(word)
+        );
+
         const matchesUbication = !filters.ubication || d.ubication_name === filters.ubication;
         const matchesDepartment = !filters.department || d.department_name === filters.department;
         const matchesTransferDate =
             (!filters.transferdate || new Date(d.transferdate) >= new Date(filters.transferdate));
-        return matchesUbication && matchesDepartment && matchesTransferDate;
-    });
 
+        return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate;
+    });
 
 
     return (
         <div className="p-15">
             {/* Barra de búsqueda */}
             <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     {/* Parte izquierda: input y botones de búsqueda/refresh */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2">
                         <input
                             type="text"
                             placeholder="Buscar por Serie, Marbete o Nombre"
@@ -152,7 +177,7 @@ function InventoryPage() {
                         />
                         <button
                             onClick={loadDevices}
-                            className="bg-blue-500 text-white px-2 h-8 rounded flex items-center gap-1 text-sm"
+                            className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-blue-500 rounded"
                         >
                             <Search size={16} /> Buscar
                         </button>
@@ -163,7 +188,7 @@ function InventoryPage() {
                     {userType === 'admin' && (
                         <button
                             onClick={handleExportDevices}
-                            className="bg-green-500 hover:bg-green-700 text-white font-bold px-2 h-8 rounded text-sm"
+                            className="h-8 px-2 text-sm font-bold text-white bg-green-500 rounded hover:bg-green-700"
                         >
                             Exportar a Excel
                         </button>
@@ -175,7 +200,7 @@ function InventoryPage() {
                 {userType === 'admin' && (
                     <button
                         onClick={() => setShowInventoryForm(true)}
-                        className="bg-blue-500 text-white px-2 h-8 rounded flex items-center gap-1 text-sm"
+                        className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-blue-500 rounded"
                     >
                         <Plus size={16} /> Nuevo equipo
                     </button>
@@ -184,10 +209,10 @@ function InventoryPage() {
             </div>
 
             {selectedDevice && (
-                <div className="mb-4 p-4 border rounded bg-gray-50">
-                    <h3 className="font-semibold mb-2">Unidad que recibe</h3>
+                <div className="p-4 mb-4 border rounded bg-gray-50">
+                    <h3 className="mb-2 font-semibold">Unidad que recibe</h3>
 
-                    <div className="flex gap-2 mb-2 items-center">
+                    <div className="flex items-center gap-2 mb-2">
                         <label className="text-sm font-medium">Rol del técnico:</label>
                         <select
                             value={selectedDevice.role}
@@ -200,7 +225,7 @@ function InventoryPage() {
                                     userRecibe: role === 'recibe' ? authData?.name || 'Técnico no identificado' : prev.userRecibe || ''
                                 }));
                             }}
-                            className="border px-2 h-8 rounded text-sm"
+                            className="h-8 px-2 text-sm border rounded"
                         >
                             <option value="transfiere">Transfiere</option>
                             <option value="recibe">Recibe</option>
@@ -223,7 +248,7 @@ function InventoryPage() {
                     />
                     <button
                         onClick={handlePrint}
-                        className="bg-blue-600 text-white px-4 py-2 rounded mt-2 hover:bg-blue-700 transition"
+                        className="px-4 py-2 mt-2 text-white transition bg-blue-600 rounded hover:bg-blue-700"
                     >
                         Imprimir traslado
                     </button>
@@ -249,7 +274,7 @@ function InventoryPage() {
 
             {/* Modal para agregar nuevo equipo */}
             {showInventoryForm && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-40 flex items-center justify-center z-50 transition-opacity duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 bg-gray-800 bg-opacity-40">
                     <InventoryFormModal
                         initialData={{}}
                         onCancel={() => setShowInventoryForm(false)}

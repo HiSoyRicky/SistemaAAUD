@@ -5,7 +5,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
     return (
         <form
             onSubmit={handleSubmit}
-            className="mb-8 p-8 bg-white border border-gray-200 rounded-2xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-6"
+            className="grid grid-cols-1 gap-6 p-8 mb-8 bg-white border border-gray-200 shadow-lg rounded-2xl md:grid-cols-2"
         >
             {/* Nombre */}
             <div>
@@ -16,7 +16,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     type="text"
                     value={form.nombre_completo}
                     onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })}
-                    className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                 />
             </div>
@@ -30,7 +30,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     type="text"
                     value={form.username}
                     onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                 />
             </div>
@@ -44,7 +44,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
             </div>
 
@@ -56,7 +56,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                 <select
                     value={form.id_rol}
                     onChange={(e) => setForm({ ...form, id_rol: parseInt(e.target.value) })}
-                    className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     {roles.map(r => (
                         <option key={r.id} value={r.id}>{r.role_name}</option>
@@ -74,13 +74,13 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder={form.id ? "Dejar vacío para no cambiar" : ""}
-                    className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required={!form.id}
                 />
             </div>
 
             {/* Activo con Toggle Switch */}
-            <div className="flex items-center gap-3 mt-6 md:mt-0 col-span-2">
+            <div className="flex items-center col-span-2 gap-3 mt-6 md:mt-0">
                 <span className="font-medium">Activo</span>
                 <button
                     type="button"
@@ -97,7 +97,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
             </div>
 
             {/* Botones */}
-            <div className="md:col-span-2 flex justify-end mt-6 gap-4">
+            <div className="flex justify-end gap-4 mt-6 md:col-span-2">
                 <button
                     type="submit"
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-800 transition"

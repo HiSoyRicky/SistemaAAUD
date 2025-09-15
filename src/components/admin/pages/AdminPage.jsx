@@ -1,7 +1,6 @@
 // src/pages/admin/AdminPage.jsx
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import Layout from "@/components/Layout";
 import { Users, Home, MapPin, Building, Cpu, Tag, Layers, Droplet } from "lucide-react";
 
 export default function AdminPage() {
@@ -17,12 +16,11 @@ export default function AdminPage() {
     ];
 
     return (
-        <Layout>
             <div className="p-6">
-                <h1 className="text-3xl font-bold mb-6 text-gray-800">Panel de Administración</h1>
+                <h1 className="mb-6 text-3xl font-bold text-gray-800">Panel de Administración</h1>
 
                 {/* Menú horizontal con scroll para móviles */}
-                <div className="flex gap-3 overflow-x-auto mb-6 pb-2">
+                <div className="flex gap-3 pb-2 mb-6 overflow-x-auto">
                     {menuItems.map(item => (
                         <NavLink
                             key={item.path}
@@ -43,6 +41,5 @@ export default function AdminPage() {
                     <Outlet />
                 </div>
             </div>
-        </Layout>
     );
 }
