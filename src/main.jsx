@@ -36,7 +36,7 @@ class ErrorBoundary extends Component {
           <h1 className="text-2xl font-bold text-red-600">Algo salió mal</h1>
           <p>{this.state.error?.message || 'Error desconocido'}</p>
           <button
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+            className="px-4 py-2 mt-4 text-white bg-blue-500 rounded"
             onClick={() => window.location.reload()}
           >
             Recargar página

@@ -7,7 +7,6 @@ import LoginPage from './pages/LoginPage';
 import IncidentsPage from './components/incidents/pages/IncidentsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import Dashboard from './pages/Dashboard';
-import Layout from './components/Layout';
 import useAuth from './hooks/useAuth';
 import IncidentDetails from './components/incidents/pages/IncidentDetails';
 import SelectorPage from './pages/SelectorPage';
@@ -15,20 +14,21 @@ import InventoryPage from './components/inventory/pages/InventoryPage';
 import AdminRoute from '@/components/admin/AdminRoute';
 import AdminPage from "./components/admin/pages/AdminPage";
 import DevicesManager from "./components/admin/DevicesManager";
-import UsersManager from "./components/admin/UsersManager";
+import UsersManager from "./components/admin/users/UsersManager";
 import UbicationsManager from "./components/admin/UbicationsManager";
 import DepartmentsManager from "./components/admin/DepartmentManager";
-import BrandsManager from "./components/admin/BrandsManager";
+import BrandsManager from "./components/admin/brands/BrandsManager";
 import ModelsManager from './components/admin/ModelsManager';
 import TonersManager from './components/admin/TonersManager';
 import StatusManager from './components/admin/StatusManager';
+import PrivateLayout from "@/components/PrivateLayout";
 
 // Componente para proteger rutas
 const PrivateRoute = ({ children, allowedUserTypes }) => {
   const { isAuthenticated, userType, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Cargando...</div>; // O un spinner
+    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>; // O un spinner
   }
 
   if (!isAuthenticated) {
@@ -40,8 +40,7 @@ const PrivateRoute = ({ children, allowedUserTypes }) => {
 
     return <Navigate to="/" replace />; // O a una página 403
   }
-
-  return <Layout>{children}</Layout>;
+  return children;
 };
 
 function App() {
@@ -49,7 +48,7 @@ function App() {
 
   // Muestra un loader mientras se verifica la autenticación inicial
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Cargando aplicación...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Cargando aplicación...</div>;
   }
 
   return (
@@ -66,7 +65,9 @@ function App() {
           path="/selector"
           element={
             <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'secretaria']}>
-              <SelectorPage />
+              <PrivateLayout>
+                <SelectorPage />
+              </PrivateLayout>
             </PrivateRoute>
           }
         />
@@ -76,7 +77,9 @@ function App() {
           path="/incidencias"
           element={
             <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'secretaria']}>
-              <IncidentsPage />
+              <PrivateLayout>
+                <IncidentsPage />
+              </PrivateLayout>
             </PrivateRoute>
           }
         />
@@ -94,7 +97,9 @@ function App() {
           path="/inventario"
           element={
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'secretaria']}>
-              <InventoryPage />
+              <PrivateLayout>
+                <InventoryPage />
+              </PrivateLayout>
             </PrivateRoute>
           }
         />
@@ -103,7 +108,9 @@ function App() {
           path="/dashboard"
           element={
             <PrivateRoute allowedUserTypes={['admin', 'tecnico']}>
-              <Dashboard />
+              <PrivateLayout>
+                <Dashboard />
+              </PrivateLayout>
             </PrivateRoute>
           }
         />
@@ -112,7 +119,9 @@ function App() {
           path="/admin"
           element={
             <AdminRoute>
-              <AdminPage />
+              <PrivateLayout>
+                <AdminPage />
+              </PrivateLayout>
             </AdminRoute>
           }
         />
@@ -126,7 +135,17 @@ function App() {
               replace />}
         />
 
-        <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>}>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <PrivateLayout>
+                <AdminPage />
+              </PrivateLayout>
+            </AdminRoute>
+          }
+        >
+
           <Route path="devices" element={<DevicesManager />} />
           <Route path="users" element={<UsersManager />} />
           <Route path="ubications" element={<UbicationsManager />} />
