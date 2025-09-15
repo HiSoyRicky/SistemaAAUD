@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Pagination from "@/components/Pagination";
 import { Edit } from "lucide-react";
 
 export default function ModelsManager() {
@@ -12,6 +13,15 @@ export default function ModelsManager() {
     const [successMessage, setSuccessMessage] = useState("");
     const [editingBrand, setEditingBrand] = useState("");
     const API_URL = `${import.meta.env.VITE_API_URL}/api/models`;
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const sortedModels = [...models].sort((a, b) => a.name.localeCompare(b.name));
+
+    const totalPages = Math.ceil(sortedModels.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedModels = sortedModels.slice(startIndex, endIndex);
 
     // 🔹 Cargar dispositivos desde backend
     const fetchModels = async () => {
@@ -107,14 +117,17 @@ export default function ModelsManager() {
             <table className="bg-white rounded-lg shadow-md p-1">
                 <thead className="bg-gray-100">
                     <tr>
+                        <th className="border px-3 py-1 text-center">#</th>
                         <th className="border px-3 py-1">Modelo</th>
                         <th className="border px-3 py-1">Marca</th>
                         <th className="border px-3 py-1 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {models.map((m) => (
+                    {paginatedModels.map((m, index) => (
                         <tr key={m.id}>
+                            {/* Enumeración consecutiva */}
+                            <td className="border px-3   py-1 text-center">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                             <td className="border px-3 py-1">
                                 {editingId === m.id ? (
                                     <input
@@ -156,6 +169,12 @@ export default function ModelsManager() {
                     ))}
                 </tbody>
             </table>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+            />
+            {successMessage && <div className="mt-2 text-green-600">{successMessage}</div>}
         </div>
     );
 }

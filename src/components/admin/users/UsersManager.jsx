@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import UsersTable from "./users/UsersTable";
-import UserForm from "./users/UsersForm";
-import { Users } from "../../services/api";
-import SuccessMessage from "../SuccessMessage";
+import UsersTable from "./UsersTable";
+import UserForm from "./UsersForm";
+import { Users } from "@/services/api";
+import SuccessMessage from "@/components/SuccessMessage";
+import Pagination from "@/components/Pagination";
 
 export default function UsersManager() {
     const [users, setUsers] = useState([]);
@@ -18,7 +19,9 @@ export default function UsersManager() {
     const [editing, setEditing] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState('success'); // 'success' o 'error'
+    const [messageType, setMessageType] = useState('success');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
 
     useEffect(() => {
@@ -81,7 +84,6 @@ export default function UsersManager() {
         }
     };
 
-
     const handleCancel = () => {
         setForm({
             id: null,
@@ -98,27 +100,32 @@ export default function UsersManager() {
 
     const sortedUsers = [...users].sort((a, b) => a.id - b.id);
 
+    const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = sortedUsers.slice(startIndex, endIndex);
+
     return (
         <div className="space-y-4">
-            <h2 className="text-xl font-semibold mb-4">Gestión de Usuarios</h2>
-            {/* Botón para mostrar/ocultar formulario */}
-            <button
-                onClick={() => setShowForm(!showForm)}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-                {showForm ? "Ocultar formulario" : "Crear nuevo usuario"}
-            </button>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
+                <button
+                    onClick={() => setShowForm(!showForm)}
+                    className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                >
+                    {showForm ? "Ocultar formulario" : "Crear nuevo usuario"}
+                </button>
+            </div>
 
             {message && (
                 <SuccessMessage
                     message={message}
                     type={messageType}
                     onClose={() => setMessage('')}
-                    duration={3000} // desaparece después de 3 segundos
+                    duration={3000}
                 />
             )}
 
-            {/* Formulario */}
             {showForm && (
                 <UserForm
                     form={form}
@@ -130,11 +137,19 @@ export default function UsersManager() {
             )}
 
             <UsersTable
-                users={sortedUsers}
+                users={paginatedUsers}
                 roles={roles}
                 editUser={editUser}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
                 handleDelete={handleDelete}
                 handleResetPassword={handleResetPassword}
+            />
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
             />
         </div>
     );

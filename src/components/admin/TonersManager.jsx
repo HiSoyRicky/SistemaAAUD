@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Toners } from "../../services/api";
+import Pagination from "@/components/Pagination";
+import { Toners } from "@/services/api";
 import { Edit } from "lucide-react";
 
 export default function TonersManager() {
@@ -19,7 +20,16 @@ export default function TonersManager() {
     const [movementType, setMovementType] = useState("Entrada");
     const [movementQuantity, setMovementQuantity] = useState(1);
     const [movementNotes, setMovementNotes] = useState("");
-    const [newTonerModelName, setNewTonerModelName] = useState(""); // Nuevo estado para nombre de modelo
+    const [newTonerModelName, setNewTonerModelName] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const sortedToners = [...toners].sort((a, b) => a.id - b.id);
+
+    const totalPages = Math.ceil(sortedToners.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedToners = sortedToners.slice(startIndex, endIndex);
 
     // Cargar datos iniciales
     const fetchAll = async () => {
@@ -142,49 +152,49 @@ export default function TonersManager() {
 
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-4">Gestión de tóners</h2>
+            <h2 className="mb-4 text-xl font-semibold">Gestión de tóners</h2>
 
             {successMessage && (
-                <div className="mb-4 p-2 bg-green-200 text-green-800 rounded">
+                <div className="p-2 mb-4 text-green-800 bg-green-200 rounded">
                     {successMessage}
                 </div>
             )}
 
             {/* Agregar nuevo modelo de tóner */}
-            <div className="mb-4 flex gap-2">
+            <div className="flex gap-2 mb-4">
                 <input
                     type="text"
                     value={newTonerModelName}
                     onChange={(e) => setNewTonerModelName(e.target.value)}
                     placeholder="Nuevo modelo de tóner (ej. TK-8337C)"
-                    className="border rounded px-2 py-1"
+                    className="px-2 py-1 border rounded"
                 />
                 <button
                     onClick={addTonerModel}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
                     Agregar Modelo
                 </button>
             </div>
 
             {/* Agregar nuevo tóner */}
-            <div className="mb-4 flex flex-col gap-2">
+            <div className="flex flex-col gap-2 mb-4">
                 <label>Modelo de Impresora:</label>
-                <select value={newPrinterModel} onChange={(e) => setNewPrinterModel(e.target.value)} className="border rounded px-2 py-1">
+                <select value={newPrinterModel} onChange={(e) => setNewPrinterModel(e.target.value)} className="px-2 py-1 border rounded">
                     <option value="">Selecciona</option>
                     {printerModels.map((pm) => (
                         <option key={pm.id} value={pm.id}>{pm.name}</option>
                     ))}
                 </select>
                 <label>Modelo de Tóner:</label>
-                <select value={newTonerModel} onChange={(e) => setNewTonerModel(e.target.value)} className="border rounded px-2 py-1">
+                <select value={newTonerModel} onChange={(e) => setNewTonerModel(e.target.value)} className="px-2 py-1 border rounded">
                     <option value="">Selecciona</option>
                     {tonerModels.map((tm) => (
                         <option key={tm.id} value={tm.id}>{tm.name}</option>
                     ))}
                 </select>
                 <label>Color:</label>
-                <select value={newColor} onChange={(e) => setNewColor(e.target.value)} className="border rounded px-2 py-1">
+                <select value={newColor} onChange={(e) => setNewColor(e.target.value)} className="px-2 py-1 border rounded">
                     <option value="">Selecciona</option>
                     {colors.map((cl) => (
                         <option key={cl.id} value={cl.id}>{cl.name}</option>
@@ -195,47 +205,49 @@ export default function TonersManager() {
                     type="number"
                     value={newStock}
                     onChange={(e) => setNewStock(e.target.value)}
-                    className="border rounded px-2 py-1"
+                    className="px-2 py-1 border rounded"
                 />
                 <label>Estado:</label>
-                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="border rounded px-2 py-1">
+                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="px-2 py-1 border rounded">
                     <option value="Disponible">Disponible</option>
                     <option value="Agotado">Agotado</option>
                 </select>
                 <button
                     onClick={addToner}
-                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                    className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
                 >
                     Agregar Tóner
                 </button>
             </div>
 
             {/* Tabla */}
-            <table className="bg-white rounded-lg shadow-md p-1 w-full">
+            <table className="w-full p-1 bg-white rounded-lg shadow-md">
                 <thead className="bg-gray-100">
                     <tr>
-                        <th className="border px-3 py-1">Impresora</th>
-                        <th className="border px-3 py-1">Modelo Tóner</th>
-                        <th className="border px-3 py-1">Color</th>
-                        <th className="border px-3 py-1">Stock</th>
-                        <th className="border px-3 py-1">Estado</th>
-                        <th className="border px-3 py-1">Última actualización</th>
-                        <th className="border px-3 py-1 text-center">Acciones</th>
+                        <th className="px-3 py-1 border">#</th>
+                        <th className="px-3 py-1 border">Impresora</th>
+                        <th className="px-3 py-1 border">Modelo Tóner</th>
+                        <th className="px-3 py-1 border">Color</th>
+                        <th className="px-3 py-1 border">Stock</th>
+                        <th className="px-3 py-1 border">Estado</th>
+                        <th className="px-3 py-1 border">Última actualización</th>
+                        <th className="px-3 py-1 text-center border">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {toners.map((t) => (
+                    {paginatedToners.map((t, index) => (
                         <tr key={t.id}>
-                            <td className="border px-3 py-1">{t.printer_model}</td>
-                            <td className="border px-3 py-1">{t.toner_model}</td>
-                            <td className="border px-3 py-1">{t.color}</td>
-                            <td className="border px-3 py-1">{t.stock}</td>
-                            <td className="border px-3 py-1">
+                            <td className="px-3 py-1 text-center border">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                            <td className="px-3 py-1 border">{t.printer_model}</td>
+                            <td className="px-3 py-1 border">{t.toner_model}</td>
+                            <td className="px-3 py-1 border">{t.color}</td>
+                            <td className="px-3 py-1 border">{t.stock}</td>
+                            <td className="px-3 py-1 border">
                                 {editingId === t.id ? (
                                     <select
                                         value={editingStatus}
                                         onChange={(e) => setEditingStatus(e.target.value)}
-                                        className="border rounded px-2 py-1"
+                                        className="px-2 py-1 border rounded"
                                     >
                                         <option value="Disponible">Disponible</option>
                                         <option value="Agotado">Agotado</option>
@@ -244,25 +256,25 @@ export default function TonersManager() {
                                     t.status
                                 )}
                             </td>
-                            <td className="border px-3 py-1">
+                            <td className="px-3 py-1 border">
                                 {t.last_update ? new Date(t.last_update).toLocaleString() : "-"}
                             </td>
-                            <td className="border px-3 py-1 text-center flex justify-center gap-2">
+                            <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                 {editingId === t.id ? (
                                     <button
                                         onClick={() => saveToner(t.id)}
-                                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                        className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                                     >
                                         Guardar
                                     </button>
                                 ) : (
-                                    <button onClick={() => editToner(t)} title="Editar tóner">
+                                    <button onClick={() => editToner(t.id, t.printer_model, t.toner_model)} title="Editar tóner">
                                         <Edit className="w-5 h-5 text-yellow-500" />
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setMovementTonerId(movementTonerId === t.id ? null : t.id)}
-                                    className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                    className="px-2 py-1 text-white bg-purple-500 rounded hover:bg-purple-600"
                                 >
                                     Movimiento
                                 </button>
@@ -273,7 +285,7 @@ export default function TonersManager() {
                     {toners.map((t) => (
                         movementTonerId === t.id && (
                             <tr key={`movement-${t.id}`}>
-                                <td colSpan="7" className="border px-3 py-1">
+                                <td colSpan="7" className="px-3 py-1 border">
                                     <div className="flex flex-col gap-2">
                                         <label>Tipo:</label>
                                         <select value={movementType} onChange={(e) => setMovementType(e.target.value)}>
@@ -285,18 +297,18 @@ export default function TonersManager() {
                                             type="number"
                                             value={movementQuantity}
                                             onChange={(e) => setMovementQuantity(e.target.value)}
-                                            className="border rounded px-2 py-1"
+                                            className="px-2 py-1 border rounded"
                                         />
                                         <label>Notas:</label>
                                         <input
                                             type="text"
                                             value={movementNotes}
                                             onChange={(e) => setMovementNotes(e.target.value)}
-                                            className="border rounded px-2 py-1"
+                                            className="px-2 py-1 border rounded"
                                         />
                                         <button
                                             onClick={() => addMovement(t.id)}
-                                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                            className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
                                         >
                                             Registrar Movimiento
                                         </button>
@@ -307,6 +319,12 @@ export default function TonersManager() {
                     ))}
                 </tbody>
             </table>
+            {/* Paginación */}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+            />
         </div>
     );
 }
