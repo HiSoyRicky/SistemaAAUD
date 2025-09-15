@@ -109,32 +109,88 @@ router.post('/', async (req, res) => {
                     to: 'rvargas@aaud.gob.pa',
                     subject: `📥 Nueva incidencia registrada (#${formattedId})`,
                     html: `
-                    <h3>Se ha registrado una nueva incidencia</h3>
-                    <p><strong>Incidencia N°:</strong> ${formattedId}</p>
-                    <p><strong>Reportado por:</strong> ${reporter_name}</p>
-                    <p><strong>Ubicación:</strong> ${ubication_name}</p>
-                    <p><strong>Departamento:</strong> ${department_name}</p>
-                    <p><strong>Categoría:</strong> ${category_name}</p>
-                    <p><strong>Otra categoría:</strong> ${other_category_detail || 'N/A'}</p>
-                    <p><strong>Descripción:</strong> ${description}</p>
-                    <p><strong>Fecha de creación:</strong> ${creationDate.toLocaleString('es-PA')}</p>
-                    <p>Sistema de Incidencias AAUD</p>
-                    <p>
-                        <a href="${publicViewUrl}" style="
-                            display: inline-block;
-                            padding: 10px 15px;
-                            background-color: #2563eb;
-                            color: white;
-                            text-decoration: none;
-                            border-radius: 5px;
-                        ">Ver incidencia</a>
-                    </p>
-                    <p style="font-size: 0.8em; color: #666;">
-                    Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
-                    Para cualquier consulta, utilice el sistema de incidencias.<br/>
-                    Gracias.
-                    </p>
-                `
+                    <div style="
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background-color: #f9f9f9;
+                        padding: 20px;
+                    ">
+                        <div style="
+                            max-width: 600px;
+                            margin: auto;
+                            background-color: #ffffff;
+                            padding: 30px;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            border-top: 6px solid #2563eb;
+                        ">
+                            <h2 style="
+                                color: #111827;
+                                text-align: center;
+                                margin-bottom: 20px;
+                            ">Nueva incidencia registrada</h2>
+
+                            <p style="font-size: 16px; color: #374151;">
+                                Se ha registrado una nueva incidencia en el sistema.
+                            </p>
+
+                            <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
+                                    <td style="padding: 8px;">${formattedId}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
+                                    <td style="padding: 8px;">${reporter_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Ubicación:</td>
+                                    <td style="padding: 8px;">${ubication_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Departamento:</td>
+                                    <td style="padding: 8px;">${department_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Categoría:</td>
+                                    <td style="padding: 8px;">${category_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Otra categoría:</td>
+                                    <td style="padding: 8px;">${other_category_detail || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Descripción:</td>
+                                    <td style="padding: 8px;">${description}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Fecha de creación:</td>
+                                    <td style="padding: 8px;">${creationDate.toLocaleString('es-PA')}</td>
+                                </tr>
+                            </table>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${publicViewUrl}" style="
+                                    display: inline-block;
+                                    padding: 12px 25px;
+                                    background-color: #2563eb;
+                                    color: white;
+                                    text-decoration: none;
+                                    border-radius: 8px;
+                                    font-weight: bold;
+                                    transition: background-color 0.3s ease;
+                                " onmouseover="this.style.backgroundColor='#1e40af'" onmouseout="this.style.backgroundColor='#2563eb'">
+                                    Ver incidencia
+                                </a>
+                            </div>
+
+                            <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                                Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
+                                Para cualquier consulta, utilice el sistema de incidencias.<br/>
+                                Gracias.
+                            </p>
+                        </div>
+                    </div>
+                    `
                 });
 
                 if (email) {
@@ -142,31 +198,87 @@ router.post('/', async (req, res) => {
                         to: email,
                         subject: `🕒 Confirmación de reporte de incidencia`,
                         html: `
-                        <h3>Tu incidencia ha sido recibida correctamente.</h3>
-                        <p>Pronto se te asignará un técnico para resolver tu incidencia.</p>
-                        <p><strong>Incidencia N°:</strong> ${formattedId}</p>
-                        <p><strong>Reportado por:</strong> ${reporter_name}</p>
-                        <p><strong>Ubicación:</strong> ${ubication_name}</p>
-                        <p><strong>Departamento:</strong> ${department_name}</p>
-                        <p><strong>Categoría:</strong> ${category_name}</p>
-                        <p><strong>Otra categoría:</strong> ${other_category_detail || 'N/A'}</p>
-                        <p><strong>Descripción:</strong> ${description}</p>
-                        <p>Sistema de Incidencias AAUD</p>
-                        <p>
-                            <a href="${publicViewUrl}" style="
-                                display: inline-block;
-                                padding: 10px 15px;
-                                background-color: #2563eb;
-                                color: white;
-                                text-decoration: none;
-                                border-radius: 5px;
-                            ">Ver incidencia</a>
-                        </p>
-                        <p style="font-size: 0.8em; color: #666;">
-                        Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
-                        Para cualquier consulta, utilice el sistema de incidencias.<br/>
-                        Gracias.
-                        </p>
+                        <div style="
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background-color: #f9f9f9;
+                        padding: 20px;
+                    ">
+                        <div style="
+                            max-width: 600px;
+                            margin: auto;
+                            background-color: #ffffff;
+                            padding: 30px;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            border-top: 6px solid #2563eb;
+                        ">
+                            <h2 style="
+                                color: #111827;
+                                text-align: center;
+                                margin-bottom: 20px;
+                            ">Tu incidencia ha sido recibida correctamente</h2>
+
+                            <p style="font-size: 16px; color: #374151;">
+                                Pronto se te asignará un técnico para resolver tu incidencia.
+                            </p>
+
+                        <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
+                                    <td style="padding: 8px;">${formattedId}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
+                                    <td style="padding: 8px;">${reporter_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Ubicación:</td>
+                                    <td style="padding: 8px;">${ubication_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Departamento:</td>
+                                    <td style="padding: 8px;">${department_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Categoría:</td>
+                                    <td style="padding: 8px;">${category_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Otra categoría:</td>
+                                    <td style="padding: 8px;">${other_category_detail || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Descripción:</td>
+                                    <td style="padding: 8px;">${description}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Fecha de creación:</td>
+                                    <td style="padding: 8px;">${creationDate.toLocaleString('es-PA')}</td>
+                                </tr>
+                            </table>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${publicViewUrl}" style="
+                                    display: inline-block;
+                                    padding: 12px 25px;
+                                    background-color: #2563eb;
+                                    color: white;
+                                    text-decoration: none;
+                                    border-radius: 8px;
+                                    font-weight: bold;
+                                    transition: background-color 0.3s ease;
+                                " onmouseover="this.style.backgroundColor='#1e40af'" onmouseout="this.style.backgroundColor='#2563eb'">
+                                    Ver incidencia
+                                </a>
+                            </div>
+
+                            <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                                Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
+                                Para cualquier consulta, utilice el sistema de incidencias.<br/>
+                                Gracias.
+                            </p>
+                        </div>
+                    </div>
                     `
                     });
                 }
