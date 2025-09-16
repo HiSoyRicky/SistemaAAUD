@@ -1,5 +1,5 @@
 {
-  "name": "pagina-web-incidencias-aaud",
+  "name": "aaud-system",
   "version": "1.0.0",
   "main": "server/Server.js",
   "type": "commonjs",

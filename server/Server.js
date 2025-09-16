@@ -16,9 +16,10 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: process.env.VITE_API_URL,
     methods: ['GET', 'POST'],
   },
+  transports: ['websocket', 'polling'],
 });
 
 // Importar rutas

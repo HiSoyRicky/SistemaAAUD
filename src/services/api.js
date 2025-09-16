@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Configuración de la URL base de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || '  http://localhost:5173';
 
 // Configuración inicial de axios
 const api = axios.create({
@@ -12,12 +12,13 @@ const api = axios.create({
 
 // Interceptor para auth
 api.interceptors.request.use(config => {
-    const token = localStorage.getItem('token'); // Asumiendo storage
+    const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-});
+}, error => Promise.reject(error));
+;
 
 // Interceptor para errors
 api.interceptors.response.use(
@@ -25,7 +26,8 @@ api.interceptors.response.use(
     error => {
         if (error.response?.status === 401) {
             // Redirect to login
-            window.location.href = '/login';
+            localStorage.removeItem('token');
+            window.location.href = '/login?expired=true';
         }
         return Promise.reject(error);
     }
@@ -38,6 +40,7 @@ const Incidents = {
 
 // --- Inventario ---
 const Inventory = {
+    fetchDeviceTypes: () => api.get('/api/devices').then(res => res.data),
     fetchDevices: (search = '') => api.get('/api/inventory', { params: { search } }).then(res => res.data),
     addDevice: (data) => api.post('/api/inventory', data).then(res => res.data),
     updateDevice: (id, data) => api.put(`/api/inventory/${id}`, data).then(res => res.data),

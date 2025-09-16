@@ -5,13 +5,12 @@ import { io } from 'socket.io-client';
 const API_URL = import.meta.env.VITE_API_URL;
 
 const socket = io(API_URL, {
-    autoConnect: false, // Conectar manualmente
+    autoConnect: false,
+    transports: ['websocket', 'polling'],
 });
 
 export const connectSocket = () => {
-    if (!socket.connected) {
-        socket.connect();
-    }
+    if (!socket.connected) socket.connect();
 };
 
 export const disconnectSocket = () => {

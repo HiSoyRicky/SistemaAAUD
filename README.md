@@ -1,4 +1,4 @@
-📌 Sistema de Incidencias AAUD
+📌 Sistema AAUD
 
 📖 Descripción
 

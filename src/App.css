@@ -1,33 +1,20 @@
 /* src/App.css */
+/* Este archivo queda prácticamente vacío si todo lo hacemos con Tailwind,
+   pero puedes dejarlo para estilos globales mínimos si es necesario */
 
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
+/* Por ejemplo, si quieres definir fuente global */
+@layer base {
+  body {
+    @apply p-0 m-0 font-sans;
+  }
 
-h1,
-h2 {
-  color: #333;
-}
+  h1,
+  h2 {
+    @apply text-gray-800;
+    /* equivalente a color #333 */
+  }
 
-form {
-  max-width: 400px;
-  margin: 20px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-input,
-textarea,
-button {
-  display: block;
-  width: 100%;
-  margin: 10px 0;
-  padding: 8px;
-}
-
-td[colspan] {
-  text-align: center;
+  td[colspan] {
+    @apply text-center;
+  }
 }

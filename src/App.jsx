@@ -18,7 +18,7 @@ import UsersManager from "./components/admin/users/UsersManager";
 import UbicationsManager from "./components/admin/UbicationsManager";
 import DepartmentsManager from "./components/admin/DepartmentManager";
 import BrandsManager from "./components/admin/brands/BrandsManager";
-import ModelsManager from './components/admin/ModelsManager';
+import ModelsManager from './components/admin/models/ModelsManager';
 import TonersManager from './components/admin/TonersManager';
 import StatusManager from './components/admin/StatusManager';
 import PrivateLayout from "@/components/PrivateLayout";
