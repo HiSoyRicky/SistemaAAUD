@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Brandstable from "./BrandsTable";
+import BrandsTable from "./BrandsTable";
 import SuccessMessage from "@/components/SuccessMessage";
 import Pagination from "@/components/Pagination";
 
 export default function BrandsManager() {
     const [brands, setbrands] = useState([]);
     const [newBrand, setnewBrand] = useState("");
+    const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState('success');
+    const [SuccessMessage, setSuccessMessage] = useState('success');
     const API_URL = `${import.meta.env.VITE_API_URL}/api/brands`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -62,30 +63,37 @@ export default function BrandsManager() {
             setEditingId(null);
             setEditingName("");
             fetchbrands();
-            setSuccessMessage("Ubicación actualizada correctamente");
+            setSuccessMessage("Marca actualizada correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
-            console.error("Error al guardar dispositivo:", err);
+            console.error("Error al guardar marca:", err);
         }
     };
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
+                <h2 className="text-xl font-semibold">Gestión de Marcas</h2>
             </div>
 
             {message && (
                 <SuccessMessage
                     message={message}
-                    type={messageType}
+                    type={setSuccessMessage}
                     onClose={() => setMessage('')}
                     duration={3000}
                 />
             )}
 
-            <Brandstable
+            <BrandsTable
                 brands={paginatedBrands}
                 editBrand={editBrand}
+                addBrand={addBrand}
+                newBrand={newBrand}
+                saveBrand={saveBrand}
+                editingId={editingId}
+                editingName={editingName}
+                setnewBrand={setnewBrand}
+                setEditingName={setEditingName}
                 currentPage={currentPage}
                 itemsPerPage={itemsPerPage}
             />
