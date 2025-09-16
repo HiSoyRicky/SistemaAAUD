@@ -1,8 +1,8 @@
 // src/components/inventory/InventoryTable.jsx
 import React, { useState } from 'react';
 import { formatDateToDDMMYYYY } from '@/utils/formatDate';
-import { Printer, Pencil } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
+import ActionButton from "@/components/ui/ActionButton";
 
 function InventoryTable({ inventory, onPrint, onEdit }) {
     const itemsPerPage = 15;
@@ -70,8 +70,8 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
     const paginatedItems = sortedInventory.slice(startIndex, endIndex);
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-1">
-            <div className="flex gap-2 mb-2 items-center">
+        <div className="p-1 bg-white rounded-lg shadow-md">
+            <div className="flex items-center gap-2 mb-2">
                 <button
                     onClick={() => setFilters({
                         ubication_name: "",
@@ -82,7 +82,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                         model_name: "",
                         status_name: ""
                     })}
-                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                    className="px-2 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
                 >
                     Quitar filtros
                 </button>
@@ -100,7 +100,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                 <select
                                     value={filters.ubication_name}
                                     onChange={(e) => handleFilterChange("ubication_name", e.target.value)}
-                                    className="border rounded text-xs text-center mt-1 w-full"
+                                    className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
                                     {options.ubication_name.map(val => (
@@ -115,7 +115,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                 <select
                                     value={filters.department_name}
                                     onChange={(e) => handleFilterChange("department_name", e.target.value)}
-                                    className="border rounded text-xs text-center mt-1 w-full"
+                                    className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
                                     {options.department_name.map(val => (
@@ -129,7 +129,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                 <select
                                     value={filters.device_name}
                                     onChange={(e) => handleFilterChange("device_name", e.target.value)}
-                                    className="border rounded text-xs text-center mt-1 w-full"
+                                    className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
                                     {options.device_name.map(val => (
@@ -142,7 +142,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                 <select
                                     value={filters.brand_name}
                                     onChange={(e) => handleFilterChange("brand_name", e.target.value)}
-                                    className="border rounded text-xs text-center mt-1 w-full"
+                                    className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
                                     {options.brand_name.map(val => (
@@ -155,7 +155,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                 <select
                                     value={filters.model_name}
                                     onChange={(e) => handleFilterChange("model_name", e.target.value)}
-                                    className="border rounded text-xs text-center mt-1 w-full"
+                                    className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
                                     {options.model_name.map(val => (
@@ -170,7 +170,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                 <select
                                     value={filters.status_name}
                                     onChange={(e) => handleFilterChange("status_name", e.target.value)}
-                                    className="border rounded text-xs text-center mt-1 w-full"
+                                    className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
                                     {options.status_name.map(val => (
@@ -190,7 +190,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                     <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedItems.length === 0 ? (
                             <tr>
-                                <td colSpan="13" className="px-6 py-4 whitespace-normal text-center text-sm text-gray-500">
+                                <td colSpan="13" className="px-6 py-4 text-sm text-center text-gray-500 whitespace-normal">
                                     No hay dispositivos para mostrar.
                                 </td>
                             </tr>
@@ -212,32 +212,34 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
 
                                     {/* Acciones */}
                                     <td className={`${thClass} border`}>
-                                        <div className="flex justify-center items-center h-full gap-2 ">
+                                        <div className="flex items-center justify-center h-full gap-2 ">
+
+                                            {/* Botón Ver detalles */}
                                             <button
-                                                title={`Ver detalles de ${item.tag}`}
-                                                onClick={() => alert(`Ver detalles de ${item.tag}`)}
-                                                className="text-gray-600 hover:text-gray-800"
+                                                className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
+                                                title={showExtraColumns ? "Ocultar columnas" : "Mostrar columnas"}
                                             >
                                                 🔍
                                             </button>
 
+                                            {/* Botón Editar - solo para admin */}
                                             {userType === 'admin' && (
-                                                <button
+                                                <ActionButton
+                                                    type={"edit"}
                                                     title="Editar equipo"
                                                     onClick={() => item && onEdit(item)}
-                                                    className="text-blue-600 hover:text-blue-800"
                                                 >
-                                                    <Pencil className="w-5 h-5" />
-                                                </button>
+                                                </ActionButton>
                                             )}
 
-                                            <button
+                                            {/* Botón Imprimir */}
+                                            <ActionButton
+                                                type={"print"}
                                                 title="Imprimir equipo"
-                                                onClick={() => onPrint(item)}
-                                                className="text-red-600 hover:text-red-800"
+                                                onClick={() => item && onPrint(item)}
                                             >
-                                                <Printer size={16} />
-                                            </button>
+                                            </ActionButton>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -251,12 +253,12 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
             {/* Controles de paginación con saltos inteligentes */}
             {
                 totalPages > 1 && (
-                    <div className="mt-4 flex justify-center">
+                    <div className="flex justify-center mt-4">
                         {/* Botón Anterior */}
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                            className="px-3 py-1 text-gray-700 bg-gray-200 rounded disabled:opacity-50"
                         >
                             Anterior
                         </button>
@@ -302,7 +304,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                            className="px-3 py-1 text-gray-700 bg-gray-200 rounded disabled:opacity-50"
                         >
                             Siguiente
                         </button>
@@ -310,10 +312,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                 )
             }
 
-            <div className="mt-2 flex justify-center">
+            <div className="flex justify-center mt-2">
                 <button
                     onClick={toggleExtraColumns}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    className="px-3 py-1 text-gray-700 bg-gray-300 rounded hover:bg-gray-400"
                 >
                     {showExtraColumns ? 'Ocultar columnas extra' : 'Mostrar columnas extra'}
                 </button>

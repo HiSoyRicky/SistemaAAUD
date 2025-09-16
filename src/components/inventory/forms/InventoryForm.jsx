@@ -12,9 +12,9 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         id_ubication: initialData.id_ubication || null,
         id_department: initialData.id_department || null,
         user: initialData.user || '',
-        id_device: initialData.id_device || null,
-        id_brand: initialData.id_brand || null,
-        id_model: initialData.id_model || null,
+        id_device: initialData.id_device,
+        id_brand: initialData.id_brand,
+        id_model: initialData.id_model,
         serie: initialData.serie || '',
         ip: initialData.ip || '',
         id_status: initialData.id_status || null,
@@ -27,17 +27,27 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 
     const [errors, setErrors] = useState({});
     const [options, setOptions] = useState({ devices: [], brands: [], models: [], statuses: [] });
+    const [loadingOptions, setLoadingOptions] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     // 🔹 Cargar opciones para los selectores
     useEffect(() => {
         async function fetchOptions() {
-            const [devices, brands, models, statuses] = await Promise.all([
-                Inventory.fetchDevices(),
-                Inventory.fetchBrands(),
-                Inventory.fetchModels(),
-                Inventory.fetchStatuses()
-            ]);
-            setOptions({ devices, brands, models, statuses });
+            try {
+                setLoadingOptions(true);
+                const [devices, brands, models, statuses] = await Promise.all([
+                    Inventory.fetchDeviceTypes(),
+                    Inventory.fetchBrands(),
+                    Inventory.fetchModels(),
+                    Inventory.fetchStatuses()
+                ]);
+                setOptions({ devices, brands, models, statuses });
+            } catch (error) {
+                console.error('Error fetching options:', error);
+                setFetchError('Error al cargar opciones. Verifica la conexión o el backend.');
+            } finally {
+                setLoadingOptions(false);
+            }
         }
         fetchOptions();
     }, []);
@@ -95,111 +105,127 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         }
     };
 
+    if (fetchError) { // Agregado: Muestra error si fetch falla, para UI feedback.**
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
+                <div className="w-full max-w-lg p-6 bg-white shadow-xl rounded-xl">
+                    <p className="text-red-500">{fetchError}</p>
+                    <button onClick={onCancel} className="px-4 py-2 mt-4 bg-gray-300 rounded">Cerrar</button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative">
                 <h3 className="mb-6 text-2xl font-bold text-center">
                     {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo'}
                 </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Marbete */}
-                    <InputField label="Marbete *" name="tag" value={formData.tag} onChange={handleChange} error={errors.tag} />
+                {loadingOptions ? ( // Agregado: Muestra loading mientras carga opciones, evita select vacío.**
+                    <p className="text-center">Cargando opciones...</p>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Marbete */}
+                        <InputField label="Marbete *" name="tag" value={formData.tag} onChange={handleChange} error={errors.tag} />
 
-                    {/* Ubicación y Departamento */}
-                    <UbiDepSelector
-                        id_ubication={formData.id_ubication}
-                        id_department={formData.id_department}
-                        onChange={handleUbiDepChange}
-                        errors={{ ubication: errors.id_ubication, department: errors.id_department }}
-                        mode="inventory"
-                    />
-
-                    {/* Usuario */}
-                    <InputField label="Usuario asignado" name="user" value={formData.user} onChange={handleChange} />
-
-                    {/* Equipo */}
-                    <SelectField
-                        label="Nombre del equipo *"
-                        name="id_device"
-                        value={formData.id_device}
-                        onChange={handleChange}
-                        options={options.devices.map((d) => ({ id: d.id, name: d.name }))}
-                        error={errors.id_device}
-                    />
-
-                    {/* Marca */}
-                    <SelectField
-                        label="Marca *"
-                        name="id_brand"
-                        value={formData.id_brand}
-                        onChange={(e) => {
-                            handleChange(e);
-                            setFormData((prev) => ({ ...prev, id_model: '' }));
-                        }}
-                        options={options.brands.map((b) => ({ id: b.id, name: b.name }))}
-                        error={errors.id_brand}
-                    />
-
-                    {/* Modelo */}
-                    <SelectField
-                        label="Modelo *"
-                        name="id_model"
-                        value={formData.id_model}
-                        onChange={handleChange}
-                        options={filteredModels.map((m) => ({ id: m.id, name: m.name }))}
-                        error={errors.id_model}
-                        disabled={!formData.id_brand}
-                    />
-
-                    {/* Serie */}
-                    <InputField label="Serie *" name="serie" value={formData.serie} onChange={handleChange} error={errors.serie} />
-
-                    {/* Estado */}
-                    <SelectField
-                        label="Estado *"
-                        name="id_status"
-                        value={formData.id_status}
-                        onChange={handleChange}
-                        options={options.statuses.map((s) => ({ id: s.id, name: s.name }))}
-                        error={errors.id_status}
-                    />
-
-                    {/* IP */}
-                    <InputField label="IP" name="ip" value={formData.ip} onChange={handleChange} error={errors.ip} />
-
-                    {/* Fecha de Traslado */}
-                    <div>
-                        <label className="block mb-1 text-sm font-medium">
-                            Fecha de Traslado: {formData.transferdate || 'N/A'}
-                        </label>
-                        <input
-                            type="date"
-                            name="transferDateInput"
-                            value={formData.transferDateInput}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border rounded"
+                        {/* Ubicación y Departamento */}
+                        <UbiDepSelector
+                            id_ubication={formData.id_ubication}
+                            id_department={formData.id_department}
+                            onChange={handleUbiDepChange}
+                            errors={{ ubication: errors.id_ubication, department: errors.id_department }}
+                            mode="inventory"
                         />
-                    </div>
 
-                    {/* Observaciones */}
-                    <TextAreaField label="Observaciones" name="observation" value={formData.observation} onChange={handleChange} />
+                        {/* Usuario */}
+                        <InputField label="Usuario asignado" name="user" value={formData.user} onChange={handleChange} />
 
-                    <div className="flex justify-end gap-3 mt-4">
-                        <button
-                            type="button"
-                            onClick={onCancel}
-                            className="px-4 py-2 transition bg-gray-300 rounded hover:bg-gray-400"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 text-white transition bg-blue-500 rounded hover:bg-blue-600"
-                        >
-                            Guardar
-                        </button>
-                    </div>
-                </form>
+                        {/* Equipo */}
+                        <SelectField
+                            label="Nombre del equipo *"
+                            name="id_device"
+                            value={formData.id_device}
+                            onChange={handleChange}
+                            options={options.devices.map((d) => ({ id: d.id, name: d.name }))}
+                            error={errors.id_device}
+                            disabled={loadingOptions}
+                        />
+
+                        {/* Marca */}
+                        <SelectField
+                            label="Marca *"
+                            name="id_brand"
+                            value={formData.id_brand}
+                            onChange={(e) => {
+                                handleChange(e);
+                                setFormData((prev) => ({ ...prev, id_model: '' }));
+                            }}
+                            options={options.brands.map((b) => ({ id: b.id, name: b.name }))}
+                            error={errors.id_brand}
+                        />
+
+                        {/* Modelo */}
+                        <SelectField
+                            label="Modelo *"
+                            name="id_model"
+                            value={formData.id_model}
+                            onChange={handleChange}
+                            options={filteredModels.map((m) => ({ id: m.id, name: m.name }))}
+                            error={errors.id_model}
+                            disabled={!formData.id_brand}
+                        />
+
+                        {/* Serie */}
+                        <InputField label="Serie *" name="serie" value={formData.serie} onChange={handleChange} error={errors.serie} />
+
+                        {/* Estado */}
+                        <SelectField
+                            label="Estado *"
+                            name="id_status"
+                            value={formData.id_status}
+                            onChange={handleChange}
+                            options={options.statuses.map((s) => ({ id: s.id, name: s.name }))}
+                            error={errors.id_status}
+                        />
+
+                        {/* IP */}
+                        <InputField label="IP" name="ip" value={formData.ip} onChange={handleChange} error={errors.ip} />
+
+                        {/* Fecha de Traslado */}
+                        <div>
+                            <label className="block mb-1 text-sm font-medium">
+                                Fecha de Traslado: {formData.transferdate || 'N/A'}
+                            </label>
+                            <input
+                                type="date"
+                                name="transferDateInput"
+                                value={formData.transferDateInput}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border rounded"
+                            />
+                        </div>
+
+                        {/* Observaciones */}
+                        <TextAreaField label="Observaciones" name="observation" value={formData.observation} onChange={handleChange} />
+
+                        <div className="flex justify-end gap-3 mt-4">
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                className="px-4 py-2 transition bg-gray-300 rounded hover:bg-gray-400"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 text-white transition bg-blue-500 rounded hover:bg-blue-600"
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </form>
+                )}
             </div>
         </div>
     );

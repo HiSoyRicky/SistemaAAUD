@@ -167,7 +167,7 @@ function InventoryPage() {
             <div className="flex items-center justify-between mb-2">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     {/* Parte izquierda: input y botones de búsqueda/refresh */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-6">
                         <input
                             type="text"
                             placeholder="Buscar por Serie, Marbete o Nombre"
