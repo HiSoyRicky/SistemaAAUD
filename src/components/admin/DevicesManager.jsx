@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
-import { Edit } from "lucide-react";
+import ActionButton from "@/components/ui/ActionButton";
 
 export default function DevicesManager() {
     const [devices, setDevices] = useState([]);
@@ -122,16 +122,19 @@ export default function DevicesManager() {
                             </td>
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                 {editingId === d.id ? (
-                                    <button
+                                    <ActionButton
+                                        type={"save"}
+                                        title="Guardar dispositivo"
                                         onClick={() => saveDevice(d.id)}
-                                        className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                                     >
-                                        Guardar
-                                    </button>
+                                    </ActionButton>
                                 ) : (
-                                    <button onClick={() => editDevice(d.id, d.name)} title="Editar dispositivo">
-                                        <Edit className="w-5 h-5 text-yellow-500" />
-                                    </button>
+                                    <ActionButton
+                                        type={"edit"}
+                                        title="Editar dispositivo"
+                                        onClick={() => editDevice(d.id, d.name)}
+                                    >
+                                    </ActionButton>
                                 )}
                             </td>
                         </tr>
