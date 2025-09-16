@@ -68,18 +68,16 @@ export default function UsersManager() {
         setShowForm(true);
     };
 
-    const handleDelete = async (id) => {
-        await Users.delete(id);
-        loadUsers();
-    };
-
     const handleResetPassword = async (user) => {
+        const newPassword = prompt(`Nueva contraseña para ${user.username}:`);
+        if (!newPassword) return;
+
         try {
-            await Users.updatePassword(user.id);
-            setMessage('Contraseña reseteada correctamente');
+            await Users.updatePassword(user.id, newPassword);
+            setMessage('Contraseña actualizada correctamente');
             setMessageType('success');
         } catch (err) {
-            setMessage('Error al resetear la contraseña');
+            setMessage('Error al actualizar la contraseña');
             setMessageType('error');
         }
     };
@@ -142,7 +140,6 @@ export default function UsersManager() {
                 editUser={editUser}
                 currentPage={currentPage}
                 itemsPerPage={itemsPerPage}
-                handleDelete={handleDelete}
                 handleResetPassword={handleResetPassword}
             />
 

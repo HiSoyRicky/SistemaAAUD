@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Edit } from "lucide-react";
 import Pagination from "@/components/Pagination";
+import ActionButton from "@/components/ui/ActionButton";
 
 export default function UbicationsManager() {
     const [ubications, setUbications] = useState([]);
@@ -122,16 +123,19 @@ export default function UbicationsManager() {
                             </td>
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                 {editingId === u.id ? (
-                                    <button
+                                    <ActionButton
+                                        type={"save"}
+                                        title="Guardar"
                                         onClick={() => saveUbication(u.id)}
-                                        className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                                     >
-                                        Guardar
-                                    </button>
+                                    </ActionButton>
                                 ) : (
-                                    <button onClick={() => editUbication(u.id, u.name)} title="Editar ubicación">
-                                        <Edit className="w-5 h-5 text-yellow-500" />
-                                    </button>
+                                    <ActionButton
+                                        type={"edit"}
+                                        title="Editar"
+                                        onClick={() => editUbication(u.id, u.name)}
+                                    >
+                                    </ActionButton>
                                 )}
                             </td>
                         </tr>

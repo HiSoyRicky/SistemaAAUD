@@ -1,8 +1,8 @@
 // src/components/admin/UsersTable.jsx
 import React from "react";
-import { Edit, Trash2, Key } from "lucide-react";
+import ActionButton from "@/components/ui/ActionButton";
 
-export default function UsersTable({ users, roles, editUser, handleDelete, handleResetPassword, currentPage = 1, itemsPerPage = 10 }) {
+export default function UsersTable({ users, roles, editUser, handleResetPassword, currentPage = 1, itemsPerPage = 10 }) {
     return (
         <table className="p-1 bg-white rounded-lg shadow-md">
             <thead>
@@ -27,15 +27,19 @@ export default function UsersTable({ users, roles, editUser, handleDelete, handl
                         <td className="p-2 border">{roles.find(r => r.id === u.id_rol)?.role_name || "Desconocido"}</td>
                         <td className="p-2 text-center border">{u.active ? "Sí" : "No"}</td>
                         <td className="flex justify-center gap-1 p-2 border">
-                            <button onClick={() => editUser(u)} title="Editar usuario">
-                                <Edit className="w-5 h-5 text-yellow-500" />
-                            </button>
-                            <button onClick={() => handleDelete(u.id)} title="Eliminar usuario">
-                                <Trash2 className="w-5 h-5 text-red-600" />
-                            </button>
-                            <button onClick={() => handleResetPassword(u)} title="Cambiar contraseña">
-                                <Key className="w-5 h-5 text-purple-600" />
-                            </button>
+                            <ActionButton
+                                type={"edit"}
+                                title="Editar usuario"
+                                onClick={() => editUser(u)}
+                            >
+                            </ActionButton>
+                            <ActionButton
+                                type={"reset"}
+                                title="Cambiar contraseña"
+                                onClick={() => handleResetPassword(u)}
+                            >
+                            </ActionButton>
+
                         </td>
                     </tr>
                 ))}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Pagination from "@/components/Pagination";
 import { Toners } from "@/services/api";
-import { Edit } from "lucide-react";
+import ActionButton from "@/components/ui/ActionButton";
 
 export default function TonersManager() {
     const [toners, setToners] = useState([]);
@@ -261,23 +261,26 @@ export default function TonersManager() {
                             </td>
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                 {editingId === t.id ? (
-                                    <button
+                                    <ActionButton
+                                        type={"save"}
+                                        title="Guardar tóner"
                                         onClick={() => saveToner(t.id)}
-                                        className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                                     >
-                                        Guardar
-                                    </button>
+                                    </ActionButton>
                                 ) : (
-                                    <button onClick={() => editToner(t.id, t.printer_model, t.toner_model)} title="Editar tóner">
-                                        <Edit className="w-5 h-5 text-yellow-500" />
-                                    </button>
+                                    <ActionButton
+                                        type={"edit"}
+                                        title="Editar tóner"
+                                        onClick={() => editToner(t.id, t.name)}
+                                    >
+                                    </ActionButton>
                                 )}
-                                <button
-                                    onClick={() => setMovementTonerId(movementTonerId === t.id ? null : t.id)}
-                                    className="px-2 py-1 text-white bg-purple-500 rounded hover:bg-purple-600"
+                                <ActionButton
+                                    type={"refresh"}
+                                    title="Recargar movimientos"
+                                    onClick={() => addMovement(t.id, t.name)}
                                 >
-                                    Movimiento
-                                </button>
+                                </ActionButton>
                             </td>
                         </tr>
                     ))}

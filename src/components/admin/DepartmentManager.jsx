@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
-import { Edit } from "lucide-react";
+import ActionButton from "@/components/ui/ActionButton";
 
 export default function DepartmentsManager() {
     const [departments, setDepartments] = useState([]);
@@ -193,13 +193,19 @@ export default function DepartmentsManager() {
                             {/* Acciones */}
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                 {editingId === d.id ? (
-                                    <button onClick={() => saveDepartment(d.id)} className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600">
-                                        Guardar
-                                    </button>
+                                    <ActionButton
+                                        type={"save"}
+                                        title="Guardar"
+                                        onClick={() => saveDepartment(d.id)}
+                                    >
+                                    </ActionButton>
                                 ) : (
-                                    <button onClick={() => editDepartment(d.id, d.name, d.id_ubication)} title="Editar departamento">
-                                        <Edit className="w-5 h-5 text-yellow-500" />
-                                    </button>
+                                    <ActionButton
+                                        type={"edit"}
+                                        title="Editar departamento"
+                                        onClick={() => editDepartment(d.id, d.name, d.id_ubication)}
+                                    >
+                                    </ActionButton>
                                 )}
                             </td>
                         </tr>
