@@ -1,13 +1,21 @@
-// src/components/incidents/ResolveIncidentModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
     const [solutionText, setSolutionText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    useEffect(() => {
+        // 🚫 Bloquea scroll
+        document.body.classList.add("no-scroll");
+
+        // ✅ Quita bloqueo al desmontar modal
+        return () => {
+            document.body.classList.remove("no-scroll");
+        };
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!solutionText.trim()) {
             alert("Debe ingresar la solución aplicada.");
             return;
@@ -15,8 +23,8 @@ function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
 
         try {
             setIsSubmitting(true);
-            await onConfirm(solutionText);  // Esperar que onConfirm termine
-            onClose(); // Solo cerrar si tuvo éxito
+            await onConfirm(solutionText);
+            onClose();
         } catch (error) {
             console.error("Error al resolver la incidencia:", error);
             alert("Error al enviar la solución.");
@@ -26,17 +34,19 @@ function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-                <h3 className="text-lg font-bold mb-4">Resolver Incidencia #{id_incident}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+            <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-xl">
+                <h3 className="mb-4 text-lg font-bold text-center">
+                    Resolver Incidencia #{String(id_incident).padStart(6, "0")}
+                </h3>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label htmlFor="solutionText" className="block text-gray-700 text-sm font-bold mb-2">
+                        <label htmlFor="solutionText" className="block mb-2 text-sm font-bold text-gray-700">
                             Solución Aplicada:
                         </label>
                         <textarea
                             id="solutionText"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
                             rows="4"
                             placeholder="Describa la solución aquí..."
                             value={solutionText}
@@ -44,11 +54,12 @@ function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
                             required
                         ></textarea>
                     </div>
+
                     <div className="flex justify-end space-x-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className="px-4 py-2 font-bold text-gray-800 bg-gray-300 rounded hover:bg-gray-400 focus:outline-none focus:shadow-outline"
                         >
                             Cancelar
                         </button>

@@ -216,7 +216,7 @@ router.post('/', async (req, res) => {
                                 color: #111827;
                                 text-align: center;
                                 margin-bottom: 20px;
-                            ">Tu incidencia ha sido recibida correctamente</h2>
+                            ">Tu incidencia ha sido recibida</h2>
 
                             <p style="font-size: 16px; color: #374151;">
                                 Pronto se te asignará un técnico para resolver tu incidencia.

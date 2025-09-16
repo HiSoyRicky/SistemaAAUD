@@ -108,24 +108,87 @@ router.put('/:id', async (req, res) => {
                     to: updatedIncident.technician_email,
                     subject: `🔧 Nueva incidencia asignada (#${formattedId})`,
                     html: `
-                        <h3>Hola ${updatedIncident.technician_full_name}, se te ha asignado una nueva incidencia:</h3>
-                        <p><strong>Incidencia N°:</strong> ${formattedId}</p>
-                        <p><strong>Reportado por:</strong> ${updatedIncident.reporter_name}</p>
-                        <p><strong>Ubicación:</strong> ${updatedIncident.ubication_name}</p>
-                        <p><strong>Departamento:</strong> ${updatedIncident.department_name}</p>
-                        <p><strong>Categoría:</strong> ${updatedIncident.category_name}</p>
-                        <p><strong>Otra categoría:</strong> ${updatedIncident.other_category_detail || 'N/A'}</p>
-                        <p><strong>Descripción:</strong> ${updatedIncident.description}</p>
-                        <p><strong>Fecha de creación:</strong> ${new Date(updatedIncident.creation_date).toLocaleString('es-PA')}</p>
-                        <p>Sistema de Incidencias AAUD</p>
-                        <p>
-                            <a href="${privateViewUrl}" style="display: inline-block; padding: 10px 15px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px;">Ver incidencia</a>
-                        </p>
-                        <p style="font-size: 0.8em; color: #666;">
-                            Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
-                            Para cualquier consulta, utilice el sistema de incidencias.<br/>
-                            Gracias.
-                        </p>
+                    <div style="
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background-color: #f9f9f9;
+                        padding: 20px;
+                    ">
+                        <div style="
+                            max-width: 600px;
+                            margin: auto;
+                            background-color: #ffffff;
+                            padding: 30px;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            border-top: 6px solid #2563eb;
+                        ">
+                            <h2 style="
+                                color: #111827;
+                                text-align: center;
+                                margin-bottom: 20px;
+                            ">Incidencia Asignada</h2>
+
+                            <p style="font-size: 16px; color: #374151;">
+                                Hola ${updatedIncident.technician_full_name}, se te ha asignado una nueva incidencia:
+                            </p>
+
+                            <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
+                                    <td style="padding: 8px;">${formattedId}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
+                                    <td style="padding: 8px;">${updatedIncident.reporter_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Ubicación:</td>
+                                    <td style="padding: 8px;">${updatedIncident.ubication_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Departamento:</td>
+                                    <td style="padding: 8px;">${updatedIncident.department_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Categoría:</td>
+                                    <td style="padding: 8px;">${updatedIncident.category_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Otra categoría:</td>
+                                    <td style="padding: 8px;">${updatedIncident.other_category_detail || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Descripción:</td>
+                                    <td style="padding: 8px;">${updatedIncident.description}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Fecha de creación:</td>
+                                    <td style="padding: 8px;">${updatedIncident.creation_date.toLocaleString('es-PA')}</td>
+                                </tr>
+                            </table>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${privateViewUrl}" style="
+                                    display: inline-block;
+                                    padding: 12px 25px;
+                                    background-color: #2563eb;
+                                    color: white;
+                                    text-decoration: none;
+                                    border-radius: 8px;
+                                    font-weight: bold;
+                                    transition: background-color 0.3s ease;
+                                " onmouseover="this.style.backgroundColor='#1e40af'" onmouseout="this.style.backgroundColor='#2563eb'">
+                                    Ver incidencia
+                                </a>
+                            </div>
+
+                            <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                                Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
+                                Para cualquier consulta, utilice el sistema de incidencias.<br/>
+                                Gracias.
+                            </p>
+                        </div>
+                    </div>
                     `
                 });
             }
@@ -134,28 +197,103 @@ router.put('/:id', async (req, res) => {
             if (currentStatus !== 3 && id_status === 3 && reporterEmail && !silent) {
                 const formattedId = id.toString().padStart(6, '0');
                 const token = generarTokenIncidencia(id, reporterEmail);
-                const publicViewUrl = `${frontendUrl}/incidencias/view?token=${token}`;
+                const publicViewUrl = `${frontendUrl}/public/incidencia/${formattedId}?token=${token}`;
+
                 await sendMail({
                     to: reporterEmail,
                     subject: `✅ Tu incidencia #${formattedId} ha sido resuelta`,
                     html: `
-                        <h3>Hola ${reporterName},</h3>
-                        <p>Tu incidencia ha sido resuelta.</p>
-                        <p><strong>Incidencia N°:</strong> ${formattedId}</p>
-                        <p><strong>Ubicación:</strong> ${updatedIncident.ubication_name}</p>
-                        <p><strong>Departamento:</strong> ${updatedIncident.department_name}</p>
-                        <p><strong>Categoría:</strong> ${updatedIncident.category_name}</p>
-                        <p><strong>Descripción:</strong> ${updatedIncident.description}</p>
-                        <p><strong>Solución:</strong> ${updatedIncident.solution || 'No proporcionada'}</p>
-                        <p>Puedes revisar más detalles en el sistema de incidencias.</p>
-                        <p>
-                            <a href="${publicViewUrl}" style="display: inline-block; padding: 10px 15px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px;">Ver incidencia</a>
-                        </p>
-                        <p style="font-size: 0.8em; color: #666;">
-                            Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
-                            Para cualquier consulta, utilice el sistema de incidencias.<br/>
-                            Gracias.
-                        </p>
+                    <div style="
+                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                background-color: #f9f9f9;
+                                padding: 20px;
+                            ">
+                        <div style="
+                                    max-width: 600px;
+                                    margin: auto;
+                                    background-color: #ffffff;
+                                    padding: 30px;
+                                    border-radius: 10px;
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                                    border-top: 6px solid #2563eb;
+                                ">
+                            <h2 style="
+                                        color: #111827;
+                                        text-align: center;
+                                        margin-bottom: 20px;
+                                    ">Incidencia Resuelta</h2>
+
+                            <p style="font-size: 16px; color: #374151;">
+                                Hola ${reporterName}, tu incidencia ha sido resuelta:
+                            </p>
+
+                            <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
+                                    <td style="padding: 8px;">${formattedId}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
+                                    <td style="padding: 8px;">${updatedIncident.reporter_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Ubicación:</td>
+                                    <td style="padding: 8px;">${updatedIncident.ubication_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Departamento:</td>
+                                    <td style="padding: 8px;">${updatedIncident.department_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Categoría:</td>
+                                    <td style="padding: 8px;">${updatedIncident.category_name}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Otra categoría:</td>
+                                    <td style="padding: 8px;">${updatedIncident.other_category_detail || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Descripción:</td>
+                                    <td style="padding: 8px;">${updatedIncident.description}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Fecha de creación:</td>
+                                    <td style="padding: 8px;">${updatedIncident.creation_date.toLocaleString('es-PA')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: bold;">Solución:</td>
+                                    <td style="padding: 8px;">${updatedIncident.solution}</td>
+                                </tr>
+                                <tr>
+                                <td style="padding: 8px; font-weight: bold;">Fecha de solución:</td>
+                                <td style="padding: 8px;">${updatedIncident.solution_date ? new Date(updatedIncident.solution_date).toLocaleDateString('es-PA') : 'N/A'}
+                                </td>
+                                </tr>
+
+                            </table>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${publicViewUrl}" style="
+                                            display: inline-block;
+                                            padding: 12px 25px;
+                                            background-color: #2563eb;
+                                            color: white;
+                                            text-decoration: none;
+                                            border-radius: 8px;
+                                            font-weight: bold;
+                                            transition: background-color 0.3s ease;
+                                        " onmouseover="this.style.backgroundColor='#1e40af'" onmouseout="this.style.backgroundColor='#2563eb'">
+                                    Ver incidencia
+                                </a>
+                            </div>
+
+                            <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                                Por favor, no responda a este correo. Este buzón no está monitoreado.<br />
+                                Para cualquier consulta, utilice el sistema de incidencias.<br />
+                                Gracias.
+                            </p>
+                        </div>
+                    </div>
                     `
                 });
             }
@@ -173,7 +311,7 @@ router.put('/:id', async (req, res) => {
         }
     } catch (err) {
         console.error('Error al actualizar incidencia:', err);
-        res.status(500).json({ error: 'Error al actualizar incidencia' });
+        res.status(500).json({ error: 'Error al actualizar incidencia', details: err.message });
     }
 });
 

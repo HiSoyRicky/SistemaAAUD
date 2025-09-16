@@ -1,8 +1,7 @@
 import React from 'react';
-import { Table, Button } from "react-bootstrap";
 import { formatDateToDDMMYYYY } from '@/utils/formatDate.js';
-import { Pencil, Trash2, Wrench, CheckCircle2 } from 'lucide-react';
 import Pagination from "@/components/Pagination";
+import ActionButton from '@/components/ui/ActionButton.jsx';
 
 // Función para obtener el nombre legible del estado
 const getStatusName = (id_status) => {
@@ -164,60 +163,50 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
 
                                     {/* Acciones según el tipo de usuario */}
                                     <td className={`${thClass} border`}>
-                                        <div className="flex items-center justify-center">
-                                            {/* Botón Ver detalles */}
-                                            <button
-                                                className="text-gray-600 hover:text-gray-800"
-                                                title={showExtraColumns ? "Ocultar columnas" : "Mostrar columnas"}
-                                            >
-                                                🔍
-                                            </button>
-
+                                        <div className="flex items-center justify-center gap-x-2"> {/* <- gap aquí */}
+                                        
                                             {/* Botón Asignar técnico */}
                                             {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
-                                                <button
-                                                    onClick={() => onAssign && onAssign(incident.id_incident)}
-                                                    className="text-yellow-600 hover:text-yellow-800"
-                                                    title="Asignar técnico"
-                                                >
-                                                    <Wrench className="w-5 h-5" />
-                                                </button>
+                                                <ActionButton
+                                                type={"assign"}
+                                                title="Asignar técnico"
+                                                onClick={() => item && onAssign(item)}
+                                            >
+                                            </ActionButton>
                                             )}
 
                                             {/* Botón Resolver */}
                                             {userType === 'tecnico' && incident.id_status !== 3 && (
-                                                <button
-                                                    onClick={() => onResolve && onResolve(incident.id_incident)}
-                                                    className="text-green-600 hover:text-green-800"
-                                                    title="Resolver"
-                                                >
-                                                    <CheckCircle2 className="w-5 h-5" />
-                                                </button>
+                                                <ActionButton
+                                                type={"resolve"}
+                                                title="Resolver"
+                                                onClick={() => item && onResolve(item)}
+                                            >
+                                            </ActionButton>
                                             )}
 
                                             {/* Botón Editar */}
                                             {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
-                                                <button
-                                                    onClick={() => onEdit && onEdit(incident)}
-                                                    className="text-blue-600 hover:text-blue-800"
-                                                    title="Editar"
-                                                >
-                                                    <Pencil className="w-5 h-5" />
-                                                </button>
+                                                <ActionButton
+                                                type={"edit"}
+                                                title="Editar incidencia"
+                                                onClick={() => item && onEdit(item)}
+                                            >
+                                            </ActionButton>
                                             )}
 
                                             {/* Botón Eliminar */}
                                             {userType === 'admin' && (
-                                                <button
-                                                    onClick={() => onDelete && onDelete(incident.id_incident)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                    title="Eliminar"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                                <ActionButton
+                                                type={"delete"}
+                                                title="Eliminar incidencia"
+                                                onClick={() => item && onDelete(item)}
+                                            >
+                                            </ActionButton>
                                             )}
                                         </div>
                                     </td>
+
                                 </tr>
                             ))
                         )}

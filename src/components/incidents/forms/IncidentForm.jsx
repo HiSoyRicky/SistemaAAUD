@@ -241,10 +241,12 @@ function IncidentForm({ onSubmit }) {
 
                 {formData.id_category === "4" && (
                     <div className="mb-4">
-                        <label htmlFor="other_category_detail" className="block mb-2 text-sm font-bold text-gray-700">Especifique otra categoría:</label>
+                        <label htmlFor="other_category_detail"
+                            className="block mb-2 text-sm font-bold text-gray-700">Especifique otra categoría:</label>
                         <input
                             type="text"
                             id="other_category_detail"
+                            name="other_category_detail"
                             value={formData.other_category_detail}
                             onChange={handleChange}
                             className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
