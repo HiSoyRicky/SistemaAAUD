@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
-import { Edit } from "lucide-react";
+import ActionButton from "@/components/ui/ActionButton";
 
 export default function StatusesManager() {
     const [statuses, setStatuses] = useState([]);
@@ -55,7 +55,7 @@ export default function StatusesManager() {
 
     // 🔹 Guardar edición
     const saveStatus = async (id) => {
-        if (!editingName.trim() || !editingBrand) return;
+        if (!editingName.trim()) return;
         try {
             await axios.put(`${import.meta.env.VITE_API_URL}/api/statuses/${id}`, { name: editingName });
             setEditingId(null);
@@ -87,6 +87,12 @@ export default function StatusesManager() {
                 </button>
             </div>
 
+            {successMessage && (
+                <div className="p-2 mb-4 text-green-800 bg-green-200 border border-green-800 rounded">
+                    {successMessage}
+                </div>
+            )}
+
             {/* Tabla */}
             <table className="p-1 bg-white rounded-lg shadow-md">
                 <thead className="bg-gray-100">
@@ -97,32 +103,35 @@ export default function StatusesManager() {
                     </tr>
                 </thead>
                 <tbody>
-                    {paginatedStatuses.map((m, index) => (
-                        <tr key={m.id}>
+                    {paginatedStatuses.map((s, index) => (
+                        <tr key={s.id}>
                             {/* Enumeración consecutiva */}
                             <td className="px-3 py-1 text-center border">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                             <td className="px-3 py-1 border">
-                                {editingId === m.id ? (
+                                {editingId === s.id ? (
                                     <input
                                         type="text"
                                         value={editingName}
                                         onChange={(e) => setEditingName(e.target.value)}
                                         className="w-full px-2 py-1 border rounded"
                                     />
-                                ) : m.name}
+                                ) : s.name}
                             </td>
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
-                                {editingId === m.id ? (
-                                    <button
-                                        onClick={() => saveStatus(m.id)}
-                                        className="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                                    >
-                                        Guardar
-                                    </button>
+                                {editingId === s.id ? (
+                                    <ActionButton
+                                        type={"save"}
+                                        value={editingName}
+                                        title="Guardar estado"
+                                        onChange={(e) => setEditingName(e.target.value)}
+                                        onClick={() => saveStatus(s.id)}
+                                    />
                                 ) : (
-                                    <button onClick={() => editStatus(m.id, m.name)} title="Editar modelo">
-                                        <Edit className="w-5 h-5 text-yellow-500" />
-                                    </button>
+                                    <ActionButton
+                                        type={"edit"}
+                                        title="Editar estado"
+                                        onClick={() => editStatus(s.id, s.name)}
+                                    />
                                 )}
                             </td>
                         </tr>
@@ -134,7 +143,7 @@ export default function StatusesManager() {
                 totalPages={totalPages}
                 onPageChange={(page) => setCurrentPage(page)}
             />
-            {successMessage && <div className="mt-2 text-green-600">{successMessage}</div>}
+
         </div>
     );
 }

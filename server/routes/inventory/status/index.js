@@ -4,6 +4,8 @@ const router = express.Router();
 
 // Importar rutas específicas
 const getStatus = require('./getStatus');
+const updateStatus = require('./updateStatus');
+const postStatus = require('./postStatus');
 
 
 
@@ -11,5 +13,7 @@ const getStatus = require('./getStatus');
 
 // Usar las rutas
 router.use(getStatus);
+router.use(updateStatus);
+router.use(postStatus);
 
 module.exports = router;
