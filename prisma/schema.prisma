@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bd_carnet {
+  id             Int       @id(map: "pk_bd_carnet") @default(autoincrement())
+  n_pos          Int
+  nombrecompleto String?   @db.VarChar(50)
+  cedula         String?   @db.VarChar(50)
+  departamento   String?   @db.VarChar(50)
+  cargo          String?   @db.VarChar(50)
+  tiposangre     String?   @db.VarChar(6)
+  sexo           String?   @db.VarChar(7)
+  alergico       String?   @db.VarChar(255)
+  afecciones     String?   @db.VarChar(255)
+  emergencia     String?   @db.VarChar(255)
+  estatus        String?   @db.VarChar(50)
+  fechaentrega   DateTime? @db.Date
+}
+
+model bd_incidents {
+  id                                      Int         @id(map: "pk_incidents") @default(autoincrement())
+  id_user                                 Int
+  reporter_name                           String      @db.VarChar(25)
+  email                                   String?     @db.VarChar(25)
+  id_ubication                            Int
+  id_department                           Int
+  description                             String      @db.VarChar(255)
+  id_category                             Int
+  other_category_detail                   String?     @db.VarChar(50)
+  creation_date                           DateTime
+  id_status                               Int
+  id_technician                           Int?
+  solution_date                           DateTime?
+  solution                                String      @db.VarChar(255)
+  categories                              categories  @relation(fields: [id_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_categories")
+  departments                             departments @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_departments")
+  status                                  status      @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_status")
+  ubications                              ubications  @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_ubications")
+  users_bd_incidents_id_userTousers       users       @relation("bd_incidents_id_userTousers", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users")
+  users_bd_incidents_id_technicianTousers users?      @relation("bd_incidents_id_technicianTousers", fields: [id_technician], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users1")
+}
+
+model bd_inventory {
+  id            Int         @id(map: "pk_bd_inventory") @default(autoincrement())
+  tag           String      @db.VarChar(50)
+  id_ubication  Int
+  id_department Int
+  user          String?     @db.VarChar(50)
+  id_device     Int
+  id_brand      Int
+  id_model      Int
+  serie         String      @db.VarChar(50)
+  ip            String?     @db.VarChar(50)
+  id_status     Int
+  transferdate  DateTime?   @db.Date
+  observation   String?     @db.VarChar(100)
+  brands        brands      @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
+  departments   departments @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
+  devices       devices     @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
+  models        models      @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
+  status        status      @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
+  ubications    ubications  @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
+}
+
+model brands {
+  id           Int            @id(map: "pk_brands") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  bd_inventory bd_inventory[]
+  models       models[]
+}
+
+model categories {
+  id           Int            @id(map: "pk_category") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  bd_incidents bd_incidents[]
+}
+
+model departments {
+  id           Int            @id(map: "pk_department") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  id_ubication Int?
+  bd_incidents bd_incidents[]
+  bd_inventory bd_inventory[]
+  ubications   ubications?    @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
+}
+
+model devices {
+  id           Int            @id(map: "pk_device") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  bd_inventory bd_inventory[]
+  models       models[]
+}
+
+model directions {
+  id   Int    @id(map: "pk_direction") @default(autoincrement())
+  name String @db.VarChar(50)
+}
+
+model models {
+  id           Int            @id(map: "pk_models") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  id_brand     Int
+  id_device    Int
+  bd_inventory bd_inventory[]
+  brands       brands         @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_brands")
+  devices      devices        @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
+  toners       toners[]
+}
+
+model roles {
+  id    Int     @id(map: "pk_roles") @default(autoincrement())
+  name  String  @db.VarChar(50)
+  users users[]
+}
+
+model status {
+  id           Int            @id(map: "pk_status") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  bd_incidents bd_incidents[]
+  bd_inventory bd_inventory[]
+}
+
+model toner_colors {
+  id     Int      @id(map: "pk_toner_color") @default(autoincrement())
+  name   String?  @db.VarChar(50)
+  toners toners[]
+}
+
+model toner_models {
+  id     Int      @id(map: "pk_toner_model") @default(autoincrement())
+  name   String   @db.VarChar(50)
+  toners toners[]
+}
+
+model toner_movements {
+  id            Int       @id(map: "pk_toner_movements") @default(autoincrement())
+  id_toner      Int
+  movement_type String    @db.VarChar(20)
+  quantity      Int
+  movement_date DateTime?
+  id_user       Int?
+  notes         String?   @db.VarChar(255)
+  toners        toners    @relation(fields: [id_toner], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toner_movements_toners")
+  users         users?    @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toner_movements_users")
+}
+
+model toners {
+  id               Int               @id(map: "pk_toners") @default(autoincrement())
+  id_printer_model Int
+  id_toner_model   Int
+  id_color         Int
+  stock            Int
+  status           String?           @db.VarChar(50)
+  last_update      DateTime?         @db.Date
+  toner_movements  toner_movements[]
+  models           models            @relation(fields: [id_printer_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toners_models")
+  toner_colors     toner_colors      @relation(fields: [id_color], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toners_toner_colors")
+  toner_models     toner_models      @relation(fields: [id_toner_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toners_toner_models")
+}
+
+model ubications {
+  id           Int            @id(map: "pk_ubication") @default(autoincrement())
+  name         String         @db.VarChar(50)
+  bd_incidents bd_incidents[]
+  bd_inventory bd_inventory[]
+  departments  departments[]
+}
+
+model users {
+  id                                             Int               @id(map: "pk_users") @default(autoincrement())
+  nombre_completo                                String            @db.VarChar(50)
+  username                                       String            @db.VarChar(50)
+  password                                       String?           @db.VarChar(255)
+  email                                          String?           @db.VarChar(50)
+  id_rol                                         Int
+  active                                         Int
+  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]    @relation("bd_incidents_id_userTousers")
+  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]    @relation("bd_incidents_id_technicianTousers")
+  toner_movements                                toner_movements[]
+  roles                                          roles             @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+}
