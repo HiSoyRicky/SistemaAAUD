@@ -1,5 +1,6 @@
 import React from "react";
 import ActionButton from "@/components/ui/ActionButton";
+import { de } from "zod/v4/locales";
 
 export default function BrandsTable({
     brands,
@@ -12,7 +13,14 @@ export default function BrandsTable({
     editingName,
     setEditingName,
     currentPage = 1,
-    itemsPerPage = 10 }) {
+    itemsPerPage = 10,
+    devices = [],
+    selectedDevice,
+    setSelectedDevice,
+    models = [],
+    editingDevice,
+    setEditingDevice
+}) {
 
     return (
         <div>

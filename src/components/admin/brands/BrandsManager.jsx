@@ -40,7 +40,9 @@ export default function BrandsManager() {
     const addBrand = async () => {
         if (!newBrand.trim()) return;
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/brands`, { name: newBrand });
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/brands`, {
+                name: newBrand
+            });
             setnewBrand("");
             fetchbrands();
         }
