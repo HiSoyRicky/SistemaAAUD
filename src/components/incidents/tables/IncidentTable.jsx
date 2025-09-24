@@ -34,7 +34,9 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
     const totalPages = Math.ceil(incidents.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedIncidents = incidents.slice(startIndex, endIndex);
+    const sortedIncidents = [...incidents].sort((a, b) => b.id_incident - a.id_incident);
+    const paginatedIncidents = sortedIncidents.slice(startIndex, endIndex);
+
 
 
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
@@ -136,7 +138,6 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
 
                                     {showExtraColumns && (
                                         <>
-
                                             {/* Técnico asignado */}
                                             <td className={`${thClass} border`}>
                                                 {incident.technician_full_name || (incident.id_technician ? `ID: ${incident.id_technician}` : <span title="Sin asignar">N/A</span>)}
@@ -163,50 +164,49 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
 
                                     {/* Acciones según el tipo de usuario */}
                                     <td className={`${thClass} border`}>
-                                        <div className="flex items-center justify-center gap-x-2"> {/* <- gap aquí */}
-                                        
+                                        <div className="flex items-center justify-center gap-x-2">
+
                                             {/* Botón Asignar técnico */}
                                             {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
                                                 <ActionButton
-                                                type={"assign"}
-                                                title="Asignar técnico"
-                                                onClick={() => item && onAssign(item)}
-                                            >
-                                            </ActionButton>
+                                                    type={"assign"}
+                                                    title="Asignar técnico"
+                                                    onClick={() => onAssign(incident.id_incident)}
+                                                >
+                                                </ActionButton>
                                             )}
 
                                             {/* Botón Resolver */}
                                             {userType === 'tecnico' && incident.id_status !== 3 && (
                                                 <ActionButton
-                                                type={"resolve"}
-                                                title="Resolver"
-                                                onClick={() => item && onResolve(item)}
-                                            >
-                                            </ActionButton>
+                                                    type={"resolve"}
+                                                    title="Resolver"
+                                                    onClick={() => onResolve(incident.id_incident)}
+                                                >
+                                                </ActionButton>
                                             )}
 
                                             {/* Botón Editar */}
                                             {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
                                                 <ActionButton
-                                                type={"edit"}
-                                                title="Editar incidencia"
-                                                onClick={() => item && onEdit(item)}
-                                            >
-                                            </ActionButton>
+                                                    type={"edit"}
+                                                    title="Editar incidencia"
+                                                    onClick={() => onEdit(incident)}
+                                                >
+                                                </ActionButton>
                                             )}
 
                                             {/* Botón Eliminar */}
                                             {userType === 'admin' && (
                                                 <ActionButton
-                                                type={"delete"}
-                                                title="Eliminar incidencia"
-                                                onClick={() => item && onDelete(item)}
-                                            >
-                                            </ActionButton>
+                                                    type={"delete"}
+                                                    title="Eliminar incidencia"
+                                                    onClick={() => onDelete(incident.id_incident)}
+                                                >
+                                                </ActionButton>
                                             )}
                                         </div>
                                     </td>
-
                                 </tr>
                             ))
                         )}
