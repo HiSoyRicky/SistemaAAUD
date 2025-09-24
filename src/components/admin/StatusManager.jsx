@@ -138,6 +138,7 @@ export default function StatusesManager() {
                     ))}
                 </tbody>
             </table>
+            
             <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

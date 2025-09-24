@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
 import ModelsTable from "./ModelsTable";
+import { de } from "zod/v4/locales";
 
 export default function ModelsManager() {
     const [models, setModels] = useState([]);
@@ -14,6 +15,12 @@ export default function ModelsManager() {
     const API_URL = `${import.meta.env.VITE_API_URL}/api/models`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    const [selectedDevice, setSelectedDevice] = useState("");
+    const [editingDevice, setEditingDevice] = useState("");
+
+    const [devices, setDevices] = useState([]);
+
 
     const sortedModels = [...models].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -32,6 +39,15 @@ export default function ModelsManager() {
         }
     };
 
+    const fetchDevices = async () => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/devices`);
+            setDevices(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const fetchBrands = async () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/brands`);
@@ -44,13 +60,18 @@ export default function ModelsManager() {
     useEffect(() => {
         fetchModels();
         fetchBrands();
+        fetchDevices();
     }, []);
 
-    // 🔹 Agregar nueva marca
+    // 🔹 Agregar nuevo modelo
     const addModel = async () => {
-        if (!newModel.trim() || !selectedBrand) return;
+        if (!newModel.trim() || !selectedBrand || !selectedDevice) return;
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/models`, { name: newModel });
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/models`, {
+                name: newModel,
+                id_brand: Number(selectedBrand),
+                id_device: Number(selectedDevice)
+            });
             setnewModel("");
             setSelectedBrand("");
             fetchModels();
@@ -61,25 +82,35 @@ export default function ModelsManager() {
     };
 
     // 🔹 Iniciar edición
-    const editModel = (id, name) => {
-        setEditingId(id);
-        setEditingName(name);
-        setEditingBrand(id_brand);
+    const editModel = (model) => {
+        setEditingId(model.id);
+        setEditingName(model.name);
+        setEditingBrand(model.brand_id != null ? Number(model.brand_id) : "");
+        setEditingDevice(model.device_id != null ? Number(model.device_id) : "");
     };
+
+    const [successMessage, setSuccessMessage] = useState("");
+
 
     // 🔹 Guardar edición
     const saveModel = async (id) => {
         if (!editingName.trim() || !editingBrand) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/models/${id}`, { name: editingName });
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/models/${id}`, {
+                name: editingName,
+                id_brand: editingBrand,
+                id_device: editingDevice
+            });
             setEditingId(null);
             setEditingName("");
             setEditingBrand("");
+            setEditingDevice("");
+            setSelectedDevice("");
             fetchModels();
             setSuccessMessage("Ubicación actualizada correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
-            console.error("Error al guardar dispositivo:", err);
+            console.error("Error:", err.response?.data || err.message);
         }
     };
 
@@ -88,6 +119,11 @@ export default function ModelsManager() {
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Gestión de Modelos</h2>
             </div>
+
+            {successMessage && (
+                <div className="p-2 mb-2 text-green-800 bg-green-200 rounded">{successMessage}</div>
+            )}
+
 
             <ModelsTable
                 models={paginatedModels}
@@ -99,8 +135,19 @@ export default function ModelsManager() {
                 editingBrand={editingBrand}
                 setEditingName={setEditingName}
                 setEditingBrand={setEditingBrand}
+                newModel={newModel}
+                setnewModel={setnewModel}
+                addModel={addModel}
+                selectedBrand={selectedBrand}
+                setSelectedBrand={setSelectedBrand}
                 editModel={editModel}
                 saveModel={saveModel}
+
+                selectedDevice={selectedDevice}
+                setSelectedDevice={setSelectedDevice}
+                editingDevice={editingDevice}
+                setEditingDevice={setEditingDevice}
+                devices={devices}
             />
 
 
