@@ -1,12 +1,12 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userType, setUserType] = useState(null); // 'admin', 'tecnico', 'secretaria', 'trabajador'
+  const [userType, setUserType] = useState(null);
   const [loggedUserName, setLoggedUserName] = useState(null);
   const [loggedUserId, setLoggedUserId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +65,15 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Login failed:', error.response?.data || error.message);
       logout();
+
+      // 429 con retryAfter
+      if (error.response?.status === 429) {
+        throw {
+          message: error.response.data?.error || "Demasiados intentos fallidos.",
+          retryAfter: error.response.data?.retryAfter || 0
+        };
+      }
+
       throw new Error(error.response?.data?.error || 'Error desconocido al iniciar sesión');
     }
   };
