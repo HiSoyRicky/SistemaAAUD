@@ -1,65 +1,61 @@
 // server/routes/inventory/getInventory.js
 const express = require('express');
+const { prisma } = require('../../Prisma');
 const router = express.Router();
-const { pool } = require('../../db/db');
 
 router.get('/', async (req, res) => {
     const { search } = req.query;
-    let params = [];
-
-    let query = `
-        SELECT 
-            inv.id,
-            inv.tag,
-            inv."user",
-            inv.serie,
-            inv.ip,
-            inv.transferdate,
-            inv.observation,
-
-            ubi.id AS id_ubication,
-            ubi.name AS ubication_name,
-
-            dep.id AS id_department,
-            dep.name AS department_name,
-
-            dev.id AS id_device,
-            dev.name AS device_name,
-
-            bra.id AS id_brand,
-            bra.name AS brand_name,
-
-            mod.id AS id_model,
-            mod.name AS model_name,
-
-            sta.id AS id_status,
-            sta.name AS status_name
-        FROM BD_Inventory inv
-        LEFT JOIN ubications ubi ON inv.id_ubication = ubi.id
-        LEFT JOIN departments dep ON inv.id_department = dep.id
-        LEFT JOIN devices dev ON inv.id_device = dev.id
-        LEFT JOIN brands bra ON inv.id_brand = bra.id
-        LEFT JOIN models mod ON inv.id_model = mod.id
-        LEFT JOIN status sta ON inv.id_status = sta.id
-    `;
-
-    if (search) {
-        query += `
-            WHERE inv.serie ILIKE $1
-            OR inv.tag ILIKE $1
-            OR dev.name ILIKE $1
-            OR bra.name ILIKE $1
-            OR mod.name ILIKE $1
-            OR dep.name ILIKE $1
-            OR ubi.name ILIKE $1
-            OR inv."user" ILIKE $1
-        `;
-        params.push(`%${search}%`);
-    }
 
     try {
-        const result = await pool.query(query, params);
-        res.json(result.rows);
+        const inventory = await prisma.bd_inventory.findMany({
+            where: search
+                ? {
+                    OR: [
+                        { serie: { contains: search, mode: 'insensitive' } },
+                        { tag: { contains: search, mode: 'insensitive' } },
+                        { user: { contains: search, mode: 'insensitive' } },
+                        { devices: { name: { contains: search, mode: 'insensitive' } } },
+                        { brands: { name: { contains: search, mode: 'insensitive' } } },
+                        { models: { name: { contains: search, mode: 'insensitive' } } },
+                        { departments: { name: { contains: search, mode: 'insensitive' } } },
+                        { ubications: { name: { contains: search, mode: 'insensitive' } } },
+                    ],
+                }
+                : {},
+            include: {
+                devices: { select: { id: true, name: true } },
+                brands: { select: { id: true, name: true } },
+                models: { select: { id: true, name: true } },
+                departments: { select: { id: true, name: true } },
+                ubications: { select: { id: true, name: true } },
+                status: { select: { id: true, name: true } },
+            },
+        });
+
+        // Mapear relaciones al formato que tu frontend espera
+        const formattedInventory = inventory.map(item => ({
+            id: item.id,
+            tag: item.tag,
+            user: item.user,
+            serie: item.serie,
+            ip: item.ip,
+            transferdate: item.transferdate,
+            observation: item.observation,
+            id_ubication: item.id_ubication,
+            ubication_name: item.ubications?.name || null,
+            id_department: item.id_department,
+            department_name: item.departments?.name || null,
+            id_device: item.id_device,
+            device_name: item.devices?.name || null,
+            id_brand: item.id_brand,
+            brand_name: item.brands?.name || null,
+            id_model: item.id_model,
+            model_name: item.models?.name || null,
+            id_status: item.id_status,
+            status_name: item.status?.name || null,
+        }));
+
+        res.json(formattedInventory);
     } catch (err) {
         console.error('❌ Error al obtener dispositivos:', err.message);
         res.status(500).json({ error: 'Error al obtener dispositivos', details: err.message });

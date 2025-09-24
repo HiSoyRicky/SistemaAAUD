@@ -2,21 +2,30 @@
 // server/Server.js
 // Autor: Ricardo Vargas
 // Fecha de inicio 07/07/2025
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
+const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const FRONTEND_URL = process.env.FRONTEND_BASE_URL;
+const { prisma } = require('../src/generated/prisma');
 require('dotenv').config();
 
 const app = express();
+
+// Puerto
 const port = process.env.PORT || 3000;
 
 // Crear servidor HTTP para Express y Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.VITE_API_URL,
+    origin: [FRONTEND_URL, "http://localhost:5173"],
     methods: ['GET', 'POST'],
   },
   transports: ['websocket', 'polling'],
@@ -40,11 +49,48 @@ const inventoryRouter = require('./routes/inventory');
 const brandsRouter = require('./routes/inventory/brands');
 const devicesRouter = require('./routes/inventory/devices');
 const modelsRouter = require('./routes/inventory/models');
-const statusRouter = require('./routes/inventory/status');
+const statusRouter = require('./routes/AAUD/status');
+
+// Seguridad HTTP con Helmet
+app.use(helmet());
+
+//Compresión gzip
+app.use(compression());
+
+// Logs de peticiones (solo en dev)
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan('tiny', {
+    skip: (req, res) => res.statusCode < 400
+  }));
+}
 
 // Middleware
-app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use(cors({
+  origin: [FRONTEND_URL, "http://localhost:5173"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+}));
+
+// Limite de peticiones
+const loginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minutos
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    // Obtenemos el tiempo restante en milisegundos
+    const retryAfterSec = Math.ceil(res.getHeader('Retry-After') || 5 * 60);
+
+    res.status(429).json({
+      error: "Demasiados intentos fallidos.",
+      retryAfter: retryAfterSec
+    });
+  }
+});
+
+//Aplicar el límite solo a login
+app.use('/api/login', loginLimiter);
 
 // Rutas
 app.use('/api', authRouter);
@@ -89,6 +135,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+
   });
 });
 

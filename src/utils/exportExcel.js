@@ -20,22 +20,27 @@ export async function exportIncidentsToExcel(incidents) {
         { header: 'Fecha de creación', key: 'fecha_creacion', width: 25 },
         { header: 'Estado', key: 'estado', width: 12 },
         { header: 'Técnico', key: 'tecnico', width: 25 },
-        { header: 'Fecha de solución', key: 'fecha_solucion', width: 20 },
+        { header: 'Fecha de solución', key: 'fecha_solucion', width: 25 },
         { header: 'Solución', key: 'solucion', width: 40 },
     ];
+
+    // Ordenar por ID descendente (más recientes primero)
+    incidents.sort((a, b) => (b.id_incident || 0) - (a.id_incident || 0));
 
     worksheet.columns = columns;
 
     // Mapea incidentes a objetos con claves matching keys de columnas
     const rows = incidents.map((i) => {
-        const fechaCreacion = new Date(i.creation_date);
-        const fechaCreacionStr = formatDateToDDMMYYYY(fechaCreacion.toISOString()); // 'DD/MM/YYYY'
-
-        // Hora en formato HH:mm:ss, opcional incluir segundos si quieres
-        fechaCreacion.toLocaleTimeString('es-PA', { hour12: true });
+        const fechaCreacion = i.creation_date ? new Date(i.creation_date) : null;
+        const fechaCreacionStr = fechaCreacion
+            ? formatDateToDDMMYYYY(fechaCreacion.toISOString())
+            : 'N/A';
+        const horaCreacionStr = fechaCreacion
+            ? fechaCreacion.toLocaleTimeString('es-PA', { hour12: true })
+            : '';
 
         return {
-            id: i.id.toString().padStart(6, '0'),
+            id: i.id_incident ? i.id_incident.toString().padStart(6, '0') : '',
             usuario: i.reporter_name || `Usuario ID: ${i.id_user}`,
             correo: i.reporter_email || 'N/A',
             ubicacion: i.ubication_name || 'N/A',
@@ -51,7 +56,7 @@ export async function exportIncidentsToExcel(incidents) {
                 ? (() => {
                     const fSol = new Date(i.solution_date);
                     const fSolStr = formatDateToDDMMYYYY(fSol.toISOString());
-                    const hSolStr = fSol.toLocaleTimeString('es-PA', { hour12: false });
+                    const hSolStr = fSol.toLocaleTimeString('es-PA', { hour12: true });
                     return `${fSolStr} ${hSolStr}`;
                 })()
                 : 'N/A',

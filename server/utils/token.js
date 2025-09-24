@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db/db');
 
-const secretKey = process.env.JWT_SECRET || 'clave_super_secreta';
+const secretKey = process.env.JWT_SECRET;
 
 // Generar token para acceso público a una incidencia
 function generarTokenIncidencia(id, email) {

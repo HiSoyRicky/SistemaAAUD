@@ -15,6 +15,12 @@ router.post("/", async (req, res) => {
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error(err);
+
+        // Si es un error de UNIQUE constraint
+        if (err.code === '23505') {
+            return res.status(409).json({ error: "La marca ya existe" });
+        }
+
         res.status(500).json({ error: "Error al agregar marca" });
     }
 });

@@ -3,20 +3,30 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { pool } = require('../db/db');
 const jwt = require('jsonwebtoken');
-const secretKey = process.env.JWT_SECRET || 'clave_super_secreta';
+const Joi = require('joi');
+const { tr } = require('zod/v4/locales');
+
+const secretKey = process.env.JWT_SECRET;
+
+const registerSchema = Joi.object({
+    username: Joi.string().min(3).max(30).required(),
+    password: Joi.string().min(8).required(),
+    nombre_completo: Joi.string().min(3).max(100).required(),
+    id_rol: Joi.number().integer().min(1).required()
+});
+
+const loginSchema = Joi.object({
+    username: Joi.string().required(),
+    password: Joi.string().required()
+});
 
 router.post('/register', async (req, res) => {
-    const { username, password, nombre_completo, id_rol } = req.body;
-
-    if (!username || !password || !nombre_completo || !id_rol) {
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
-    }
-
-    if (password.length < 8) {
-        return res.status(400).json({ error: 'Contraseña debe tener al menos 8 caracteres' });
-    }
-
     try {
+        // Validar datos con Joi
+        await registerSchema.validateAsync(req.body, { abortEarly: false });
+
+        const { username, password, nombre_completo, id_rol } = req.body;
+
         // Chequea si rol existe
         const rolExists = await pool.query('SELECT id FROM roles WHERE id = $1', [id_rol]);
         if (rolExists.rows.length === 0) {
@@ -41,6 +51,10 @@ router.post('/register', async (req, res) => {
 
         res.json({ mensaje: 'Usuario registrado exitosamente', usuario: newUser.rows[0] });
     } catch (err) {
+        if (err.isJoi) {
+            // Error de validación Joi
+            return res.status(400).json({ error: err.details.map(d => d.message).join(', ') });
+        }
         console.error('❌ Error al registrar:', err.message);
         res.status(500).json({ error: 'Error al registrar' });
     }
@@ -49,10 +63,10 @@ router.post('/register', async (req, res) => {
 // Endpoint para autenticar usuario
 router.post('/login', async (req, res) => {
     try {
+        // Validar datos con Joi
+        await loginSchema.validateAsync(req.body, { abortEarly: false });
+
         const { username, password } = req.body;
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
-        }
 
         const result = await pool.query(
             'SELECT id, nombre_completo, id_rol, password FROM users WHERE username = $1 AND active = 1',
@@ -78,8 +92,11 @@ router.post('/login', async (req, res) => {
         const { password: _, ...userWithoutPassword } = user;
         res.json({ mensaje: 'Login exitoso', usuario: userWithoutPassword, token });
     } catch (err) {
+        if (err.isJoi) {
+            return res.status(400).json({ error: err.details.map(d => d.message).join(', ') });
+        }
         console.error('Error al autenticar usuario:', err);
-        res.status(500).json({ error: 'Error del servidor'});
+        res.status(500).json({ error: 'Error del servidor' });
     }
 });
 

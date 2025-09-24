@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const { getIncidentByToken } = require('../../utils/token');
-const AppError = require('../../utils/AppError');
 
 // Endpoint para obtener incidencia pública por token
 router.get('/public/:token', async (req, res, next) => {
