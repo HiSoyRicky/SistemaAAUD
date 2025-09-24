@@ -52,9 +52,24 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         fetchOptions();
     }, []);
 
-    // 🔹 Filtrar modelos según la marca seleccionada
-    const filteredModels = options.models.filter((m) => String(m.id_brand) === String(formData.id_brand));
+    // Filtra IDs de marcas por el equipo seleccionado
+    const filteredBrandIds = options.models
+        .filter(m => String(m.id_device) === String(formData.id_device))
+        .map(m => m.id_brand);
 
+    // Filtra marcas por el equipo seleccionado
+    const filteredBrands = options.brands.filter(b =>
+        filteredBrandIds.includes(b.id)
+    );
+
+    // Filtra modelos por marca Y por el equipo seleccionado
+    const filteredModels = options.models.filter(
+        (m) =>
+            String(m.id_brand) === String(formData.id_brand) &&
+            String(m.id_device) === String(formData.id_device)
+    );
+
+    // Manejo de cambios en los campos del formulario
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === 'transferDateInput') {
@@ -71,6 +86,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         setErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
+    // Manejo de cambios en ubicación y departamento desde UbiDepSelector
     const handleUbiDepChange = ({ id_ubication, id_department }) => {
         setFormData((prev) => ({
             ...prev,
@@ -80,6 +96,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         setErrors((prev) => ({ ...prev, id_ubication: '', id_department: '' }));
     };
 
+    // Validación y envío del formulario
     const handleSubmit = (e) => {
         e.preventDefault();
         const newErrors = {};
@@ -105,7 +122,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         }
     };
 
-    if (fetchError) { // Agregado: Muestra error si fetch falla, para UI feedback.**
+    // Manejo de error en fetch de opciones
+    if (fetchError) {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
                 <div className="w-full max-w-lg p-6 bg-white shadow-xl rounded-xl">
@@ -161,8 +179,9 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 handleChange(e);
                                 setFormData((prev) => ({ ...prev, id_model: '' }));
                             }}
-                            options={options.brands.map((b) => ({ id: b.id, name: b.name }))}
+                            options={filteredBrands.map((b) => ({ id: b.id, name: b.name }))}
                             error={errors.id_brand}
+                            disabled={!formData.id_device}
                         />
 
                         {/* Modelo */}
@@ -207,7 +226,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         </div>
 
                         {/* Observaciones */}
-                        <TextAreaField label="Observaciones" name="observation" value={formData.observation} onChange={handleChange} />
+                        <TextAreaField label="Observaciones / Ubicación Anterior" name="observation" value={formData.observation} onChange={handleChange} />
 
                         <div className="flex justify-end gap-3 mt-4">
                             <button

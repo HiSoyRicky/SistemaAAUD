@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { formatDateToDDMMYYYY } from '@/utils/formatDate';
 import useAuth from '@/hooks/useAuth';
 import ActionButton from "@/components/ui/ActionButton";
+import Pagination from '@/components/Pagination';
 
-function InventoryTable({ inventory, onPrint, onEdit }) {
+function InventoryTable({ inventory, onPrint, onEdit, search }) {
     const itemsPerPage = 15;
     const [currentPage, setCurrentPage] = useState(1);
     const [showExtraColumns, setShowExtraColumns] = useState(false);
@@ -13,13 +14,14 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
     const thClass = "px-4 py-0 text-center text-sm text-gray-700 border";
 
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
     const toggleExtraColumns = () => {
         setShowExtraColumns(prev => !prev);
     };
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
+
 
     // estado para filtros
     const [filters, setFilters] = useState({
@@ -35,7 +37,7 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
     // función para actualizar un filtro
     const handleFilterChange = (column, value) => {
         setFilters(prev => ({ ...prev, [column]: value }));
-        setCurrentPage(1); // volver a primera página
+        setCurrentPage(1);
     };
 
     // aplicar filtros antes de paginar
@@ -103,8 +105,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
-                                    {options.ubication_name.map(val => (
-                                        <option key={val} value={val}>{val}</option>
+                                    {options.ubication_name.map((val, idx) => (
+                                        <option key={`${val}-${idx}`} value={val}>
+                                            {val}
+                                        </option>
                                     ))}
                                 </select>
                             </th>
@@ -118,8 +122,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
-                                    {options.department_name.map(val => (
-                                        <option key={val} value={val}>{val}</option>
+                                    {options.department_name.map((val, idx) => (
+                                        <option key={`${val}-${idx}`} value={val}>
+                                            {val}
+                                        </option>
                                     ))}
                                 </select>
                             </th>
@@ -132,8 +138,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
-                                    {options.device_name.map(val => (
-                                        <option key={val} value={val}>{val}</option>
+                                    {options.device_name.map((val, idx) => (
+                                        <option key={`${val}-${idx}`} value={val}>
+                                            {val}
+                                        </option>
                                     ))}
                                 </select>
                             </th>
@@ -145,8 +153,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
-                                    {options.brand_name.map(val => (
-                                        <option key={val} value={val}>{val}</option>
+                                    {options.brand_name.map((val, idx) => (
+                                        <option key={`${val}-${idx}`} value={val}>
+                                            {val}
+                                        </option>
                                     ))}
                                 </select>
                             </th>
@@ -158,8 +168,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
-                                    {options.model_name.map(val => (
-                                        <option key={val} value={val}>{val}</option>
+                                    {options.model_name.map((val, idx) => (
+                                        <option key={`${val}-${idx}`} value={val}>
+                                            {val}
+                                        </option>
                                     ))}
                                 </select>
                             </th>
@@ -173,8 +185,10 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                                     className="w-full mt-1 text-xs text-center border rounded"
                                 >
                                     <option value="">Todos</option>
-                                    {options.status_name.map(val => (
-                                        <option key={val} value={val}>{val}</option>
+                                    {options.status_name.map((val, idx) => (
+                                        <option key={`${val}-${idx}`} value={val}>
+                                            {val}
+                                        </option>
                                     ))}
                                 </select>
                             </th>
@@ -249,68 +263,12 @@ function InventoryTable({ inventory, onPrint, onEdit }) {
                 </table>
             </div>
 
-
-            {/* Controles de paginación con saltos inteligentes */}
-            {
-                totalPages > 1 && (
-                    <div className="flex justify-center mt-4">
-                        {/* Botón Anterior */}
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 text-gray-700 bg-gray-200 rounded disabled:opacity-50"
-                        >
-                            Anterior
-                        </button>
-
-                        {/* Lógica de páginas */}
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                            .filter((page) => {
-                                // Mostrar siempre primera, última y las cercanas a la actual
-                                return (
-                                    page === 1 ||
-                                    page === totalPages ||
-                                    (page >= currentPage - 2 && page <= currentPage + 2)
-                                );
-                            })
-                            .reduce((acc, page, idx, arr) => {
-                                // Insertar "..." cuando haya saltos
-                                if (idx > 0 && page - arr[idx - 1] > 1) {
-                                    acc.push("...");
-                                }
-                                acc.push(page);
-                                return acc;
-                            }, [])
-                            .map((item, index) =>
-                                item === "..." ? (
-                                    <span key={`dots-${index}`} className="px-2">
-                                        ...
-                                    </span>
-                                ) : (
-                                    <button
-                                        key={item}
-                                        onClick={() => handlePageChange(item)}
-                                        className={`px-3 py-1 rounded ${currentPage === item
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-gray-100 text-gray-700 hover:bg-gray-300"
-                                            }`}
-                                    >
-                                        {item}
-                                    </button>
-                                )
-                            )}
-
-                        {/* Botón Siguiente */}
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 text-gray-700 bg-gray-200 rounded disabled:opacity-50"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                )
-            }
+            {/* Paginación */}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+            />
 
             <div className="flex justify-center mt-2">
                 <button

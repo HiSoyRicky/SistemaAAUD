@@ -126,10 +126,6 @@ function InventoryPage() {
         exportInventoryToExcel(devices);
     };
 
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
     const [filters, setFilters] = useState({
         ubication: '',
         department: '',
@@ -172,8 +168,10 @@ function InventoryPage() {
                             type="text"
                             placeholder="Buscar por Serie, Marbete o Nombre"
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="border px-2 h-8 rounded text-sm flex-1 min-w-[200px]"
+                            onChange={(e) => {
+                                setSearch(e.target.value)
+                            }}
+                            className="border px-3 h-8 rounded text-sm flex-1 min-w-[300px] focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
                         <button
                             onClick={loadDevices}
@@ -261,6 +259,7 @@ function InventoryPage() {
                 onPrint={handlePreparePrint}
                 onEdit={editDevice}
                 authData={authData}
+                search={search}
             />
 
             {/* Modal para editrar equipo */}
