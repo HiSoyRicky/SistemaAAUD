@@ -16,3 +16,5 @@ docs/tree.txt
 # Ignorar archivos de tareas pendientes
 All.md
 
+# Ignorar archivos generados por Prisma
+/src/generated/prisma

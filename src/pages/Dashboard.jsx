@@ -49,19 +49,19 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex max-h-screen bg-gray-50">
 
       {/* Contenido principal */}
       <main className="w-full pt-4 pb-12">
         <div className="w-full px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
 
           {/* Encabezado */}
-          <h1 className="mb-6 text-3xl font-bold text-gray-800">Dashboard</h1>
+          <h1 className="mb-2 text-3xl font-bold text-gray-800">Dashboard</h1>
 
           {/* Estadísticas en Cards */}
           <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex flex-col items-center justify-center p-4 text-center bg-white rounded shadow">
-              <h3 className="mb-2 text-gray-500">Total incidencias</h3>
+              <h3 className="mb-2 text-gray-500">Total</h3>
               <p className="text-2xl font-bold text-gray-800">{totalIncidences}</p>
             </div>
             <div className="flex flex-col items-center justify-center p-4 text-center bg-white rounded shadow">
@@ -90,49 +90,6 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Botones para tablas */}
-          <div className="flex justify-center gap-4 mb-6">
-            <button
-              className="px-4 py-2 text-white transition bg-gray-600 rounded hover:bg-gray-500"
-              onClick={() => setShowTable(!showTable)}
-            >
-              {showTable ? "Ocultar tabla de incidencias" : "Mostrar tabla de incidencias"}
-            </button>
-            <button
-              className="px-4 py-2 text-white transition bg-gray-800 rounded hover:bg-gray-700"
-              onClick={() => setShowInventory(!showInventory)}
-            >
-              {showInventory ? "Ocultar inventario" : "Mostrar inventario"}
-            </button>
-          </div>
-
-          {/* Tabla de incidencias */}
-          {showTable && (
-            <div className="p-4 bg-white rounded shadow">
-              {loadingIncidences ? (
-                <p className="text-lg text-center text-gray-600">Cargando...</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <IncidentTable incidents={incidences} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* InventoryTable */}
-          {showInventory && (
-            <div className="p-4 mb-6 bg-white rounded shadow">
-              {loadingDevices ? (
-                <p className="text-lg text-center text-gray-600">Cargando inventario...</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <InventoryTable inventory={devices} />
-                </div>
-              )}
-            </div>
-          )}
-
         </div>
       </main>
     </div>
