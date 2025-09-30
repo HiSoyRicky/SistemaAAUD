@@ -1,28 +1,66 @@
+// updateBrands.js
 const express = require("express");
 const router = express.Router();
-const { pool } = require("../../../db/db"); // Ajusta según tu estructura
+const { prisma } = require("../../../Prisma");
+const AppError = require("../../../utils/AppError");
+const catchAsync = require("../../../utils/catchAsync");
+const { body, validationResult } = require("express-validator");
+
+const validateBrand = [
+    body("name").notEmpty().withMessage("El nombre es requerido"),
+];
 
 // PUT actualizar marca
-router.put("/:id", async (req, res) => {
+router.put("/:id", validateBrand, catchAsync(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            errors: errors.array()
+        });
+    }
+
     const id = parseInt(req.params.id, 10);
     const { name } = req.body;
 
-    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
-    if (!name) return res.status(400).json({ error: "Nombre es requerido" });
+    if (isNaN(id)) throw new AppError("ID inválido", 400);
+    if (!name) throw new AppError("Nombre es requerido", 400);
 
-    try {
-        const result = await pool.query(
-            "UPDATE brands SET name=$1 WHERE id=$2 RETURNING *",
-            [name, id]
-        );
-        if (result.rowCount === 0)
-            return res.status(404).json({ error: "Marca no encontrada" });
+    // Verificar si la marca existe
+    const existingBrand = await prisma.brands.findUnique({
+        where: { id: parseInt(id) }
+    });
 
-        res.json({ message: "Marca actualizada correctamente", brand: result.rows[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Error al actualizar marca" });
+    if (!existingBrand) {
+        throw new AppError('Marca no encontrada', 404);
     }
-});
+
+    // Verificar si el nuevo nombre ya existe (excepto para la marca actual)
+    const duplicateBrand = await prisma.brands.findFirst({
+        where: {
+            name: name.trim(),
+            id: { not: parseInt(id) } // Excluir la marca actual
+        }
+    });
+
+    if (duplicateBrand) {
+        throw new AppError('Ya existe una marca con este nombre', 409);
+    }
+
+    // Actualizar la marca
+    const updatedBrand = await prisma.brands.update({
+        where: { id: parseInt(id) },
+        data: {
+            name: name.trim()
+        }
+    });
+
+    res.json({
+        success: true,
+        message: 'Marca actualizada exitosamente',
+        brand: updatedBrand
+    });
+
+}));
 
 module.exports = router;

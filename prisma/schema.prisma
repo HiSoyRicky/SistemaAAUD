@@ -71,7 +71,7 @@ model bd_inventory {
 
 model brands {
   id           Int            @id(map: "pk_brands") @default(autoincrement())
-  name         String         @db.VarChar(50)
+  name         String         @unique @db.VarChar(50)
   bd_inventory bd_inventory[]
   models       models[]
 }
@@ -127,42 +127,15 @@ model status {
   bd_inventory bd_inventory[]
 }
 
-model toner_colors {
-  id     Int      @id(map: "pk_toner_color") @default(autoincrement())
-  name   String?  @db.VarChar(50)
-  toners toners[]
-}
-
-model toner_models {
-  id     Int      @id(map: "pk_toner_model") @default(autoincrement())
-  name   String   @db.VarChar(50)
-  toners toners[]
-}
-
-model toner_movements {
-  id            Int       @id(map: "pk_toner_movements") @default(autoincrement())
-  id_toner      Int
-  movement_type String    @db.VarChar(20)
-  quantity      Int
-  movement_date DateTime?
-  id_user       Int?
-  notes         String?   @db.VarChar(255)
-  toners        toners    @relation(fields: [id_toner], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toner_movements_toners")
-  users         users?    @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toner_movements_users")
-}
-
 model toners {
-  id               Int               @id(map: "pk_toners") @default(autoincrement())
-  id_printer_model Int
-  id_toner_model   Int
-  id_color         Int
+  id               Int       @id(map: "pk_toners") @default(autoincrement())
   stock            Int
-  status           String?           @db.VarChar(50)
-  last_update      DateTime?         @db.Date
-  toner_movements  toner_movements[]
-  models           models            @relation(fields: [id_printer_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toners_models")
-  toner_colors     toner_colors      @relation(fields: [id_color], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toners_toner_colors")
-  toner_models     toner_models      @relation(fields: [id_toner_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_toners_toner_models")
+  status           String?   @db.VarChar(50)
+  last_update      DateTime? @db.Date
+  toner_model      String?   @db.VarChar(20)
+  color            String?   @db.VarChar(10)
+  id_printer_model Int?
+  models           models?   @relation(fields: [id_printer_model], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model ubications {
@@ -174,15 +147,14 @@ model ubications {
 }
 
 model users {
-  id                                             Int               @id(map: "pk_users") @default(autoincrement())
-  nombre_completo                                String            @db.VarChar(50)
-  username                                       String            @db.VarChar(50)
-  password                                       String?           @db.VarChar(255)
-  email                                          String?           @db.VarChar(50)
+  id                                             Int            @id(map: "pk_users") @default(autoincrement())
+  nombre_completo                                String         @db.VarChar(50)
+  username                                       String         @db.VarChar(50)
+  password                                       String?        @db.VarChar(255)
+  email                                          String?        @db.VarChar(50)
   id_rol                                         Int
   active                                         Int
-  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]    @relation("bd_incidents_id_userTousers")
-  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]    @relation("bd_incidents_id_technicianTousers")
-  toner_movements                                toner_movements[]
-  roles                                          roles             @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+  bd_incidents_bd_incidents_id_userTousers       bd_incidents[] @relation("bd_incidents_id_userTousers")
+  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[] @relation("bd_incidents_id_technicianTousers")
+  roles                                          roles          @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
 }

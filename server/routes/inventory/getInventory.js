@@ -2,11 +2,11 @@
 const express = require('express');
 const { prisma } = require('../../Prisma');
 const router = express.Router();
+const catchAsync = require('../../utils/catchAsync');
 
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res) => {
     const { search } = req.query;
 
-    try {
         const inventory = await prisma.bd_inventory.findMany({
             where: search
                 ? {
@@ -56,10 +56,7 @@ router.get('/', async (req, res) => {
         }));
 
         res.json(formattedInventory);
-    } catch (err) {
-        console.error('❌ Error al obtener dispositivos:', err.message);
-        res.status(500).json({ error: 'Error al obtener dispositivos', details: err.message });
-    }
-});
+
+}));
 
 module.exports = router;

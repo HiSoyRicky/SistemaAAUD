@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import BrandsTable from "./BrandsTable";
-import SuccessMessage from "@/components/SuccessMessage";
 import Pagination from "@/components/Pagination";
 
 export default function BrandsManager() {
@@ -14,13 +13,7 @@ export default function BrandsManager() {
     const API_URL = `${import.meta.env.VITE_API_URL}/api/brands`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-
-    const sortedBrands = [...brands].sort((a, b) => a.name.localeCompare(b.name));
-
-    const totalPages = Math.ceil(sortedBrands.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedBrands = sortedBrands.slice(startIndex, endIndex);
+    const [search, setSearch] = useState("");
 
     // 🔹 Cargar dispositivos desde backend
     const fetchbrands = async () => {
@@ -71,6 +64,23 @@ export default function BrandsManager() {
             console.error("Error al guardar marca:", err);
         }
     };
+
+    useEffect(() => {
+            setCurrentPage(1);
+        }, [search]);
+
+    // Filtrado por búsqueda
+    const filteredBrands = brands.filter((u) =>
+        u.name?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const sortedBrands = [...filteredBrands].sort((a, b) => a.name.localeCompare(b.name));
+
+    const totalPages = Math.ceil(sortedBrands.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedBrands = sortedBrands.slice(startIndex, endIndex);
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
@@ -78,13 +88,21 @@ export default function BrandsManager() {
             </div>
 
             {message && (
-                <SuccessMessage
-                    message={message}
-                    type={setSuccessMessage}
-                    onClose={() => setMessage('')}
-                    duration={3000}
-                />
+                <div className="px-4 py-2 text-green-800 bg-green-100 border border-green-300 rounded">
+                    {message}
+                </div>
             )}
+
+            {/* Barra de búsqueda */}
+            <div className="flex gap-1 mb-4">
+                <input
+                    type="text"
+                    placeholder="Buscar marca..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 px-2 py-1 border rounded"
+                />
+            </div>
 
             <BrandsTable
                 brands={paginatedBrands}

@@ -1,43 +1,61 @@
 import React from "react";
+import Pagination from "@/components/Pagination";
 import ActionButton from "@/components/ui/ActionButton";
 
-export default function BrandsTable({
-    brands,
-    editBrand,
-    saveBrand,
-    addBrand,
-    newBrand,
-    setnewBrand,
+export default function DevicesTable( {
+    currentPage,
+    itemsPerPage,
     editingId,
     editingName,
     setEditingName,
-    currentPage = 1,
-    itemsPerPage = 10,
-    devices = [],
-    selectedDevice,
-    setSelectedDevice,
-    models = [],
-    editingDevice,
-    setEditingDevice
+    saveDevice,
+    totalPages,
+    search,
+    setSearch,
+    paginatedDevices,
+    newDevice,
+    setnewDevice,
+    addDevice,
+    successMessage,
+    setCurrentPage,
+    editDevice
 }) {
 
     return (
         <div>
+            <h2 className="mb-4 text-xl font-semibold">Gestión de Dispositivos</h2>
+            {successMessage && (
+                <div className="p-2 mb-4 text-green-800 bg-green-200 rounded">
+                    {successMessage}
+                </div>
+            )}
+
             {/* Agregar */}
             <div className="flex gap-2 mb-4">
                 <input
                     type="text"
-                    value={newBrand}
-                    onChange={(e) => setnewBrand(e.target.value)}
-                    placeholder="Nueva Marca"
+                    value={newDevice}
+                    onChange={(e) => setnewDevice(e.target.value)}
+                    placeholder="Nuevo dispositivo"
                     className="px-2 py-1 border rounded"
                 />
                 <button
-                    onClick={addBrand}
+                    onClick={addDevice}
                     className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
                 >
                     Agregar
                 </button>
+            </div>
+
+            {/* Barra de búsqueda */}
+            <div className="flex gap-2 mb-4">
+                <input
+                    type="text"
+                    placeholder="Buscar equipos..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 px-2 py-1 border rounded"
+                />
             </div>
 
             {/* Tabla */}
@@ -50,12 +68,13 @@ export default function BrandsTable({
                     </tr>
                 </thead>
                 <tbody>
-                    {brands.map((b, index) => (
-                        <tr key={b.id}>
+                    {paginatedDevices.map((d, index) => (
+                        <tr key={d.id}>
                             {/* Enumeración consecutiva */}
                             <td className="px-3 py-1 text-center border">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+
                             <td className="px-3 py-1 border">
-                                {editingId === b.id ? (
+                                {editingId === d.id ? (
                                     <input
                                         type="text"
                                         value={editingName}
@@ -63,30 +82,35 @@ export default function BrandsTable({
                                         className="w-full px-2 py-1 border rounded"
                                     />
                                 ) : (
-                                    b.name
+                                    d.name
                                 )}
                             </td>
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
-                                {editingId === b.id ? (
+                                {editingId === d.id ? (
                                     <ActionButton
                                         type={"save"}
-                                        value={editingName}
-                                        title="Guardar marca"
-                                        onChange={(e) => setEditingName(e.target.value)}
-                                        onClick={() => saveBrand(b.id)}
-                                    />
+                                        title="Guardar dispositivo"
+                                        onClick={() => saveDevice(d.id)}
+                                    >
+                                    </ActionButton>
                                 ) : (
                                     <ActionButton
                                         type={"edit"}
-                                        title="Editar marca"
-                                        onClick={() => editBrand(b.id, b.name)}
-                                    />
+                                        title="Editar dispositivo"
+                                        onClick={() => editDevice(d.id, d.name)}
+                                    >
+                                    </ActionButton>
                                 )}
                             </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+            />
         </div>
     );
 }

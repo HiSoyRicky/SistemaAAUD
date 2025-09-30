@@ -1,12 +1,11 @@
-// server/utils/AppError.js
-
 class AppError extends Error {
-    constructor(message, status, code, details) {
-        super(message);
-        this.status = status;
-        this.code = code;
-        this.details = details;
-    }
+  constructor(message, statusCode = 500, code = "APP_ERROR", details = null) {
+    super(message);
+    this.statusCode = statusCode; 
+    this.code = code;             
+    this.details = details;     
+    this.isOperational = true;
+  }
 }
 
 module.exports = AppError;

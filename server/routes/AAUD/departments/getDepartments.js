@@ -1,25 +1,36 @@
-// server/routes/departamentos.js
+// getDepartments.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
+const catchAsync = require('../../../utils/catchAsync');
 
-router.get('/', async (req, res) => {
-    try {
-        const result = await pool.query(`
-        SELECT 
-            d.id, 
-            d.name, 
-            d.id_ubication, 
-            u.name AS ubication_name
-            FROM departments d
-            LEFT JOIN ubications u ON d.id_ubication = u.id
-            ORDER BY d.id
-    `);
-        res.json(result.rows);
-    } catch (error) {
-        console.error('❌ Error al obtener departamentos:', error.message);
-        res.status(500).json({ error: 'Error al obtener departamentos', details: error.message });
-    }
-});
+router.get('/', catchAsync(async (req, res) => {
+
+    const departments = await prisma.departments.findMany({
+        select: {
+            id: true,
+            name: true,
+            id_ubication: true,
+            ubications: {
+                select: {
+                    name: true
+                }
+            }
+        },
+        orderBy: {
+            id: 'asc'
+        }
+    });
+
+    const mappedDepartments = departments.map(dept => ({
+        id: dept.id,
+        name: dept.name,
+        id_ubication: dept.id_ubication,
+        ubication_name: dept.ubications?.name || null
+    }));
+
+    res.json(mappedDepartments);
+
+}));
 
 module.exports = router;

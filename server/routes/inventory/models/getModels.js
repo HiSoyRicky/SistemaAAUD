@@ -1,21 +1,22 @@
 // server/routes/brands
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
+const catchAsync = require('../../../utils/catchAsync');
 
-router.get('/', async (req, res) => {
-    try {
-        
-        const result = await pool.query(`
-            SELECT id, name, id_brand, id_device 
-            FROM models 
-            ORDER BY name
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al obtener modelos' });
-    }
-});
+router.get('/', catchAsync(async (req, res) => {
+
+    const result = await prisma.models.findMany({
+        select: {
+            id: true,
+            name: true,
+            id_brand: true,
+            id_device: true
+        },
+        orderBy: { name: 'asc' }
+    });
+    res.json(result);
+
+}));
 
 module.exports = router;

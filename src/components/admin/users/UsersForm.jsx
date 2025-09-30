@@ -59,7 +59,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     {roles.map(r => (
-                        <option key={r.id} value={r.id}>{r.role_name}</option>
+                        <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                 </select>
             </div>

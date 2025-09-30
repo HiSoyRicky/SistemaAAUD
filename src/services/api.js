@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Configuración de la URL base de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || '  http://localhost:5173';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Configuración inicial de axios
 const api = axios.create({
@@ -53,13 +53,9 @@ const Inventory = {
 // --- Toners ---
 const Toners = {
     fetchAll: () => api.get('/api/toners').then(res => res.data),
-    fetchPrinterModels: () => api.get('/api/toners/printer_models').then(res => res.data),
-    fetchTonerModels: () => api.get('/api/toners/toner_models').then(res => res.data),
-    createTonerModel: (data) => api.post('/api/toners/toner_models', data).then(res => res.data),
-    fetchColors: () => api.get('/api/toners/colors').then(res => res.data),
     create: (data) => api.post('/api/toners', data).then(res => res.data),
     update: (id, data) => api.put(`/api/toners/${id}`, data).then(res => res.data),
-    // delete: ... (si lo necesitas)
+    delete: (id) => api.delete(`/api/toners/${id}`).then(res => res.data),
     addMovement: (data) => api.post('/api/toners/movement', data).then(res => res.data),
 };
 

@@ -1,26 +1,83 @@
+// server/routes/AAUD/departments/updateDepartment.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
+const catchAsync = require('../../../utils/catchAsync');
+const AppError = require('../../../utils/AppError');
+const { body, validationResult } = require('express-validator');
+
+const validateDepartment = [
+    body('name').notEmpty().withMessage('El nombre es requerido'),
+    body('id_ubication').notEmpty().withMessage('La ubicación es requerida').isInt().withMessage('ID de ubicación inválido'),
+];
 
 // 🔹 PUT actualizar departamento
-router.put('/:id', async (req, res) => {
+router.put('/:id', validateDepartment, catchAsync(async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const firstError = errors.array()[0];
+        return next(new AppError(firstError.msg, 400));
+    }
+
     const { id } = req.params;
     const { name, id_ubication } = req.body;
-    if (!name || !id_ubication) return res.status(400).json({ error: 'Campos requeridos' });
+
+    // Validación adicional
+    if (!name || !id_ubication) {
+        return next(new AppError('Campos requeridos', 400));
+    }
+
+    const id_departmentInt = parseInt(id, 10);
+    const id_ubicationInt = parseInt(id_ubication, 10);
+
+    if (isNaN(id_departmentInt) || isNaN(id_ubicationInt)) {
+        return next(new AppError('ID inválido', 400));
+    }
 
     try {
-        const result = await pool.query(
-            'UPDATE department SET name = $1, id_ubication = $2 WHERE id = $3 RETURNING *',
-            [name, id_ubication, id]
-        );
+        // Verificar si la ubicación existe
+        const ubicationCheck = await prisma.ubications.findUnique({
+            where: { id: id_ubicationInt }
+        });
 
-        if (result.rowCount === 0) return res.status(404).json({ error: 'Departamento no encontrado' });
+        if (!ubicationCheck) {
+            return next(new AppError('La ubicación especificada no existe', 400));
+        }
 
-        res.json({ message: 'Departamento actualizado', updated: result.rows[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al actualizar departamento' });
+        // Actualizar el departamento
+        const updatedDepartment = await prisma.departments.update({
+            where: { id: departmentId },
+            data: { name, id_ubication: ubicationId },
+            select: { id: true, name: true, id_ubication: true }
+        });
+
+        res.json({
+            message: 'Departamento actualizado',
+            updated: updatedDepartment
+        });
+
+    } catch (error) {
+        console.error('Error actualizando departamento:', error);
+
+        // Manejar errores específicos de Prisma
+        if (error.code === 'P2025') {
+            // El registro no fue encontrado
+            return next(new AppError('Departamento no encontrado', 404));
+        }
+
+        if (error.code === 'P2003') {
+            // Foreign key constraint failed (ubicación no existe)
+            return next(new AppError('La ubicación especificada no existe', 400));
+        }
+
+        if (error.code === 'P2002') {
+            // Unique constraint failed (nombre duplicado)
+            return next(new AppError('Ya existe un departamento con ese nombre', 400));
+        }
+
+        // Otro error inesperado
+        return next(new AppError('Error interno del servidor', 500));
     }
-});
+}));
 
 module.exports = router;

@@ -27,24 +27,22 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
         }
     };
 
-    console.log('Renderizando AssignTechnicianModal con props:', { id_incident, technicians });
-
     // Validar technicians
     const validTechnicians = Array.isArray(technicians) ? technicians : [];
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-                <h3 className="text-lg font-bold mb-4">Asignar Técnico a Incidencia #{id_incident || 'N/A'}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+            <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-xl">
+                <h3 className="mb-4 text-lg font-bold">Asignar Técnico a Incidencia #{id_incident || 'N/A'}</h3>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label htmlFor="technicianSelect" className="block text-gray-700 text-sm font-bold mb-2">
+                        <label htmlFor="technicianSelect" className="block mb-2 text-sm font-bold text-gray-700">
                             Selecciona un Técnico:
                         </label>
                         <select
                             id="technicianSelect"
                             name="technicianSelect"
-                            className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow focus:outline-none focus:shadow-outline"
                             value={selectedTechnician}
                             onChange={(e) => setSelectedTechnician(e.target.value)}
                             required
@@ -67,7 +65,7 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
                         <button
                             type="button"
                             onClick={onClose}
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className="px-4 py-2 font-bold text-gray-800 bg-gray-300 rounded hover:bg-gray-400 focus:outline-none focus:shadow-outline"
                         >
                             Cancelar
                         </button>

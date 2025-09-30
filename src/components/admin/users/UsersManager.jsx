@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import UsersTable from "./UsersTable";
 import UserForm from "./UsersForm";
 import { Users } from "@/services/api";
-import SuccessMessage from "@/components/SuccessMessage";
 import Pagination from "@/components/Pagination";
 
 export default function UsersManager() {
@@ -21,8 +20,8 @@ export default function UsersManager() {
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
     const [currentPage, setCurrentPage] = useState(1);
+    const [search, setSearch] = useState("");
     const itemsPerPage = 10;
-
 
     useEffect(() => {
         loadUsers();
@@ -96,7 +95,20 @@ export default function UsersManager() {
         setShowForm(false);
     };
 
-    const sortedUsers = [...users].sort((a, b) => a.id - b.id);
+
+    // Filtrado por búsqueda
+    const filteredUsers = users.filter(user => {
+        const roleName = roles.find(r => r.id === user.id_rol)?.name || "";
+        const term = search.toLowerCase();
+        return (
+            user.nombre_completo?.toLowerCase().includes(term) ||
+            user.username?.toLowerCase().includes(term) ||
+            user.email?.toLowerCase().includes(term) ||
+            roleName.toLowerCase().includes(term)
+        );
+    });
+
+    const sortedUsers = [...filteredUsers].sort((a, b) => a.id - b.id);
 
     const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -105,24 +117,6 @@ export default function UsersManager() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
-                <button
-                    onClick={() => setShowForm(!showForm)}
-                    className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
-                >
-                    {showForm ? "Ocultar formulario" : "Crear nuevo usuario"}
-                </button>
-            </div>
-
-            {message && (
-                <SuccessMessage
-                    message={message}
-                    type={messageType}
-                    onClose={() => setMessage('')}
-                    duration={3000}
-                />
-            )}
 
             {showForm && (
                 <UserForm
@@ -141,6 +135,16 @@ export default function UsersManager() {
                 currentPage={currentPage}
                 itemsPerPage={itemsPerPage}
                 handleResetPassword={handleResetPassword}
+                setShowForm={setShowForm}
+                showForm={showForm}
+                setSearch={setSearch}
+                search={search}
+                setCurrentPage={setCurrentPage}
+                message={message}
+                messageType={messageType}
+                setMessage={setMessage}
+                setMessageType={setMessageType}
+                setEditing={setEditing}
             />
 
             <Pagination

@@ -1,9 +1,30 @@
-// server/routes/inventory/postInventory.js
+// postInventory.js
 const express = require('express');
 const { prisma } = require('../../Prisma');
 const router = express.Router();
+const AppError = require('../../utils/AppError');
+const catchAsync = require('../../utils/catchAsync');
+const { body, validationResult } = require('express-validator');
 
-router.post('/', async (req, res) => {
+const validateInventory = [
+    body('tag').notEmpty().withMessage('El campo tag es obligatorio'),
+    body('id_ubication').isInt().withMessage('El campo id_ubication debe ser un número entero'),
+    body('id_department').isInt().withMessage('El campo id_department debe ser un número entero'),
+    body('id_device').isInt().withMessage('El campo id_device debe ser un número entero'),
+    body('id_brand').isInt().withMessage('El campo id_brand debe ser un número entero'),
+    body('id_model').isInt().withMessage('El campo id_model debe ser un número entero'),
+    body('serie').notEmpty().withMessage('El campo serie es obligatorio'),
+    body('id_status').isInt().withMessage('El campo id_status debe ser un número entero'),
+    body('transferdate').optional({ nullable: true, checkFalsy: true }).isISO8601().toDate().withMessage('El campo transferdate debe ser una fecha válida'),
+];
+
+router.post('/', validateInventory, catchAsync(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        console.log('❌ Errores de validación:', errors.array());
+        return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
     const {
         tag,
         id_ubication,
@@ -19,27 +40,70 @@ router.post('/', async (req, res) => {
         observation
     } = req.body;
 
+    // Validar campos obligatorios
+    if (!tag || !id_ubication || !id_department || !id_device || !id_brand || !id_model || !serie || !id_status) {
+        throw new AppError('Faltan campos obligatorios', 400);
+    }
+
+    // Convertir IDs a números
+    const idUbication = parseInt(id_ubication, 10);
+    const idDepartment = parseInt(id_department, 10);
+    const idDevice = parseInt(id_device, 10);
+    const idBrand = parseInt(id_brand, 10);
+    const idModel = parseInt(id_model, 10);
+    const idStatus = parseInt(id_status, 10);
+
+    // Validar que los IDs sean números válidos
+    if (isNaN(idUbication) || isNaN(idDepartment) || isNaN(idDevice) || isNaN(idBrand) || isNaN(idModel) || isNaN(idStatus)) {
+        throw new AppError('Los IDs deben ser números enteros válidos', 400);
+    }
+
     try {
-        // Validar campos obligatorios
-        if (!tag || !id_ubication || !id_department || !id_device || !id_brand || !id_model || !serie || !id_status) {
-            return res.status(400).json({ success: false, message: 'Faltan campos obligatorios' });
+        // Verificar que las FKs existan
+        const [
+            ubicationExists,
+            departmentExists,
+            deviceExists,
+            brandExists,
+            modelExists,
+            statusExists
+        ] = await Promise.all([
+            prisma.ubications.findUnique({ where: { id: idUbication } }),
+            prisma.departments.findUnique({ where: { id: idDepartment } }),
+            prisma.devices.findUnique({ where: { id: idDevice } }),
+            prisma.brands.findUnique({ where: { id: idBrand } }),
+            prisma.models.findUnique({ where: { id: idModel } }),
+            prisma.status.findUnique({ where: { id: idStatus } })
+        ]);
+
+        if (!ubicationExists) throw new AppError('La ubicación especificada no existe', 400);
+        if (!departmentExists) throw new AppError('El departamento especificado no existe', 400);
+        if (!deviceExists) throw new AppError('El dispositivo especificado no existe', 400);
+        if (!brandExists) throw new AppError('La marca especificada no existe', 400);
+        if (!modelExists) throw new AppError('El modelo especificado no existe', 400);
+        if (!statusExists) throw new AppError('El estado especificado no existe', 400);
+
+        let transferDateObj = null;
+        if (transferdate && transferdate.trim() !== '') {
+            const parsedDate = new Date(transferdate);
+            if (isNaN(parsedDate.getTime())) {
+                throw new AppError('El campo transferdate debe ser una fecha válida', 400);
+            }
+            transferDateObj = parsedDate;
         }
 
-        const transferDateObj = transferdate ? new Date(transferdate) : new Date();
-
-        // Crear el registro usando Prisma
         const newInventory = await prisma.bd_inventory.create({
             data: {
                 tag,
-                id_ubication: parseInt(id_ubication),
-                id_department: parseInt(id_department),
+                id_ubication: idUbication,
+                id_department: idDepartment,
                 user: user || null,
-                id_device: parseInt(id_device),
-                id_brand: parseInt(id_brand),
-                id_model: parseInt(id_model),
+                id_device: idDevice,
+                id_brand: idBrand,
+                id_model: idModel,
                 serie,
                 ip: ip || null,
-                id_status: parseInt(id_status),
+                id_status: idStatus,
                 transferdate: transferDateObj,
                 observation: observation || null,
             },
@@ -81,14 +145,31 @@ router.post('/', async (req, res) => {
             message: 'Dispositivo creado exitosamente',
             inventory: formattedInventory
         });
-    } catch (err) {
-        console.error('❌ Error al crear dispositivo:', err.message);
-        res.status(500).json({
-            success: false,
-            message: 'Error al crear el dispositivo',
-            error: err.message
-        });
+
+    } catch (error) {
+        console.log('💥 Error detallado:', error);
+        console.log('💥 Error code:', error.code);
+
+        // Manejo específico de errores de Prisma
+        if (error.code === 'P2003') {
+            throw new AppError('ID de referencia inválido (FK no existe)', 400);
+        }
+
+        if (error.code === 'P2002') {
+            throw new AppError('Ya existe un dispositivo con ese tag o serie', 409);
+        }
+
+        if (error.code === 'P2004') {
+            throw new AppError('Error de restricción en la base de datos', 400);
+        }
+
+        if (error.code === 'P2011') {
+            throw new AppError('Error: campo requerido no puede ser nulo', 400);
+        }
+
+        // Lanza un error genérico si no es un error específico
+        throw new AppError('Error al crear dispositivo', 500);
     }
-});
+}));
 
 module.exports = router;

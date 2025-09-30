@@ -5,8 +5,27 @@ const { pool } = require('../../db/db');
 const sendMail = require('../../utils/mailer');
 const { generarTokenIncidencia } = require('../../utils/token');
 const frontendUrl = process.env.FRONTEND_BASE_URL;
+const AppError = require('../../utils/AppError');
+const catchAsync = require('../../utils/catchAsync');
+const { body, validationResult } = require('express-validator');
 
-router.post('/', async (req, res) => {
+const validateIncident = [
+    body('id_user').isInt().withMessage('id_user debe ser un número entero'),
+    body('id_ubication').isInt().withMessage('id_ubication debe ser un número entero'),
+    body('id_department').isInt().withMessage('id_department debe ser un número entero'),
+    body('description').notEmpty().withMessage('description es obligatorio'),
+    body('id_category').isInt().withMessage('id_category debe ser un número entero'),
+    body('reporter_name').notEmpty().withMessage('reporter_name es obligatorio')
+];
+
+router.post('/', validateIncident, catchAsync(async (req, res) => {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const firstError = errors.array()[0];
+        return res.status(400).json({ error: firstError.msg });
+    }
+
     const {
         id_user,
         email,
@@ -27,59 +46,58 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'Datos requeridos inválidos o faltantes' });
     }
 
+    const client = await pool.connect();
     try {
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
+        await client.query('BEGIN');
 
-            const statusMap = { 'Pendiente': 1, 'En proceso': 2, 'Resuelto': 3 };
-            const id_status = statusMap[status] || 1;
+        const statusMap = { 'Pendiente': 1, 'En proceso': 2, 'Resuelto': 3 };
+        const id_status = statusMap[status] || 1;
 
-            const creationDate = createdAt ? new Date(createdAt) : new Date();
-            if (isNaN(creationDate.getTime())) {
-                return res.status(400).json({ error: 'Fecha de creación inválida' });
-            }
-            const solutionDate = solution_date ? new Date(solution_date) : null;
-            if (solutionDate && isNaN(solutionDate.getTime())) {
-                return res.status(400).json({ error: 'Fecha de solución inválida' });
-            }
+        const creationDate = createdAt ? new Date(createdAt) : new Date();
+        if (isNaN(creationDate.getTime())) {
+            return res.status(400).json({ error: 'Fecha de creación inválida' });
+        }
+        const solutionDate = solution_date ? new Date(solution_date) : null;
+        if (solutionDate && isNaN(solutionDate.getTime())) {
+            return res.status(400).json({ error: 'Fecha de solución inválida' });
+        }
 
-            // Valida FKs (ejemplo simple)
-            const fkChecks = await Promise.all([
-                client.query('SELECT id FROM users WHERE id = $1', [userIdNum]),
-                client.query('SELECT id FROM ubications WHERE id = $1', [id_ubication]),
-                client.query('SELECT id FROM departments WHERE id = $1', [id_department]),
-                client.query('SELECT id FROM categories WHERE id = $1', [id_category])
-            ]);
-            if (fkChecks.some(result => result.rows.length === 0)) {
-                throw new Error('ID de referencia inválido');
-            }
+        // Valida FKs (ejemplo simple)
+        const fkChecks = await Promise.all([
+            client.query('SELECT id FROM users WHERE id = $1', [userIdNum]),
+            client.query('SELECT id FROM ubications WHERE id = $1', [id_ubication]),
+            client.query('SELECT id FROM departments WHERE id = $1', [id_department]),
+            client.query('SELECT id FROM categories WHERE id = $1', [id_category])
+        ]);
+        if (fkChecks.some(result => result.rows.length === 0)) {
+            throw new Error('ID de referencia inválido');
+        }
 
-            // Insertar incidencia y retornar id
-            const insertResult = await pool.query(
-                `INSERT INTO BD_Incidents
+        // Insertar incidencia y retornar id
+        const insertResult = await pool.query(
+            `INSERT INTO BD_Incidents
                     (id_user, reporter_name, email, id_ubication, id_department, description, id_category, other_category_detail, id_status, creation_date, solution_date, solution)
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
                 RETURNING id;`,
-                [
-                    id_user,
-                    reporter_name,
-                    email || null,
-                    id_ubication,
-                    id_department,
-                    description,
-                    id_category,
-                    other_category_detail || null,
-                    id_status,
-                    creationDate,
-                    solutionDate || null,
-                    solution || ''
-                ]
-            );
+            [
+                id_user,
+                reporter_name,
+                email || null,
+                id_ubication,
+                id_department,
+                description,
+                id_category,
+                other_category_detail || null,
+                id_status,
+                creationDate,
+                solutionDate || null,
+                solution || ''
+            ]
+        );
 
-            const insertedId = insertResult.rows[0].id;
+        const insertedId = insertResult.rows[0].id;
 
-            const fullIncidentResult = await client.query(`
+        const fullIncidentResult = await client.query(`
                 SELECT
                     i.id AS id_incident, i.id_user, i.reporter_name, i.email AS reporter_email,
                     u.name AS ubication_name, d.name AS department_name, c.name AS category_name,
@@ -94,21 +112,21 @@ router.post('/', async (req, res) => {
                 WHERE i.id = $1
             `, [insertedId]);
 
-            const newIncident = fullIncidentResult.rows[0];
+        const newIncident = fullIncidentResult.rows[0];
 
-            await client.query('COMMIT');
+        await client.query('COMMIT');
 
-            const { ubication_name, department_name, category_name } = newIncident;
+        const { ubication_name, department_name, category_name } = newIncident;
 
-            const token = generarTokenIncidencia(insertedId, email);
-            const publicViewUrl = `${frontendUrl}/incidencias/view?token=${token}`;
+        const token = generarTokenIncidencia(insertedId, email);
+        const publicViewUrl = `${frontendUrl}/incidencias/view?token=${token}`;
 
-            try {
-                const formattedId = insertedId.toString().padStart(6, '0');
-                await sendMail({
-                    to: 'rvargas@aaud.gob.pa',
-                    subject: `📥 Nueva incidencia registrada (#${formattedId})`,
-                    html: `
+        try {
+            const formattedId = insertedId.toString().padStart(6, '0');
+            await sendMail({
+                to: 'rvargas@aaud.gob.pa',
+                subject: `📥 Nueva incidencia registrada (#${formattedId})`,
+                html: `
                     <div style="
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                         background-color: #f9f9f9;
@@ -191,13 +209,13 @@ router.post('/', async (req, res) => {
                         </div>
                     </div>
                     `
-                });
+            });
 
-                if (email) {
-                    await sendMail({
-                        to: email,
-                        subject: `🕒 Confirmación de reporte de incidencia`,
-                        html: `
+            if (email) {
+                await sendMail({
+                    to: email,
+                    subject: `🕒 Confirmación de reporte de incidencia`,
+                    html: `
                         <div style="
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                         background-color: #f9f9f9;
@@ -280,26 +298,23 @@ router.post('/', async (req, res) => {
                         </div>
                     </div>
                     `
-                    });
-                }
-            } catch (mailErr) {
-                console.error('Error al enviar correo:', mailErr);
+                });
             }
-
-            const io = req.app.get('io');
-            io.emit('incidentCreated', newIncident);
-
-            return res.json(newIncident);
-        } catch (err) {
-            await client.query('ROLLBACK');
-            throw err;
-        } finally {
-            client.release();
+        } catch (mailErr) {
+            console.error('Error al enviar correo:', mailErr);
         }
+
+        const io = req.app.get('io');
+        io.emit('incidentCreated', newIncident);
+
+        return res.json(newIncident);
     } catch (err) {
-        console.error("Error detallado:", err);
-        res.status(500).json({ error: 'Error al crear incidencia' });
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
     }
-});
+
+}));
 
 module.exports = router;

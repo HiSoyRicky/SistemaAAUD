@@ -12,6 +12,7 @@ export default function StatusesManager() {
     const API_URL = `${import.meta.env.VITE_API_URL}/api/statuses`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+    const [search, setSearch] = useState("");
 
     const sortedStatuses = [...statuses].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -67,6 +68,10 @@ export default function StatusesManager() {
             console.error("Error al guardar dispositivo:", err);
         }
     };
+
+    useEffect(() => {
+            setCurrentPage(1);
+        }, [search]);
 
     return (
         <div>

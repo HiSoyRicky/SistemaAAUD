@@ -1,6 +1,6 @@
 // src/pages/inventory/InventoryPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Tag } from 'lucide-react';
+import { Search, Plus, Tag, Printer } from 'lucide-react';
 import { toast } from 'react-toastify';
 import useAuth from '@/hooks/useAuth';
 import { Inventory } from '@/services/api';
@@ -20,6 +20,7 @@ function InventoryPage() {
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [showInventoryForm, setShowInventoryForm] = useState(false);
     const [editingDevice, setEditingDevice] = useState(null);
+    const [showPrinters, setShowPrinters] = useState(false); // Nuevo estado
     const printRef = useRef();
     const { addNotification } = useNotifications();
 
@@ -34,10 +35,6 @@ function InventoryPage() {
     };
 
     useEffect(() => {
-        loadDevices();
-    }, [search]);
-
-    useEffect(() => {
         const loadDevices = async () => {
             try {
                 // Trae TODOS los dispositivos, no uses search aquí
@@ -48,7 +45,7 @@ function InventoryPage() {
             }
         };
         loadDevices();
-    }, []);
+    }, [search]);
 
 
     const handlePrint = useReactToPrint({
@@ -98,7 +95,12 @@ function InventoryPage() {
 
     const editDeviceConfirm = async (updatedData) => {
         try {
-            await Inventory.updateDevice(editingDevice.id, updatedData);
+            const sanitizedData = Object.fromEntries(
+                Object.entries(updatedData).filter(([_, v]) => v !== "" && v !== null)
+            );
+
+            await Inventory.updateDevice(editingDevice.id, sanitizedData);
+
             setDevices(devices.map(device => device.id === editingDevice.id ? { ...device, ...updatedData } : device));
             setEditingDevice(null);
             addNotification('Dispositivo actualizado con éxito ✅', 'success');
@@ -136,7 +138,7 @@ function InventoryPage() {
     const filteredDevices = devices.filter(d => {
         const searchWords = search.toLowerCase().split(" ").filter(w => w.trim() !== "");
 
-        // Buscar que cada palabra esté en **algún campo**
+        // Buscar que cada palabra
         const matchesSearch = searchWords.every(word =>
             (d.ubication_name?.toLowerCase() || "").includes(word) ||
             (d.tag?.toLowerCase() || "").includes(word) ||
@@ -153,7 +155,13 @@ function InventoryPage() {
         const matchesTransferDate =
             (!filters.transferdate || new Date(d.transferdate) >= new Date(filters.transferdate));
 
-        return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate;
+        // Filtro de impresoras: si showPrinters es true, solo mostrar impresoras con IP
+        const matchesPrinter = !showPrinters ||
+            (d.device_name?.toLowerCase().includes('impresora') &&
+                d.ip &&
+                d.ip.trim() !== '');
+
+        return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate && matchesPrinter;
     });
 
 
@@ -162,7 +170,8 @@ function InventoryPage() {
             {/* Barra de búsqueda */}
             <div className="flex items-center justify-between mb-2">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    {/* Parte izquierda: input y botones de búsqueda/refresh */}
+
+                    {/* Parte izquierda: input y botones de búsqueda */}
                     <div className="flex flex-wrap items-center gap-6">
                         <input
                             type="text"
@@ -178,6 +187,18 @@ function InventoryPage() {
                             className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-blue-500 rounded"
                         >
                             <Search size={16} /> Buscar
+                        </button>
+
+                        {/* Botón para mostrar impresoras */}
+                        <button
+                            onClick={() => setShowPrinters(!showPrinters)}
+                            className={`flex items-center h-8 gap-1 px-2 text-sm rounded ${showPrinters
+                                ? 'text-white bg-red-500 hover:bg-red-600'
+                                : 'text-white bg-blue-500 hover:bg-blue-600'
+                                }`}
+                        >
+                            <Printer size={16} />
+                            {showPrinters ? 'Ocultar Impresoras' : 'Ver Impresoras'}
                         </button>
 
                     </div>

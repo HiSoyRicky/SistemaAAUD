@@ -1,3 +1,4 @@
+// ModelsTable.jsx
 import React from "react";
 import ActionButton from "@/components/ui/ActionButton";
 
@@ -88,76 +89,86 @@ export default function ModelsTable({
                     </tr>
                 </thead>
                 <tbody>
-                    {models.map((m, index) => (
-                        <tr key={m.id}>
-                            <td className="px-3 py-1 text-center border">
-                                {(currentPage - 1) * itemsPerPage + index + 1}
-                            </td>
+                    {models.map((m, index) => {
+                        // Determinar los IDs de marca y dispositivo
+                        const brandId = m.id_brand;
+                        const deviceId = m.id_device;
 
-                            <td className="px-3 py-1 border">
-                                {editingId === m.id ? (
-                                    <input
-                                        type="text"
-                                        value={editingName}
-                                        onChange={(e) => setEditingName(e.target.value)}
-                                        className="w-full px-2 py-1 border rounded"
-                                    />
-                                ) : (
-                                    m.name
-                                )}
-                            </td>
+                        return (
+                            <tr key={m.id}>
+                                <td className="px-3 py-1 text-center border">
+                                    {(currentPage - 1) * itemsPerPage + index + 1}
+                                </td>
 
-                            <td className="px-3 py-1 border">
-                                {editingId === m.id ? (
-                                    <select
-                                        value={editingBrand ?? ""}
-                                        onChange={(e) => setEditingBrand(e.target.value === "" ? "" : Number(e.target.value))}
-                                        className="w-full px-2 py-1 border rounded"
-                                    >
-                                        <option value="">Seleccionar Marca</option>
-                                        {brands.map(b => (
-                                            <option key={b.id} value={b.id}>{b.name}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    brands.find(b => String(b.id) === String(m.brand_id))?.name || "S/M"
-                                )}
-                            </td>
+                                <td className="px-3 py-1 border">
+                                    {editingId === m.id ? (
+                                        <input
+                                            type="text"
+                                            value={editingName}
+                                            onChange={(e) => setEditingName(e.target.value)}
+                                            className="w-full px-2 py-1 border rounded"
+                                        />
+                                    ) : (
+                                        m.name
+                                    )}
+                                </td>
 
-                            <td className="px-3 py-1 border">
-                                {editingId === m.id ? (
-                                    <select
-                                        value={editingDevice ?? ""}
-                                        onChange={(e) => setEditingDevice(e.target.value === "" ? "" : Number(e.target.value))}
-                                        className="w-full px-2 py-1 border rounded"
-                                    >
-                                        <option value="">Seleccionar Dispositivo</option>
-                                        {devices.map(d => (
-                                            <option key={d.id} value={d.id}>{d.name}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    devices.find(d => String(d.id) === String(m.id_device))?.name || "S/D"
-                                )}
-                            </td>
+                                <td className="px-3 py-1 border">
+                                    {editingId === m.id ? (
+                                        <select
+                                            value={editingBrand ?? ""}
+                                            onChange={(e) => setEditingBrand(e.target.value === "" ? "" : Number(e.target.value))}
+                                            className="w-full px-2 py-1 border rounded"
+                                        >
+                                            <option value="">Seleccionar Marca</option>
+                                            {brands.map(b => (
+                                                <option key={b.id} value={b.id}>{b.name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        brandId && brands.find(b => b.id === brandId)
+                                            ? brands.find(b => b.id === brandId).name
+                                            : "S/M"
+                                    )}
+                                </td>
 
-                            <td className="flex justify-center gap-2 px-3 py-1 text-center border">
-                                {editingId === m.id ? (
-                                    <ActionButton
-                                        type={"save"}
-                                        title="Guardar modelo"
-                                        onClick={() => saveModel(m.id)}
-                                    />
-                                ) : (
-                                    <ActionButton
-                                        type={"edit"}
-                                        title="Editar modelo"
-                                        onClick={() => editModel(m)}
-                                    />
-                                )}
-                            </td>
-                        </tr>
-                    ))}
+                                <td className="px-3 py-1 border">
+                                    {editingId === m.id ? (
+                                        <select
+                                            value={editingDevice ?? ""}
+                                            onChange={(e) => setEditingDevice(e.target.value === "" ? "" : Number(e.target.value))}
+                                            className="w-full px-2 py-1 border rounded"
+                                        >
+                                            <option value="">Seleccionar Dispositivo</option>
+                                            {devices.map(d => (
+                                                <option key={d.id} value={d.id}>{d.name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        deviceId && devices.find(d => d.id === deviceId)
+                                            ? devices.find(d => d.id === deviceId).name
+                                            : "S/D"
+                                    )}
+                                </td>
+
+                                <td className="flex justify-center gap-2 px-3 py-1 text-center border">
+                                    {editingId === m.id ? (
+                                        <ActionButton
+                                            type={"save"}
+                                            title="Guardar modelo"
+                                            onClick={() => saveModel(m.id)}
+                                        />
+                                    ) : (
+                                        <ActionButton
+                                            type={"edit"}
+                                            title="Editar modelo"
+                                            onClick={() => editModel(m)}
+                                        />
+                                    )}
+                                </td>
+                            </tr>
+                        )
+                    })}
                 </tbody>
             </table>
         </div>

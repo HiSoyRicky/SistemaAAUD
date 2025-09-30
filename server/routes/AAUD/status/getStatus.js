@@ -1,21 +1,21 @@
-// server/routes/inventory/status/getStatus.js
+// getStatus.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
+const catchAsync = require('../../../utils/catchAsync');
 
-router.get('/', async (req, res) => {
-    try {
-        
-        const result = await pool.query(`
-            SELECT id, name
-            FROM status
-            ORDER BY name
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al obtener los estados' });
-    }
-});
+router.get('/', catchAsync(async (req, res) => {
+
+    const status = await prisma.status.findMany({
+        select: {
+            id: true,
+            name: true
+        },
+        orderBy: {
+            name: 'asc'
+        }
+    });
+    res.json(status);
+}));
 
 module.exports = router;

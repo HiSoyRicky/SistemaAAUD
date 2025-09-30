@@ -2,40 +2,36 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
 import ModelsTable from "./ModelsTable";
-import { de } from "zod/v4/locales";
 
 export default function ModelsManager() {
     const [models, setModels] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [devices, setDevices] = useState([]);
+
     const [newModel, setnewModel] = useState("");
     const [selectedBrand, setSelectedBrand] = useState("");
+    const [selectedDevice, setSelectedDevice] = useState("");
+
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [editingBrand, setEditingBrand] = useState("");
-    const API_URL = `${import.meta.env.VITE_API_URL}/api/models`;
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
-
-    const [selectedDevice, setSelectedDevice] = useState("");
     const [editingDevice, setEditingDevice] = useState("");
 
-    const [devices, setDevices] = useState([]);
+    const [successMessage, setSuccessMessage] = useState("");
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const [search, setSearch] = useState("");
 
-    const sortedModels = [...models].sort((a, b) => a.name.localeCompare(b.name));
+    const API_URL = `${import.meta.env.VITE_API_URL}/api/models`;
 
-    const totalPages = Math.ceil(sortedModels.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedModels = sortedModels.slice(startIndex, endIndex);
-
-    // 🔹 Cargar dispositivos desde backend
+    // 🔹 Cargar modelos desde backend
     const fetchModels = async () => {
         try {
             const res = await axios.get(API_URL);
             setModels(res.data);
         } catch (err) {
-            console.error("Error al cargar dispositivos:", err);
+            console.error("Error al cargar modelos:", err);
         }
     };
 
@@ -74,10 +70,11 @@ export default function ModelsManager() {
             });
             setnewModel("");
             setSelectedBrand("");
+            setSelectedDevice("");
             fetchModels();
         }
         catch (err) {
-            console.error("Error al agregar marca:", err);
+            console.error("Error al agregar modelo:", err);
         }
     };
 
@@ -85,12 +82,9 @@ export default function ModelsManager() {
     const editModel = (model) => {
         setEditingId(model.id);
         setEditingName(model.name);
-        setEditingBrand(model.brand_id != null ? Number(model.brand_id) : "");
-        setEditingDevice(model.device_id != null ? Number(model.device_id) : "");
+        setEditingBrand(model.brandId || model.brand_id || model.id_brand || "");
+        setEditingDevice(model.deviceId || model.id_device || "");
     };
-
-    const [successMessage, setSuccessMessage] = useState("");
-
 
     // 🔹 Guardar edición
     const saveModel = async (id) => {
@@ -105,14 +99,41 @@ export default function ModelsManager() {
             setEditingName("");
             setEditingBrand("");
             setEditingDevice("");
-            setSelectedDevice("");
             fetchModels();
-            setSuccessMessage("Ubicación actualizada correctamente");
+            setSuccessMessage("Modelo actualizado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error:", err.response?.data || err.message);
         }
     };
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
+
+    // 🔹 Filtrado
+    const filteredModels = models.filter((m) => {
+        // Intentar diferentes nombres de campo para la marca
+        const brandId = m.id_brand;
+        const deviceId = m.id_device;
+
+        const brandName = brands.find((b) => b.id === brandId)?.name || "";
+        const deviceName = devices.find((d) => d.id === deviceId)?.name || "";
+
+        const term = search.toLowerCase();
+        return (
+            m.name.toLowerCase().includes(term) ||
+            brandName.toLowerCase().includes(term) ||
+            deviceName.toLowerCase().includes(term)
+        );
+    });
+
+    const sortedModels = [...filteredModels].sort((a, b) => a.name.localeCompare(b.name));
+
+    const totalPages = Math.ceil(sortedModels.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedModels = sortedModels.slice(startIndex, endIndex);
 
     return (
         <div className="space-y-4">
@@ -124,6 +145,16 @@ export default function ModelsManager() {
                 <div className="p-2 mb-2 text-green-800 bg-green-200 rounded">{successMessage}</div>
             )}
 
+            {/* Barra de búsqueda */}
+            <div className="flex gap-2 mb-4">
+                <input
+                    type="text"
+                    placeholder="Buscar por nombre, marca o dispositivo..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 px-2 py-1 border rounded"
+                />
+            </div>
 
             <ModelsTable
                 models={paginatedModels}
@@ -149,7 +180,6 @@ export default function ModelsManager() {
                 setEditingDevice={setEditingDevice}
                 devices={devices}
             />
-
 
             <Pagination
                 currentPage={currentPage}

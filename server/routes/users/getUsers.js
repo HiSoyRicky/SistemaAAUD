@@ -1,56 +1,56 @@
-// server/routes/usuarios/getUsers.js
+// getUsers.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../db/db');
+const { prisma } = require('../../Prisma');
+const catchAsync = require('../../utils/catchAsync');
 
 // Obtener todos los usuarios
-router.get('/', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT 
-            id, 
-            nombre_completo, 
-            username, 
-            email, 
-            id_rol, 
-            active
-            FROM users
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('❌ Error al obtener usuarios:', err.message);
-        res.status(500).json({ error: 'Error al obtener usuarios', details: err.message });
-    }
-});
+router.get('/', catchAsync(async (req, res) => {
 
-router.get('/technicians', async (req, res) => {
-    try {
-        
-        const result = await pool.query(`
-            SELECT id, username, nombre_completo
-            FROM users
-            WHERE id_rol = 2 AND active = 1
-    `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('❌ Error al obtener técnicos:', err.message);
-        res.status(500).json({ error: 'Error al obtener técnicos', details: err.message });
-    }
-});
+    const users = await prisma.users.findMany({
+        select: {
+            id: true,
+            nombre_completo: true,
+            username: true,
+            email: true,
+            id_rol: true,
+            active: true
+        }
+    });
+    res.json(users);
+
+}));
+
+router.get('/technicians', catchAsync(async (req, res) => {
+
+    const technicians = await prisma.users.findMany({
+        select: {
+            id: true,
+            nombre_completo: true,
+            username: true,
+            email: true,
+            id_rol: true,
+            active: true
+        },
+        where: {
+            id_rol: 2,
+        }
+    });
+    res.json(technicians);
+
+}));
 
 // Obtener todos los roles
 router.get('/roles', async (req, res) => {
-    try {
-        
-        const result = await pool.query(`
-            SELECT id, name AS role_name
-            FROM roles
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('❌ Error al obtener roles:', err.message);
-        res.status(500).json({ error: 'Error al obtener roles', details: err.message });
-    }
+
+    const roles = await prisma.roles.findMany({
+        select: {
+            id: true,
+            name: true
+        }
+    });
+
+    res.json(roles);
 });
 
 module.exports = router;

@@ -1,82 +1,132 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../db/db');
+const { prisma } = require('../../Prisma');
+const catchAsync = require('../../utils/catchAsync');
 
 // Endpoint para obtener todas las incidencias
-router.get('/', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT
-                i.id AS id_incident,
-                i.id_user,
-                i.reporter_name,
-                i.email AS reporter_email,
-                u.name AS ubication_name,
-                d.name AS department_name,
-                i.description,
-                i.id_category,
-                i.other_category_detail,
-                i.id_status,
-                i.creation_date,
-                i.solution_date,
-                i.solution,  
-                t.nombre_completo AS technician_full_name,
-                i.id_technician
-            FROM
-                BD_Incidents i
-            LEFT JOIN users t ON i.id_technician = t.id
-            LEFT JOIN ubications u ON i.id_ubication = u.id
-            LEFT JOIN departments d ON i.id_department = d.id
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('❌ Error en la conexión SQL:', err.message);
-        res.status(500).json({ error: 'Error en la conexión PostgreSQL', details: err.message });
-    }
-});
+router.get('/', catchAsync(async (req, res) => {
+    const incidents = await prisma.bd_incidents.findMany({
+        select: {
+            id: true,
+            id_user: true,
+            reporter_name: true,
+            email: true,
+            description: true,
+            id_category: true,
+            other_category_detail: true,
+            id_status: true,
+            creation_date: true,
+            solution_date: true,
+            solution: true,
+            id_technician: true,
+            // Relaciones
+            ubications: {
+                select: {
+                    name: true
+                }
+            },
+            departments: {
+                select: {
+                    name: true
+                }
+            },
+            users_bd_incidents_id_technicianTousers: {
+                select: {
+                    nombre_completo: true
+                }
+            }
+        }
+    });
+
+    // Mapear los resultados para que coincidan con el formato original
+    const mappedIncidents = incidents.map(incident => ({
+        id_incident: incident.id,
+        id_user: incident.id_user,
+        reporter_name: incident.reporter_name,
+        reporter_email: incident.email,
+        ubication_name: incident.ubications?.name || null,
+        department_name: incident.departments?.name || null,
+        description: incident.description,
+        id_category: incident.id_category,
+        other_category_detail: incident.other_category_detail,
+        id_status: incident.id_status,
+        creation_date: incident.creation_date,
+        solution_date: incident.solution_date,
+        solution: incident.solution,
+        id_technician: incident.id_technician,
+        technician_full_name: incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null
+    }));
+
+    res.json(mappedIncidents);
+}));
 
 // Endpoint para obtener incidencia por id
-router.get('/:id', async (req, res) => {
+router.get('/:id', catchAsync(async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    try {
-        const result = await pool.query(`
-                SELECT
-                    i.id AS id_incident,
-                    i.reporter_name,
-                    i.email AS reporter_email,
-                    u.name AS ubication_name,
-                    d.name AS department_name,
-                    c.name AS category_name,
-                    i.description,
-                    i.other_category_detail,
-                    i.creation_date,
-                    i.solution,
-                    i.solution_date,
-                    i.id_status,
-                    CASE i.id_status
-                        WHEN 1 THEN 'Pendiente'
-                        WHEN 2 THEN 'Asignado a un técnico'
-                        WHEN 3 THEN 'Resuelto'
-                        ELSE 'Desconocido'
-                    END AS status
-                FROM incident i
-                JOIN ubication u ON i.id_ubication = u.id
-                JOIN department d ON i.id_department = d.id
-                JOIN category c ON i.id_category = c.id
-                WHERE i.id = $1
-             `, [id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Incidencia no encontrada' });
+    const incident = await prisma.bd_incidents.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            reporter_name: true,
+            email: true,
+            description: true,
+            other_category_detail: true,
+            creation_date: true,
+            solution: true,
+            solution_date: true,
+            id_status: true,
+            // Relaciones
+            ubications: {
+                select: {
+                    name: true
+                }
+            },
+            departments: {
+                select: {
+                    name: true
+                }
+            },
+            categories: {
+                select: {
+                    name: true
+                }
+            }
         }
+    });
 
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error al obtener incidencia:', err);
-        res.status(500).json({ error: 'Error interno del servidor' });
+    if (!incident) {
+        return res.status(404).json({ error: 'Incidencia no encontrada' });
     }
-});
+
+    // Mapear el resultado al formato original
+    const mappedIncident = {
+        id_incident: incident.id,
+        reporter_name: incident.reporter_name,
+        reporter_email: incident.email,
+        ubication_name: incident.ubications?.name || null,
+        department_name: incident.departments?.name || null,
+        category_name: incident.categories?.name || null,
+        description: incident.description,
+        other_category_detail: incident.other_category_detail,
+        creation_date: incident.creation_date,
+        solution: incident.solution,
+        solution_date: incident.solution_date,
+        id_status: incident.id_status,
+        status: getStatusText(incident.id_status)
+    };
+
+    res.json(mappedIncident);
+}));
+
+function getStatusText(id_status) {
+    switch (id_status) {
+        case 1: return 'Pendiente';
+        case 2: return 'Asignado a un técnico';
+        case 3: return 'Resuelto';
+        default: return 'Desconocido';
+    }
+}
 
 module.exports = router;

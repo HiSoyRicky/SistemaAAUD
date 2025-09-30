@@ -35,21 +35,7 @@ const io = new Server(server, {
 const authRouter = require('./routes/auth');
 const errorHandler = require('./middleware/errorHandler');
 
-//AAUD
-const departmentsRouter = require('./routes/AAUD/departments');
-const ubicationsRouter = require('./routes/AAUD/ubications');
-const usersRouter = require('./routes/users');
-const tonersRouter = require('./routes/AAUD/toners');
-
-//Incidencias
-const incidentsRouter = require('./routes/incidents');
-
-//Inventario
-const inventoryRouter = require('./routes/inventory');
-const brandsRouter = require('./routes/inventory/brands');
-const devicesRouter = require('./routes/inventory/devices');
-const modelsRouter = require('./routes/inventory/models');
-const statusRouter = require('./routes/AAUD/status');
+const AllRoutes = require('./routes/AllRoutes');
 
 // Seguridad HTTP con Helmet
 app.use(helmet());
@@ -94,22 +80,7 @@ app.use('/api/login', loginLimiter);
 
 // Rutas
 app.use('/api', authRouter);
-
-//AAUD
-app.use('/api/departments', departmentsRouter);
-app.use('/api/ubications', ubicationsRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/toners', tonersRouter);
-
-//Incidencias
-app.use('/api/incidents', incidentsRouter);
-
-//Inventario
-app.use('/api/inventory', inventoryRouter);
-app.use('/api/brands', brandsRouter);
-app.use('/api/devices', devicesRouter);
-app.use('/api/models', modelsRouter);
-app.use('/api/statuses', statusRouter);
+app.use('/api', AllRoutes);
 
 app.use(errorHandler);
 

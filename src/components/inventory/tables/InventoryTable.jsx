@@ -55,14 +55,15 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
         return 0;
     });
 
+    // Crear opciones ordenadas alfabéticamente
     const options = {
-        ubication_name: [...new Set(filteredInventory.map(i => i.ubication_name))],
-        department_name: [...new Set(filteredInventory.map(i => i.department_name))],
-        user: [...new Set(filteredInventory.map(i => i.user))],
-        device_name: [...new Set(filteredInventory.map(i => i.device_name))],
-        brand_name: [...new Set(filteredInventory.map(i => i.brand_name))],
-        model_name: [...new Set(filteredInventory.map(i => i.model_name))],
-        status_name: [...new Set(filteredInventory.map(i => i.status_name))]
+        ubication_name: [...new Set(filteredInventory.map(i => i.ubication_name))].sort(),
+        department_name: [...new Set(filteredInventory.map(i => i.department_name))].sort(),
+        user: [...new Set(filteredInventory.map(i => i.user))].sort(),
+        device_name: [...new Set(filteredInventory.map(i => i.device_name))].sort(),
+        brand_name: [...new Set(filteredInventory.map(i => i.brand_name))].sort(),
+        model_name: [...new Set(filteredInventory.map(i => i.model_name))].sort(),
+        status_name: [...new Set(filteredInventory.map(i => i.status_name))].sort()
     };
 
     // ahora paginar sobre filteredInventory en vez de inventory
@@ -232,6 +233,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                             <button
                                                 className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
                                                 title={showExtraColumns ? "Ocultar columnas" : "Mostrar columnas"}
+                                                onClick={toggleExtraColumns}
                                             >
                                                 🔍
                                             </button>

@@ -72,16 +72,19 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     // Manejo de cambios en los campos del formulario
     const handleChange = (e) => {
         const { name, value } = e.target;
+
         if (name === 'transferDateInput') {
             const date = value ? new Date(value + 'T00:00:00Z') : null;
             setFormData((prev) => ({
                 ...prev,
-                [name]: value === '' ? null : parseInt(value),
-                transferDateInput: value,
+                [name]: value,
                 transferdate: date ? formatDateToDDMMYYYY(date) : ''
             }));
         } else {
-            setFormData((prev) => ({ ...prev, [name]: value }));
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value
+            }));
         }
         setErrors((prev) => ({ ...prev, [name]: '' }));
     };
@@ -109,7 +112,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         if (!formData.id_model) newErrors.id_model = 'Seleccione un modelo';
         if (!formData.id_status) newErrors.id_status = 'Seleccione un estado';
         if (!formData.serie.trim()) newErrors.serie = 'La serie es obligatoria';
-        if (formData.ip && !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(formData.ip)) newErrors.ip = 'La IP no es válida';
+        if (formData.ip && formData.ip.trim() !== '' && !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(formData.ip)) newErrors.ip = 'La IP no es válida';
 
         setErrors(newErrors);
 
@@ -118,7 +121,13 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                 ? new Date(formData.transferDateInput + 'T00:00:00Z').toISOString()
                 : null;
 
-            onSubmit({ ...formData, transferdate });
+            const submitData = {
+                ...formData,
+                transferdate,
+                ip: formData.ip.trim() === '' ? null : formData.ip // ✅ Convierte a null si está vacío
+            };
+
+            onSubmit(submitData);
         }
     };
 
@@ -140,7 +149,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                 <h3 className="mb-6 text-2xl font-bold text-center">
                     {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo'}
                 </h3>
-                {loadingOptions ? ( // Agregado: Muestra loading mientras carga opciones, evita select vacío.**
+                {loadingOptions ? (
                     <p className="text-center">Cargando opciones...</p>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -209,7 +218,13 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         />
 
                         {/* IP */}
-                        <InputField label="IP" name="ip" value={formData.ip} onChange={handleChange} error={errors.ip} />
+                        <InputField
+                            label="IP"
+                            name="ip"
+                            value={formData.ip} // ✅ Ahora siempre es string
+                            onChange={handleChange}
+                            error={errors.ip}
+                        />
 
                         {/* Fecha de Traslado */}
                         <div>
@@ -259,7 +274,7 @@ function InputField({ label, name, value, onChange, error }) {
                 id={name}
                 name={name}
                 type="text"
-                value={value}
+                value={value} // ✅ Cambia || '' por el valor directo
                 onChange={onChange}
                 className={`w-full border px-3 py-2 rounded ${error ? 'border-red-500' : 'border-gray-300'}`}
             />
