@@ -19,9 +19,9 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                                 alt="Logo AAUDCPS"
                                 className="mx-auto mb-2"
                                 style={{ width: '450px', height: 'auto' }} />
-                            <h2 className="font-bold text-lg mt-2">AUTORIDAD DE ASEO URBANO Y DOMICILIARIO</h2>
-                            <h3 className="font-semibold leading-tight mt-1 text-sm">UNIDAD DE INFORMÁTICA Y BIENES PATRIMONIALES</h3>
-                            <h3 className="font-semibold leading-tight mt-1 text-sm">TRASLADO DE EQUIPO INFORMÁTICO</h3>
+                            <h2 className="mt-2 text-lg font-bold">AUTORIDAD DE ASEO URBANO Y DOMICILIARIO</h2>
+                            <h3 className="mt-1 text-sm font-semibold leading-tight">UNIDAD DE INFORMÁTICA Y BIENES PATRIMONIALES</h3>
+                            <h3 className="mt-1 text-sm font-semibold leading-tight">TRASLADO DE EQUIPO INFORMÁTICO</h3>
 
                         </td>
                     </tr>
@@ -37,55 +37,55 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
 
                     {/* Datos del traslado */}
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Unidad que transfiere:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">
+                        <td className="w-1/4 px-2 font-semibold border border-black">Unidad que transfiere:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">
                             {device.ubication_name ? `${device.ubication_name} / ${device.department_name}` : "N/A"}
                         </td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">
+                        <td className="w-1/4 px-2 font-semibold border border-black">
                             Unidad que recibe:
                         </td>
-                        <td colSpan="5" className="border border-black px-2 py-1">
+                        <td colSpan="5" className="px-2 py-1 border border-black">
                             {device.ubication_destino_name || "N/A"} / {device.department_destino_name || "N/A"}
                         </td>
                     </tr>
 
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Dispositivo:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.device_name || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Dispositivo:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.device_name || "N/A"}</td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Marca:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.brand_name || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Marca:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.brand_name || "N/A"}</td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Modelo:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.model_name || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Modelo:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.model_name || "N/A"}</td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Serie:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.serie || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Serie:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.serie || "N/A"}</td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Marbete:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.tag || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Marbete:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.tag || "N/A"}</td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-1 font-semibold w-1/4">Condición del artículo:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.status_name || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Condición del artículo:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.status_name || "N/A"}</td>
                     </tr>
 
                     <tr>
-                        <td className="border border-black px-2 py-3 font-semibold w-1/4">Observación:</td>
-                        <td colSpan="5" className="border border-black px-2 py-1">{device.observation || "N/A"}</td>
+                        <td className="w-1/4 px-2 font-semibold border border-black">Observación:</td>
+                        <td colSpan="5" className="px-2 py-1 border border-black">{device.observation || "N/A"}</td>
                     </tr>
 
                     {/* Espacio para firmas */}
@@ -98,10 +98,10 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                         </td>
                     </tr>
                     <tr>
-                        <td colSpan="3" className="text-center font-semibold">
+                        <td colSpan="3" className="font-semibold text-center">
                             Firma del Jefe de Informática
                         </td>
-                        <td colSpan="3" className="text-center font-semibold">
+                        <td colSpan="3" className="font-semibold text-center">
                             Firma de Jefa de Bienes
                         </td>
                     </tr>
@@ -116,10 +116,10 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                         </td>
                     </tr>
                     <tr>
-                        <td colSpan="3" className="text-center font-semibold">
+                        <td colSpan="3" className="font-semibold text-center">
                             Firma del Emisor
                         </td>
-                        <td colSpan="3" className="text-center font-semibold">
+                        <td colSpan="3" className="font-semibold text-center">
                             Firma del Receptor
                         </td>
                     </tr>
@@ -136,17 +136,17 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                     </tr>
 
                     <tr>
-                        <td colSpan="3" className="text-center font-semibold">
+                        <td colSpan="3" className="font-semibold text-center">
                             {"Nombre del Emisor"}
                         </td>
-                        <td colSpan="3" className="text-center font-semibold">
+                        <td colSpan="3" className="font-semibold text-center">
                             {"Nombre del Receptor"}
                         </td>
                     </tr>
 
                     {/* Nota legal */}
                     <tr>
-                        <td colSpan="6" className="pt-10 text-justify text-xs">
+                        <td colSpan="6" className="pt-10 text-xs text-justify">
                             <p>
                                 <em>
                                     En cumplimiento a lo dispuesto en el Artículo 19 de nuestro Reglamento Interno, se recuerda lo siguiente:<br /><br />

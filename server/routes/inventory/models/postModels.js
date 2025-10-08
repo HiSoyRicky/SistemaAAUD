@@ -18,7 +18,7 @@ const validateModel = [
     }
 ];
 
-// 🔹 Crear un nuevo modelo
+//  Crear un nuevo modelo
 router.post('/', validateModel, catchAsync(async (req, res) => {
 
     const errors = validationResult(req);

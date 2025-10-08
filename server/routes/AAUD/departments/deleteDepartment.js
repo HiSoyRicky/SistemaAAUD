@@ -3,10 +3,16 @@ const router = express.Router();
 const { prisma } = require('../../../Prisma');
 const catchAsync = require('../../../utils/catchAsync');
 const AppError = require('../../../utils/AppError');
+const authMiddleware = require('../../../middleware/authMiddleware');
 
 // DELETE eliminar departamento
-router.delete('/:id', catchAsync(async (req, res, next) => {
+router.delete('/:id', authMiddleware, catchAsync(async (req, res, next) => {
     const { id } = req.params;
+    const { authorized } = req.body;
+
+    if (!authorized) {
+        throw new AppError('No autorizado para eliminar', 403);
+    }
 
     const id_department = parseInt(id, 10);
     if (isNaN(id_department)) {
@@ -18,7 +24,7 @@ router.delete('/:id', catchAsync(async (req, res, next) => {
             where: { id: id_department }
         });
 
-        res.json({ message: 'Departamento eliminado' });
+        res.json({ success: true, message: 'Departamento eliminado', data: deletedDepartment });
 
     } catch (error) {
         // Si no existe, Prisma lanza un error P2025

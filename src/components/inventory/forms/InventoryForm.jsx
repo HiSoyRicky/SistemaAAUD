@@ -30,7 +30,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     const [loadingOptions, setLoadingOptions] = useState(true);
     const [fetchError, setFetchError] = useState(null);
 
-    // 🔹 Cargar opciones para los selectores
+    //  Cargar opciones para los selectores
     useEffect(() => {
         async function fetchOptions() {
             try {
@@ -124,7 +124,9 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
             const submitData = {
                 ...formData,
                 transferdate,
-                ip: formData.ip.trim() === '' ? null : formData.ip // ✅ Convierte a null si está vacío
+                user: formData.user.trim() === '' ? null : formData.user,
+                ip: formData.ip.trim() === '' ? null : formData.ip,
+                observation: formData.observation.trim() === '' ? null : formData.observation
             };
 
             onSubmit(submitData);
@@ -205,7 +207,12 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         />
 
                         {/* Serie */}
-                        <InputField label="Serie *" name="serie" value={formData.serie} onChange={handleChange} error={errors.serie} />
+                        <InputField label="Serie *"
+                            name="serie"
+                            value={formData.serie}
+                            onChange={handleChange}
+                            error={errors.serie}
+                        />
 
                         {/* Estado */}
                         <SelectField
@@ -241,7 +248,12 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         </div>
 
                         {/* Observaciones */}
-                        <TextAreaField label="Observaciones / Ubicación Anterior" name="observation" value={formData.observation} onChange={handleChange} />
+                        <TextAreaField
+                            label="Observaciones / Ubicación Anterior"
+                            name="observation"
+                            value={formData.observation}
+                            onChange={handleChange}
+                        />
 
                         <div className="flex justify-end gap-3 mt-4">
                             <button
@@ -265,7 +277,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     );
 }
 
-// 🔹 Reutilizables
+//  Reutilizables
 function InputField({ label, name, value, onChange, error }) {
     return (
         <div>

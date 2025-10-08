@@ -14,7 +14,7 @@ export default function UbicationsManager() {
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
 
-    // 🔹 Cargar ubicaciones desde backend
+    //  Cargar ubicaciones desde backend
     const fetchUbications = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -28,7 +28,7 @@ export default function UbicationsManager() {
         fetchUbications();
     }, []);
 
-    // 🔹 Agregar nueva ubicación
+    //  Agregar nueva ubicación
     const addUbication = async () => {
         if (!newUbication.trim()) return;
         try {
@@ -40,13 +40,13 @@ export default function UbicationsManager() {
         }
     };
 
-    // 🔹 Iniciar edición
+    //  Iniciar edición
     const editUbication = (id, name) => {
         setEditingId(id);
         setEditingName(name);
     };
 
-    // 🔹 Guardar edición
+    //  Guardar edición
     const saveUbication = async (id) => {
         if (!editingName.trim()) return;
         try {

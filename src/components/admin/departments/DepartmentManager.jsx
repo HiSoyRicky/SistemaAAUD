@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DepartmentsTable from "./DepartmentsTable";
+import { Departments } from "@/services/api";
 
 export default function DepartmentsManager() {
     const [departments, setDepartments] = useState([]);
@@ -19,7 +20,7 @@ export default function DepartmentsManager() {
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // 🔹 Cargar departamentos
+    //  Cargar departamentos
     const fetchDepartments = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -34,7 +35,7 @@ export default function DepartmentsManager() {
         }
     };
 
-    // 🔹 Cargar ubicaciones para los select
+    //  Cargar ubicaciones para los select
     const fetchUbications = async () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ubications`);
@@ -50,7 +51,7 @@ export default function DepartmentsManager() {
         fetchUbications();
     }, []);
 
-    // 🔹 Agregar
+    //  Agregar
     const addDepartment = async () => {
         if (!newName || !newUbication) {
             setErrorMessage("Por favor completa todos los campos");
@@ -72,14 +73,14 @@ export default function DepartmentsManager() {
         }
     };
 
-    // 🔹 Editar
+    //  Editar
     const editDepartment = (id, name, id_ubication) => {
         setEditingId(id);
         setEditingName(name);
         setEditingUbication(id_ubication);
     };
 
-    // 🔹 Guardar
+    //  Guardar
     const saveDepartment = async (id) => {
         if (!editingName || !editingUbication) {
             setErrorMessage("Por favor completa todos los campos");
@@ -105,12 +106,18 @@ export default function DepartmentsManager() {
         }
     };
 
-    // 🔹 Eliminar
+    // Eliminar
     const handleDelete = async (id, depName) => {
-        if (!window.confirm("¿Eliminar este departamento?")) return;
+        const password = prompt("Para eliminar este departamento, ingresa tu contraseña:");
+        if (!password) return;
 
         try {
-            await axios.delete(`${API_URL}/${id}`);
+            // Verificar contraseña
+            await Departments.authorize(id, password);
+
+            // Si es correcta, borrar
+            await Departments.delete(id, { authorized: true });
+
             fetchDepartments();
             setSuccessMessage(`✅ Departamento "${depName}" eliminado correctamente`);
             setErrorMessage("");

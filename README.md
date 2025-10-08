@@ -10,17 +10,17 @@ El sistema está desarrollado en React (frontend) y Express con SQL Server (back
 
 ⚙️ Instalación
 
-🔹 1. Clonar el repositorio
+    1. Clonar el repositorio
 
 git clone https://github.com/HiSoyRicky/SistemaAAUD.git
 
 cd SistemaAAUD
 
-🔹 2. Instalar dependencias
+    2. Instalar dependencias
 
 npm install
 
-🔹 3. Configurar la base de datos
+    3. Configurar la base de datos
 
 Importar el script SQL ubicado en:
 
@@ -29,7 +29,7 @@ server/Soporte AAUD.sql
 
 en SQL Server para crear las tablas necesarias.
 
-🔹 4. Variables de entorno
+    4. Variables de entorno
 
 Crear un archivo .env en la raíz del proyecto con la siguiente estructura (ejemplo):
 
@@ -46,11 +46,11 @@ SQL_SERVER=localhost
 
 (Ajustar según tu configuración de SQL Server)
 
-🔹 5. Iniciar el backend
+    5. Iniciar el backend
 
 npm run server
 
-🔹 6. Iniciar el frontend
+    6. Iniciar el frontend
 
 npm run dev
 
@@ -72,7 +72,7 @@ Crear, editar y visualizar incidencias en el dashboard, administrar los disposit
 
 🛠️ Tecnologías
 
-🔹 Frontend
+ Frontend
 
 -React
 
@@ -83,14 +83,14 @@ Crear, editar y visualizar incidencias en el dashboard, administrar los disposit
 -React Router
 
 
-🔹 Backend
+ Backend
 
 -Express
 
 -SQL Server
 
 
-🔹 Dependencias principales
+ Dependencias principales
 
 -axios
 
@@ -103,4 +103,4 @@ Crear, editar y visualizar incidencias en el dashboard, administrar los disposit
 
 👨‍💻 Autor
 
-Desarrollado por Ricardo Vargas (Ricky) ✨
+Desarrollado por Ricardo Vargas (Ricky)

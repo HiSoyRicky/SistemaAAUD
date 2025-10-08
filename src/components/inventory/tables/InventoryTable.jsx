@@ -48,7 +48,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
         });
     });
 
-    // 🔹 Ordenar por Marbete (tag) ascendente
+    //  Ordenar por Marbete (tag) ascendente
     const sortedInventory = [...filteredInventory].sort((a, b) => {
         if (a.tag < b.tag) return -1;
         if (a.tag > b.tag) return 1;
@@ -178,7 +178,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                             </th>
                             <th className={`${tdClass} border`}>Serie</th>
                             {showExtraColumns && <th className={`${tdClass} border`}>IP</th>}
-                            <th className={`${tdClass} border`}>Estado
+                            {showExtraColumns && <th className={`${tdClass} border`}>Estado
                                 <br />
                                 <select
                                     value={filters.status_name}
@@ -192,7 +192,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                         </option>
                                     ))}
                                 </select>
-                            </th>
+                            </th>}
                             {showExtraColumns && <th className={`${tdClass} border`}>Fecha Traslado</th>}
                             {showExtraColumns && <th className={`${tdClass} border`}>Observación / Ubicación Anterior</th>}
                             <th className={`${tdClass} border`}>
@@ -221,7 +221,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                     <td className={`${thClass} border`}>{item.model_name}</td>
                                     <td className={`${thClass} border`}>{item.serie}</td>
                                     {showExtraColumns && (<td className={`${thClass} border`}>{item.ip ? item.ip : 'N/A'}</td>)}
-                                    <td className={`${thClass} border`}>{item.status_name}</td>
+                                    {showExtraColumns && <td className={`${thClass} border`}>{item.status_name}</td>}
                                     {showExtraColumns && <td className={`${thClass} border`}>{item.transferdate ? formatDateToDDMMYYYY(item.transferdate) : 'N/A'}</td>}
                                     {showExtraColumns && <td className={`${thClass} border`}>{item.observation || 'N/A'}</td>}
 

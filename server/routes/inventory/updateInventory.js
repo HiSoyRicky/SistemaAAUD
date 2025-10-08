@@ -4,7 +4,7 @@ const router = express.Router();
 const { prisma } = require('../../Prisma');
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
-const { body, validationResult } = require('express-validator');
+const { body, validationResult, check } = require('express-validator');
 
 const validateInventoryUpdate = [
     body('tag').optional().notEmpty().withMessage('El campo tag no puede estar vacío'),
@@ -14,9 +14,9 @@ const validateInventoryUpdate = [
     body('id_brand').optional().isInt().withMessage('El campo id_brand debe ser un número entero'),
     body('id_model').optional().isInt().withMessage('El campo id_model debe ser un número entero'),
     body('serie').optional().notEmpty().withMessage('El campo serie no puede estar vacío'),
-    body('ip').optional().isIP().withMessage('El campo ip debe ser una dirección IP válida'),
+    body('ip').optional({ nullable: true, checkFalsy: true }).isIP().withMessage('El campo ip debe ser una dirección IP válida'),
     body('id_status').optional().isInt().withMessage('El campo id_status debe ser un número entero'),
-    body('transferdate').optional().isISO8601().toDate().withMessage('El campo transferdate debe ser una fecha válida'),
+    body('transferdate').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('El campo transferdate debe ser una fecha válida'),
 ];
 
 router.put('/:id', validateInventoryUpdate, catchAsync(async (req, res) => {
@@ -75,22 +75,22 @@ router.put('/:id', validateInventoryUpdate, catchAsync(async (req, res) => {
     }
 
     const updateData = {};
-
     if (tag !== undefined) updateData.tag = tag;
     if (id_ubication !== undefined) updateData.id_ubication = parseInt(id_ubication);
     if (id_department !== undefined) updateData.id_department = parseInt(id_department);
-    if (user !== undefined) updateData.user = user;
     if (id_device !== undefined) updateData.id_device = parseInt(id_device);
     if (id_brand !== undefined) updateData.id_brand = parseInt(id_brand);
     if (id_model !== undefined) updateData.id_model = parseInt(id_model);
     if (serie !== undefined) updateData.serie = serie;
-    if (ip !== undefined) updateData.ip = ip;
     if (id_status !== undefined) updateData.id_status = parseInt(id_status);
+    if (user !== undefined) updateData.user = user;
+    if (ip !== undefined) updateData.ip = ip;
     if (observation !== undefined) updateData.observation = observation;
 
     if (transferdate !== undefined) {
         updateData.transferdate = transferdate ? new Date(transferdate) : null;
     }
+    console.log('Datos a actualizar:', updateData);
 
     // Actualizar el registro usando Prisma
     const updatedInventory = await prisma.bd_inventory.update({

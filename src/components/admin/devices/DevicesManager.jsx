@@ -13,7 +13,7 @@ export default function DevicesManager() {
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
 
-    // 🔹 Cargar dispositivos desde backend
+    //  Cargar dispositivos desde backend
     const fetchDevices = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -27,7 +27,7 @@ export default function DevicesManager() {
         fetchDevices();
     }, []);
 
-    // 🔹 Agregar nuevo dispositivo
+    //  Agregar nuevo dispositivo
     const addDevice = async () => {
         if (!newDevice.trim()) return;
         try {
@@ -40,13 +40,13 @@ export default function DevicesManager() {
         }
     };
 
-    // 🔹 Iniciar edición
+    //  Iniciar edición
     const editDevice = (id, name) => {
         setEditingId(id);
         setEditingName(name);
     };
 
-    // 🔹 Guardar edición
+    //  Guardar edición
     const saveDevice = async (id) => {
         if (!editingName.trim()) return;
         try {

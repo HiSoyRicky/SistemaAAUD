@@ -18,7 +18,7 @@ const validateModel = [
     }
 ];
 
-// 🔹 Actualizar un modelo existente
+//  Actualizar un modelo existente
 router.put('/:id', validateModel, catchAsync(async (req, res) => {
 
     const errors = validationResult(req);

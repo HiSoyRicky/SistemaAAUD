@@ -1,5 +1,5 @@
 // src/components/UbiDepSelector.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useUbicationDepartments } from '@/utils/useUbicationDepartments';
 
 function UbiDepSelector({ id_ubication, id_department, onChange, errors = {}, mode = "incident" }) {
@@ -12,18 +12,37 @@ function UbiDepSelector({ id_ubication, id_department, onChange, errors = {}, mo
         setSelectedDepartment
     } = useUbicationDepartments();
 
+    // Ordenar ubicaciones y departamentos alfabéticamente con useMemo
+    const sortedUbications = useMemo(
+        () => [...ubications].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })),
+        [ubications]
+    );
+
+    const sortedDepartments = useMemo(
+        () => [...departments].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })),
+        [departments]
+    );
+
     // Sincronizar valores iniciales según el modo
     useEffect(() => {
         if (mode === "inventory") {
-            if (id_ubication != null) setSelectedUbication(parseInt(id_ubication));
-            const depExists = departments.some(dep => dep.id === parseInt(id_department));
-            if (depExists) {
-                setSelectedDepartment(parseInt(id_department));
-            } else {
-                setSelectedDepartment(null);
+            // Establecer ubicación cuando exista
+            if (id_ubication) {
+                setSelectedUbication(parseInt(id_ubication));
+            }
+
+            // Esperar a que los departamentos estén disponibles antes de validar
+            if (departments.length > 0 && id_department) {
+                const depExists = departments.some(dep => dep.id === parseInt(id_department));
+                if (depExists) {
+                    setSelectedDepartment(parseInt(id_department));
+                } else {
+                    setSelectedDepartment(null);
+                }
             }
         }
-    }, [id_ubication, id_department, mode, setSelectedUbication, setSelectedDepartment]);
+    }, [id_ubication, id_department, mode, departments]);
+
 
     const handleUbicationChange = (e) => {
         const idUbi = e.target.value ? parseInt(e.target.value) : null;
@@ -46,7 +65,7 @@ function UbiDepSelector({ id_ubication, id_department, onChange, errors = {}, mo
 
             {/* Ubicación */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Ubicación: </label>
+                <label className="block mb-1 text-sm font-bold text-gray-700">Ubicación: </label>
                 <select
                     id="id_ubication"
                     value={selectedUbication || ''}
@@ -57,20 +76,20 @@ function UbiDepSelector({ id_ubication, id_department, onChange, errors = {}, mo
                     <option value="" disabled>
                         -- Seleccione una ubicación --
                     </option>
-                    {ubications.map((ubi) => (
+                    {sortedUbications.map((ubi) => (
                         <option
                             key={ubi.id} value={ubi.id}>
                             {ubi.name}
                         </option>
                     ))}
                 </select>
-                {errors.ubication && <p className="text-red-500 text-sm mt-1">
+                {errors.ubication && <p className="mt-1 text-sm text-red-500">
                     {errors.ubication}</p>}
             </div>
 
             {/* Departamento */}
             <div>
-                <label htmlFor="id_department" className="block text-sm font-bold text-gray-700 mb-1">
+                <label htmlFor="id_department" className="block mb-1 text-sm font-bold text-gray-700">
                     Departamento:
                 </label>
                 <select
@@ -86,14 +105,14 @@ function UbiDepSelector({ id_ubication, id_department, onChange, errors = {}, mo
                     <option value="" disabled>
                         -- Seleccione un departamento --
                     </option>
-                    {departments.map((dep) => (
+                    {sortedDepartments.map((dep) => (
                         <option key={dep.id} value={dep.id}>
                             {dep.name}
                         </option>
                     ))}
                 </select>
                 {errors.department && (
-                    <p id="department-error" className="text-red-500 text-sm mt-1">
+                    <p id="department-error" className="mt-1 text-sm text-red-500">
                         {errors.department}
                     </p>
                 )}

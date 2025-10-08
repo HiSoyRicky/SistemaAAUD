@@ -25,7 +25,7 @@ export default function ModelsManager() {
 
     const API_URL = `${import.meta.env.VITE_API_URL}/api/models`;
 
-    // 🔹 Cargar modelos desde backend
+    // Cargar modelos desde backend
     const fetchModels = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -59,7 +59,7 @@ export default function ModelsManager() {
         fetchDevices();
     }, []);
 
-    // 🔹 Agregar nuevo modelo
+    //  Agregar nuevo modelo
     const addModel = async () => {
         if (!newModel.trim() || !selectedBrand || !selectedDevice) return;
         try {
@@ -78,7 +78,7 @@ export default function ModelsManager() {
         }
     };
 
-    // 🔹 Iniciar edición
+    // Iniciar edición
     const editModel = (model) => {
         setEditingId(model.id);
         setEditingName(model.name);
@@ -86,7 +86,7 @@ export default function ModelsManager() {
         setEditingDevice(model.deviceId || model.id_device || "");
     };
 
-    // 🔹 Guardar edición
+    // Guardar edición
     const saveModel = async (id) => {
         if (!editingName.trim() || !editingBrand) return;
         try {
@@ -111,7 +111,7 @@ export default function ModelsManager() {
         setCurrentPage(1);
     }, [search]);
 
-    // 🔹 Filtrado
+    //  Filtrado
     const filteredModels = models.filter((m) => {
         // Intentar diferentes nombres de campo para la marca
         const brandId = m.id_brand;

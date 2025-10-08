@@ -15,7 +15,7 @@ export default function BrandsManager() {
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
 
-    // 🔹 Cargar dispositivos desde backend
+    //  Cargar dispositivos desde backend
     const fetchbrands = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -29,7 +29,7 @@ export default function BrandsManager() {
         fetchbrands();
     }, []);
 
-    // 🔹 Agregar nueva marca
+    //  Agregar nueva marca
     const addBrand = async () => {
         if (!newBrand.trim()) return;
         try {
@@ -44,13 +44,13 @@ export default function BrandsManager() {
         }
     };
 
-    // 🔹 Iniciar edición
+    //  Iniciar edición
     const editBrand = (id, name) => {
         setEditingId(id);
         setEditingName(name);
     };
 
-    // 🔹 Guardar edición
+    //  Guardar edición
     const saveBrand = async (id) => {
         if (!editingName.trim()) return;
         try {

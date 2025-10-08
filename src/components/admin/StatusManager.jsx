@@ -21,7 +21,7 @@ export default function StatusesManager() {
     const endIndex = startIndex + itemsPerPage;
     const paginatedStatuses = sortedStatuses.slice(startIndex, endIndex);
 
-    // 🔹 Cargar dispositivos desde backend
+    //  Cargar dispositivos desde backend
     const fetchStatuses = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -35,7 +35,7 @@ export default function StatusesManager() {
         fetchStatuses();
     }, []);
 
-    // 🔹 Agregar nueva marca
+    //  Agregar nueva marca
     const addStatus = async () => {
         if (!newStatus.trim()) return;
         try {
@@ -48,13 +48,13 @@ export default function StatusesManager() {
         }
     };
 
-    // 🔹 Iniciar edición
+    //  Iniciar edición
     const editStatus = (id, name) => {
         setEditingId(id);
         setEditingName(name);
     };
 
-    // 🔹 Guardar edición
+    //  Guardar edición
     const saveStatus = async (id) => {
         if (!editingName.trim()) return;
         try {

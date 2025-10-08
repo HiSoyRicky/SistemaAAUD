@@ -64,7 +64,6 @@ function InventoryPage() {
                 console.error("Error cargando departamentos:", error);
             }
         };
-
         fetchDepartments();
     }, []);
 
@@ -87,21 +86,23 @@ function InventoryPage() {
         });
     };
 
-
     const editDevice = (device) => {
-        console.log('Equipo seleccionado para editar:', device);
         setEditingDevice(device);
     };
 
     const editDeviceConfirm = async (updatedData) => {
         try {
-            const sanitizedData = Object.fromEntries(
-                Object.entries(updatedData).filter(([_, v]) => v !== "" && v !== null)
-            );
+            // const sanitizedData = Object.fromEntries(
+            //Object.entries(updatedData).filter(([_, v]) => v !== "" && v !== null)
+            // );
 
-            await Inventory.updateDevice(editingDevice.id, sanitizedData);
+            await Inventory.updateDevice(editingDevice.id, updatedData);
 
-            setDevices(devices.map(device => device.id === editingDevice.id ? { ...device, ...updatedData } : device));
+            setDevices(devices.map(device =>
+                device.id === editingDevice.id
+                    ? { ...device, ...updatedData }
+                    : device
+            ));
             setEditingDevice(null);
             addNotification('Dispositivo actualizado con éxito ✅', 'success');
         } catch (error) {

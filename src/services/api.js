@@ -70,4 +70,12 @@ const Users = {
         api.put(`/api/users/${id}/password`, { newPassword }).then(res => res.data),
 };
 
-export { Incidents, Users, Inventory, Toners };
+const Departments = {
+  fetchAll: () => api.get('/api/departments').then(res => res.data),
+  create: (data) => api.post('/api/departments', data).then(res => res.data),
+  update: (id, data) => api.put(`/api/departments/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/api/departments/${id}`).then(res => res.data),
+  authorize: (id, password) => api.post(`/api/departments/${id}/authorize`, { password }).then(res => res.data),
+};
+
+export { Incidents, Users, Inventory, Toners, Departments };

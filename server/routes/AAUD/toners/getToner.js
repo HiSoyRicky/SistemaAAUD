@@ -5,7 +5,7 @@ const { prisma } = require("../../../Prisma");
 const AppError = require("../../../utils/AppError");
 const catchAsync = require("../../../utils/catchAsync");
 
-// 🔹 Obtener todos los tóners con modelo, color y stock
+//  Obtener todos los tóners con modelo, color y stock
 router.get("/", catchAsync(async (req, res) => {
         const result = await prisma.toners.findMany({
                 select: {

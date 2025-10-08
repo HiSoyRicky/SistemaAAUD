@@ -6,8 +6,6 @@ const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const { tr } = require('zod/v4/locales');
 
-const secretKey = process.env.JWT_SECRET;
-
 const registerSchema = Joi.object({
     username: Joi.string().min(3).max(30).required(),
     password: Joi.string().min(8).required(),
@@ -86,7 +84,15 @@ router.post('/login', async (req, res) => {
         }
 
         // Genera JWT
-        const token = jwt.sign({ id: user.id, rol: user.id_rol }, secretKey, { expiresIn: '1h' });
+        const token = jwt.sign(
+            {
+                id: user.id,
+                username: user.username,
+                rol: user.id_rol
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
 
         // Login exitoso, devolver datos sin la contraseña
         const { password: _, ...userWithoutPassword } = user;

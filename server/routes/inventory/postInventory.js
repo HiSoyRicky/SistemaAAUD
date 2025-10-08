@@ -84,12 +84,12 @@ router.post('/', validateInventory, catchAsync(async (req, res) => {
         if (!statusExists) throw new AppError('El estado especificado no existe', 400);
 
         let transferDateObj = null;
-        if (transferdate && transferdate.trim() !== '') {
-            const parsedDate = new Date(transferdate);
-            if (isNaN(parsedDate.getTime())) {
+        if (transferdate) {
+            if (transferdate instanceof Date && !isNaN(transferdate.getTime())) {
+                transferDateObj = transferdate;
+            } else {
                 throw new AppError('El campo transferdate debe ser una fecha válida', 400);
             }
-            transferDateObj = parsedDate;
         }
 
         const newInventory = await prisma.bd_inventory.create({

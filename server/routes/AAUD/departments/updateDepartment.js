@@ -11,7 +11,7 @@ const validateDepartment = [
     body('id_ubication').notEmpty().withMessage('La ubicación es requerida').isInt().withMessage('ID de ubicación inválido'),
 ];
 
-// 🔹 PUT actualizar departamento
+//  PUT actualizar departamento
 router.put('/:id', validateDepartment, catchAsync(async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -46,8 +46,11 @@ router.put('/:id', validateDepartment, catchAsync(async (req, res, next) => {
 
         // Actualizar el departamento
         const updatedDepartment = await prisma.departments.update({
-            where: { id: departmentId },
-            data: { name, id_ubication: ubicationId },
+            where: { id: id_departmentInt },
+            data: {
+                name,
+                id_ubication: id_ubicationInt
+            },
             select: { id: true, name: true, id_ubication: true }
         });
 

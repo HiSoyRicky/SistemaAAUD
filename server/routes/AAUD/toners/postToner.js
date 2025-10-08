@@ -5,7 +5,7 @@ const AppError = require("../../../utils/AppError");
 const catchAsync = require("../../../utils/catchAsync");
 const { body, validationResult } = require("express-validator");
 
-// 🔹 Validación middleware
+//  Validación middleware
 const validateToner = [
     body("id_printer_model").notEmpty().withMessage("El id del modelo de impresora es requerido"),
     body("id_toner_model").notEmpty().withMessage("El id del modelo de tóner es requerido"),
@@ -38,7 +38,7 @@ router.post("/", validateToner, catchAsync(async (req, res) => {
 
 }));
 
-// 🔹 Crear modelo de tóner
+//  Crear modelo de tóner
 router.post("/toner_models", catchAsync(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
