@@ -1,7 +1,7 @@
 // server/routes/devices.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
 const AppError = require('../../../utils/AppError');
 const catchAsync = require('../../../utils/catchAsync');
 const { body, validationResult } = require('express-validator');
@@ -13,7 +13,6 @@ const validateDevice = [
 
 // Actualizar dispositivo por id
 router.put('/:id', validateDevice, catchAsync(async (req, res) => {
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -26,16 +25,20 @@ router.put('/:id', validateDevice, catchAsync(async (req, res) => {
         throw new AppError('El nombre es obligatorio', 400);
     }
 
-    const result = await pool.query(
-        'UPDATE devices SET name = $1 WHERE id = $2 RETURNING *',
-        [name.trim(), id]
-    );
+    const device = await prisma.devices.findUnique({
+        where: { id: parseInt(id) }
+    });
 
-    if (result.rowCount === 0) {
+    if (!device) {
         throw new AppError('Dispositivo no encontrado', 404);
     }
+    
+    const updatedDevice = await prisma.devices.update({
+        where: { id: parseInt(id) },
+        data: { name: name.trim() }
+    });
 
-    res.json({ message: 'Dispositivo actualizado correctamente', device: result.rows[0] });
+    res.json({ message: 'Dispositivo actualizado correctamente', device: updatedDevice });
 
 }));
 

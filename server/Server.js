@@ -11,14 +11,11 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
-const FRONTEND_URL = process.env.FRONTEND_BASE_URL;
+const FRONTEND_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';;
 const { prisma } = require('../src/generated/prisma');
 require('dotenv').config();
 
 const app = express();
-
-// Puerto
 const port = process.env.PORT || 3000;
 
 // Crear servidor HTTP para Express y Socket.IO
@@ -34,26 +31,50 @@ const io = new Server(server, {
 // Importar rutas
 const authRouter = require('./routes/auth');
 const errorHandler = require('./middleware/errorHandler');
-
 const AllRoutes = require('./routes/AllRoutes');
 
-// Seguridad HTTP con Helmet
-app.use(helmet());
+const allowedOrigins = [
+    'http://localhost:5173', // Para cuando usas el servidor de desarrollo de Vite (npm run dev)
+    'http://localhost:3000', // Para cuando tu propio Express server sirve el HTML del frontend
+    // Agrega aquí la IP 172.23.98.103 si es un servidor de red, aunque es mejor evitar IPs fijas en producción
+];
 
-//Compresión gzip
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Permitir solicitudes sin origen (como Postman o peticiones del mismo servidor)
+        if (!origin) return callback(null, true); 
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true); // Origen permitido
+        } else {
+            callback(new Error('Not allowed by CORS'), false); // Origen denegado
+        }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+// Seguridad HTTP y compresión
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", FRONTEND_URL, "http://localhost:5173", "http://localhost:3000", "http://172.23.98.103:3000",],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+      },
+    },
+  })
+);
 app.use(compression());
-
-// Logs de peticiones (solo en dev)
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan('tiny', {
-    skip: (req, res) => res.statusCode < 400
-  }));
-}
 
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: [FRONTEND_URL, "http://localhost:5173"],
+  origin: [FRONTEND_URL, "http://localhost:5173", "http://172.23.98.103:3000"],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
@@ -82,14 +103,17 @@ app.use('/api/login', loginLimiter);
 app.use('/api', authRouter);
 app.use('/api', AllRoutes);
 
+// Manejar errores
 app.use(errorHandler);
 
-// Servir archivos estáticos desde /public
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Ruta por defecto
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Servir frontend compilado
+const publicPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(publicPath));
+
+// Catch-all para SPA (debe ir al final, después de todas las rutas)
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Manejar conexiones de Socket.IO
@@ -113,7 +137,24 @@ io.on('connection', (socket) => {
 // Hacer que io esté disponible en las rutas
 app.set('io', io);
 
-// Servidor
-server.listen(port, '0.0.0.0', () => {
-  console.log(`Servidor escuchando en http://0.0.0.0:${port}`);
-});
+// Servidor con manejo de error de puerto en uso
+const startServer = (port) => {
+  server.listen(port, '0.0.0.0');
+
+  server.on('listening', () => {
+    console.log(`✅ Servidor escuchando en http://0.0.0.0:${port}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`⚠️  El puerto ${port} está en uso. Intentando con ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error('❌ Error al iniciar el servidor:', err);
+      process.exit(1);
+    }
+  });
+};
+
+// Iniciar servidor
+startServer(parseInt(port, 10));

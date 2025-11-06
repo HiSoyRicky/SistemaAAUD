@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { pool } = require("../../../db/db");
+const { prisma } = require("../../../Prisma");
 const AppError = require("../../../utils/AppError");
 const catchAsync = require("../../../utils/catchAsync");
 const { body, validationResult } = require("express-validator");
@@ -19,13 +19,24 @@ router.put("/:id", validateTonerUpdate, catchAsync(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-        await pool.query(`
-            UPDATE toners 
-            SET status = $1, last_update = NOW() 
-            WHERE id = $2
-        `, [status, id]);
+    if (!status || !status.trim()) {
+        throw new AppError("El estado es obligatorio", 400);
+    }
 
-        res.json({ message: 'Toner actualizado', updated: result.rows[0] });
+    const toner = await prisma.toners.findUnique({
+        where: { id: parseInt(id) }
+    });
+
+    if (!toner) {
+        throw new AppError("Toner no encontrado", 404);
+    }
+
+    const updatedToner = await prisma.toners.update({
+        where: { id: parseInt(id) },
+        data: { status: status.trim() }
+    });
+
+    res.json({ message: "Toner actualizado correctamente", toner: updatedToner });
 
 }));
 

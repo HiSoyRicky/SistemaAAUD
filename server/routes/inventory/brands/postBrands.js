@@ -50,7 +50,7 @@ router.post("/", validateBrand, catchAsync(async (req, res) => {
 
     } catch (error) {
         // Manejo específico de errores
-        if (error.code === 'P2002') { // Prisma unique constraint violation
+        if (error.code === 'P2002') {
             throw new AppError('La marca ya existe', 409);
         }
 

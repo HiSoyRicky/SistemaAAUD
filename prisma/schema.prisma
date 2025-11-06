@@ -98,11 +98,6 @@ model devices {
   models       models[]
 }
 
-model directions {
-  id   Int    @id(map: "pk_direction") @default(autoincrement())
-  name String @db.VarChar(50)
-}
-
 model models {
   id           Int            @id(map: "pk_models") @default(autoincrement())
   name         String         @db.VarChar(50)

@@ -1,75 +1,75 @@
 // src/services/api.js
 import axios from 'axios';
 
-// Configuración de la URL base de la API
+// ✅ Usa directamente la URL de la API (sin duplicar /api)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Aviso si no está definida
+if (!API_BASE_URL) {
+  console.error("VITE_API_URL no está definido en el entorno.");
+}
 
 // Configuración inicial de axios
 const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: { 'Content-Type': 'application/json' },
+  baseURL: API_BASE_URL, // 👈 no agregues /api aquí
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Interceptor para auth
+// --- Interceptores ---
 api.interceptors.request.use(config => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 }, error => Promise.reject(error));
-;
 
-// Interceptor para errors
 api.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response?.status === 401) {
-            // Redirect to login
-            localStorage.removeItem('token');
-            window.location.href = '/login?expired=true';
-        }
-        return Promise.reject(error);
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login?expired=true';
     }
+    return Promise.reject(error);
+  }
 );
 
 // --- Incidencias ---
 const Incidents = {
-    fetchAll: () => api.get('/api/incidents').then(res => res.data),
+  fetchAll: () => api.get('/api/incidents').then(res => res.data),
 };
 
 // --- Inventario ---
 const Inventory = {
-    fetchDeviceTypes: () => api.get('/api/devices').then(res => res.data),
-    fetchDevices: (search = '') => api.get('/api/inventory', { params: { search } }).then(res => res.data),
-    addDevice: (data) => api.post('/api/inventory', data).then(res => res.data),
-    updateDevice: (id, data) => api.put(`/api/inventory/${id}`, data).then(res => res.data),
-    deleteDevice: (id) => api.delete(`/api/inventory/${id}`).then(res => res.data),
-    fetchBrands: () => api.get('/api/brands').then(res => res.data),
-    fetchModels: () => api.get('/api/models').then(res => res.data),
-    fetchStatuses: () => api.get('/api/statuses').then(res => res.data),
+  fetchDeviceTypes: () => api.get('/api/devices').then(res => res.data),
+  fetchDevices: (search = '') => api.get('/api/inventory', { params: { search } }).then(res => res.data),
+  addDevice: (data) => api.post('/api/inventory', data).then(res => res.data),
+  updateDevice: (id, data) => api.put(`/api/inventory/${id}`, data).then(res => res.data),
+  deleteDevice: (id) => api.delete(`/api/inventory/${id}`).then(res => res.data),
+  fetchBrands: () => api.get('/api/brands').then(res => res.data),
+  fetchModels: () => api.get('/api/models').then(res => res.data),
+  fetchStatuses: () => api.get('/api/statuses').then(res => res.data),
 };
 
 // --- Toners ---
 const Toners = {
-    fetchAll: () => api.get('/api/toners').then(res => res.data),
-    create: (data) => api.post('/api/toners', data).then(res => res.data),
-    update: (id, data) => api.put(`/api/toners/${id}`, data).then(res => res.data),
-    delete: (id) => api.delete(`/api/toners/${id}`).then(res => res.data),
-    addMovement: (data) => api.post('/api/toners/movement', data).then(res => res.data),
+  fetchAll: () => api.get('/api/toners').then(res => res.data),
+  create: (data) => api.post('/api/toners', data).then(res => res.data),
+  update: (id, data) => api.put(`/api/toners/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/api/toners/${id}`).then(res => res.data),
+  addMovement: (data) => api.post('/api/toners/movement', data).then(res => res.data),
 };
 
 // --- Usuarios ---
 const Users = {
-    fetchAll: () => api.get('/api/users').then(res => res.data),
-    fetchRoles: () => api.get('/api/users/roles').then(res => res.data),
-    create: (user) => api.post('/api/users', user).then(res => res.data),
-    update: (user) => api.put(`/api/users/${user.id}`, user).then(res => res.data),
-    delete: (id) => api.delete(`/api/users/${id}`).then(res => res.data),
-    updatePassword: (id, newPassword) =>
-        api.put(`/api/users/${id}/password`, { newPassword }).then(res => res.data),
+  fetchAll: () => api.get('/api/users').then(res => res.data),
+  fetchRoles: () => api.get('/api/users/roles').then(res => res.data),
+  create: (user) => api.post('/api/users', user).then(res => res.data),
+  update: (user) => api.put(`/api/users/${user.id}`, user).then(res => res.data),
+  delete: (id) => api.delete(`/api/users/${id}`).then(res => res.data),
+  updatePassword: (id, newPassword) => api.put(`/api/users/${id}/password`, { newPassword }).then(res => res.data),
 };
 
+// --- Departamentos ---
 const Departments = {
   fetchAll: () => api.get('/api/departments').then(res => res.data),
   create: (data) => api.post('/api/departments', data).then(res => res.data),

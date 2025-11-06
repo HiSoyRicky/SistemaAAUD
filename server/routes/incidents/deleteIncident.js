@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
-
 const { pool } = require('../../db/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');

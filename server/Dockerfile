@@ -1,11 +1,19 @@
-# Dockerfile backend
-FROM node:18-bullseye
-
+FROM node:22-alpine
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Instalar dependencias
+COPY package*.json ./
+RUN npm install
 
-COPY ./server ./
+# Copiar todo el backend y Prisma
+COPY ./server ./server
+COPY ./prisma ./prisma
+
+# Generar Prisma Client
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Exponer puerto del backend
 EXPOSE 3000
-CMD ["node", "Server.js"]
+
+# Comando de inicio del backend
+CMD ["node", "server/Server.js"]

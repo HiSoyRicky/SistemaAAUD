@@ -148,6 +148,7 @@ function InventoryPage() {
             (d.device_name?.toLowerCase() || "").includes(word) ||
             (d.brand_name?.toLowerCase() || "").includes(word) ||
             (d.model_name?.toLowerCase() || "").includes(word) ||
+            (d.transferdate?.toLowerCase() || "").includes(word) ||
             (d.serie?.toLowerCase() || "").includes(word)
         );
 

@@ -193,7 +193,25 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                     ))}
                                 </select>
                             </th>}
-                            {showExtraColumns && <th className={`${tdClass} border`}>Fecha Traslado</th>}
+                            {showExtraColumns && <th className={`${tdClass} border`}>Fecha Traslado
+                                <br />
+                                <select
+                                    value={filters.transferdate}
+                                    onChange={(e) => handleFilterChange("transferdate", e.target.value)}
+                                    className="w-full mt-1 text-xs text-center border rounded"
+                                >
+                                    <option value="">Todos</option>
+                                    {sortedInventory
+                                        .map(i => i.transferdate)
+                                        .filter((value, index, self) => value && self.indexOf(value) === index)
+                                        .sort()
+                                        .map((val, idx) => (
+                                            <option key={`${val}-${idx}`} value={val}>
+                                                {formatDateToDDMMYYYY(val)}
+                                            </option>
+                                        ))}
+                                </select>
+                            </th>}
                             {showExtraColumns && <th className={`${tdClass} border`}>Observación / Ubicación Anterior</th>}
                             <th className={`${tdClass} border`}>
                                 Acciones

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
 const catchAsync = require('../../../utils/catchAsync');
 const { body, validationResult } = require('express-validator');
 const AppError = require('../../../utils/AppError');
@@ -20,35 +20,36 @@ const validateModel = [
 
 //  Actualizar un modelo existente
 router.put('/:id', validateModel, catchAsync(async (req, res) => {
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-
-    const modelId = parseInt(req.params.id, 10);
+    
+    const { id } = req.params;
     const { name, id_brand, id_device } = req.body;
 
-    if (isNaN(modelId)) {
-        throw new AppError('ID de modelo inválido', 400);
+    if (!name || !name.trim()) {
+        throw new AppError('El nombre es obligatorio', 400);
     }
 
-    if (!name || !id_brand || !id_device) {
-        throw new AppError('Todos los campos son requeridos', 400);
+    const model = await prisma.models.findUnique({
+        where: { id: parseInt(id) }
+    });
+
+    if (!model) {
+        throw new AppError('Modelo no encontrado', 404);
     }
-
-        const result = await pool.query(`
-            UPDATE models
-            SET name = $1, id_brand = $2, id_device = $3
-            WHERE id = $4
-            RETURNING *
-        `, [name, id_brand, id_device, modelId]);
-
-        if (result.rows.length === 0) {
-            throw new AppError('Modelo no encontrado', 404);
+    
+    const updatedModel = await prisma.models.update({
+        where: { id: parseInt(id) },
+        data: {
+            name: name.trim(),
+            id_brand,
+            id_device
         }
+    });
 
-        res.json(result.rows[0]);
+    res.json({ message: 'Modelo actualizado correctamente', model: updatedModel });
 
 }));
 

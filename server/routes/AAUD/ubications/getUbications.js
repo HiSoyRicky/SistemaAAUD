@@ -1,17 +1,20 @@
 // server/routes/departamentos.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
 const catchAsync = require('../../../utils/catchAsync');
 
+// Obtener todas las ubicaciones
 router.get('/', catchAsync(async (req, res, next) => {
 
-    const result = await pool.query(`
-        SELECT id, name
-        FROM ubications
-            ORDER BY name
-    `);
-    res.json(result.rows);
+    const result = await prisma.ubications.findMany({
+        select: {
+            id: true,
+            name: true
+        },
+        orderBy: { name: 'asc' }
+    });
+    res.json(result);
 }));
 
 module.exports = router;

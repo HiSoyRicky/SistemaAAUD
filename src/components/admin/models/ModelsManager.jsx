@@ -107,6 +107,18 @@ export default function ModelsManager() {
         }
     };
 
+    const deleteModel = async (id) => {
+        if (!window.confirm("¿Está seguro de que desea eliminar este modelo?")) return;
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/models/${id}`);
+            fetchModels();
+            setSuccessMessage("Modelo eliminado correctamente");
+            setTimeout(() => setSuccessMessage(""), 3000);
+        } catch (err) {
+            console.error("Error al eliminar modelo:", err);
+        }
+    }
+
     useEffect(() => {
         setCurrentPage(1);
     }, [search]);
@@ -173,6 +185,7 @@ export default function ModelsManager() {
                 setSelectedBrand={setSelectedBrand}
                 editModel={editModel}
                 saveModel={saveModel}
+                deleteModel={deleteModel}
 
                 selectedDevice={selectedDevice}
                 setSelectedDevice={setSelectedDevice}

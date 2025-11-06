@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../../db/db');
+const { prisma } = require('../../../Prisma');
 const AppError = require('../../../utils/AppError');
 const catchAsync = require('../../../utils/catchAsync');
 const { body, validationResult } = require('express-validator');
@@ -13,29 +13,30 @@ const validateUbication = [
 
 // PUT actualizar ubicación
 router.put('/:id', validateUbication, catchAsync(async (req, res, next) => {
-    const { id } = req.params;
-    const { name } = req.body;
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return next(new AppError('Error de validación', 400, errors.array()));
     }
 
-    const parsedId = parseInt(id, 10);
+    const { id } = req.params;
+    const { name } = req.body;
 
-    if (isNaN(parsedId)) return res.status(400).json({ error: 'ID inválido' });
-    if (!name || !name.trim()) return res.status(400).json({ error: 'Nombre inválido' });
+    // Verificar si la ubicación existe
+    const existingUbication = await prisma.ubication.findUnique({
+        where: { id: parseInt(id) }
+    });
 
-    const result = await pool.query(
-        'UPDATE ubications SET name = $1 WHERE id = $2 RETURNING *',
-        [name, id]
-    );
-
-    if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Ubicación no encontrada' });
+    if (!existingUbication) {
+        return next(new AppError('Ubicación no encontrada', 404));
     }
 
-    res.json({ message: 'Ubicación actualizada', updated: result.rows[0] });
+    // Actualizar la ubicación
+    const updatedUbication = await prisma.ubication.update({
+        where: { id: parseInt(id) },
+        data: { name }
+    });
+
+    res.status(200).json(updatedUbication);
 
 }));
 

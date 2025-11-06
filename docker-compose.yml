@@ -1,37 +1,21 @@
+version: "3.9"
 services:
-  db:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_PORT: ${DB_PORT}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./server/db/migrations:/docker-entrypoint-initdb.d
-    ports:
-      - "5433:5432"
-
   backend:
     build:
       context: .
       dockerfile: server/Dockerfile
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      PGHOST: sistemaaaud
-      PGUSER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
-      PGDATABASE: ${DB_NAME}
-      PGPORT: ${DB_PORT}
-      PORT: 3000
-    depends_on:
-      # <- corregido
-      - sistemaaaud
+    container_name: aaud-backend
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=production
 
-volumes:
-  db_data:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: aaud-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

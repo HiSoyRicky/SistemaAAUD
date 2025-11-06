@@ -2,7 +2,6 @@
 const express = require("express");
 const router = express.Router();
 const { prisma } = require("../../../Prisma");
-const AppError = require("../../../utils/AppError");
 const catchAsync = require("../../../utils/catchAsync");
 
 //  Obtener todos los tóners con modelo, color y stock

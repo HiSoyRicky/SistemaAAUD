@@ -23,7 +23,8 @@ export default function ModelsTable({
     setSelectedDevice,
     devices,
     editingDevice,
-    setEditingDevice
+    setEditingDevice,
+    deleteModel
 }) {
 
     return (
@@ -153,11 +154,18 @@ export default function ModelsTable({
 
                                 <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                     {editingId === m.id ? (
-                                        <ActionButton
-                                            type={"save"}
-                                            title="Guardar modelo"
-                                            onClick={() => saveModel(m.id)}
-                                        />
+                                        <>
+                                            <ActionButton
+                                                type={"save"}
+                                                title="Guardar modelo"
+                                                onClick={() => saveModel(m.id)}
+                                            />
+                                            <ActionButton
+                                                type={"delete"}
+                                                title="Eliminar modelo"
+                                                onClick={() => deleteModel(m.id)}
+                                            />
+                                        </>
                                     ) : (
                                         <ActionButton
                                             type={"edit"}

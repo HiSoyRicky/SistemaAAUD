@@ -16,7 +16,6 @@ export default function UbicationsManager({
     paginatedUbications,
     totalPages,
     setCurrentPage,
-    successMessage,
     search,
     setSearch,
     message,

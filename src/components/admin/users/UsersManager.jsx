@@ -19,6 +19,7 @@ export default function UsersManager() {
     const [showForm, setShowForm] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
+    const [SuccessMessage, setSuccessMessage] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [search, setSearch] = useState("");
     const itemsPerPage = 10;
@@ -145,6 +146,7 @@ export default function UsersManager() {
                 setMessage={setMessage}
                 setMessageType={setMessageType}
                 setEditing={setEditing}
+                SuccessMessage={SuccessMessage}
             />
 
             <Pagination

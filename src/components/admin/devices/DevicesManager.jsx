@@ -8,6 +8,7 @@ export default function DevicesManager() {
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
     const API_URL = `${import.meta.env.VITE_API_URL}/api/devices`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -29,14 +30,37 @@ export default function DevicesManager() {
 
     //  Agregar nuevo dispositivo
     const addDevice = async () => {
-        if (!newDevice.trim()) return;
+        if (!newDevice) {
+            setErrorMessage("Por favor completa todos los campos");
+            return;
+        }
+
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/devices`, { name: newDevice });
+            await axios.post(API_URL, { name: newDevice });
             setnewDevice("");
             fetchDevices();
+            setErrorMessage("");
+            setSuccessMessage("Dispositivo agregado correctamente");
+            setTimeout(() => setSuccessMessage(""), 3000);
         }
+
         catch (err) {
-            console.error("Error al agregar ubicación:", err);
+
+            if (err.response) {
+                const status = err.response.status;
+                const message = err.response.data.message || "Error al agregar dispositivo.";
+
+                if (status === 409) {
+                    setErrorMessage("Este dispositivo ya existe.");
+                } else {
+                    setErrorMessage(message);
+                }
+            } else {
+                setErrorMessage("No se pudo conectar con el servidor.");
+            }
+
+            // Borra el mensaje de error luego de unos segundos
+            setTimeout(() => setErrorMessage(""), 4000);
         }
     };
 
@@ -50,7 +74,9 @@ export default function DevicesManager() {
     const saveDevice = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/devices/${id}`, { name: editingName });
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/devices/${id}`, {
+                name: editingName
+            });
             setEditingId(null);
             setEditingName("");
             fetchDevices();
@@ -58,6 +84,19 @@ export default function DevicesManager() {
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error al guardar dispositivo:", err);
+        }
+    };
+
+    //  Eliminar dispositivo
+    const deleteDevice = async (id) => {
+        if (!window.confirm("¿Está seguro de que desea eliminar este dispositivo?")) return;
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/devices/${id}`);
+            fetchDevices();
+            setSuccessMessage("Dispositivo eliminado correctamente");
+            setTimeout(() => setSuccessMessage(""), 3000);
+        } catch (err) {
+            console.error("Error al eliminar dispositivo:", err);
         }
     };
 
@@ -96,9 +135,11 @@ export default function DevicesManager() {
                 setnewDevice={setnewDevice}
                 addDevice={addDevice}
                 successMessage={successMessage}
+                errorMessage={errorMessage}
                 setCurrentPage={setCurrentPage}
                 editDevice={editDevice}
+                deleteDevice={deleteDevice}
             />
-        </div>            
+        </div>
     );
 }

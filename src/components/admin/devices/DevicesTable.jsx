@@ -2,7 +2,7 @@ import React from "react";
 import Pagination from "@/components/Pagination";
 import ActionButton from "@/components/ui/ActionButton";
 
-export default function DevicesTable( {
+export default function DevicesTable({
     currentPage,
     itemsPerPage,
     editingId,
@@ -18,7 +18,9 @@ export default function DevicesTable( {
     addDevice,
     successMessage,
     setCurrentPage,
-    editDevice
+    editDevice,
+    errorMessage,
+    deleteDevice
 }) {
 
     return (
@@ -45,6 +47,19 @@ export default function DevicesTable( {
                 >
                     Agregar
                 </button>
+
+                {errorMessage && (
+                    <div className="px-4 py-2 mb-3 text-red-700 bg-red-100 border border-red-400 rounded">
+                        {errorMessage}
+                    </div>
+                )}
+
+                {successMessage && (
+                    <div className="px-4 py-2 mb-3 text-green-700 bg-green-100 border border-green-400 rounded">
+                        {successMessage}
+                    </div>
+                )}
+
             </div>
 
             {/* Barra de búsqueda */}
@@ -67,6 +82,7 @@ export default function DevicesTable( {
                         <th className="px-3 py-1 text-center border">Acciones</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {paginatedDevices.map((d, index) => (
                         <tr key={d.id}>
@@ -87,12 +103,19 @@ export default function DevicesTable( {
                             </td>
                             <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                                 {editingId === d.id ? (
-                                    <ActionButton
-                                        type={"save"}
-                                        title="Guardar dispositivo"
-                                        onClick={() => saveDevice(d.id)}
-                                    >
-                                    </ActionButton>
+                                    <>
+                                        <ActionButton
+                                            type={"save"}
+                                            title="Guardar dispositivo"
+                                            onClick={() => saveDevice(d.id)}
+                                        >
+                                        </ActionButton>
+                                        <ActionButton
+                                            type={"delete"}
+                                            title="Eliminar dispositivo"
+                                            onClick={() => deleteDevice(d.id)}
+                                        />
+                                    </>
                                 ) : (
                                     <ActionButton
                                         type={"edit"}

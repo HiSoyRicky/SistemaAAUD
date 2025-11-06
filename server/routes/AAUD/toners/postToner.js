@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { pool } = require("../../../db/db");
+const { prisma } = require("../../../Prisma");
 const AppError = require("../../../utils/AppError");
 const catchAsync = require("../../../utils/catchAsync");
 const { body, validationResult } = require("express-validator");
@@ -22,20 +22,23 @@ router.post("/", validateToner, catchAsync(async (req, res) => {
         throw new AppError(firstError.msg, 400);
     }
 
-    const { id_printer_model, id_toner_model, id_color, stock, status } = req.body;
+    const { id_printer_model, id_toner_model, id_color, stock = 0, status = "Disponible" } = req.body;
 
     if (!id_printer_model || !id_toner_model || !id_color) {
-        throw new AppError("Faltan datos requeridos", 400);
+        throw new AppError("Faltan datos obligatorios", 400);
     }
 
-    const result = await pool.query(
-        `INSERT INTO toners (id_printer_model, id_toner_model, id_color, stock, status, last_update)
-             VALUES ($1, $2, $3, $4, $5, NOW())
-             RETURNING id`,
-        [id_printer_model, id_toner_model, id_color, stock || 0, status || 'Disponible']
-    );
-    res.json({ id: result.rows[0].id, message: "Tóner creado correctamente" });
+    const newToner = await prisma.toners.create({
+        data: {
+            id_printer_model,
+            id_toner_model,
+            id_color,
+            stock,
+            status
+        }
+    });
 
+    res.json({ id: newToner.id, message: "Tóner creado correctamente" });
 }));
 
 //  Crear modelo de tóner
@@ -46,20 +49,22 @@ router.post("/toner_models", catchAsync(async (req, res) => {
         throw new AppError(firstError.msg, 400);
     }
 
-    const { name } = req.body;
+    const { name, id_brand, id_device } = req.body;
 
-    if (!name || !name.trim()) {
-        throw new AppError("El nombre es requerido", 400);
+    if (!name || !id_brand || !id_device) {
+        throw new AppError("Faltan datos obligatorios", 400);
     }
 
-    const result = await pool.query(
-        `INSERT INTO toner_models (name) 
-             VALUES ($1) 
-             RETURNING id, name`,
-        [name.trim()]
-    );
-    res.json({ id: result.rows[0].id, message: "Modelo de toner creado correctamente" });
+    const newTonerModel = await prisma.toner_models.create({
+        data: {
+            name,
+            id_brand,
+            id_device
+        }
+    });
 
+    res.json({ id: newTonerModel.id, message: "Modelo de tóner creado correctamente" });
+    
 }));
 
 module.exports = router;

@@ -2,17 +2,17 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // Validar variables de entorno
-const { DB_USER, DB_PASSWORD, DB_SERVER, DB_NAME, DB_PORT } = process.env;
+const { POSTGRES_USER, POSTGRES_PASSWORD, DB_SERVER, POSTGRES_DB, DB_PORT } = process.env;
 
-if (!DB_USER || !DB_PASSWORD || !DB_SERVER || !DB_NAME || !DB_PORT) {
+if (!POSTGRES_USER || !POSTGRES_PASSWORD || !DB_SERVER || !POSTGRES_DB || !DB_PORT) {
     throw new Error("❌ Faltan variables de entorno para la conexión a la base de datos");
 }
 
 const pool = new Pool({
-    user: DB_USER,
-    password: DB_PASSWORD,
+    user: POSTGRES_USER,
+    password: POSTGRES_PASSWORD,
     host: DB_SERVER,
-    database: DB_NAME,
+    database: POSTGRES_DB,
     port: parseInt(DB_PORT, 10),
     max: 20,
     idleTimeoutMillis: 30000,

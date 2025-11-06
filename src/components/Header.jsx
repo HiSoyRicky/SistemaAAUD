@@ -1,11 +1,12 @@
 import { LogOut, Menu, LayoutDashboard, List, Cpu, Settings } from "lucide-react"; // Agregado: Icons reales de lucide-react para menús (reemplaza placeholders).
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "@/hooks/useAuth";
 
 function Header() {
   const { isAuthenticated = false, userType = null, loggedUserName = '', logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Iniciales del usuario
   const initials = loggedUserName
@@ -15,6 +16,10 @@ function Header() {
       .join("")
       .toUpperCase()
     : "?";
+
+  const handleClick = () => {
+    navigate('/dashboard');
+  };
 
   // Menús dinámicos por rol (con icons lucide para look pro)
   const menuItems = [
@@ -52,7 +57,10 @@ function Header() {
     <header className="sticky top-0 z-50 text-white shadow-md bg-gradient-to-r from-blue-900 to-indigo-600">
       <div className="flex items-center justify-between py-2 mx-auto max-w-7xl">
         {/* Logo / título */}
-        <h1 className="text-3xl font-extrabold tracking-wide text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-white to-gray-300">
+        <h1
+          onClick={handleClick}
+          role="button"
+          className="text-3xl font-extrabold tracking-wide text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-white to-gray-300">
           Sistema AAUD
         </h1>
 
@@ -108,7 +116,7 @@ function Header() {
             <button
               onClick={logout}
               title="Cerrar Sesión"
-              className="flex items-center gap-2 px-4 py-2 font-semibold text-white transition-all transform rounded-full shadow-md bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2">
+              className="flex gap-2 px-3 py-2 font-semibold text-white transition-all transform rounded-full shadow-md items-left bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2">
               <LogOut className="w-5 h-5" />
               <span className="hidden md:inline"></span>
             </button>

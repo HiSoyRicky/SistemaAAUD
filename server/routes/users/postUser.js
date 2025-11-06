@@ -1,34 +1,49 @@
 // server/routes/usuarios/postUser.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../db/db'); // tu pool de pg
+const { prisma } = require('../../Prisma');
+const AppError = require("../../utils/AppError");
+const catchAsync = require("../../utils/catchAsync");
 const bcrypt = require('bcrypt');
+const { body, validationResult } = require("express-validator");
+
+const validateUser = [
+    body("username").notEmpty().withMessage("El nombre de usuario es requerido"),
+    body("password").notEmpty().withMessage("La contraseña es requerida"),
+    body("email").isEmail().withMessage("El correo electrónico no es válido"),
+    body("id_rol").notEmpty().withMessage("El rol es requerido"),
+];
 
 // Crear un nuevo usuario
-router.post('/', async (req, res) => {
-    const { username, password, nombre_completo, id_rol, email } = req.body;
-
-    if (!username || !password || !nombre_completo || !id_rol) {
-        return res.status(400).json({ error: 'Todos los campos son requeridos' });
+router.post('/', validateUser, catchAsync(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return AppError(errors.array()[0].msg, 400);
     }
 
-    try {
-        // Hashear contraseña
-        const hashedPassword = await bcrypt.hash(password, 10);
+    const { username, password, email, id_rol } = req.body;
 
-        const query = `
-            INSERT INTO users (username, password, email, nombre_completo, id_rol, active)
-            VALUES ($1, $2, $3, $4, $5, true)
-        `;
-        const values = [username, hashedPassword, email || null, nombre_completo, id_rol];
+    const existingUser = await prisma.users.findUnique({
+        where: { username }
+    });
 
-        await pool.query(query, values);
-
-        res.json({ message: 'Usuario creado correctamente' });
-    } catch (err) {
-        console.error('❌ Error al crear usuario:', err.message);
-        res.status(500).json({ error: 'Error al crear usuario', details: err.message });
+    if (existingUser) {
+        return AppError('El nombre de usuario ya existe', 400);
     }
-});
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.users.create({
+        data: {
+            username,
+            password: hashedPassword,
+            email,
+            id_rol
+        }
+    });
+
+    res.json({ id: newUser.id, message: "Usuario creado correctamente" });
+    
+}));
 
 module.exports = router;

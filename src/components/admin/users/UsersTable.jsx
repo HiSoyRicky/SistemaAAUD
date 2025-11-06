@@ -1,7 +1,6 @@
 // src/components/admin/UsersTable.jsx
 import React from "react";
 import ActionButton from "@/components/ui/ActionButton";
-import { set } from "zod";
 
 export default function UsersTable({
     users,
@@ -11,27 +10,24 @@ export default function UsersTable({
     currentPage = 1,
     itemsPerPage = 10,
     setCurrentPage,
-    setEditing,
     setShowForm,
     showForm,
     search,
     setSearch,
-    message,
-    setMessage,
-    messageType,
-    setMessageType
 
 }) {
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
+
                 <button
                     onClick={() => setShowForm(!showForm)}
                     className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
                 >
                     {showForm ? "Ocultar formulario" : "Crear nuevo usuario"}
                 </button>
+                
             </div>
 
             {/* Barra de búsqueda */}
@@ -42,26 +38,13 @@ export default function UsersTable({
                     value={search}
                     onChange={(e) => {
                         setSearch(e.target.value);
-                        setCurrentPage(1); // reiniciar a página 1 al buscar
+                        setCurrentPage(1);
                     }}
                     className="w-full px-3 py-2 border rounded"
                 />
             </div>
 
-            {
-                message && (
-                    <SuccessMessage
-                        message={message}
-                        type={messageType}
-                        onClose={() => setMessage('')}
-                        duration={3000}
-                    />
-                )
-            }
-
-
             <table className="p-1 bg-white rounded-lg shadow-md">
-
 
                 <thead>
                     <tr className="bg-gray-200">

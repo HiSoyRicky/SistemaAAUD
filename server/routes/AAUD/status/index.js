@@ -8,9 +8,6 @@ const updateStatus = require('./updateStatus');
 const postStatus = require('./postStatus');
 
 
-
-
-
 // Usar las rutas
 router.use(getStatus);
 router.use(updateStatus);
