@@ -10,6 +10,7 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
         <div ref={ref} className="p-16 text-sm leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
             <table className="w-full border-collapse">
                 <thead>
+
                     {/* Logos y encabezado */}
                     <tr>
                         <td colSpan="6" className="text-center">
@@ -27,6 +28,7 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                     </tr>
                 </thead>
                 <tbody>
+
                     {/* Fila de la fecha */}
                     <tr>
                         <td colSpan="5"></td>
@@ -158,7 +160,7 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                             </p>
                         </td>
                     </tr>
-                    
+
                 </tbody>
             </table>
         </div>

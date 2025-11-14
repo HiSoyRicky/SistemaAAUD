@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatDateToDDMMYYYY } from '@/utils/formatDate.js';
+import { formatDateToDDMMYYYY, formatDateTime } from '@/utils/formatDate.js';
 import Pagination from "@/components/Pagination";
 import ActionButton from '@/components/ui/ActionButton.jsx';
 
@@ -124,7 +124,9 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                     <td className={`${thClass} border`}>
                                         <div className="flex flex-col">
                                             <span>{formatDateToDDMMYYYY(incident.creation_date)}</span>
-                                            <span className="text-xs text-gray-400">{new Date(incident.creation_date).toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span className="text-xs text-gray-400">
+                                                {formatDateTime(incident.creation_date).split(' ')[1] + ' ' + formatDateTime(incident.creation_date).split(' ')[2]}
+                                            </span>
                                         </div>
                                     </td>
                                     <td
