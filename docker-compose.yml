@@ -1,5 +1,17 @@
-version: "3.9"
 services:
+  db:
+    image: postgres:15
+    container_name: aaud-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: sistemaaaud
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   backend:
     build:
       context: .
@@ -7,8 +19,11 @@ services:
     container_name: aaud-backend
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: always
 
   frontend:
     build:
@@ -19,3 +34,7 @@ services:
       - "80:80"
     depends_on:
       - backend
+    restart: always
+
+volumes:
+  postgres_data:

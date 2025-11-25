@@ -48,6 +48,19 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                 />
             </div>
 
+            <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
+                    Contraseña
+                </label>
+                <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                />
+            </div>
+
             {/* Rol */}
             <div>
                 <label className="block mb-2 text-sm font-semibold text-gray-700">

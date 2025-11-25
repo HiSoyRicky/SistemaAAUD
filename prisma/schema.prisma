@@ -144,7 +144,7 @@ model ubications {
 model users {
   id                                             Int            @id(map: "pk_users") @default(autoincrement())
   nombre_completo                                String         @db.VarChar(50)
-  username                                       String         @db.VarChar(50)
+  username                                       String         @unique @db.VarChar(50)
   password                                       String?        @db.VarChar(255)
   email                                          String?        @db.VarChar(50)
   id_rol                                         Int

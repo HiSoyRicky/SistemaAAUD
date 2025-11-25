@@ -1,4 +1,4 @@
-// server/routes/usuarios/postUser.js
+// postUser.js
 const express = require('express');
 const router = express.Router();
 const { prisma } = require('../../Prisma');
@@ -11,24 +11,29 @@ const validateUser = [
     body("username").notEmpty().withMessage("El nombre de usuario es requerido"),
     body("password").notEmpty().withMessage("La contraseña es requerida"),
     body("email").isEmail().withMessage("El correo electrónico no es válido"),
+    body("password").notEmpty().withMessage("La contraseña es requerida"),
     body("id_rol").notEmpty().withMessage("El rol es requerido"),
 ];
 
 // Crear un nuevo usuario
-router.post('/', validateUser, catchAsync(async (req, res) => {
+router.post('/', validateUser, catchAsync(async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return AppError(errors.array()[0].msg, 400);
+        return next(new AppError(errors.array()[0].msg, 400));
     }
 
-    const { username, password, email, id_rol } = req.body;
+    // Extraer datos
+    let { nombre_completo, username, password, email, id_rol, active } = req.body;
 
-    const existingUser = await prisma.users.findUnique({
+    id_rol = parseInt(id_rol);
+    active = active ?? 1;
+
+    const existingUser = await prisma.users.findFirst({
         where: { username }
     });
 
     if (existingUser) {
-        return AppError('El nombre de usuario ya existe', 400);
+        return next(new AppError('El nombre de usuario ya existe', 400));
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -36,14 +41,16 @@ router.post('/', validateUser, catchAsync(async (req, res) => {
     const newUser = await prisma.users.create({
         data: {
             username,
+            nombre_completo,
             password: hashedPassword,
             email,
-            id_rol
+            id_rol,
+            active
         }
     });
 
     res.json({ id: newUser.id, message: "Usuario creado correctamente" });
-    
+
 }));
 
 module.exports = router;

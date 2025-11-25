@@ -5,15 +5,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copiar todo el backend y Prisma
+# Copiar server y prisma
 COPY ./server ./server
 COPY ./prisma ./prisma
 
-# Generar Prisma Client
+# Generar Prisma Client dentro de Docker
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-# Exponer puerto del backend
 EXPOSE 3000
 
-# Comando de inicio del backend
 CMD ["node", "server/Server.js"]

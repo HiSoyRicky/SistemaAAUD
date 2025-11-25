@@ -22,62 +22,44 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [FRONTEND_URL, "http://localhost:5173"],
+    origin: [
+      FRONTEND_URL,
+      "http://localhost:5173",
+      "http://aaud-system.aaud.local",
+      "http://172.25.30.26"
+    ],
     methods: ['GET', 'POST'],
+    credentials: false
   },
   transports: ['websocket', 'polling'],
 });
+
 
 // Importar rutas
 const authRouter = require('./routes/auth');
 const errorHandler = require('./middleware/errorHandler');
 const AllRoutes = require('./routes/AllRoutes');
 
-const allowedOrigins = [
-    'http://localhost:5173', // Para cuando usas el servidor de desarrollo de Vite (npm run dev)
-    'http://localhost:3000', // Para cuando tu propio Express server sirve el HTML del frontend
-    // Agrega aquí la IP 172.23.98.103 si es un servidor de red, aunque es mejor evitar IPs fijas en producción
-];
-
-const corsOptions = {
-    origin: (origin, callback) => {
-        // Permitir solicitudes sin origen (como Postman o peticiones del mismo servidor)
-        if (!origin) return callback(null, true); 
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true); // Origen permitido
-        } else {
-            callback(new Error('Not allowed by CORS'), false); // Origen denegado
-        }
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-};
-
-app.use(cors(corsOptions));
-
 // Seguridad HTTP y compresión
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        connectSrc: ["'self'", FRONTEND_URL, "http://localhost:5173", "http://localhost:3000", "http://172.23.98.103:3000",],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:"],
-      },
-    },
+    contentSecurityPolicy: false,   
+    crossOriginEmbedderPolicy: false,
+    hsts: false
   })
 );
+
+
 app.use(compression());
 
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: [FRONTEND_URL, "http://localhost:5173", "http://172.23.98.103:3000"],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
+  origin: "*",
+  methods: "GET,POST,PUT,DELETE",
+  credentials: false
 }));
+
 
 // Limite de peticiones
 const loginLimiter = rateLimit({
@@ -103,18 +85,25 @@ app.use('/api/login', loginLimiter);
 app.use('/api', authRouter);
 app.use('/api', AllRoutes);
 
-// Manejar errores
-app.use(errorHandler);
+// Redirigir raíz hacia /login
+app.get("/", (req, res) => {
+  return res.redirect("/login");
+});
 
+// ========= SERVIR FRONTEND DE PRODUCCIÓN =========
+const publicPath = path.join(__dirname, "public");
 
-// Servir frontend compilado
-const publicPath = path.join(__dirname, '..', 'dist');
+// Servir archivos estáticos
 app.use(express.static(publicPath));
 
-// Catch-all para SPA (debe ir al final, después de todas las rutas)
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(publicPath, 'index.html'));
+// SPA fallback para React (Express 5 requiere regex)
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(publicPath, "index.html"));
 });
+// ================================================
+
+// Manejar errores
+app.use(errorHandler);
 
 // Manejar conexiones de Socket.IO
 io.on('connection', (socket) => {
@@ -137,24 +126,7 @@ io.on('connection', (socket) => {
 // Hacer que io esté disponible en las rutas
 app.set('io', io);
 
-// Servidor con manejo de error de puerto en uso
-const startServer = (port) => {
-  server.listen(port, '0.0.0.0');
-
-  server.on('listening', () => {
-    console.log(`✅ Servidor escuchando en http://0.0.0.0:${port}`);
-  });
-
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.warn(`⚠️  El puerto ${port} está en uso. Intentando con ${port + 1}...`);
-      startServer(port + 1);
-    } else {
-      console.error('❌ Error al iniciar el servidor:', err);
-      process.exit(1);
-    }
-  });
-};
-
-// Iniciar servidor
-startServer(parseInt(port, 10));
+// Iniciar servidor en puerto fijo
+server.listen(port, '0.0.0.0', () => {
+  console.log(`✅ Servidor escuchando en http://0.0.0.0:${port}`);
+});
