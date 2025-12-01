@@ -1,14 +1,21 @@
-import { LogOut, Menu, LayoutDashboard, List, Cpu, Settings } from "lucide-react"; // Agregado: Icons reales de lucide-react para menús (reemplaza placeholders).
+import { LogOut, Menu, LayoutDashboard, List, Cpu, Settings, ChevronDown } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "@/hooks/useAuth";
 
 function Header() {
-  const { isAuthenticated = false, userType = null, loggedUserName = '', logout } = useAuth();
+  const {
+    isAuthenticated = false,
+    userType = null,
+    loggedUserName = '',
+    loggedUserId,
+    logout
+  } = useAuth();
+  const userId = loggedUserId;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Iniciales del usuario
   const initials = loggedUserName
     ? loggedUserName
       .split(" ")
@@ -18,10 +25,9 @@ function Header() {
     : "?";
 
   const handleClick = () => {
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
-  // Menús dinámicos por rol (con icons lucide para look pro)
   const menuItems = [
     {
       icon: <LayoutDashboard className="w-5 h-5" />,
@@ -53,6 +59,15 @@ function Header() {
     item.allowed.includes(userType)
   );
 
+  const roleLabel =
+    userType === "admin"
+      ? "Admin"
+      : userType === "tecnico"
+        ? "Técnico"
+        : userType === "secretaria"
+          ? "Secretaria"
+          : "Trabajador";
+
   return (
     <header className="sticky top-0 z-50 text-white shadow-md bg-gradient-to-r from-blue-900 to-indigo-600">
       <div className="flex items-center justify-between py-2 mx-auto max-w-7xl">
@@ -60,14 +75,15 @@ function Header() {
         <h1
           onClick={handleClick}
           role="button"
-          className="text-3xl font-extrabold tracking-wide text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-white to-gray-300">
+          className="text-3xl font-extrabold tracking-wide text-transparent cursor-pointer md:text-5xl bg-clip-text bg-gradient-to-r from-white to-gray-300"
+        >
           Sistema AAUD
         </h1>
 
         {/* Menú de escritorio */}
         {isAuthenticated && (
           <nav
-            className={` overflow-hidden transition-all duration-500 ease-in-out md:flex 
+            className={`overflow-hidden transition-all duration-500 ease-in-out md:flex 
               ${menuOpen ? "max-h-96" : "max-h-0 md:max-h-full"}`}
           >
             {filteredMenuItems.map((item) => (
@@ -94,32 +110,57 @@ function Header() {
         </button>
 
         {isAuthenticated && (
-          <div className="flex items-center space-x-3">
-            {/* Avatar */}
-            <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-blue-600 bg-white rounded-full shadow-md ring-1 ring-white">
-              {initials}
-            </div>
-            {/* Nombre y rol */}
-            <span className="hidden text-sm font-medium md:inline">
-              {loggedUserName} (
-              {userType === "admin"
-                ? "Admin"
-                : userType === "tecnico"
-                  ? "Técnico"
-                  : userType === "secretaria"
-                    ? "Secretaria"
-                    : "Trabajador"}
-              )
-            </span>
-
-            {/* Botón logout */}
+          <div className="relative flex items-center space-x-3">
+            {/* Botón de usuario (avatar + nombre + rol) */}
             <button
-              onClick={logout}
-              title="Cerrar Sesión"
-              className="flex gap-2 px-3 py-2 font-semibold text-white transition-all transform rounded-full shadow-md items-left bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2">
-              <LogOut className="w-5 h-5" />
-              <span className="hidden md:inline"></span>
+              type="button"
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+              className="flex items-center gap-2 px-2 py-1 text-sm font-medium transition-colors rounded-full hover:bg-blue-800/60"
+            >
+              {/* Avatar */}
+              <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-blue-600 bg-white rounded-full shadow-md ring-1 ring-white">
+                {initials}
+              </div>
+
+              {/* Nombre + rol (solo desktop) */}
+              <span className="hidden md:flex md:flex-col md:items-start">
+                <span className="leading-tight">{loggedUserName}</span>
+                <span className="text-xs text-blue-100/80">{roleLabel}</span>
+              </span>
+
+              {/* Flechita */}
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${userMenuOpen ? "rotate-180" : "rotate-0"
+                  }`}
+              />
             </button>
+
+            {/* Dropdown usuario */}
+            {userMenuOpen && (
+              <div className="absolute right-0 z-50 w-40 p-2 mt-2 text-sm text-gray-800 bg-white rounded-lg shadow-lg top-full">
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    navigate("/perfil");
+                  }}
+                  className="flex items-center w-full gap-2 px-3 py-2 text-left rounded-md hover:bg-gray-100"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Mi perfil</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    logout();
+                  }}
+                  className="flex items-center w-full gap-2 px-3 py-2 text-left text-red-600 rounded-md hover:bg-red-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Cerrar sesión</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -142,7 +183,7 @@ function Header() {
           ))}
         </nav>
       )}
-    </header >
+    </header>
   );
 }
 

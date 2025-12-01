@@ -1,4 +1,4 @@
-// server/routes/usuarios/updateUser.js
+// updateUser.js
 const express = require('express');
 const router = express.Router();
 const { prisma } = require('../../Prisma');
@@ -10,7 +10,6 @@ const { body, validationResult } = require("express-validator");
 const validateUserUpdate = [
     body("username").optional().notEmpty().withMessage("El nombre de usuario no puede estar vacío"),
     body("nombre_completo").optional().notEmpty().withMessage("El nombre completo no puede estar vacío"),
-    body("email").optional().isEmail().withMessage("El correo electrónico no es válido"),
     body("id_rol").optional().notEmpty().withMessage("El rol no puede estar vacío"),
 ];
 
@@ -22,25 +21,37 @@ router.put('/:id', validateUserUpdate, catchAsync(async (req, res) => {
     }
 
     const userId = parseInt(req.params.id, 10);
-    const { username, email, id_rol, nombre_completo } = req.body;
-
     if (isNaN(userId)) {
         throw new AppError('ID de usuario inválido', 400);
     }
 
+    console.log(" BODY RECIBIDO EN /usuarios/:id =>", req.body);
+
+    const { username, id_rol, nombre_completo, email, active } = req.body;
+
+    // Armamos el objeto de actualización SOLO con lo que venga
+    const dataToUpdate = {};
+
+    if (username !== undefined) dataToUpdate.username = username;
+    if (nombre_completo !== undefined) dataToUpdate.nombre_completo = nombre_completo;
+    if (id_rol !== undefined) dataToUpdate.id_rol = Number(id_rol);
+    if (email !== undefined) dataToUpdate.email = email;
+
+    if (active !== undefined) {
+        dataToUpdate.active = Number(active);
+    }
+
+    console.log(" DATA QUE SE MANDA A PRISMA =>", dataToUpdate);
+
     const updatedUser = await prisma.users.update({
         where: { id: userId },
-        data: {
-            username,
-            nombre_completo,
-            email,
-            id_rol
-        }
+        data: dataToUpdate
     });
+
+    console.log(" USUARIO ACTUALIZADO =>", updatedUser);
 
     res.json({ id: updatedUser.id, message: "Usuario actualizado correctamente" });
 }));
-
 
 // Actualizar la contraseña de un usuario
 router.put('/:id/password', catchAsync(async (req, res) => {

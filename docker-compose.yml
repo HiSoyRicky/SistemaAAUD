@@ -1,40 +1,30 @@
 services:
-  db:
-    image: postgres:15
-    container_name: aaud-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 12345678
-      POSTGRES_DB: sistemaaaud
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   backend:
     build:
       context: .
       dockerfile: server/Dockerfile
     container_name: aaud-backend
-    ports:
-      - "3000:3000"
     env_file:
       - .env
-    depends_on:
-      - db
     restart: always
+    ports:
+      - "3001:3000"
+    networks:
+      - aaud-net
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: aaud-frontend
-    ports:
-      - "80:80"
     depends_on:
       - backend
     restart: always
+    ports:
+      - "81:80"
+    networks:
+      - aaud-net
 
-volumes:
-  postgres_data:
+networks:
+  aaud-net:
+    driver: bridge

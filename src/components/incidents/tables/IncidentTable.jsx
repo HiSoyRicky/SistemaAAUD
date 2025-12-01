@@ -63,6 +63,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                             {showExtraColumns && (
                                 <>
                                     <th className={tdClass}>ID</th>
+                                    <th className={tdClass}>ID Usuario</th>
                                 </>
                             )}
                             <th className={tdClass}>Usuario</th>
@@ -104,6 +105,8 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                         <>
                                             {/* ID de la incidencia */}
                                             <td className={`${thClass} border`}>{formatId(incident.id_incident)}</td>
+
+                                            <td className={`${thClass} border`}>{incident.id_user}</td>
                                         </>
                                     )}
                                     <td className={`${thClass} border`}>{incident.reporter_name}</td>

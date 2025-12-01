@@ -37,7 +37,7 @@ async function initPool() {
         client.release();
     } catch (err) {
         console.error('❌ Error al conectar a PostgreSQL', err);
-        process.exit(-1); // Solo exit si falla inicial
+     //   process.exit(-1); // Solo exit si falla inicial
     }
 }
 

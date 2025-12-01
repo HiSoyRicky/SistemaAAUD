@@ -145,6 +145,7 @@ export async function exportInventoryToExcel(devices) {
 
     // Definir columnas
     const columns = [
+        { header: 'ID', key: 'id', width: 7.5 },
         { header: 'Marbete', key: 'tag', width: 14 },
         { header: 'Ubicación', key: 'ubication', width: 20 },
         { header: 'Departamento', key: 'departamento', width: 25 },
@@ -162,6 +163,7 @@ export async function exportInventoryToExcel(devices) {
     // Mapea inventario a filas
     const rows = devices.map((item) => {
         return {
+            id: item.id,
             tag: item.tag || 'N/A',
             ubication: item.ubication_name || 'N/A',
             departamento: item.department_name || 'N/A',

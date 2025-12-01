@@ -290,14 +290,6 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                 onPageChange={(page) => setCurrentPage(page)}
             />
 
-            <div className="flex justify-center mt-2">
-                <button
-                    onClick={toggleExtraColumns}
-                    className="px-3 py-1 text-gray-700 bg-gray-300 rounded hover:bg-gray-400"
-                >
-                    {showExtraColumns ? 'Ocultar columnas extra' : 'Mostrar columnas extra'}
-                </button>
-            </div>
         </div >
     )
 }

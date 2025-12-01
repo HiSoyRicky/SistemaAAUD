@@ -11,6 +11,7 @@ import useAuth from './hooks/useAuth';
 import IncidentDetails from './components/incidents/pages/IncidentDetails';
 import SelectorPage from './pages/SelectorPage';
 import InventoryPage from './components/inventory/pages/InventoryPage';
+import ProfilePage from './pages/ProfilePage';
 import AdminRoute from '@/components/admin/AdminRoute';
 import AdminPage from "./components/admin/pages/AdminPage";
 import DevicesManager from "./components/admin/devices/DevicesManager";
@@ -99,6 +100,17 @@ function App() {
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'secretaria']}>
               <PrivateLayout>
                 <InventoryPage />
+              </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/perfil"
+          element={
+            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'secretaria']}>
+              <PrivateLayout>
+                <ProfilePage />
               </PrivateLayout>
             </PrivateRoute>
           }

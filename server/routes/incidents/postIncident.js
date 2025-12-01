@@ -124,7 +124,8 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
         try {
             const formattedId = insertedId.toString().padStart(6, '0');
             await sendMail({
-                to: 'rvargas@aaud.gob.pa',
+                from: '"No responder" <no-responder@aaud.gob.pa>',
+                to: 'soporte@aaud.gob.pa',
                 subject: `📥 Nueva incidencia registrada (#${formattedId})`,
                 html: `
                     <div style="

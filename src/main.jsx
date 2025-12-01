@@ -7,7 +7,6 @@ import App from './App.jsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
-import NotificationsContainer from './components/NotificationsContainer.jsx';
 
 // Importar CSS de Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -56,7 +55,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <NotificationProvider>
             <App />
-            <NotificationsContainer />
           </NotificationProvider>
         </AuthProvider>
       </BrowserRouter>

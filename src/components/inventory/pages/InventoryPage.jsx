@@ -21,32 +21,22 @@ function InventoryPage() {
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [showInventoryForm, setShowInventoryForm] = useState(false);
     const [editingDevice, setEditingDevice] = useState(null);
-    const [showPrinters, setShowPrinters] = useState(false);
     const printRef = useRef();
     const { addNotification } = useNotifications();
     const [printType, setPrintType] = useState('transfer');
 
-    const loadDevices = async () => {
+    const loadDevices = async (searchTerm = "") => {
         try {
-            const data = await Inventory.fetchDevices(search);
+            const data = await Inventory.fetchDevices(searchTerm);
             setDevices(data);
         } catch (error) {
             console.error('Error al obtener dispositivos:', error);
-        } finally {
         }
     };
 
+
     useEffect(() => {
-        const loadDevices = async () => {
-            try {
-                // Trae TODOS los dispositivos, no uses search aquí
-                const data = await Inventory.fetchDevices("");
-                setDevices(data);
-            } catch (error) {
-                console.error('Error al obtener dispositivos:', error);
-            }
-        };
-        loadDevices();
+        loadDevices(search);
     }, [search]);
 
 
@@ -80,10 +70,10 @@ function InventoryPage() {
         }
         setSelectedDevice({
             ...device,
-            role: 'recibe', // Rol inicial por defecto
-            userName: loggedUserName || 'Técnico no identificado', // Nombre del técnico logueado
-            userTransfiere: device.userTransfiere || '', // Nombre del emisor (puede venir del dispositivo)
-            userRecibe: device.userRecibe || '', // Receptor por defecto es el técnico
+            role: 'recibe',
+            userName: loggedUserName || 'Técnico no identificado',
+            userTransfiere: device.userTransfiere || '',
+            userRecibe: device.userRecibe || '',
             ubication_destino_id: device.ubication_destino_id || null,
             department_destino_id: device.department_destino_id || null,
             ubication_destino_name: device.ubication_destino_name || '',
@@ -100,12 +90,10 @@ function InventoryPage() {
 
             await Inventory.updateDevice(editingDevice.id, updatedData);
 
-            setDevices(devices.map(device =>
-                device.id === editingDevice.id
-                    ? { ...device, ...updatedData }
-                    : device
-            ));
+            await loadDevices();
+
             setEditingDevice(null);
+
             addNotification('Dispositivo actualizado con éxito ✅', 'success');
         } catch (error) {
             console.error('Error al actualizar dispositivo:', error);
@@ -141,17 +129,21 @@ function InventoryPage() {
     const filteredDevices = devices.filter(d => {
         const searchWords = search.toLowerCase().split(" ").filter(w => w.trim() !== "");
 
-        // Buscar que cada palabra
+        const toStrLower = (val) =>
+            val === null || val === undefined
+                ? ""
+                : String(val).toLowerCase();
+
         const matchesSearch = searchWords.every(word =>
-            (d.ubication_name?.toLowerCase() || "").includes(word) ||
-            (d.tag?.toLowerCase() || "").includes(word) ||
-            (d.department_name?.toLowerCase() || "").includes(word) ||
-            (d.user?.toLowerCase() || "").includes(word) ||
-            (d.device_name?.toLowerCase() || "").includes(word) ||
-            (d.brand_name?.toLowerCase() || "").includes(word) ||
-            (d.model_name?.toLowerCase() || "").includes(word) ||
-            (d.transferdate?.toLowerCase() || "").includes(word) ||
-            (d.serie?.toLowerCase() || "").includes(word)
+            toStrLower(d.ubication_name).includes(word) ||
+            toStrLower(d.tag).includes(word) ||
+            toStrLower(d.department_name).includes(word) ||
+            toStrLower(d.user).includes(word) ||
+            toStrLower(d.device_name).includes(word) ||
+            toStrLower(d.brand_name).includes(word) ||
+            toStrLower(d.model_name).includes(word) ||
+            toStrLower(d.transferdate).includes(word) ||   // ahora seguro
+            toStrLower(d.serie).includes(word)
         );
 
         const matchesUbication = !filters.ubication || d.ubication_name === filters.ubication;
@@ -159,14 +151,9 @@ function InventoryPage() {
         const matchesTransferDate =
             (!filters.transferdate || new Date(d.transferdate) >= new Date(filters.transferdate));
 
-        // Filtro de impresoras: si showPrinters es true, solo mostrar impresoras con IP
-        const matchesPrinter = !showPrinters ||
-            (d.device_name?.toLowerCase().includes('impresora') &&
-                d.ip &&
-                d.ip.trim() !== '');
-
-        return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate && matchesPrinter;
+        return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate;
     });
+
 
 
     return (
@@ -187,23 +174,12 @@ function InventoryPage() {
                             className="border px-3 h-8 rounded text-sm flex-1 min-w-[300px] focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
                         <button
-                            onClick={loadDevices}
+                            onClick={() => loadDevices(search)}
                             className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-blue-500 rounded"
                         >
                             <Search size={16} /> Buscar
                         </button>
 
-                        {/* Botón para mostrar impresoras */}
-                        <button
-                            onClick={() => setShowPrinters(!showPrinters)}
-                            className={`flex items-center h-8 gap-1 px-2 text-sm rounded ${showPrinters
-                                ? 'text-white bg-red-500 hover:bg-red-600'
-                                : 'text-white bg-blue-500 hover:bg-blue-600'
-                                }`}
-                        >
-                            <Printer size={16} />
-                            {showPrinters ? 'Ocultar Impresoras' : 'Ver Impresoras'}
-                        </button>
 
                     </div>
 

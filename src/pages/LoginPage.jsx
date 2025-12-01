@@ -119,6 +119,7 @@ function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-2 border rounded"
                   placeholder="Ingresa tu usuario"
+                  autoComplete="username"
                   required
                 />
               </div>
@@ -135,6 +136,7 @@ function LoginPage() {
                   className="w-full px-4 py-2 border rounded"
                   placeholder="Ingresa tu contraseña"
                   required
+                  autoComplete="current-password"
                 />
               </div>
             </>

@@ -8,6 +8,7 @@ export default function UsersManager() {
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
     const [form, setForm] = useState({
+        id: null,
         nombre_completo: "",
         username: "",
         email: "",
@@ -61,8 +62,8 @@ export default function UsersManager() {
             username: user.username || "",
             email: user.email || "",
             password: "",
-            id_rol: user.id_rol,
-            active: user.active
+            id_rol: Number(user.id_rol),
+            active: Number(user.active),  
         });
         setEditing(true);
         setShowForm(true);

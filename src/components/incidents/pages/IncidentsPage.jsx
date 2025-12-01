@@ -77,18 +77,25 @@ function IncidentsPage() {
     const fetchIncidents = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/incidents/`);
-            let fetchedIncidents = response.data;
+            let fetchedIncidents = Array.isArray(response.data) ? response.data : [];
+
             if (userType === 'tecnico' && loggedUserId && !isNaN(parseInt(loggedUserId))) {
-                fetchedIncidents = fetchedIncidents.filter((inc) => inc.id_technician === parseInt(loggedUserId));
+                fetchedIncidents = fetchedIncidents.filter(
+                    (inc) => inc.id_technician === parseInt(loggedUserId)
+                );
             }
+
             setIncidents(fetchedIncidents);
-            // Unirse a las salas de todas las incidencias cargadas
+
+            // Solo si es array:
             fetchedIncidents.forEach((inc) => socket.emit('joinIncidentRoom', inc.id));
         } catch (error) {
             console.error('Error al cargar incidencias:', error);
             showNotification('Error al cargar incidencias: ' + error.message, 'error');
+            setIncidents([]);
         }
     };
+
 
     const fetchTechnicians = async () => {
         try {
@@ -212,14 +219,18 @@ function IncidentsPage() {
         showNotification('Incidencias exportadas a Excel', 'success');
     };
 
+    const incidentsArray = Array.isArray(incidents) ? incidents : [];
+
     const filteredIncidentsForTable =
         userType === 'tecnico' && loggedUserId && !isNaN(parseInt(loggedUserId))
-            ? incidents.filter((inc) => inc.id_technician && inc.id_technician === parseInt(loggedUserId))
-            : incidents;
+            ? incidentsArray.filter(
+                (inc) => inc.id_technician && inc.id_technician === parseInt(loggedUserId)
+            )
+            : incidentsArray;
 
-    const sortedIncidentsForTable = filteredIncidentsForTable.slice().sort((a, b) =>
-        new Date(b.creation_date) - new Date(a.creation_date)
-    );
+    const sortedIncidentsForTable = filteredIncidentsForTable
+        .slice()
+        .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
 
     return (
         <Container fluid className="p-4">
@@ -312,9 +323,9 @@ function IncidentsPage() {
                     />
                 </div>
             ) : (
-                
+
                 incidentToEdit && <div>Error: Incidencia no válida</div>
-                
+
             )}
 
             {/* Modales */}

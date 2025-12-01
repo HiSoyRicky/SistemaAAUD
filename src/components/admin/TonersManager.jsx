@@ -283,7 +283,7 @@ export default function TonersManager() {
                         <tr>
                             <th className="px-3 py-1 border">#</th>
                             <th className="px-3 py-1 border">Impresora</th>
-                            <th className="px-3 py-1 border">Modelo Tóner</th>
+                            <th className="px-3 py-1 border">Modelo</th>
                             <th className="px-3 py-1 border">Color</th>
                             <th className="px-3 py-1 border">Stock</th>
                             <th className="px-3 py-1 border">Estado</th>

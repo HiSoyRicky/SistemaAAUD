@@ -1,4 +1,4 @@
-// src/context/AuthContext.jsx
+// AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
@@ -19,14 +19,19 @@ export const AuthProvider = ({ children }) => {
     const storedUserId = sessionStorage.getItem('loggedUserId');
     const storedUsername = sessionStorage.getItem('username');
 
-    if (storedUser && storedUserType && storedUserName && storedUserId && storedUsername) {
+    // Evitar valores basura como "undefined" o "null"
+    const safeUsername =
+      storedUsername && storedUsername !== 'undefined' && storedUsername !== 'null'
+        ? storedUsername
+        : null;
 
+    if (storedUser && storedUserType && storedUserName && storedUserId && safeUsername) {
       try {
         setIsAuthenticated(true);
         setUserType(storedUserType);
         setLoggedUserName(storedUserName);
         setLoggedUserId(storedUserId);
-        setUsername(storedUsername);
+        setUsername(safeUsername);
       } catch (e) {
         console.error("Error parsing stored user data:", e);
         logout();
@@ -35,42 +40,49 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (loginIdentifier, password) => {
     try {
-      const response = await axios.post('/api/login', { username, password });
+      const response = await axios.post('/api/login', { username: loginIdentifier, password });
       const { usuario } = response.data;
 
       const userRoleMap = {
-        1: 'admin',      // ID 1 para Administrador
-        2: 'tecnico',    // ID 2 para Técnico
-        3: 'secretaria', // ID 3 para Secretaria
-        4: 'trabajador', // ID 4 para Trabajador
+        1: 'admin',
+        2: 'tecnico',
+        3: 'secretaria',
+        4: 'trabajador',
       };
 
-      const type = userRoleMap[usuario.id_rol] || 'trabajador'; // Default a trabajador si no coincide
+      const type = userRoleMap[usuario.id_rol] || 'trabajador';
+
+      // Resolver username de forma segura
+      const resolvedUsername =
+        usuario.username ||
+        usuario.usuario ||
+        usuario.correo ||
+        loginIdentifier ||
+        '';
 
       setIsAuthenticated(true);
       setUserType(type);
-      setLoggedUserName(usuario.nombre_completo || usuario.username);
+      setLoggedUserName(usuario.nombre_completo || resolvedUsername);
       setLoggedUserId(usuario.id);
-      setUsername(usuario.username);
+      setUsername(resolvedUsername);
 
       sessionStorage.setItem('user', JSON.stringify(usuario));
       sessionStorage.setItem('userType', type);
-      sessionStorage.setItem('loggedUserName', usuario.nombre_completo || usuario.username);
+      sessionStorage.setItem('loggedUserName', usuario.nombre_completo || resolvedUsername);
       sessionStorage.setItem('loggedUserId', usuario.id);
-      sessionStorage.setItem('username', usuario.username);
+      sessionStorage.setItem('username', resolvedUsername);
 
       return { success: true, userType: type };
     } catch (error) {
-      console.error('Login failed:', error.response?.data || error.message);
+      console.error('Login failed:', error?.response?.data || error.message);
       logout();
 
-      // 429 con retryAfter
       if (error.response?.status === 429) {
         throw {
-          message: error.response.data?.error || "Demasiados intentos fallidos.",
-          retryAfter: error.response.data?.retryAfter || 0
+          message: error.response.data?.error || 'Demasiados intentos fallidos.',
+          retryAfter: error.response.data?.retryAfter || 0,
         };
       }
 
@@ -88,6 +100,11 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('userType', data.userType);
     sessionStorage.setItem('loggedUserName', data.loggedUserName);
     sessionStorage.setItem('loggedUserId', data.user ? data.user.id : null);
+
+    if (data.username) {
+      setUsername(data.username);
+      sessionStorage.setItem('username', data.username);
+    }
   };
 
   const logout = () => {
@@ -95,21 +112,23 @@ export const AuthProvider = ({ children }) => {
     setUserType(null);
     setLoggedUserName(null);
     setLoggedUserId(null);
+    setUsername(null);
     sessionStorage.clear();
   };
 
   return (
-    <AuthContext.Provider value={{
-      isAuthenticated,
-      userType,
-      loggedUserName,
-      loggedUserId,
-      username,
-      loading,
-      login,
-      logout,
-      setAuthData,
-    }}
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        userType,
+        loggedUserName,
+        loggedUserId,
+        username,
+        loading,
+        login,
+        logout,
+        setAuthData,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -117,5 +136,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
 export { AuthContext };

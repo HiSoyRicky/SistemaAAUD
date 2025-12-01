@@ -25,7 +25,7 @@ const io = new Server(server, {
     origin: [
       FRONTEND_URL,
       "http://localhost:5173",
-      "http://aaud-system.aaud.local",
+      "http://system.aaud.local",
       "http://172.25.30.26"
     ],
     methods: ['GET', 'POST'],

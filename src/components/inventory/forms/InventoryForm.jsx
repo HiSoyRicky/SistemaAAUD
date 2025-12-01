@@ -112,7 +112,11 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         if (!formData.id_model) newErrors.id_model = 'Seleccione un modelo';
         if (!formData.id_status) newErrors.id_status = 'Seleccione un estado';
         if (!formData.serie.trim()) newErrors.serie = 'La serie es obligatoria';
-        if (formData.ip && formData.ip.trim() !== '' && !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(formData.ip)) newErrors.ip = 'La IP no es válida';
+        if (
+            formData.ip &&
+            formData.ip.trim() !== '' &&
+            !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(formData.ip)
+        ) newErrors.ip = 'La IP no es válida';
 
         setErrors(newErrors);
 
@@ -139,115 +143,146 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
                 <div className="w-full max-w-lg p-6 bg-white shadow-xl rounded-xl">
                     <p className="text-red-500">{fetchError}</p>
-                    <button onClick={onCancel} className="px-4 py-2 mt-4 bg-gray-300 rounded">Cerrar</button>
+                    <button onClick={onCancel} className="px-4 py-2 mt-4 bg-gray-300 rounded">
+                        Cerrar
+                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative">
-                <h3 className="mb-6 text-2xl font-bold text-center">
-                    {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo'}
-                </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+            <div className="relative w-full max-w-5xl p-6 bg-white shadow-2xl rounded-2xl md:p-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold md:text-2xl">
+                        {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo al Inventario'}
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="text-xl text-gray-500 hover:text-gray-700"
+                    >
+                        ✕
+                    </button>
+                </div>
+
                 {loadingOptions ? (
                     <p className="text-center">Cargando opciones...</p>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Marbete */}
-                        <InputField label="Marbete *" name="tag" value={formData.tag} onChange={handleChange} error={errors.tag} />
-
-                        {/* Ubicación y Departamento */}
-                        <UbiDepSelector
-                            id_ubication={formData.id_ubication}
-                            id_department={formData.id_department}
-                            onChange={handleUbiDepChange}
-                            errors={{ ubication: errors.id_ubication, department: errors.id_department }}
-                            mode="inventory"
-                        />
-
-                        {/* Usuario */}
-                        <InputField label="Usuario asignado" name="user" value={formData.user} onChange={handleChange} />
-
-                        {/* Equipo */}
-                        <SelectField
-                            label="Nombre del equipo *"
-                            name="id_device"
-                            value={formData.id_device}
-                            onChange={handleChange}
-                            options={options.devices.map((d) => ({ id: d.id, name: d.name }))}
-                            error={errors.id_device}
-                            disabled={loadingOptions}
-                        />
-
-                        {/* Marca */}
-                        <SelectField
-                            label="Marca *"
-                            name="id_brand"
-                            value={formData.id_brand}
-                            onChange={(e) => {
-                                handleChange(e);
-                                setFormData((prev) => ({ ...prev, id_model: '' }));
-                            }}
-                            options={filteredBrands.map((b) => ({ id: b.id, name: b.name }))}
-                            error={errors.id_brand}
-                            disabled={!formData.id_device}
-                        />
-
-                        {/* Modelo */}
-                        <SelectField
-                            label="Modelo *"
-                            name="id_model"
-                            value={formData.id_model}
-                            onChange={handleChange}
-                            options={filteredModels.map((m) => ({ id: m.id, name: m.name }))}
-                            error={errors.id_model}
-                            disabled={!formData.id_brand}
-                        />
-
-                        {/* Serie */}
-                        <InputField label="Serie *"
-                            name="serie"
-                            value={formData.serie}
-                            onChange={handleChange}
-                            error={errors.serie}
-                        />
-
-                        {/* Estado */}
-                        <SelectField
-                            label="Estado *"
-                            name="id_status"
-                            value={formData.id_status}
-                            onChange={handleChange}
-                            options={options.statuses.map((s) => ({ id: s.id, name: s.name }))}
-                            error={errors.id_status}
-                        />
-
-                        {/* IP */}
-                        <InputField
-                            label="IP"
-                            name="ip"
-                            value={formData.ip} // ✅ Ahora siempre es string
-                            onChange={handleChange}
-                            error={errors.ip}
-                        />
-
-                        {/* Fecha de Traslado */}
-                        <div>
-                            <label className="block mb-1 text-sm font-medium">
-                                Fecha de Traslado: {formData.transferdate || 'N/A'}
-                            </label>
-                            <input
-                                type="date"
-                                name="transferDateInput"
-                                value={formData.transferDateInput}
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Fila 1: Marbete / Usuario / Estado */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <InputField
+                                label="Marbete *"
+                                name="tag"
+                                value={formData.tag}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border rounded"
+                                error={errors.tag}
+                            />
+                            <InputField
+                                label="Usuario asignado"
+                                name="user"
+                                value={formData.user}
+                                onChange={handleChange}
+                            />
+                            <SelectField
+                                label="Estado *"
+                                name="id_status"
+                                value={formData.id_status}
+                                onChange={handleChange}
+                                options={options.statuses.map((s) => ({ id: s.id, name: s.name }))}
+                                error={errors.id_status}
                             />
                         </div>
 
-                        {/* Observaciones */}
+                        {/* Fila 2: Ubicación / Departamento */}
+                        <div className="p-3 border rounded-xl bg-gray-50">
+                            <p className="mb-2 text-sm font-semibold text-gray-700">
+                                Ubicación y Departamento *
+                            </p>
+                            <UbiDepSelector
+                                id_ubication={formData.id_ubication}
+                                id_department={formData.id_department}
+                                onChange={handleUbiDepChange}
+                                errors={{
+                                    ubication: errors.id_ubication,
+                                    department: errors.id_department
+                                }}
+                                mode="inventory"
+                            />
+                        </div>
+
+                        {/* Fila 3: Equipo / Marca / Modelo */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <SelectField
+                                label="Nombre del equipo *"
+                                name="id_device"
+                                value={formData.id_device}
+                                onChange={handleChange}
+                                options={options.devices.map((d) => ({ id: d.id, name: d.name }))}
+                                error={errors.id_device}
+                            />
+                            <SelectField
+                                label="Marca *"
+                                name="id_brand"
+                                value={formData.id_brand}
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    setFormData((prev) => ({ ...prev, id_model: '' }));
+                                }}
+                                options={filteredBrands.map((b) => ({ id: b.id, name: b.name }))}
+                                error={errors.id_brand}
+                                disabled={!formData.id_device}
+                            />
+                            <SelectField
+                                label="Modelo *"
+                                name="id_model"
+                                value={formData.id_model}
+                                onChange={handleChange}
+                                options={filteredModels.map((m) => ({ id: m.id, name: m.name }))}
+                                error={errors.id_model}
+                                disabled={!formData.id_brand}
+                            />
+                        </div>
+
+                        {/* Fila 4: Serie / IP / Fecha traslado */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <InputField
+                                label="Serie *"
+                                name="serie"
+                                value={formData.serie}
+                                onChange={handleChange}
+                                error={errors.serie}
+                            />
+                            <InputField
+                                label="IP"
+                                name="ip"
+                                value={formData.ip}
+                                onChange={handleChange}
+                                error={errors.ip}
+                            />
+                            <div>
+                                <label className="block mb-1 text-sm font-medium">
+                                    Fecha de Traslado
+                                </label>
+                                <input
+                                    type="date"
+                                    name="transferDateInput"
+                                    value={formData.transferDateInput}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded"
+                                />
+                                {formData.transferdate && (
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Guardado como: {formData.transferdate}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Fila 5: Observaciones */}
                         <TextAreaField
                             label="Observaciones / Ubicación Anterior"
                             name="observation"
@@ -255,17 +290,18 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                             onChange={handleChange}
                         />
 
-                        <div className="flex justify-end gap-3 mt-4">
+                        {/* Botones */}
+                        <div className="flex justify-end gap-3 pt-3">
                             <button
                                 type="button"
                                 onClick={onCancel}
-                                className="px-4 py-2 transition bg-gray-300 rounded hover:bg-gray-400"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 text-white transition bg-blue-500 rounded hover:bg-blue-600"
+                                className="px-5 py-2 text-sm font-semibold text-white transition bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700"
                             >
                                 Guardar
                             </button>
@@ -286,11 +322,12 @@ function InputField({ label, name, value, onChange, error }) {
                 id={name}
                 name={name}
                 type="text"
-                value={value} // ✅ Cambia || '' por el valor directo
+                value={value}
                 onChange={onChange}
-                className={`w-full border px-3 py-2 rounded ${error ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border px-3 py-2 rounded text-sm ${error ? 'border-red-500' : 'border-gray-300'
+                    }`}
             />
-            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
     );
 }
@@ -304,7 +341,7 @@ function TextAreaField({ label, name, value, onChange }) {
                 name={name}
                 value={value}
                 onChange={onChange}
-                className="w-full px-3 py-2 border rounded"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
                 rows={3}
             />
         </div>
@@ -320,7 +357,8 @@ function SelectField({ label, name, value, onChange, options = [], disabled = fa
                 name={name}
                 value={value || ''}
                 onChange={onChange}
-                className={`w-full border px-3 py-2 rounded ${error ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border px-3 py-2 rounded text-sm ${error ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 disabled={disabled}
             >
                 <option value="">Selecciona {label.toLowerCase()}</option>
@@ -330,7 +368,7 @@ function SelectField({ label, name, value, onChange, options = [], disabled = fa
                     </option>
                 ))}
             </select>
-            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
     );
 }

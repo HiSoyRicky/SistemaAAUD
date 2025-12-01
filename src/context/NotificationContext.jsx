@@ -1,19 +1,18 @@
-// src/context/NotificationContext.jsx
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+// NotificationContext.jsx
+import React, { createContext, useContext, useState, useCallback } from "react";
+import { v4 as uuidv4 } from "uuid";
+import NotificationContainer from "@/components/ui/NotificationContainer";
 
 const NotificationContext = createContext();
-
 export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
 
-    const addNotification = useCallback((message, type = 'success', duration = 4000) => {
+    const addNotification = useCallback((message, type = "success", duration = 3500) => {
         const id = uuidv4();
         setNotifications(prev => [...prev, { id, message, type }]);
 
-        // Eliminar automáticamente después de la duración
         setTimeout(() => {
             setNotifications(prev => prev.filter(n => n.id !== id));
         }, duration);
@@ -24,10 +23,12 @@ export const NotificationProvider = ({ children }) => {
     }, []);
 
     return (
-        <NotificationContext.Provider value={{ notifications, addNotification, removeNotification }}>
+        <NotificationContext.Provider value={{ addNotification, removeNotification }}>
             {children}
+            <NotificationContainer
+                notifications={notifications}
+                remove={removeNotification}
+            />
         </NotificationContext.Provider>
     );
 };
-
-
