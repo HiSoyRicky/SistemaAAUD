@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import BrandsTable from "./BrandsTable";
 import Pagination from "@/components/Pagination";
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 export default function BrandsManager() {
     const [brands, setbrands] = useState([]);
@@ -10,7 +11,7 @@ export default function BrandsManager() {
     const [editingName, setEditingName] = useState("");
     const [message, setMessage] = useState('');
     const [SuccessMessage, setSuccessMessage] = useState('success');
-    const API_URL = `${import.meta.env.VITE_API_URL}/api/brands`;
+    const API_URL = `${API_BASE_URL}/api/brands`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
@@ -33,7 +34,7 @@ export default function BrandsManager() {
     const addBrand = async () => {
         if (!newBrand.trim()) return;
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/brands`, {
+            await axios.post(`${API_URL}`, {
                 name: newBrand
             });
             setnewBrand("");
@@ -54,7 +55,7 @@ export default function BrandsManager() {
     const saveBrand = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/brands/${id}`, { name: editingName });
+            await axios.put(`${API_URL}/${id}`, { name: editingName });
             setEditingId(null);
             setEditingName("");
             fetchbrands();

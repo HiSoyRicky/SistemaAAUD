@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 function IncidentEditForm({ incident, onCancel, onSave }) {
     const [description, setDescription] = useState(incident.description || '');
@@ -7,7 +8,7 @@ function IncidentEditForm({ incident, onCancel, onSave }) {
     const [solution, setSolution] = useState(incident.solution || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const API_URL = import.meta.env.VITE_API_URL;
+    const API_URL = API_BASE_URL;
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -1,7 +1,9 @@
 // Sistema AAUD
-// server/Server.js
+// Server.js
 // Autor: Ricardo Vargas
 // Fecha de inicio 07/07/2025
+
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
@@ -11,44 +13,56 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const helmet = require('helmet');
 const compression = require('compression');
-const FRONTEND_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';;
 const { prisma } = require('../src/generated/prisma');
-require('dotenv').config();
 
+const FRONTEND_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Crear servidor HTTP para Express y Socket.IO
 const server = http.createServer(app);
+
+const allowedOrigins = [
+  FRONTEND_URL,
+  'http://localhost:5173',
+  'http://system.aaud.local',
+  'http://172.25.30.26',
+];
+
 const io = new Server(server, {
   cors: {
-    origin: [
-      FRONTEND_URL,
-      "http://localhost:5173",
-      "http://system.aaud.local",
-      "http://172.25.30.26"
-    ],
+    origin: (origin, callback) => {
+      // Para cosas tipo Postman / sin origin
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origen no permitido: ${origin}`), false);
+    },
     methods: ['GET', 'POST'],
-    credentials: false
+    credentials: false,
   },
   transports: ['websocket', 'polling'],
 });
-
 
 // Importar rutas
 const authRouter = require('./routes/auth');
 const errorHandler = require('./middleware/errorHandler');
 const AllRoutes = require('./routes/AllRoutes');
 
+// Confiar en proxies (si aplica)
+app.set('trust proxy', true);
+
 // Seguridad HTTP y compresión
 app.use(
   helmet({
-    contentSecurityPolicy: false,   
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     hsts: false
   })
 );
-
 
 app.use(compression());
 
@@ -59,7 +73,6 @@ app.use(cors({
   methods: "GET,POST,PUT,DELETE",
   credentials: false
 }));
-
 
 // Limite de peticiones
 const loginLimiter = rateLimit({

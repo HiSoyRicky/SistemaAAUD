@@ -1,8 +1,35 @@
+# Carpetas de Node
 node_modules
-npm-debug.log
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Builds del frontend
 dist
-.git
-docs
+.stats
 stats.html
-db
-src/generated/prisma
+
+# Build copiado al backend (no lo queremos desde local)
+server/public
+
+# Prisma generado (se puede generar en el contenedor)
+src/generated
+
+# Archivos de control
+.git
+.gitignore
+.vscode
+.idea
+
+# Logs
+*.log
+logs
+server/logs
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Documentación local
+docs/tree.txt
+All.md

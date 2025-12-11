@@ -17,21 +17,21 @@ export default function UsersTable({
 
 }) {
     return (
-        <div>
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
+        <div className="space-y-3">
+            {/* Título + botón */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold">Gestión de Usuarios</h2>
 
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                    className="px-3 py-1.5 text-sm text-white bg-blue-500 rounded-md hover:bg-blue-600"
                 >
                     {showForm ? "Ocultar formulario" : "Crear nuevo usuario"}
                 </button>
-                
             </div>
 
             {/* Barra de búsqueda */}
-            <div className="flex mb-4">
+            <div div className="flex mb-4" >
                 <input
                     type="text"
                     placeholder="Buscar por nombre, usuario, correo o rol..."
@@ -42,10 +42,9 @@ export default function UsersTable({
                     }}
                     className="w-full px-3 py-2 border rounded"
                 />
-            </div>
+            </div >
 
-            <table className="p-1 bg-white rounded-lg shadow-md">
-
+            <table className="bg-white rounded-lg shadow-md">
                 <thead>
                     <tr className="bg-gray-200">
                         <th className="p-2 text-center border">#</th>

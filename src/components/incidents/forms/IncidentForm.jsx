@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useAuth from '@/hooks/useAuth';
 import UbiDepSelector from '@/components/UbiDepSelector';
 import { toast } from 'react-toastify';
-import { Modal, Button, Alert } from "react-bootstrap";
+import { Modal, Button } from "react-bootstrap";
 
 function IncidentForm({ onSubmit }) {
     const { loggedUserId, logout } = useAuth();
@@ -65,6 +65,12 @@ function IncidentForm({ onSubmit }) {
         return Object.keys(newErrors).length === 0;
     };
 
+    const CATEGORY_OPTIONS = [
+        { value: "1", label: "Problemas con el internet" },
+        { value: "2", label: "Problemas con el equipo" },
+        { value: "3", label: "Problemas con un programa" },
+        { value: "4", label: "Otro" },
+    ];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -170,121 +176,176 @@ function IncidentForm({ onSubmit }) {
     };
 
     return (
-        <div className="p-6 mb-8 bg-white rounded-lg shadow-md">
-            <h3 className="mb-4 text-lg font-bold">Reportar Nueva Incidencia</h3>
-            <form onSubmit={handleSubmit} noValidate className="p-6 mb-8 bg-white rounded-lg shadow-md">
+        <section className="px-4 py-6">
+            {/* Título + contenedor centrado */}
+            <div className="max-w-5xl mx-auto">
 
-                {/* Nombre */}
-                <div className="mb-4">
-                    <label htmlFor="reporter_name" className="block mb-2 text-sm font-bold text-gray-700">
-                        Nombre completo:
-                    </label>
-                    <input
-                        id="reporter_name"
-                        name="reporter_name"
-                        type="text"
-                        value={formData.reporter_name}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-                        placeholder="Ingrese su nombre"
-                    />
-                    {errors.reporter_name && <p className="mt-1 text-sm text-red-500">{errors.reporter_name}</p>}
-                </div>
-
-                {/* Correo electrónico */}
-                <div className="mb-4">
-                    <label htmlFor="email" className="block mb-2 text-sm font-bold text-gray-700">
-                        Correo electrónico (opcional):
-                    </label>
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-                        placeholder="ejemplo@aaud.gob.pa"
-                    />
-                    {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-                </div>
-
-                {/* UbiDepSelector */}
-                <div className="mb-4">
-                    {/* UbiDepSelector */}
-                    <UbiDepSelector
-                        id_ubication={formData.id_ubication}
-                        id_department={formData.id_department}
-                        onChange={handleUbiDepChange}
-                        errors={{ ubication: errors.id_ubication, department: errors.id_department, }}
-                        mode="incident"
-                    />
-                </div>
-
-                {/* Categoría */}
-                <div className="mb-4">
-                    <label htmlFor="id_category" className="block mb-2 text-sm font-bold text-gray-700">Categoría:</label>
-                    <select
-                        id="id_category"
-                        name="id_category"
-                        value={formData.id_category}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow focus:outline-none focus:shadow-outline"
+                <div className="bg-white border border-gray-100 shadow-md rounded-2xl">
+                    <form
+                        onSubmit={handleSubmit}
+                        noValidate
+                        className="p-6 space-y-6 md:p-8"
                     >
-                        <option value="" disabled>Escoge una categoría</option>
-                        <option value="1">Problemas con el internet</option>
-                        <option value="2">Problemas con el equipo</option>
-                        <option value="3">Problemas con un programa</option>
-                        <option value="4">Otro</option>
-                    </select>
-                    {errors.id_category && <p className="mt-1 text-sm text-red-500">{errors.id_category}</p>}
+                        {/* Nombre + Email */}
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="reporter_name"
+                                    className="block mb-1 text-sm font-medium text-gray-700"
+                                >
+                                    Nombre completo:
+                                </label>
+                                <input
+                                    id="reporter_name"
+                                    name="reporter_name"
+                                    type="text"
+                                    value={formData.reporter_name}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                                    placeholder="Ingrese su nombre"
+                                />
+                                {errors.reporter_name && (
+                                    <p className="mt-1 text-xs text-red-500">
+                                        {errors.reporter_name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="email"
+                                    className="block mb-1 text-sm font-medium text-gray-700"
+                                >
+                                    Correo electrónico (opcional):
+                                </label>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                                    placeholder="ejemplo@aaud.gob.pa"
+                                />
+                                {errors.email && (
+                                    <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Ubicación + Departamento */}
+                        <div className="space-y-2">
+                            <UbiDepSelector
+                                id_ubication={formData.id_ubication}
+                                id_department={formData.id_department}
+                                onChange={handleUbiDepChange}
+                                errors={{
+                                    ubication: errors.id_ubication,
+                                    department: errors.id_department,
+                                }}
+                                mode="incident"
+                            />
+                        </div>
+
+                        {/* Categoría + Otra categoría */}
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="id_category"
+                                    className="block mb-1 text-sm font-medium text-gray-700"
+                                >
+                                    Categoría:
+                                </label>
+                                <select
+                                    id="id_category"
+                                    name="id_category"
+                                    value={formData.id_category}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                                >
+                                    <option value="" disabled>
+                                        Escoge una categoría
+                                    </option>
+                                    {CATEGORY_OPTIONS.map(cat => (
+                                        <option key={cat.value} value={cat.value}>
+                                            {cat.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.id_category && (
+                                    <p className="mt-1 text-xs text-red-500">
+                                        {errors.id_category}
+                                    </p>
+                                )}
+                            </div>
+
+                            {formData.id_category === '4' && (
+                                <div>
+                                    <label
+                                        htmlFor="other_category_detail"
+                                        className="block mb-1 text-sm font-medium text-gray-700"
+                                    >
+                                        Especifique otra categoría:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="other_category_detail"
+                                        name="other_category_detail"
+                                        value={formData.other_category_detail}
+                                        onChange={handleChange}
+                                        className="w-full px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                                        placeholder="Ej: Problema con la impresora"
+                                    />
+                                    {errors.other_category_detail && (
+                                        <p className="mt-1 text-xs text-red-500">
+                                            {errors.other_category_detail}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Descripción */}
+                        <div>
+                            <label
+                                htmlFor="description"
+                                className="block mb-1 text-sm font-medium text-gray-700"
+                            >
+                                Descripción del problema:
+                            </label>
+                            <textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                                placeholder="Describa el problema con el mayor detalle posible"
+                                rows={4}
+                            />
+                            {errors.description && (
+                                <p className="mt-1 text-xs text-red-500">
+                                    {errors.description}
+                                </p>
+                            )}
+                        </div>
+
+                        {errors.submit && (
+                            <p className="text-xs text-red-500">{errors.submit}</p>
+                        )}
+
+                        {/* Botón */}
+                        <div className="flex justify-end pt-2">
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                variant={isSubmitting ? 'secondary' : 'primary'}
+                            >
+                                {isSubmitting ? 'Enviando...' : 'Reportar Incidencia'}
+                            </Button>
+                        </div>
+                    </form>
                 </div>
-
-                {formData.id_category === "4" && (
-                    <div className="mb-4">
-                        <label htmlFor="other_category_detail"
-                            className="block mb-2 text-sm font-bold text-gray-700">Especifique otra categoría:</label>
-                        <input
-                            type="text"
-                            id="other_category_detail"
-                            name="other_category_detail"
-                            value={formData.other_category_detail}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-                            placeholder="Ej: Problema con la impresora"
-                        />
-                        {errors.other_category_detail && <p className="mt-1 text-sm text-red-500">{errors.other_category_detail}</p>}
-                    </div>
-                )}
-
-                {/* Descripción */}
-                <div className="mb-4">
-                    <label htmlFor="description" className="block mb-2 text-sm font-bold text-gray-700">
-                        Descripción del problema:
-                    </label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-                        placeholder="Describa el problema con el mayor detalle posible"
-                        rows={4}
-                    />
-                    {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
-                </div>
-
-
-                {errors.submit && <p className="mb-4 text-sm text-red-500">{errors.submit}</p>}
-
-                {/* Botón de enviar */}
-                <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    variant={isSubmitting ? "secondary" : "primary"}
-                >
-                    {isSubmitting ? "Enviando..." : "Reportar Incidencia"}
-                </Button>
-            </form>
+            </div>
 
             {showModal && (
                 <Modal
@@ -343,9 +404,9 @@ function IncidentForm({ onSubmit }) {
                         </Button>
                     </Modal.Footer>
                 </Modal>
-            )}
-
-        </div>
+            )
+            }
+        </section >
     );
 }
 

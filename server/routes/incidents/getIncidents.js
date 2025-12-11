@@ -21,19 +21,13 @@ router.get('/', catchAsync(async (req, res) => {
             id_technician: true,
             // Relaciones
             ubications: {
-                select: {
-                    name: true
-                }
+                select: { name: true }
             },
             departments: {
-                select: {
-                    name: true
-                }
+                select: { name: true }
             },
             users_bd_incidents_id_technicianTousers: {
-                select: {
-                    nombre_completo: true
-                }
+                select: { nombre_completo: true }
             }
         }
     });
@@ -77,20 +71,15 @@ router.get('/:id', catchAsync(async (req, res) => {
             solution: true,
             solution_date: true,
             id_status: true,
+            id_technician: true,
             // Relaciones
-            ubications: {
+            ubications: { select: { name: true } },
+            departments: { select: { name: true } },
+            categories: { select: { name: true } },
+            users_bd_incidents_id_technicianTousers: {
                 select: {
-                    name: true
-                }
-            },
-            departments: {
-                select: {
-                    name: true
-                }
-            },
-            categories: {
-                select: {
-                    name: true
+                    nombre_completo: true,
+                    email: true
                 }
             }
         }
@@ -114,6 +103,9 @@ router.get('/:id', catchAsync(async (req, res) => {
         solution: incident.solution,
         solution_date: incident.solution_date,
         id_status: incident.id_status,
+        id_technician: incident.id_technician,
+        technician_full_name: incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
+        technician_email: incident.users_bd_incidents_id_technicianTousers?.email || null,
         status: getStatusText(incident.id_status)
     };
 

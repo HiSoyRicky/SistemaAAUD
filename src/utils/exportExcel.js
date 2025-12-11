@@ -6,7 +6,6 @@ export async function exportIncidentsToExcel(incidents) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Incidencias');
 
-    // Define las columnas (usa header y key para exceljs)
     const columns = [
         { header: 'ID', key: 'id', width: 7.5 },
         { header: 'Usuario', key: 'usuario', width: 25 },
@@ -17,27 +16,22 @@ export async function exportIncidentsToExcel(incidents) {
         { header: 'Detalle de categoría', key: 'detalle_categoria', width: 30 },
         { header: 'Descripción', key: 'descripcion', width: 40 },
         { header: 'Día de creación', key: 'dia_creacion', width: 16 },
-        { header: 'Fecha de creación', key: 'fecha_creacion', width: 25 },
         { header: 'Estado', key: 'estado', width: 12 },
         { header: 'Técnico', key: 'tecnico', width: 25 },
         { header: 'Fecha de solución', key: 'fecha_solucion', width: 25 },
         { header: 'Solución', key: 'solucion', width: 40 },
     ];
 
-    // Ordenar por ID descendente (más recientes primero)
+    // Ordenar por ID descendente
     incidents.sort((a, b) => (b.id_incident || 0) - (a.id_incident || 0));
 
     worksheet.columns = columns;
 
-    // Mapea incidentes a objetos con claves matching keys de columnas
     const rows = incidents.map((i) => {
         const fechaCreacion = i.creation_date ? new Date(i.creation_date) : null;
         const fechaCreacionStr = fechaCreacion
             ? formatDateToDDMMYYYY(fechaCreacion.toISOString())
             : 'N/A';
-        const horaCreacionStr = fechaCreacion
-            ? fechaCreacion.toLocaleTimeString('es-PA', { hour12: true })
-            : '';
 
         return {
             id: i.id_incident ? i.id_incident.toString().padStart(6, '0') : '',
@@ -49,29 +43,27 @@ export async function exportIncidentsToExcel(incidents) {
             detalle_categoria: i.other_category_detail || 'N/A',
             descripcion: i.description,
             dia_creacion: fechaCreacionStr,
-            fecha_creacion: `${fechaCreacionStr} ${horaCreacionStr}`,
             estado: getStatusName(i.id_status),
             tecnico: i.technician_full_name || (i.id_technician ? `ID: ${i.id_technician}` : 'N/A'),
+            // 🔹 AQUÍ solo la fecha, sin hora
             fecha_solucion: i.solution_date
                 ? (() => {
                     const fSol = new Date(i.solution_date);
                     const fSolStr = formatDateToDDMMYYYY(fSol.toISOString());
-                    const hSolStr = fSol.toLocaleTimeString('es-PA', { hour12: true });
-                    return `${fSolStr} ${hSolStr}`;
+                    return fSolStr;          // <- sin hora
                 })()
                 : 'N/A',
             solucion: i.solution || 'N/A',
         };
     });
 
-    // Agregar filas primero
+    // Agregar filas
     rows.forEach(row => worksheet.addRow(row));
 
     // Encabezados centrados
     worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-
-    // Agregar tabla completa para filtros y estilo (esto pobla las filas)
+    // Crear tabla
     worksheet.addTable({
         name: 'IncidenciasTable',
         ref: 'A1',
@@ -85,10 +77,7 @@ export async function exportIncidentsToExcel(incidents) {
         rows: rows.map(r => columns.map(c => r[c.key])),
     });
 
-    // Centrar encabezados (después de poblar)
-    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-
-    // Ajustar alineación y wrapText para filas excepto la 1 (después de poblar)
+    // Alineaciones (corrigiendo columnas que existen)
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
         if (rowNumber !== 1) {
             row.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
@@ -97,19 +86,16 @@ export async function exportIncidentsToExcel(incidents) {
             const solucionCol = worksheet.getColumn('solucion').number;
             const colDia = worksheet.getColumn('dia_creacion').number;
             const colEstado = worksheet.getColumn('estado').number;
-            const colFechaCreacion = worksheet.getColumn('fecha_creacion').number;
             const colFechaSolucion = worksheet.getColumn('fecha_solucion').number;
 
             row.getCell(descripcionCol).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
             row.getCell(solucionCol).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
             row.getCell(colDia).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             row.getCell(colEstado).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-            row.getCell(colFechaCreacion).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             row.getCell(colFechaSolucion).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         }
     });
 
-    // Generar y descargar archivo
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
@@ -118,6 +104,7 @@ export async function exportIncidentsToExcel(incidents) {
 
     saveAs(blob, nombreArchivo);
 }
+
 
 // Funciones auxiliares
 function getCategoryName(id) {

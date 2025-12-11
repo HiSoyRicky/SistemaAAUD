@@ -1,17 +1,10 @@
-// src/services/api.js
+// /api.js
 import axios from 'axios';
-
-// ✅ Usa directamente la URL de la API (sin duplicar /api)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-// Aviso si no está definida
-if (!API_BASE_URL) {
-  console.error("VITE_API_URL no está definido en el entorno.");
-}
+import { API_BASE_URL } from '../config/apiBaseUrl.js';
 
 // Configuración inicial de axios
 const api = axios.create({
-  baseURL: API_BASE_URL, // 👈 no agregues /api aquí
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 

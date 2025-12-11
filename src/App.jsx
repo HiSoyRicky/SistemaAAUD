@@ -65,7 +65,7 @@ function App() {
         <Route
           path="/selector"
           element={
-            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'secretaria']}>
+            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <SelectorPage />
               </PrivateLayout>
@@ -77,7 +77,7 @@ function App() {
         <Route
           path="/incidencias"
           element={
-            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'secretaria']}>
+            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <IncidentsPage />
               </PrivateLayout>
@@ -88,7 +88,7 @@ function App() {
         {/* Ruta para ver detalles de una incidencia */}
         <Route
           path="/incidencias/:id" element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'secretaria', 'trabajador']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
               <IncidentDetails />
             </PrivateRoute>
           } />
@@ -97,7 +97,7 @@ function App() {
         <Route
           path="/inventario"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'secretaria']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <InventoryPage />
               </PrivateLayout>
@@ -108,7 +108,7 @@ function App() {
         <Route
           path="/perfil"
           element={
-            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'secretaria']}>
+            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <ProfilePage />
               </PrivateLayout>

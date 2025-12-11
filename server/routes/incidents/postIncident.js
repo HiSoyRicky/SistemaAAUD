@@ -9,6 +9,29 @@ const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
 const { body, validationResult } = require('express-validator');
 
+const dns = require('dns').promises;
+
+async function getClientInfo(req) {
+    let ip =
+        req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+        req.socket.remoteAddress ||
+        req.connection.remoteAddress;
+
+    // Limpia ::ffff:
+    ip = ip?.replace(/^::ffff:/, '');
+
+    let host = null;
+    try {
+        const [resolved] = await dns.reverse(ip);
+        host = resolved;
+    } catch {
+        host = null;
+    }
+
+    return { ip};
+}
+
+
 const validateIncident = [
     body('id_user').isInt().withMessage('id_user debe ser un número entero'),
     body('id_ubication').isInt().withMessage('id_ubication debe ser un número entero'),
@@ -73,12 +96,16 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
             throw new Error('ID de referencia inválido');
         }
 
+        // Obtener IP del cliente
+        const { ip: clientIp} = await getClientInfo(req);
+
         // Insertar incidencia y retornar id
         const insertResult = await pool.query(
             `INSERT INTO BD_Incidents
-                    (id_user, reporter_name, email, id_ubication, id_department, description, id_category, other_category_detail, id_status, creation_date, solution_date, solution)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-                RETURNING id;`,
+                (id_user, reporter_name, email, id_ubication, id_department, description, id_category, other_category_detail, id_status, creation_date, solution_date, solution, client_ip)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+            RETURNING id;
+            `,
             [
                 id_user,
                 reporter_name,
@@ -91,7 +118,8 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
                 id_status,
                 creationDate,
                 solutionDate || null,
-                solution || ''
+                solution || '',
+                clientIp
             ]
         );
 
@@ -125,7 +153,7 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
             const formattedId = insertedId.toString().padStart(6, '0');
             await sendMail({
                 from: '"No responder" <no-responder@aaud.gob.pa>',
-                to: 'soporte@aaud.gob.pa',
+                to: 'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa',
                 subject: `📥 Nueva incidencia registrada (#${formattedId})`,
                 html: `
                     <div style="

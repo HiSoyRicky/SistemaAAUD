@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
 import ModelsTable from "./ModelsTable";
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 export default function ModelsManager() {
     const [models, setModels] = useState([]);
@@ -23,7 +24,7 @@ export default function ModelsManager() {
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
 
-    const API_URL = `${import.meta.env.VITE_API_URL}/api/models`;
+    const API_URL = `${API_BASE_URL}/api/models`;
 
     // Cargar modelos desde backend
     const fetchModels = async () => {
@@ -37,7 +38,7 @@ export default function ModelsManager() {
 
     const fetchDevices = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/devices`);
+            const res = await axios.get(`${API_BASE_URL}/api/devices`);
             setDevices(res.data);
         } catch (err) {
             console.error(err);
@@ -46,7 +47,7 @@ export default function ModelsManager() {
 
     const fetchBrands = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/brands`);
+            const res = await axios.get(`${API_BASE_URL}/api/brands`);
             setBrands(res.data);
         } catch (err) {
             console.error(err);
@@ -63,7 +64,7 @@ export default function ModelsManager() {
     const addModel = async () => {
         if (!newModel.trim() || !selectedBrand || !selectedDevice) return;
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/models`, {
+            await axios.post(`${API_BASE_URL}/api/models`, {
                 name: newModel,
                 id_brand: Number(selectedBrand),
                 id_device: Number(selectedDevice)
@@ -90,7 +91,7 @@ export default function ModelsManager() {
     const saveModel = async (id) => {
         if (!editingName.trim() || !editingBrand) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/models/${id}`, {
+            await axios.put(`${API_BASE_URL}/api/models/${id}`, {
                 name: editingName,
                 id_brand: editingBrand,
                 id_device: editingDevice
@@ -110,7 +111,7 @@ export default function ModelsManager() {
     const deleteModel = async (id) => {
         if (!window.confirm("¿Está seguro de que desea eliminar este modelo?")) return;
         try {
-            await axios.delete(`${import.meta.env.VITE_API_URL}/api/models/${id}`);
+            await axios.delete(`${API_BASE_URL}/api/models/${id}`);
             fetchModels();
             setSuccessMessage("Modelo eliminado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);

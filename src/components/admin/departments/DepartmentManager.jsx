@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DepartmentsTable from "./DepartmentsTable";
 import { Departments } from "@/services/api";
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 export default function DepartmentsManager() {
     const [departments, setDepartments] = useState([]);
@@ -14,7 +15,7 @@ export default function DepartmentsManager() {
     const [editingName, setEditingName] = useState("");
     const [editingUbication, setEditingUbication] = useState("");
     const [ubications, setUbications] = useState([]);
-    const API_URL = `${import.meta.env.VITE_API_URL}/api/departments`;
+    const API_URL = `${API_BASE_URL}/api/departments`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
@@ -38,7 +39,7 @@ export default function DepartmentsManager() {
     //  Cargar ubicaciones para los select
     const fetchUbications = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ubications`);
+            const res = await axios.get(`${API_BASE_URL}/api/ubications`);
             setUbications(res.data);
         } catch (err) {
             console.error("Error al cargar ubicaciones:", err);

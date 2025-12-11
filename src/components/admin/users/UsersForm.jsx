@@ -45,7 +45,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    
+
                 />
             </div>
 
@@ -63,6 +63,21 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                         <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                 </select>
+            </div>
+
+            {/* Contraseña */}
+            <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
+                    Contraseña
+                </label>
+                <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Escribe una nueva contraseña"
+                    autoComplete="new-password"
+                />
             </div>
 
             {/* Activo con Toggle Switch */}

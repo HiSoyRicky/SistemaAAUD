@@ -1,6 +1,6 @@
-import { LogOut, Menu, LayoutDashboard, List, Cpu, Settings, ChevronDown } from "lucide-react";
+import { LogOut, LayoutDashboard, List, Cpu, Settings, ChevronDown } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import useAuth from "@/hooks/useAuth";
 
 function Header() {
@@ -15,6 +15,8 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  const userMenuRef = useRef(null);
 
   const initials = loggedUserName
     ? loggedUserName
@@ -39,13 +41,13 @@ function Header() {
       icon: <List className="w-5 h-5" />,
       label: "Incidencias",
       path: "/incidencias",
-      allowed: ["trabajador", "admin", "tecnico", "secretaria"],
+      allowed: ["trabajador", "admin", "tecnico", "consultor"],
     },
     {
       icon: <Cpu className="w-5 h-5" />,
       label: "Inventario",
       path: "/inventario",
-      allowed: ["admin", "tecnico", "secretaria"],
+      allowed: ["admin", "tecnico", "consultor"],
     },
     {
       icon: <Settings className="w-5 h-5" />,
@@ -64,9 +66,22 @@ function Header() {
       ? "Admin"
       : userType === "tecnico"
         ? "Técnico"
-        : userType === "secretaria"
-          ? "Secretaria"
+        : userType === "consultor"
+          ? "Consultor"
           : "Trabajador";
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [userMenuOpen]);
 
   return (
     <header className="sticky top-0 z-50 text-white shadow-md bg-gradient-to-r from-blue-900 to-indigo-600">
@@ -101,16 +116,11 @@ function Header() {
           </nav>
         )}
 
-        {/* Botón hamburguesa (solo móvil) */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="p-2 transition-colors rounded-full md:hidden hover:bg-blue-700"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-
         {isAuthenticated && (
-          <div className="relative flex items-center space-x-3">
+          <div
+            ref={userMenuRef}
+            className="relative flex items-center space-x-3"
+          >
             {/* Botón de usuario (avatar + nombre + rol) */}
             <button
               type="button"
@@ -164,25 +174,6 @@ function Header() {
           </div>
         )}
       </div>
-
-      {/* Menú móvil */}
-      {menuOpen && (
-        <nav className="flex flex-col mt-2 space-y-1 md:hidden animate-fadeIn">
-          {filteredMenuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `px-3 py-2 rounded-lg flex items-center gap-2 text-sm 
-                   ${isActive ? "bg-indigo-700 text-white" : "hover:bg-indigo-500"}`
-              }
-            >
-              {item.icon} {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      )}
     </header>
   );
 }

@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { socket, connectSocket, disconnectSocket, onIncidentUpdated } from '@/services/socket';
 import { formatDateToDDMMYYYY, formatDateTime } from '@/utils/formatDate';
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 function IncidentDetails() {
     const { id } = useParams();
@@ -29,16 +30,21 @@ function IncidentDetails() {
             try {
                 let response;
                 if (token) {
-                    response = await axios.get(`${import.meta.env.VITE_API_URL}/api/incidents/public/${token}`);
+                    response = await axios.get(`${API_BASE_URL}/api/incidents/public/${token}`);
                     setIncident(response.data.data);
                 } else if (id) {
-                    response = await axios.get(`${import.meta.env.VITE_API_URL}/api/incidents/${id}`);
+                    response = await axios.get(`${API_BASE_URL}/api/incidents/${id}`);
                     setIncident(response.data);
                 } else {
                     throw new Error('ID o token no proporcionado');
                 }
             } catch (err) {
-                setError(err.response?.data?.error || 'No se pudo cargar la incidencia.');
+                setError(
+                    err.response?.data?.message ||
+                    err.response?.data?.error ||
+                    'No se pudo cargar la incidencia.'
+                );
+
             } finally {
                 setLoading(false);
             }
@@ -106,7 +112,7 @@ function IncidentDetails() {
 
                     <p>
                         <span className={thClass}>Correo:</span>{' '}
-                        {incident.reporter_email}
+                        {incident.reporter_email || 'No proporcionado'} 
                     </p>
 
                     <p>
@@ -136,12 +142,21 @@ function IncidentDetails() {
                     </p>
 
                     <p>
-                        <span className={thClass}>Fecha de creación:</span>{' '}
-                        {formatDateTime(incident.creation_date)}
+                        <p>
+                            <span className={thClass}>Fecha de creación:</span>{' '}
+                            {formatDateToDDMMYYYY(incident.creation_date)}{' '}
+                        </p>
+
+
                     </p>
 
                     <p className={statusInfo[incident.id_status]?.color || 'text-gray-400'}>
                         <span className={thClass}>Estado:</span> {statusInfo[incident.id_status]?.text || 'Desconocido'}
+                    </p>
+
+                    <p className={statusInfo[incident.id_status]?.color || 'text-gray-200'}>
+                        <span className={thClass}>Técnico asignado:</span>{' '}
+                        {incident.technician_full_name || 'No asignado'}
                     </p>
 
                     {incident.solution && (
@@ -157,7 +172,6 @@ function IncidentDetails() {
                             {formatDateToDDMMYYYY(incident.solution_date)}
                         </p>
                     )}
-
 
                 </div>
 

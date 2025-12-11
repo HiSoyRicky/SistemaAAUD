@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DevicesTable from "./DevicesTable";
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 export default function DevicesManager() {
     const [devices, setDevices] = useState([]);
@@ -9,7 +10,7 @@ export default function DevicesManager() {
     const [editingName, setEditingName] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
-    const API_URL = `${import.meta.env.VITE_API_URL}/api/devices`;
+    const API_URL = `${API_BASE_URL}/api/devices`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
@@ -74,7 +75,7 @@ export default function DevicesManager() {
     const saveDevice = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/devices/${id}`, {
+            await axios.put(`${API_BASE_URL}/api/devices/${id}`, {
                 name: editingName
             });
             setEditingId(null);
@@ -91,7 +92,7 @@ export default function DevicesManager() {
     const deleteDevice = async (id) => {
         if (!window.confirm("¿Está seguro de que desea eliminar este dispositivo?")) return;
         try {
-            await axios.delete(`${import.meta.env.VITE_API_URL}/api/devices/${id}`);
+            await axios.delete(`${API_BASE_URL}/api/devices/${id}`);
             fetchDevices();
             setSuccessMessage("Dispositivo eliminado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);

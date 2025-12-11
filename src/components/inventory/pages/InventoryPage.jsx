@@ -154,8 +154,6 @@ function InventoryPage() {
         return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate;
     });
 
-
-
     return (
         <div className="p-15">
             {/* Barra de búsqueda */}

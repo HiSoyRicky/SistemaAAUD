@@ -13,7 +13,7 @@ import axios from 'axios';
 import { exportIncidentsToExcel } from '@/utils/exportExcel';
 import { Button, Container, Row, Col } from "react-bootstrap";
 import { socket, connectSocket, disconnectSocket, onIncidentCreated, onIncidentUpdated, onIncidentDeleted } from '@/services/socket';
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL as API_URL } from '@/config/apiBaseUrl.js';
 
 // Componente principal de la página de incidentes
 function IncidentsPage() {
@@ -243,7 +243,7 @@ function IncidentsPage() {
             )}
 
             {/* Botón para mostrar formulario */}
-            {["admin", "tecnico", "secretaria"].includes(userType) && (
+            {["admin", "tecnico", "consultor"].includes(userType) && (
                 <Row className="mb-4 text-center">
                     <Col>
                         <Button
@@ -298,7 +298,7 @@ function IncidentsPage() {
                         <IncidentTable
                             incidents={sortedIncidentsForTable}
                             userType={userType}
-                            onAssign={["admin", "secretaria"].includes(userType) ? handleOpenAssignModal : null}
+                            onAssign={["admin", "consultor"].includes(userType) ? handleOpenAssignModal : null}
                             onResolve={userType === "tecnico" ? handleOpenResolveModal : null}
                             onDelete={userType === "admin" ? handleDeleteIncident : null}
                             onEdit={setIncidentToEdit}

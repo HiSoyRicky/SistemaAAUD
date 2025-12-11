@@ -154,8 +154,9 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                                     <div className="flex flex-col">
                                                         <span>{formatDateToDDMMYYYY(incident.solution_date)}</span>
                                                         <span className="text-xs text-gray-400">
-                                                            {new Date(incident.solution_date).toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' })}
+                                                            {formatDateTime(incident.solution_date).split(' ')[1] + ' ' + formatDateTime(incident.solution_date).split(' ')[2]}
                                                         </span>
+
                                                     </div>
                                                 ) : (
                                                     <span title="Sin resolver">N/A</span>
@@ -172,7 +173,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                         <div className="flex items-center justify-center gap-x-2">
 
                                             {/* Botón Asignar técnico */}
-                                            {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
+                                            {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
                                                 <ActionButton
                                                     type={"assign"}
                                                     title="Asignar técnico"
@@ -192,7 +193,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             )}
 
                                             {/* Botón Editar */}
-                                            {['admin', 'secretaria'].includes(userType) && incident.id_status === 1 && (
+                                            {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
                                                 <ActionButton
                                                     type={"edit"}
                                                     title="Editar incidencia"

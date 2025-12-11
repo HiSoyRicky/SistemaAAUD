@@ -1,4 +1,4 @@
-// src/components/inventory/InventoryFormModal.jsx
+// InventoryFormModal.jsx
 import React, { useState, useEffect } from 'react';
 import UbiDepSelector from '@/components/UbiDepSelector';
 import { formatDateToDDMMYYYY } from '@/utils/formatDate';
@@ -29,6 +29,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     const [options, setOptions] = useState({ devices: [], brands: [], models: [], statuses: [] });
     const [loadingOptions, setLoadingOptions] = useState(true);
     const [fetchError, setFetchError] = useState(null);
+
+    const ALLOWED_STATUS = ['Buen estado', 'Mal estado', 'Para descarte', 'Nuevo', 'Descartado'];
 
     //  Cargar opciones para los selectores
     useEffect(() => {
@@ -192,7 +194,9 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 name="id_status"
                                 value={formData.id_status}
                                 onChange={handleChange}
-                                options={options.statuses.map((s) => ({ id: s.id, name: s.name }))}
+                                options={options.statuses
+                                    .filter((s) => ALLOWED_STATUS.includes(s.name))
+                                    .map((s) => ({ id: s.id, name: s.name }))}
                                 error={errors.id_status}
                             />
                         </div>
@@ -274,11 +278,6 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                     onChange={handleChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded"
                                 />
-                                {formData.transferdate && (
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Guardado como: {formData.transferdate}
-                                    </p>
-                                )}
                             </div>
                         </div>
 

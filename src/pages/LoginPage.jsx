@@ -101,7 +101,7 @@ function LoginPage() {
         />
 
         <p className="mb-6 text-center text-gray-600">
-          Accede a nuestro sistema AAUD
+          Accede a nuestro Sistema AAUD
         </p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-6">

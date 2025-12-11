@@ -3,22 +3,15 @@ const { pool } = require('../db/db');
 
 const secretKey = process.env.JWT_SECRET;
 
-// Generar token para acceso público a una incidencia
 function generarTokenIncidencia(id, email) {
-    const payload = {
-        id,
-        email,
-        type: 'incident'
-    };
-    // Válido por 730 horas (30 días)
-    return jwt.sign(payload, secretKey, { expiresIn: '730h' });
+    const payload = { id, email, type: 'incident' };
+    return jwt.sign(payload, secretKey, { expiresIn: '730h' }); // 30 días
 }
 
-// Validar token y obtener incidencia
 async function getIncidentByToken(token) {
     try {
         const decoded = jwt.verify(token, secretKey);
-        const { id, email } = decoded;
+        const { id /*, email*/ } = decoded;
 
         const result = await pool.query(`
             SELECT
@@ -34,17 +27,21 @@ async function getIncidentByToken(token) {
                 i.solution,
                 i.solution_date,
                 i.id_status,
-                s.name AS status  -- Asumiendo join con status table
-            FROM BD_Incidents i
-            JOIN ubications u ON i.id_ubication = u.id
-            JOIN departments d ON i.id_department = d.id
-            JOIN categories c ON i.id_category = c.id
-            JOIN status s ON i.id_status = s.id  -- Reemplaza CASE
-            WHERE i.id = $1 AND i.email = $2
-        `, [id, email]);
+                s.name AS status,
+                i.id_technician,
+                t.nombre_completo AS technician_full_name,
+                t.email AS technician_email
+            FROM bd_incidents i
+            LEFT JOIN ubications u ON i.id_ubication = u.id
+            LEFT JOIN departments d ON i.id_department = d.id
+            LEFT JOIN categories c ON i.id_category = c.id
+            LEFT JOIN status s ON i.id_status = s.id
+            LEFT JOIN users t ON i.id_technician = t.id
+            WHERE i.id = $1
+        `, [id]);
 
         if (result.rows.length === 0) {
-            console.log('No incident found for id:', id, 'and email:', email);
+            console.log('No incident found for id:', id);
             return null;
         }
 

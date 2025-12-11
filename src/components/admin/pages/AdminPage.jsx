@@ -12,7 +12,6 @@ export default function AdminPage() {
         { path: "brands", label: "Marcas", icon: <Tag className="w-5 h-5" /> },
         { path: "models", label: "Modelos", icon: <Layers className="w-5 h-5" /> },
         { path: "statuses", label: "Estados", icon: <Home className="w-5 h-5" /> },
-        { path: "toners", label: "Toners", icon: <Droplet className="w-5 h-5" /> },
     ];
 
     return (

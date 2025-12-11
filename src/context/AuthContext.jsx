@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       const userRoleMap = {
         1: 'admin',
         2: 'tecnico',
-        3: 'secretaria',
+        3: 'consultor',
         4: 'trabajador',
       };
 

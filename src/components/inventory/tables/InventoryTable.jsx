@@ -1,4 +1,4 @@
-// src/components/inventory/InventoryTable.jsx
+// InventoryTable.jsx
 import React, { useState } from 'react';
 import { formatDateToDDMMYYYY } from '@/utils/formatDate';
 import useAuth from '@/hooks/useAuth';
@@ -43,7 +43,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
     // aplicar filtros antes de paginar
     const filteredInventory = inventory.filter(item => {
         return Object.keys(filters).every(key => {
-            if (!filters[key]) return true; // si no hay filtro, no filtra
+            if (!filters[key]) return true;
             return String(item[key]) === String(filters[key]);
         });
     });
@@ -107,7 +107,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 >
                                     <option value="">Todos</option>
                                     {options.ubication_name.map((val, idx) => (
-                                        <option key={`${val}-${idx}`} value={val}>
+                                        <option key={val} value={val}>
                                             {val}
                                         </option>
                                     ))}
@@ -124,7 +124,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 >
                                     <option value="">Todos</option>
                                     {options.department_name.map((val, idx) => (
-                                        <option key={`${val}-${idx}`} value={val}>
+                                        <option key={val} value={val}>
                                             {val}
                                         </option>
                                     ))}
@@ -140,7 +140,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 >
                                     <option value="">Todos</option>
                                     {options.device_name.map((val, idx) => (
-                                        <option key={`${val}-${idx}`} value={val}>
+                                        <option key={val} value={val}>
                                             {val}
                                         </option>
                                     ))}
@@ -155,7 +155,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 >
                                     <option value="">Todos</option>
                                     {options.brand_name.map((val, idx) => (
-                                        <option key={`${val}-${idx}`} value={val}>
+                                        <option key={val} value={val}>
                                             {val}
                                         </option>
                                     ))}
@@ -170,7 +170,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 >
                                     <option value="">Todos</option>
                                     {options.model_name.map((val, idx) => (
-                                        <option key={`${val}-${idx}`} value={val}>
+                                        <option key={val} value={val}>
                                             {val}
                                         </option>
                                     ))}
@@ -187,7 +187,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 >
                                     <option value="">Todos</option>
                                     {options.status_name.map((val, idx) => (
-                                        <option key={`${val}-${idx}`} value={val}>
+                                        <option key={val} value={val}>
                                             {val}
                                         </option>
                                     ))}
@@ -205,11 +205,12 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                         .map(i => i.transferdate)
                                         .filter((value, index, self) => value && self.indexOf(value) === index)
                                         .sort()
-                                        .map((val, idx) => (
-                                            <option key={`${val}-${idx}`} value={val}>
+                                        .map(val => (
+                                            <option key={val} value={val}>
                                                 {formatDateToDDMMYYYY(val)}
                                             </option>
                                         ))}
+
                                 </select>
                             </th>}
                             {showExtraColumns && <th className={`${tdClass} border`}>Observación / Ubicación Anterior</th>}
@@ -228,56 +229,90 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 </td>
                             </tr>
                         ) : (
-                            paginatedItems.map(item => (
-                                <tr key={item.id}>
-                                    <th className={`${thClass} border`}>{item.tag}</th>
-                                    <td className={`${thClass} border`}>{item.ubication_name}</td>
-                                    <td className={`${thClass} border`}>{item.department_name}</td>
-                                    <td className={`${thClass} border`}>{item.user}</td>
-                                    <td className={`${thClass} border`}>{item.device_name}</td>
-                                    <td className={`${thClass} border`}>{item.brand_name}</td>
-                                    <td className={`${thClass} border`}>{item.model_name}</td>
-                                    <td className={`${thClass} border`}>{item.serie}</td>
-                                    {showExtraColumns && (<td className={`${thClass} border`}>{item.ip ? item.ip : 'N/A'}</td>)}
-                                    {showExtraColumns && <td className={`${thClass} border`}>{item.status_name}</td>}
-                                    {showExtraColumns && <td className={`${thClass} border`}>{item.transferdate ? formatDateToDDMMYYYY(item.transferdate) : 'N/A'}</td>}
-                                    {showExtraColumns && <td className={`${thClass} border`}>{item.observation || 'N/A'}</td>}
+                            paginatedItems.map(item => {
+                                const status = item.status_name?.toUpperCase() || "";
+                                const isDiscarded = status === "DESCARTADO";
+                                const isForDiscard = status === "PARA DESCARTE";
+                                const isBadCondition = status === "MAL ESTADO";
 
-                                    {/* Acciones */}
-                                    <td className={`${thClass} border`}>
-                                        <div className="flex items-center justify-center h-full gap-2 ">
+                                return (
+                                    <tr
+                                        key={item.id}
+                                        className={
+                                            isDiscarded
+                                                ? "bg-red-50"
+                                                : isForDiscard
+                                                    ? "bg-yellow-50"
+                                                    : isBadCondition
+                                                        ? "bg-orange-50"
+                                                        : ""
+                                        }
+                                    >
+                                        <th
+                                            className={`${thClass} border ${isDiscarded
+                                                    ? "text-red-600 font-bold"
+                                                    : isForDiscard
+                                                        ? "text-yellow-600 font-bold"
+                                                        : isBadCondition
+                                                            ? "text-orange-600 font-bold"
+                                                            : ""
+                                                }`}
+                                        >
+                                            {item.tag}
+                                        </th>
 
-                                            {/* Botón Ver detalles */}
-                                            <button
-                                                className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
-                                                title={showExtraColumns ? "Ocultar columnas" : "Mostrar columnas"}
-                                                onClick={toggleExtraColumns}
-                                            >
-                                                🔍
-                                            </button>
+                                        <td className={`${thClass} border`}>{item.ubication_name}</td>
+                                        <td className={`${thClass} border`}>{item.department_name}</td>
+                                        <td className={`${thClass} border`}>{item.user}</td>
+                                        <td className={`${thClass} border`}>{item.device_name}</td>
+                                        <td className={`${thClass} border`}>{item.brand_name}</td>
+                                        <td className={`${thClass} border`}>{item.model_name}</td>
+                                        <td className={`${thClass} border`}>{item.serie}</td>
 
-                                            {/* Botón Editar - solo para admin */}
-                                            {userType === 'admin' && (
-                                                <ActionButton
-                                                    type={"edit"}
-                                                    title="Editar equipo"
-                                                    onClick={() => item && onEdit(item)}
+                                        {showExtraColumns && (
+                                            <td className={`${thClass} border`}>{item.ip ? item.ip : 'N/A'}</td>
+                                        )}
+                                        {showExtraColumns && (
+                                            <td className={`${thClass} border`}>{item.status_name}</td>
+                                        )}
+                                        {showExtraColumns && (
+                                            <td className={`${thClass} border`}>
+                                                {item.transferdate ? formatDateToDDMMYYYY(item.transferdate) : 'N/A'}
+                                            </td>
+                                        )}
+                                        {showExtraColumns && (
+                                            <td className={`${thClass} border`}>{item.observation || 'N/A'}</td>
+                                        )}
+
+                                        {/* Acciones */}
+                                        <td className={`${thClass} border`}>
+                                            <div className="flex items-center justify-center h-full gap-2">
+                                                <button
+                                                    className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
+                                                    title={showExtraColumns ? 'Ocultar columnas' : 'Mostrar columnas'}
+                                                    onClick={toggleExtraColumns}
                                                 >
-                                                </ActionButton>
-                                            )}
+                                                    🔍
+                                                </button>
 
-                                            {/* Botón Imprimir */}
-                                            <ActionButton
-                                                type={"print"}
-                                                title="Imprimir equipo"
-                                                onClick={() => item && onPrint(item)}
-                                            >
-                                            </ActionButton>
+                                                {userType === 'admin' && (
+                                                    <ActionButton
+                                                        type={'edit'}
+                                                        title="Editar equipo"
+                                                        onClick={() => item && onEdit(item)}
+                                                    />
+                                                )}
 
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                                                <ActionButton
+                                                    type={'print'}
+                                                    title="Imprimir equipo"
+                                                    onClick={() => item && onPrint(item)}
+                                                />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>

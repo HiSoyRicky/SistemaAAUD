@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
 import ActionButton from "@/components/ui/ActionButton";
+import { API_BASE_URL } from '@/config/apiBaseUrl.js';
 
 export default function StatusesManager() {
     const [statuses, setStatuses] = useState([]);
@@ -9,7 +10,7 @@ export default function StatusesManager() {
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const API_URL = `${import.meta.env.VITE_API_URL}/api/statuses`;
+    const API_URL = `${API_BASE_URL}/api/statuses`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
@@ -39,7 +40,7 @@ export default function StatusesManager() {
     const addStatus = async () => {
         if (!newStatus.trim()) return;
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/statuses`, { name: newStatus });
+            await axios.post(`${API_URL}`, { name: newStatus });
             setnewStatus("");
             fetchStatuses();
         }
@@ -58,7 +59,7 @@ export default function StatusesManager() {
     const saveStatus = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/statuses/${id}`, { name: editingName });
+            await axios.put(`${API_URL}/${id}`, { name: editingName });
             setEditingId(null);
             setEditingName("");
             fetchStatuses();

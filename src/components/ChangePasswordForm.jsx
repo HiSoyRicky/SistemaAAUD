@@ -9,7 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-function ChangePasswordForm({ userId, onLogout }) {
+function ChangePasswordForm({ userId, userEmail, onLogout }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -81,6 +81,16 @@ function ChangePasswordForm({ userId, onLogout }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Campo oculto para autocompletado */}
+        <input
+          type="email"
+          name="username"
+          autoComplete="username"
+          value={userEmail || ""}
+          hidden
+          readOnly
+        />
+
         {/* Nueva contraseña */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
@@ -94,6 +104,7 @@ function ChangePasswordForm({ userId, onLogout }) {
               className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Escribe tu nueva contraseña"
               required
+              autoComplete="new-password"
             />
             <button
               type="button"
@@ -125,6 +136,7 @@ function ChangePasswordForm({ userId, onLogout }) {
               className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Vuelve a escribir la contraseña"
               required
+              autoComplete="new-password"
             />
             <button
               type="button"

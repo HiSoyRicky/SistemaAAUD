@@ -1,33 +1,50 @@
+// utils/formatDate.js
+
+function parseAsLocal(dateInput) {
+    if (!dateInput) return null;
+
+    // Si ya es un Date, úsalo directo
+    if (dateInput instanceof Date) return dateInput;
+
+    if (typeof dateInput === 'string') {
+        // Si viene como "2025-12-02T14:00:00.000Z", le quitamos la Z
+        const cleaned = dateInput.endsWith('Z')
+            ? dateInput.slice(0, -1)
+            : dateInput;
+
+        const d = new Date(cleaned);
+        return isNaN(d) ? null : d;
+    }
+
+    const d = new Date(dateInput);
+    return isNaN(d) ? null : d;
+}
+
 export function formatDateToDDMMYYYY(dateString) {
-    if (!dateString) return '';
+    const d = parseAsLocal(dateString);
+    if (!d) return '';
 
-    const d = new Date(dateString);
-    if (isNaN(d)) return '';
-
-    // Siempre UTC, sin ajuste de zona
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const year = d.getUTCFullYear();
+    const day = d.toLocaleString('es-PA', { timeZone: 'America/Panama', day: '2-digit' });
+    const month = d.toLocaleString('es-PA', { timeZone: 'America/Panama', month: '2-digit' });
+    const year = d.toLocaleString('es-PA', { timeZone: 'America/Panama', year: 'numeric' });
 
     return `${day}/${month}/${year}`;
 }
 
 export function formatDateTime(dateString) {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    if (isNaN(d)) return '';
+    const d = parseAsLocal(dateString);
+    if (!d) return '';
 
-    // Extrae hora y minuto directamente en UTC (como está en DB)
-    let hours = d.getUTCHours();
-    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
+    const day = d.toLocaleString('es-PA', { timeZone: 'America/Panama', day: '2-digit' });
+    const month = d.toLocaleString('es-PA', { timeZone: 'America/Panama', month: '2-digit' });
+    const year = d.toLocaleString('es-PA', { timeZone: 'America/Panama', year: 'numeric' });
 
-    hours = hours % 12;
-    hours = hours === 0 ? 12 : hours;
+    const time = d.toLocaleString('es-PA', {
+        timeZone: 'America/Panama',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
 
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const year = d.getUTCFullYear();
-
-    return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+    return `${day}/${month}/${year} ${time}`;
 }
