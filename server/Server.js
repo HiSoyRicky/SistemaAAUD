@@ -53,7 +53,7 @@ const errorHandler = require('./middleware/errorHandler');
 const AllRoutes = require('./routes/AllRoutes');
 
 // Confiar en proxies (si aplica)
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // Seguridad HTTP y compresión
 app.use(

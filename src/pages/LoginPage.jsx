@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '@/hooks/useAuth';
-import LogoAAUDCPS from '@/assets/images/AAUDCPS.png';
-import { set } from 'zod';
+import LogoGobNal from '@/assets/images/LogoGobNacAAUD.png';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -95,7 +94,7 @@ function LoginPage() {
 
         {/* Logo debajo del título */}
         <img
-          src={LogoAAUDCPS}
+          src={LogoGobNal}
           alt="Logo"
           className="object-contain max-w-xs mx-auto mb-6 w-1/8"
         />

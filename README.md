@@ -100,6 +100,11 @@ Crear, editar y visualizar incidencias en el dashboard, administrar los disposit
 
 -dotenv
 
+Performance
+El archivo `stats.html` muestra el análisis del bundle del frontend
+(generado con Vite) y se usa para identificar oportunidades de optimización
+como lazy loading y reducción de dependencias.
+
 
 👨‍💻 Autor
 

@@ -11,6 +11,7 @@ import { useReactToPrint } from "react-to-print";
 import { useNotifications } from '@/context/NotificationContext';
 import { exportInventoryToExcel } from '@/utils/exportExcel';
 import UbiDepSelector from '@/components/UbiDepSelector';
+import PrintWizardModal from '@/components/inventory/modals/PrintWizardModal';
 import InventoryFormModal from '@/components/inventory/forms/InventoryForm';
 
 function InventoryPage() {
@@ -24,6 +25,30 @@ function InventoryPage() {
     const printRef = useRef();
     const { addNotification } = useNotifications();
     const [printType, setPrintType] = useState('transfer');
+
+    const [printModalOpen, setPrintModalOpen] = useState(false);
+    const [deviceToPrint, setDeviceToPrint] = useState(null);
+
+    const [pendingPrint, setPendingPrint] = useState(false);
+
+    const openPrintModal = (device) => {
+        if (!device) return;
+
+        setDeviceToPrint({
+            ...device,
+            role: device.role || "recibe",
+            userName: loggedUserName,
+            userTransfiere: device.userTransfiere || "",
+            userRecibe: device.userRecibe || "",
+            ubication_destino_id: device.ubication_destino_id || null,
+            department_destino_id: device.department_destino_id || null,
+            ubication_destino_name: device.ubication_destino_name || "",
+            department_destino_name: device.department_destino_name || "",
+        });
+
+        setPrintModalOpen(true);
+    };
+
 
     const loadDevices = async (searchTerm = "") => {
         try {
@@ -42,12 +67,22 @@ function InventoryPage() {
 
     const handlePrint = useReactToPrint({
         contentRef: printRef,
-        documentTitle: "Traslado de dispositivo",
+        documentTitle: printType === "transfer" ? "Traslado de dispositivo" : "Descarte de dispositivo",
         onAfterPrint: () => {
             setSelectedDevice(null);
-            setPrintType('transfer');
-        }
+            setPrintType("transfer");
+        },
     });
+
+    useEffect(() => {
+        if (!pendingPrint) return;
+        if (!selectedDevice) return;
+
+        handlePrint();
+        setPendingPrint(false);
+    }, [pendingPrint, selectedDevice, handlePrint]);
+
+
 
     useEffect(() => {
         const fetchDepartments = async () => {
@@ -71,7 +106,7 @@ function InventoryPage() {
         setSelectedDevice({
             ...device,
             role: 'recibe',
-            userName: loggedUserName || 'Técnico no identificado',
+            userName: loggedUserName,
             userTransfiere: device.userTransfiere || '',
             userRecibe: device.userRecibe || '',
             ubication_destino_id: device.ubication_destino_id || null,
@@ -205,100 +240,24 @@ function InventoryPage() {
 
             </div>
 
-            {selectedDevice && (
-                <div className="p-4 mb-4 border rounded bg-gray-50">
-                    <h3 className="mb-2 font-semibold">
-                        {printType === 'transfer'
-                            ? 'Unidad que recibe'
-                            : 'Generar documento de descarte'}
-                    </h3>
+            <PrintWizardModal
+                open={printModalOpen}
+                device={deviceToPrint}
+                departments={departments}
+                authData={authData}
+                onClose={() => setPrintModalOpen(false)}
+                onPrint={({ docType, payload }) => {
+                    setPrintType(docType);
+                    setSelectedDevice(payload);
+                    setPrintModalOpen(false);
+                    setPendingPrint(true);
+                }}
+            />
 
-                    {/* Campos SOLO para traslado */}
-                    {printType === 'transfer' && (
-                        <>
-                            <div className="flex items-center gap-2 mb-2">
-                                <label className="text-sm font-medium">Rol del técnico:</label>
-                                <select
-                                    value={selectedDevice.role}
-                                    onChange={e => {
-                                        const role = e.target.value;
-                                        setSelectedDevice(prev => ({
-                                            ...prev,
-                                            role,
-                                            userTransfiere: role === 'transfiere'
-                                                ? authData?.name || 'Técnico no identificado'
-                                                : prev.userTransfiere || '',
-                                            userRecibe: role === 'recibe'
-                                                ? authData?.name || 'Técnico no identificado'
-                                                : prev.userRecibe || ''
-                                        }));
-                                    }}
-                                    className="h-8 px-2 text-sm border rounded"
-                                >
-                                    <option value="transfiere">Transfiere</option>
-                                    <option value="recibe">Recibe</option>
-                                </select>
-                            </div>
-
-                            <UbiDepSelector
-                                id_ubication={selectedDevice.ubication_destino_id}
-                                id_department={selectedDevice.department_destino_id}
-                                departments={departments || []}
-                                onChange={({ id_ubication, id_department, ubication_name, department_name }) => {
-                                    setSelectedDevice(prev => ({
-                                        ...prev,
-                                        ubication_destino_id: id_ubication,
-                                        department_destino_id: id_department,
-                                        ubication_destino_name: ubication_name,
-                                        department_destino_name: department_name
-                                    }));
-                                }}
-                            />
-                        </>
-                    )}
-
-                    {/* Bloque resumen para DESCARTE */}
-                    {printType === 'delete' && (
-                        <div className="p-3 mt-3 text-sm bg-gray-100 border rounded">
-                            <p className="mb-1 font-medium text-gray-700">Resumen del dispositivo seleccionado:</p>
-                            <ul className="space-y-1 text-gray-600">
-                                <li><strong>Marbete:</strong> {selectedDevice.tag || 'Sin número de marbete'}</li>
-                                <li><strong>Equipo:</strong> {selectedDevice.device_name || 'Desconocido'}</li>
-                                <li><strong>Marca / Modelo:</strong> {selectedDevice.brand_name || '-'} {selectedDevice.model_name || ''}</li>
-                                <li><strong>Serie:</strong> {selectedDevice.serie || 'No especificada'}</li>
-                                <li><strong>Ubicación actual:</strong> {selectedDevice.ubication_name || 'Sin ubicación'}</li>
-                                <li><strong>Departamento:</strong> {selectedDevice.department_name || 'Sin departamento'}</li>
-                            </ul>
-                        </div>
-                    )}
-
-                    {/* Selector tipo de impresión y botón */}
-                    <div className="flex items-center gap-3 mt-3">
-                        <select
-                            value={printType}
-                            onChange={(e) => setPrintType(e.target.value)}
-                            className="h-8 px-2 text-sm border rounded"
-                        >
-                            <option value="transfer">Traslado</option>
-                            <option value="delete">Descarte</option>
-                        </select>
-
-                        <button
-                            onClick={handlePrint}
-                            className="px-4 py-2 text-white transition bg-blue-600 rounded hover:bg-blue-700"
-                        >
-                            {printType === 'transfer' ? 'Imprimir traslado' : 'Imprimir descarte'}
-                        </button>
-                    </div>
-                </div>
-            )}
-
-
-
-            {/* Tabla de inventario con botón de edición e impresión */}
+            {/* Tabla de inventario*/}
             <InventoryTable
                 inventory={filteredDevices}
-                onPrint={handlePreparePrint}
+                onPrint={(device) => openPrintModal(device)}
                 onEdit={editDevice}
                 authData={authData}
                 search={search}
@@ -343,7 +302,7 @@ function InventoryPage() {
                             ref={printRef}
                             device={selectedDevice}
                             fecha={new Date().toLocaleDateString("es-ES")}
-                            userName={loggedUserName || 'Técnico no identificado'}
+                            userName={loggedUserName}
                         />
                     )}
                 </div>

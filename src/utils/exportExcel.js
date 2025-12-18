@@ -100,7 +100,7 @@ export async function exportIncidentsToExcel(incidents) {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
     const hoyStr = formatDateToDDMMYYYY(new Date().toISOString());
-    const nombreArchivo = `incidencias.${hoyStr.replace(/\//g, '-')}.xlsx`;
+    const nombreArchivo = `Listado de Incidencias - ${hoyStr.replace(/\//g, '-')}.xlsx`;
 
     saveAs(blob, nombreArchivo);
 }
@@ -208,7 +208,7 @@ export async function exportInventoryToExcel(devices) {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
     const hoyStr = formatDateToDDMMYYYY(new Date().toISOString());
-    const nombreArchivo = `inventario.${hoyStr.replace(/\//g, '-')}.xlsx`;
+    const nombreArchivo = `Inventario Informático - ${hoyStr.replace(/\//g, '-')}.xlsx`;
 
     saveAs(blob, nombreArchivo);
 }

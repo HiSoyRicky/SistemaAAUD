@@ -153,6 +153,39 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         );
     }
 
+    const LOCKED_ON_EDIT = new Set([
+        'tag',
+        'id_device',
+        'id_brand',
+        'id_model',
+        'serie',
+        'id_ubication',
+        'id_department',
+    ]);
+
+    const EDITABLE_ALWAYS = new Set([
+        'user',
+        'ip',
+        'id_status',
+        'transferDateInput',
+        'observation',
+    ]);
+
+    const [safeMode, setSafeMode] = useState(isEdit ? true : false); // en editar arranca seguro
+    const [unlocked, setUnlocked] = useState(() => ({})); // { tag:true, ip:true ... }
+
+    const isFieldLocked = (name) => {
+        if (!isEdit) return false; // en crear todo normal
+        if (EDITABLE_ALWAYS.has(name)) return false; // estos siempre editables si quieres
+        if (!LOCKED_ON_EDIT.has(name)) return false; // si no está en lista, no bloquees
+        return safeMode && !unlocked[name]; // bloqueado si modo seguro y no lo has desbloqueado
+    };
+
+    const toggleField = (name) => {
+        setUnlocked(prev => ({ ...prev, [name]: !prev[name] }));
+    };
+
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
             <div className="relative w-full max-w-5xl p-6 bg-white shadow-2xl rounded-2xl md:p-8">
@@ -170,6 +203,22 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                     </button>
                 </div>
 
+                {isEdit && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">Edición segura</span>
+                        <button
+                            type="button"
+                            onClick={() => setSafeMode((v) => !v)}
+                            className={`px-3 py-1 text-xs rounded-full border ${safeMode ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700 border-blue-200'
+                                }`}
+                            title={safeMode ? 'Modo seguro (bloqueado)' : 'Modo libre (todo editable)'}
+                        >
+                            {safeMode ? 'Activado' : 'Desactivado'}
+                        </button>
+                    </div>
+                )}
+
+
                 {loadingOptions ? (
                     <p className="text-center">Cargando opciones...</p>
                 ) : (
@@ -182,7 +231,10 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 value={formData.tag}
                                 onChange={handleChange}
                                 error={errors.tag}
+                                locked={isFieldLocked('tag')}
+                                onToggle={() => toggleField('tag')}
                             />
+
                             <InputField
                                 label="Usuario asignado"
                                 name="user"
@@ -227,6 +279,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 onChange={handleChange}
                                 options={options.devices.map((d) => ({ id: d.id, name: d.name }))}
                                 error={errors.id_device}
+                                locked={isFieldLocked('id_device')}
+                                onToggle={() => toggleField('id_device')}
                             />
                             <SelectField
                                 label="Marca *"
@@ -239,6 +293,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 options={filteredBrands.map((b) => ({ id: b.id, name: b.name }))}
                                 error={errors.id_brand}
                                 disabled={!formData.id_device}
+                                locked={isFieldLocked('id_brand')}
+                                onToggle={() => toggleField('id_brand')}
                             />
                             <SelectField
                                 label="Modelo *"
@@ -248,6 +304,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 options={filteredModels.map((m) => ({ id: m.id, name: m.name }))}
                                 error={errors.id_model}
                                 disabled={!formData.id_brand}
+                                locked={isFieldLocked('id_model')}
+                                onToggle={() => toggleField('id_model')}
                             />
                         </div>
 
@@ -259,6 +317,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 value={formData.serie}
                                 onChange={handleChange}
                                 error={errors.serie}
+                                locked={isFieldLocked('serie')}
+                                onToggle={() => toggleField('serie')}
                             />
                             <InputField
                                 label="IP"
@@ -313,23 +373,38 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 }
 
 //  Reutilizables
-function InputField({ label, name, value, onChange, error }) {
+function InputField({ label, name, value, onChange, error, locked, onToggle }) {
     return (
         <div>
-            <label className="block mb-1 text-sm font-medium">{label}</label>
+            <div className="flex items-center justify-between">
+                <label className="block mb-1 text-sm font-medium">{label}</label>
+
+                {locked !== undefined && (
+                    <button
+                        type="button"
+                        onClick={onToggle}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                        {locked ? 'Editar' : 'Bloquear'}
+                    </button>
+                )}
+            </div>
+
             <input
                 id={name}
                 name={name}
                 type="text"
                 value={value}
                 onChange={onChange}
+                disabled={!!locked}
                 className={`w-full border px-3 py-2 rounded text-sm ${error ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    } ${locked ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}`}
             />
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
     );
 }
+
 
 function TextAreaField({ label, name, value, onChange }) {
     return (
@@ -347,18 +422,33 @@ function TextAreaField({ label, name, value, onChange }) {
     );
 }
 
-function SelectField({ label, name, value, onChange, options = [], disabled = false, error }) {
+function SelectField({ label, name, value, onChange, options = [], disabled = false, error, locked, onToggle }) {
+    const finalDisabled = disabled || !!locked;
+
     return (
         <div>
-            <label className="block mb-1 text-sm font-medium">{label}</label>
+            <div className="flex items-center justify-between">
+                <label className="block mb-1 text-sm font-medium">{label}</label>
+
+                {locked !== undefined && (
+                    <button
+                        type="button"
+                        onClick={onToggle}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                        {locked ? 'Editar' : 'Bloquear'}
+                    </button>
+                )}
+            </div>
+
             <select
                 id={name}
                 name={name}
                 value={value || ''}
                 onChange={onChange}
+                disabled={finalDisabled}
                 className={`w-full border px-3 py-2 rounded text-sm ${error ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                disabled={disabled}
+                    } ${finalDisabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}`}
             >
                 <option value="">Selecciona {label.toLowerCase()}</option>
                 {options.map((opt) => (
@@ -367,6 +457,7 @@ function SelectField({ label, name, value, onChange, options = [], disabled = fa
                     </option>
                 ))}
             </select>
+
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
     );

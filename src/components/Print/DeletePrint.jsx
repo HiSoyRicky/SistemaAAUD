@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import logoAAUD from '@/assets/images/AAUDCPS.png';
+import LogoGobienoNacional from "@/assets/images/LogoGobNacAAUD.png";
 
 const DeletePrint = forwardRef(function DeletePrint({ device = {}, fecha, setDevice, departments = [] }, ref) {
 
@@ -10,9 +10,8 @@ const DeletePrint = forwardRef(function DeletePrint({ device = {}, fecha, setDev
                     {/* Logos y encabezado */}
                     <tr>
                         <td colSpan="6" className="text-center">
-                            {/* Agrega tus logos aquí. Asegúrate de tener las imágenes en tu carpeta 'public' o 'src' */}
                             <img
-                                src={logoAAUD}
+                                src={LogoGobienoNacional}
                                 alt="Logo AAUDCPS"
                                 className="mx-auto mb-2"
                                 style={{ width: '450px', height: 'auto' }} />
