@@ -59,7 +59,6 @@ function InventoryPage() {
         }
     };
 
-
     useEffect(() => {
         loadDevices(search);
     }, [search]);
