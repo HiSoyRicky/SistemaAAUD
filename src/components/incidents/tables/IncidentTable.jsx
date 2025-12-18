@@ -37,25 +37,18 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
     const sortedIncidents = [...incidents].sort((a, b) => b.id_incident - a.id_incident);
     const paginatedIncidents = sortedIncidents.slice(startIndex, endIndex);
 
-
-
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
     const thClass = "px-4 py-0 text-center text-sm text-gray-700 border";
 
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
-    const toggleExtraColumns = () => {
-        setShowExtraColumns(prev => !prev);
-    };
-
+    const handlePageChange = (page) => setCurrentPage(page);
+    const toggleExtraColumns = () => setShowExtraColumns(prev => !prev);
     const formatId = (id) => id.toString().padStart(6, '0');
 
     return (
         <div className="p-1 bg-white rounded-lg shadow-md">
+
             {/* Contenedor scrollable SOLO para la tabla */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-scroll overflow-y-visible">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
@@ -164,13 +157,26 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             </td>
 
                                             {/* Solución de la incidencia */}
-                                            <td className={`${thClass} border`}> {incident.solution || <span title="Sin resolver">N/A</span>} </td>
+                                            <td className={`${thClass} border`}>
+                                                <div className="max-w-[300px] max-h-[120px] overflow-y-auto whitespace-pre-wrap text-left text-sm">
+                                                    {incident.solution || <span className="italic text-gray-400">Sin resolver</span>}
+                                                </div>
+                                            </td>
+
                                         </>
                                     )}
 
                                     {/* Acciones según el tipo de usuario */}
                                     <td className={`${thClass} border`}>
                                         <div className="flex items-center justify-center gap-x-2">
+
+                                            <button
+                                                className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
+                                                title={showExtraColumns ? 'Ocultar columnas' : 'Mostrar columnas'}
+                                                onClick={toggleExtraColumns}
+                                            >
+                                                🔍
+                                            </button>
 
                                             {/* Botón Asignar técnico */}
                                             {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
@@ -226,15 +232,6 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                 totalPages={totalPages}
                 onPageChange={(page) => setCurrentPage(page)}
             />
-
-            <div className="flex justify-center mt-2">
-                <button
-                    onClick={toggleExtraColumns}
-                    className="px-3 py-1 text-gray-700 bg-gray-300 rounded hover:bg-gray-400"
-                >
-                    {showExtraColumns ? 'Ocultar columnas extra' : 'Mostrar columnas extra'}
-                </button>
-            </div>
         </div>
     )
 }

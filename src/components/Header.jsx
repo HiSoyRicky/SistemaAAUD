@@ -1,65 +1,45 @@
-import { LogOut, LayoutDashboard, List, Cpu, Settings, ChevronDown } from "lucide-react";
+import {
+  LogOut,
+  LayoutDashboard,
+  List,
+  Cpu,
+  Settings,
+  ChevronDown,
+  Menu,
+  X,
+} from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useAuth from "@/hooks/useAuth";
+import LogoSistemaAAUD from "@/assets/images/LogoSistemaAAUD.png";
 
 function Header() {
   const {
     isAuthenticated = false,
     userType = null,
-    loggedUserName = '',
+    loggedUserName = "",
     loggedUserId,
-    logout
+    logout,
   } = useAuth();
-  const userId = loggedUserId;
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   const navigate = useNavigate();
 
-  const userMenuRef = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const initials = loggedUserName
-    ? loggedUserName
-      .split(" ")
+  const userMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+
+  const initials = useMemo(() => {
+    if (!loggedUserName) return "?";
+    return loggedUserName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-    : "?";
-
-  const handleClick = () => {
-    navigate("/dashboard");
-  };
-
-  const menuItems = [
-    {
-      icon: <LayoutDashboard className="w-5 h-5" />,
-      label: "Dashboard",
-      path: "/dashboard",
-      allowed: ["admin", "tecnico"],
-    },
-    {
-      icon: <List className="w-5 h-5" />,
-      label: "Incidencias",
-      path: "/incidencias",
-      allowed: ["trabajador", "admin", "tecnico", "consultor"],
-    },
-    {
-      icon: <Cpu className="w-5 h-5" />,
-      label: "Inventario",
-      path: "/inventario",
-      allowed: ["admin", "tecnico", "consultor"],
-    },
-    {
-      icon: <Settings className="w-5 h-5" />,
-      label: "Admin Panel",
-      path: "/admin",
-      allowed: ["admin"],
-    },
-  ];
-
-  const filteredMenuItems = menuItems.filter((item) =>
-    item.allowed.includes(userType)
-  );
+      .toUpperCase();
+  }, [loggedUserName]);
 
   const roleLabel =
     userType === "admin"
@@ -70,107 +50,247 @@ function Header() {
           ? "Consultor"
           : "Trabajador";
 
-  useEffect(() => {
-    if (!userMenuOpen) return;
+  const menuItems = useMemo(
+    () => [
+      {
+        icon: <LayoutDashboard className="w-5 h-5" />,
+        label: "Dashboard",
+        path: "/dashboard",
+        allowed: ["admin", "tecnico"],
+      },
+      {
+        icon: <List className="w-5 h-5" />,
+        label: "Incidencias",
+        path: "/incidencias",
+        allowed: ["trabajador", "admin", "tecnico", "consultor"],
+      },
+      {
+        icon: <Cpu className="w-5 h-5" />,
+        label: "Inventario",
+        path: "/inventario",
+        allowed: ["admin", "tecnico", "consultor"],
+      },
+      {
+        icon: <Settings className="w-5 h-5" />,
+        label: "Admin Panel",
+        path: "/admin",
+        allowed: ["admin"],
+      },
+    ],
+    []
+  );
 
-    const handleClickOutside = (e) => {
+  const filteredMenuItems = useMemo(
+    () => menuItems.filter((item) => item.allowed.includes(userType)),
+    [menuItems, userType]
+  );
+
+  const goTo = (path) => {
+    setMobileOpen(false);
+    setUserMenuOpen(false);
+    navigate(path);
+  };
+
+  // Cierra dropdowns al hacer click afuera
+  useEffect(() => {
+    const onDown = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setUserMenuOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        // si click afuera del panel mobile y estaba abierto
+        // (pero no cierres si el click es en el botón hamburguesa: lo manejamos aparte)
+        if (mobileOpen) setMobileOpen(false);
+      }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [userMenuOpen]);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [mobileOpen]);
+
+  // Cierra menú mobile si cambia el tamaño a desktop
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) setMobileOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 text-white shadow-md bg-gradient-to-r from-blue-900 to-indigo-600">
-      <div className="flex items-center justify-between py-2 mx-auto max-w-7xl">
-        {/* Logo / título */}
-        <h1
-          onClick={handleClick}
-          role="button"
-          className="text-3xl font-extrabold tracking-wide text-transparent cursor-pointer md:text-5xl bg-clip-text bg-gradient-to-r from-white to-gray-300"
-        >
-          Sistema AAUD
-        </h1>
-
-        {/* Menú de escritorio */}
-        {isAuthenticated && (
-          <nav
-            className={`overflow-hidden transition-all duration-500 ease-in-out md:flex 
-              ${menuOpen ? "max-h-96" : "max-h-0 md:max-h-full"}`}
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-900">
+      <div className="px-3 mx-auto max-w-7xl md:px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Brand */}
+          <button
+            type="button"
+            onClick={() => goTo("/dashboard")}
+            className="flex items-center gap-3 group"
           >
-            {filteredMenuItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `px-3 py-1 rounded-full flex items-center gap-1 text-sm transition-all text-white
-                  ${isActive ? "bg-indigo-600" : "hover:bg-indigo-400"}`
-                }
-              >
-                {item.icon} {item.label}
-              </NavLink>
-            ))}
-          </nav>
-        )}
-
-        {isAuthenticated && (
-          <div
-            ref={userMenuRef}
-            className="relative flex items-center space-x-3"
-          >
-            {/* Botón de usuario (avatar + nombre + rol) */}
-            <button
-              type="button"
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2 px-2 py-1 text-sm font-medium transition-colors rounded-full hover:bg-blue-800/60"
-            >
-              {/* Avatar */}
-              <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-blue-600 bg-white rounded-full shadow-md ring-1 ring-white">
-                {initials}
-              </div>
-
-              {/* Nombre + rol (solo desktop) */}
-              <span className="hidden md:flex md:flex-col md:items-start">
-                <span className="leading-tight">{loggedUserName}</span>
-                <span className="text-xs text-blue-100/80">{roleLabel}</span>
-              </span>
-
-              {/* Flechita */}
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${userMenuOpen ? "rotate-180" : "rotate-0"
-                  }`}
+            <div className="flex items-center justify-center overflow-hidden rounded-full w-14 h-14 bg-white/10 ring-1 ring-white/15 backdrop-blur">
+              <img
+                src={LogoSistemaAAUD}
+                alt="Logo AAUD"
+                className="object-cover w-full h-full"
               />
-            </button>
+            </div>
 
-            {/* Dropdown usuario */}
-            {userMenuOpen && (
-              <div className="absolute right-0 z-50 w-40 p-2 mt-2 text-sm text-gray-800 bg-white rounded-lg shadow-lg top-full">
-                <button
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    navigate("/perfil");
-                  }}
-                  className="flex items-center w-full gap-2 px-3 py-2 text-left rounded-md hover:bg-gray-100"
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-base font-extrabold tracking-wide text-white md:text-lg">
+                Sistema AAUD
+              </span>
+              <span className="hidden text-xs text-white/70 md:block">
+                Soporte • Incidencias • Inventario
+              </span>
+            </div>
+          </button>
+
+          {/* Desktop nav */}
+          {isAuthenticated && (
+            <nav className="items-center hidden gap-2 md:flex">
+              {filteredMenuItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    [
+                      "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                      isActive
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-white/90 hover:bg-white/10 hover:text-white",
+                    ].join(" ")
+                  }
                 >
-                  <Settings className="w-4 h-4" />
-                  <span>Mi perfil</span>
+                  {item.icon}
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          )}
+
+          <div className="flex items-center gap-2">
+            {/* Mobile menu button */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                className="inline-flex items-center justify-center w-10 h-10 text-white transition md:hidden rounded-xl bg-white/10 ring-1 ring-white/15 hover:bg-white/15"
+                onClick={() => setMobileOpen((p) => !p)}
+                aria-label="Abrir menú"
+              >
+                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* User menu */}
+            {isAuthenticated && (
+              <div ref={userMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-2 px-2 py-1 transition rounded-full bg-white/10 ring-1 ring-white/15 hover:bg-white/15"
+                >
+                  <div className="flex items-center justify-center font-extrabold bg-white rounded-full shadow-sm h-9 w-9 text-slate-900">
+                    {initials}
+                  </div>
+
+                  <span className="hidden pr-1 md:flex md:flex-col md:items-start">
+                    <span className="text-sm font-semibold leading-tight text-white">
+                      {loggedUserName}
+                    </span>
+                    <span className="text-xs leading-tight text-white/70">
+                      {roleLabel}
+                    </span>
+                  </span>
+
+                  <ChevronDown
+                    className={`hidden md:block w-4 h-4 text-white/90 transition-transform ${userMenuOpen ? "rotate-180" : "rotate-0"
+                      }`}
+                  />
                 </button>
 
-                <button
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    logout();
-                  }}
-                  className="flex items-center w-full gap-2 px-3 py-2 text-left text-red-600 rounded-md hover:bg-red-50"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Cerrar sesión</span>
-                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 w-56 mt-2 overflow-hidden bg-white shadow-xl rounded-2xl ring-1 ring-black/10">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <div className="text-sm font-semibold text-slate-900">
+                        {loggedUserName}
+                      </div>
+                      <div className="text-xs text-slate-500">{roleLabel}</div>
+                    </div>
+
+                    <div className="p-2">
+                      <button
+                        onClick={() => goTo("/perfil")}
+                        className="flex items-center w-full gap-2 px-3 py-2 text-sm transition rounded-xl text-slate-700 hover:bg-slate-100"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Mi perfil
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          setMobileOpen(false);
+                          logout();
+                        }}
+                        className="flex items-center w-full gap-2 px-3 py-2 text-sm text-red-600 transition rounded-xl hover:bg-red-50"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Mobile panel */}
+        {isAuthenticated && mobileOpen && (
+          <div ref={mobileMenuRef} className="pb-3 md:hidden">
+            <div className="p-2 mt-2 rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
+              <div className="grid gap-2">
+                {filteredMenuItems.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      [
+                        "flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition",
+                        isActive
+                          ? "bg-white text-slate-900"
+                          : "text-white/90 hover:bg-white/10 hover:text-white",
+                      ].join(" ")
+                    }
+                  >
+                    {item.icon}
+                    {item.label}
+                  </NavLink>
+                ))}
+
+                <div className="h-px my-1 bg-white/10" />
+
+                <button
+                  onClick={() => goTo("/perfil")}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium transition rounded-xl text-white/90 hover:bg-white/10 hover:text-white"
+                >
+                  <Settings className="w-5 h-5" />
+                  Mi perfil
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    logout();
+                  }}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-red-200 transition rounded-xl hover:bg-white/10"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

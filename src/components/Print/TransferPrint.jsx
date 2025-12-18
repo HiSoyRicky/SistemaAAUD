@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import logoAAUD from '@/assets/images/AAUDCPS.png';
+import LogoGobNal from "@/assets/images/LogoGobNacAAUD.png";
 
 const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, setDevice, departments = [] }, ref) {
 
@@ -14,9 +14,8 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                     {/* Logos y encabezado */}
                     <tr>
                         <td colSpan="6" className="text-center">
-                            {/* Agrega tus logos aquí. Asegúrate de tener las imágenes en tu carpeta 'public' o 'src' */}
                             <img
-                                src={logoAAUD}
+                                src={LogoGobNal}
                                 alt="Logo AAUDCPS"
                                 className="mx-auto mb-2"
                                 style={{ width: '450px', height: 'auto' }} />
