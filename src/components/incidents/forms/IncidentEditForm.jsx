@@ -35,7 +35,7 @@ function IncidentEditForm({ incident, onCancel, onSave }) {
                 Editar incidencia #{String(incident.id_incident).padStart(6, '0')}
             </h2>
 
-            {/* Descripción*/}
+            {/* Descripción */}
             <div className="relative mb-6">
                 <label htmlFor="description" className="block mb-2 text-sm text-gray-700">
                     Descripción *
