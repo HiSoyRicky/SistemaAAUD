@@ -1,7 +1,7 @@
 // src/services/socket.js
 
 import { io } from 'socket.io-client';
-import { API_BASE_URL } from '../config/apiBaseUrl.js';
+import { API_BASE_URL } from '../shared/config/apiBaseUrl.js';
 
 const socket = io(API_BASE_URL, {
     autoConnect: false,

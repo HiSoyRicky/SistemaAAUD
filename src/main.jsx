@@ -2,11 +2,11 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
+import App from './app/App.jsx';
 
 import './index.css';
-import { AuthProvider } from './context/AuthContext.jsx';
-import { NotificationProvider } from './context/NotificationContext.jsx';
+import { AuthProvider } from './app/providers/AuthContext.jsx';
+import { NotificationProvider } from './app/providers/NotificationContext.jsx';
 
 // Importar CSS de Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
