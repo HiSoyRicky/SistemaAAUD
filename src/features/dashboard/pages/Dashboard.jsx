@@ -177,16 +177,19 @@ export default function Dashboard() {
     return names; // ya viene ordenado por cantidad desc
   }, [inventory]);
 
-  // Inventario filtrado
-  const filteredInventory = useMemo(() => {
-    if (selectedDevice === "ALL") return inventory;
+  const [selectedBrand, setSelectedBrand] = useState("ALL");
 
-    return inventory.filter((i) => {
-      const name = i.device?.name || i.device_name || "Sin dato";
-      return name === selectedDevice;
-    });
-  }, [inventory, selectedDevice]);
 
+  const handleDeviceBarClick = (deviceName) => {
+    if (!deviceName) return;
+    setSelectedDevice((prev) => (prev === deviceName ? "ALL" : deviceName));
+    setSelectedBrand("ALL"); // al cambiar Device, reset Brand
+  };
+
+  const handleBrandBarClick = (brandName) => {
+    if (!brandName) return;
+    setSelectedBrand((prev) => (prev === brandName ? "ALL" : brandName));
+  };
 
   // =======================
   // Incidencias
@@ -208,6 +211,29 @@ export default function Dashboard() {
   // =======================
   // Inventario
   // =======================
+  // 1) Dataset base (sin filtros)
+  const baseInventory = inventory;
+
+  // 2) Filtrado por Device
+  const filteredByDevice = useMemo(() => {
+    if (selectedDevice === "ALL") return baseInventory;
+
+    return baseInventory.filter((i) => {
+      const name = i.device?.name || i.device_name || "Sin dato";
+      return name === selectedDevice;
+    });
+  }, [baseInventory, selectedDevice]);
+
+  // 3) Filtrado final (Device + Brand)
+  const filteredInventory = useMemo(() => {
+    if (selectedBrand === "ALL") return filteredByDevice;
+
+    return filteredByDevice.filter((i) => {
+      const brand = i.brand?.name || i.brand_name || "Sin dato";
+      return brand === selectedBrand;
+    });
+  }, [filteredByDevice, selectedBrand]);
+
   const totalInventory = filteredInventory.length;
 
   const byDevice = useMemo(
@@ -215,10 +241,25 @@ export default function Dashboard() {
     [filteredInventory]
   );
 
+  const byDeviceAll = useMemo(
+    () => groupCount(baseInventory, (i) => i.device?.name || i.device_name),
+    [baseInventory]
+  );
+  const top8Devices = byDeviceAll.slice(0, 8);
+
+
   const byBrand = useMemo(
     () => groupCount(filteredInventory, (i) => i.brand?.name || i.brand_name),
     [filteredInventory]
   );
+
+  // marcas disponibles dentro del device seleccionado (sin aplicar filtro de marca)
+  const byBrandInDevice = useMemo(
+    () => groupCount(filteredByDevice, (i) => i.brand?.name || i.brand_name),
+    [filteredByDevice]
+  );
+  const top8Brands = byBrandInDevice.slice(0, 8);
+
 
   const STATUS_ORDER = [
     "Buen estado",
@@ -247,10 +288,6 @@ export default function Dashboard() {
     });
   }, [filteredInventory]);
 
-
-  const top8Devices = byDevice.slice(0, 8);
-  const top8Brands = byBrand.slice(0, 8);
-
   const unclassified = filteredInventory.filter(
     (x) => !(x.device?.name || x.device_name)
   ).length;
@@ -263,14 +300,6 @@ export default function Dashboard() {
     const stillExists = inventory.some((i) => (i.device?.name || i.device_name) === selectedDevice);
     if (!stillExists) setSelectedDevice("ALL");
   }, [inventory, selectedDevice]);
-
-  // Gráficos dinámicos
-  const handleDeviceBarClick = (deviceName) => {
-    if (!deviceName) return;
-
-    setSelectedDevice((prev) => (prev === deviceName ? "ALL" : deviceName));
-  };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
@@ -361,6 +390,15 @@ export default function Dashboard() {
               <span className="font-semibold text-slate-900">
                 {selectedDevice === "ALL" ? "Todos los equipos" : selectedDevice}
               </span>
+              {selectedDevice !== "ALL" && (
+                <>
+                  {" "}
+                  • Marca:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {selectedBrand === "ALL" ? "Todas" : selectedBrand}
+                  </span>
+                </>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -380,7 +418,10 @@ export default function Dashboard() {
               {selectedDevice !== "ALL" && (
                 <button
                   type="button"
-                  onClick={() => setSelectedDevice("ALL")}
+                  onClick={() => {
+                    setSelectedDevice("ALL");
+                    setSelectedBrand("ALL");
+                  }}
                   className="px-3 py-2 text-sm font-semibold border rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
                 >
                   Limpiar
@@ -419,55 +460,86 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {selectedDevice === "ALL" && (
-              <ChartCard title="Top tipos de equipo" right="Click en una barra para filtrar">
 
-                {({ width, height }) => (
-                  <BarChart width={width} height={height} data={top8Devices} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip content={<FancyTooltip />} />
-                    <Bar
-                      dataKey="Cantidad"
-                      fill="#8b5cf6"
-                      radius={[10, 10, 0, 0]}
-                      onClick={(data) => {
-                        // recharts te pasa el payload del item clickeado
-                        const name = data?.name;
-                        handleDeviceBarClick(name);
-                      }}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <LabelList
-                        dataKey="Cantidad"
-                        position="top"
-                        style={{ fontSize: 11, fontWeight: 700 }}
-                      />
+            <ChartCard title="Top tipos de equipo" right="Click en una barra para filtrar">
 
-                      {/* Opcional: resaltar visualmente el seleccionado */}
-                      {top8Devices.map((entry, idx) => (
+              {({ width, height }) => (
+                <BarChart width={width} height={height} data={top8Devices} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip content={<FancyTooltip />} />
+                  <Bar
+                    dataKey="Cantidad"
+                    radius={[10, 10, 0, 0]}
+                    activeBar={null}
+                    onClick={(data) => {
+                      const name = data?.name;
+                      handleDeviceBarClick(name);
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {top8Devices.map((entry, idx) => {
+                      const isSelected = entry.name === selectedDevice;
+                      const isFiltering = selectedDevice !== "ALL";
+
+                      return (
                         <Cell
-                          key={`cell-${idx}`}
-                          fill={entry.name === selectedDevice ? "#4c1d95" : "#8b5cf6"}
+                          key={`cell-device-${idx}`}
+                          fill={isSelected ? "#6d28d9" : "#8b5cf6"}
+                          opacity={isFiltering && !isSelected ? 0.4 : 1}
                         />
-                      ))}
-                    </Bar>
+                      );
+                    })}
+                    <LabelList
+                      dataKey="Cantidad"
+                      position="top"
+                      style={{ fontSize: 11, fontWeight: 700 }}
+                    />
+                  </Bar>
 
-                  </BarChart>
-                )}
-              </ChartCard>
-            )}
+                </BarChart>
+              )}
+            </ChartCard>
 
             <ChartCard title="Top marcas" right="Top 8">
               {({ width, height }) => (
+
                 <BarChart width={width} height={height} data={top8Brands} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
                   <YAxis allowDecimals={false} />
                   <Tooltip content={<FancyTooltip />} />
-                  <Bar dataKey="Cantidad" fill="#14b8a6" radius={[10, 10, 0, 0]}>
-                    <LabelList dataKey="Cantidad" position="top" style={{ fontSize: 11, fontWeight: 700 }} />
+                  <Bar
+                    dataKey="Cantidad"
+                    radius={[10, 10, 0, 0]}
+                    activeBar={false}
+                    onClick={(data) => {
+                      const name = data?.name;
+                      handleBrandBarClick(name);
+                    }}
+                    style={{
+                      cursor: selectedDevice === "ALL" ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {top8Brands.map((entry, idx) => {
+                      const isSelected = entry.name === selectedBrand;
+                      const isFiltering = selectedBrand !== "ALL";
+
+                      return (
+                        <Cell
+                          key={`cell-brand-${idx}`}
+                          fill={isSelected ? "#065f46" : "#14b8a6"}
+                          opacity={isFiltering && !isSelected ? 0.4 : 1}
+                        />
+                      );
+                    })}
+                    <LabelList
+                      dataKey="Cantidad"
+                      position="top"
+                      style={{ fontSize: 11, fontWeight: 700 }}
+                    />
+
                   </Bar>
                 </BarChart>
               )}

@@ -213,7 +213,7 @@ function InventoryPage() {
                     </div>
 
                     {/* Parte derecha: exportar */}
-                    {userType === 'admin' && (
+                    {["admin", "consultor", "tecnico"].includes(userType) && (
                         <button
                             onClick={handleExportDevices}
                             className="h-8 px-2 text-sm font-bold text-white bg-green-500 rounded hover:bg-green-700"

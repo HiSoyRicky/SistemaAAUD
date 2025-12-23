@@ -177,7 +177,7 @@ function IncidentDetails() {
 
                 <div className="flex justify-center mt-8">
                     <button
-                        onClick={() => navigate('/selector')}
+                        onClick={() => navigate('/dashboard')}
                         className="px-6 py-3 font-semibold text-white transition-all duration-300 ease-in-out transform bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
                     >
                         Volver al inicio

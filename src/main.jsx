@@ -1,5 +1,5 @@
 // src/main.jsx
-import React, { Component } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './app/App.jsx';
@@ -8,45 +8,10 @@ import './index.css';
 import { AuthProvider } from './app/providers/AuthContext.jsx';
 import { NotificationProvider } from './app/providers/NotificationContext.jsx';
 
-// Importar CSS de Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
-// Importar JS de Bootstrap (opcional, para modales, dropdowns, etc.)
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-class ErrorBoundary extends Component {
-
-  state = { hasError: false, error: null };
-
-  static getDerivedStateFromError(error) {
-    console.error('Error capturado:', error);
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary capturó:', error, errorInfo);
-  }
-
-
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-4 text-center">
-          <h1 className="text-2xl font-bold text-red-600">Algo salió mal</h1>
-          <p>{this.state.error?.message || 'Error desconocido'}</p>
-          <button
-            className="px-4 py-2 mt-4 text-white bg-blue-500 rounded"
-            onClick={() => window.location.reload()}
-          >
-            Recargar página
-          </button>
-        </div>
-
-      );
-    }
-    return this.props.children;
-  }
-}
+import ErrorBoundary from './shared/components/ui/ErrorBoundary.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

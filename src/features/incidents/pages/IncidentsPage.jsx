@@ -286,7 +286,7 @@ function IncidentsPage() {
                 <section>
                     <h2 className="mb-3 text-center h3">Listado de Incidencias</h2>
 
-                    {userType === "admin" && (
+                    {["admin", "consultor", "tecnico"].includes(userType) && (
                         <div className="mb-3 text-center">
                             <Button variant="success" onClick={handleExportIncidents}>
                                 Exportar a Excel

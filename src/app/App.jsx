@@ -10,26 +10,24 @@ import IncidentsPage from '@/features/incidents/pages/IncidentsPage';
 import IncidentDetails from '@/features/incidents/pages/IncidentDetails';
 
 import NotFoundPage from './NotFoundPage';
-import Dashboard from '../features/dashboard/pages/Dashboard';
-import useAuth from '../shared/hooks/useAuth';
-
-import SelectorPage from '../features/dashboard/pages/SelectorPage';
+import Dashboard from '@/features/dashboard/pages/Dashboard';
+import useAuth from '@/shared/hooks/useAuth';
 
 // Inventario
 import InventoryPage from '@/features/inventory/pages/InventoryPage';
-import ProfilePage from '../features/auth/pages/ProfilePage';
+import ProfilePage from '@/features/auth/pages/ProfilePage';
 
 // Rutas de administración
 import AdminRoute from '@/features/admin/AdminRoute';
-import AdminPage from "../features/admin/pages/AdminPage";
-import DevicesManager from "../features/admin/components/devices/DevicesManager";
-import UsersManager from "../features/admin/components/users/UsersManager";
-import UbicationsManager from "../features/admin/components/ubications/UbicationsManager";
-import DepartmentsManager from "../features/admin/components/departments/DepartmentManager";
-import BrandsManager from "../features/admin/components/brands/BrandsManager";
-import ModelsManager from '../features/admin/components/models/ModelsManager';
-import TonersManager from '../features/admin/components/toners/TonersManager';
-import StatusManager from '../features/admin/components/status/StatusManager';
+import AdminPage from "@/features/admin/pages/AdminPage";
+import DevicesManager from "@/features/admin/components/devices/DevicesManager";
+import UsersManager from "@/features/admin/components/users/UsersManager";
+import UbicationsManager from "@/features/admin/components/ubications/UbicationsManager";
+import DepartmentsManager from "@/features/admin/components/departments/DepartmentManager";
+import BrandsManager from "@/features/admin/components/brands/BrandsManager";
+import ModelsManager from '@/features/admin/components/models/ModelsManager';
+import TonersManager from '@/features/admin/components/toners/TonersManager';
+import StatusManager from '@/features/admin/components/status/StatusManager';
 
 
 import PrivateLayout from "@/shared/components/layout/PrivateLayout";
@@ -68,20 +66,17 @@ function App() {
         {/* Login público */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Ruta pública para ver detalles de incidencia con token */}
-        <Route path="/incidencias/view" element={<IncidentDetails />} />
-
-        {/* Selector de sistema */}
         <Route
-          path="/selector"
+          path="/"
           element={
             <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
-              <PrivateLayout>
-                <SelectorPage />
-              </PrivateLayout>
+              <Navigate to="/incidencias" replace />
             </PrivateRoute>
           }
         />
+
+        {/* Ruta pública para ver detalles de incidencia con token */}
+        <Route path="/incidencias/view" element={<IncidentDetails />} />
 
         {/* Página principal de incidencias protegida */}
         <Route
@@ -129,7 +124,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <Dashboard />
               </PrivateLayout>

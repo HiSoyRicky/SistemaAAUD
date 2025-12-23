@@ -56,7 +56,7 @@ function Header() {
         icon: <LayoutDashboard className="w-5 h-5" />,
         label: "Dashboard",
         path: "/dashboard",
-        allowed: ["admin", "tecnico"],
+        allowed: ["admin", "tecnico" ,"consultor"],
       },
       {
         icon: <List className="w-5 h-5" />,
