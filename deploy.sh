@@ -54,12 +54,12 @@ log "📁 [4/5] Actualizando archivos estáticos en $WEB_ROOT ..."
 
 # Crear directorio si no existe
 if [ ! -d "$WEB_ROOT" ]; then
-  echo "${SUDO_PASSWORD:-}" | sudo -S mkdir -p "$WEB_ROOT"
+  sudo mkdir -p "$WEB_ROOT"
 fi
 
 # Limpiar y copiar
-echo "${SUDO_PASSWORD:-}" | sudo -S rm -rf "$WEB_ROOT"/*
-echo "${SUDO_PASSWORD:-}" | sudo -S cp -r "$APP_DIR"/dist/. "$WEB_ROOT"/
+sudo rm -rf "$WEB_ROOT"/*
+sudo cp -r "$APP_DIR"/dist/. "$WEB_ROOT"/
 
 # 6) PM2
 log "🚀 [5/5] Reiniciando backend con PM2..."

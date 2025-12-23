@@ -168,6 +168,26 @@ export default function Dashboard() {
     loadInventory();
   }, []);
 
+  // Filtro (tipo de equipo)
+  const [selectedDevice, setSelectedDevice] = useState("ALL");
+
+  // Opciones de equipos (para el select)
+  const deviceOptions = useMemo(() => {
+    const names = groupCount(inventory, (i) => i.device?.name || i.device_name).map(x => x.name);
+    return names; // ya viene ordenado por cantidad desc
+  }, [inventory]);
+
+  // Inventario filtrado
+  const filteredInventory = useMemo(() => {
+    if (selectedDevice === "ALL") return inventory;
+
+    return inventory.filter((i) => {
+      const name = i.device?.name || i.device_name || "Sin dato";
+      return name === selectedDevice;
+    });
+  }, [inventory, selectedDevice]);
+
+
   // =======================
   // Incidencias
   // =======================
@@ -188,30 +208,69 @@ export default function Dashboard() {
   // =======================
   // Inventario
   // =======================
-  const totalInventory = inventory.length;
+  const totalInventory = filteredInventory.length;
 
   const byDevice = useMemo(
-    () => groupCount(inventory, (i) => i.device?.name || i.device_name),
-    [inventory]
+    () => groupCount(filteredInventory, (i) => i.device?.name || i.device_name),
+    [filteredInventory]
   );
 
   const byBrand = useMemo(
-    () => groupCount(inventory, (i) => i.brand?.name || i.brand_name),
-    [inventory]
+    () => groupCount(filteredInventory, (i) => i.brand?.name || i.brand_name),
+    [filteredInventory]
   );
 
-  const byStatus = useMemo(
-    () => groupCount(inventory, (i) => i.status?.name || i.status_name),
-    [inventory]
-  );
+  const STATUS_ORDER = [
+    "Buen estado",
+    "Nuevo",
+    "Mal estado",
+    "Para descarte",
+    "Descartado",
+  ];
+
+  const byStatus = useMemo(() => {
+    const data = groupCount(
+      filteredInventory,
+      (i) => i.status?.name || i.status_name
+    );
+
+    return data.sort((a, b) => {
+      const aIndex = STATUS_ORDER.indexOf(a.name);
+      const bIndex = STATUS_ORDER.indexOf(b.name);
+
+      // Si alguno no está en la lista, lo manda al final
+      if (aIndex === -1 && bIndex === -1) return 0;
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+
+      return aIndex - bIndex;
+    });
+  }, [filteredInventory]);
+
 
   const top8Devices = byDevice.slice(0, 8);
   const top8Brands = byBrand.slice(0, 8);
 
-  const unclassified = inventory.filter((x) => !(x.device?.name || x.device_name)).length;
+  const unclassified = filteredInventory.filter(
+    (x) => !(x.device?.name || x.device_name)
+  ).length;
 
   // Colores por categoría (más vivo)
   const incidentBarColors = ["#f59e0b", "#3b82f6", "#22c55e"];
+
+  useEffect(() => {
+    if (selectedDevice === "ALL") return;
+    const stillExists = inventory.some((i) => (i.device?.name || i.device_name) === selectedDevice);
+    if (!stillExists) setSelectedDevice("ALL");
+  }, [inventory, selectedDevice]);
+
+  // Gráficos dinámicos
+  const handleDeviceBarClick = (deviceName) => {
+    if (!deviceName) return;
+
+    setSelectedDevice((prev) => (prev === deviceName ? "ALL" : deviceName));
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
@@ -296,6 +355,41 @@ export default function Dashboard() {
             icon={Boxes}
           />
 
+          <div className="flex flex-col gap-2 mb-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-slate-600">
+              Filtro actual:{" "}
+              <span className="font-semibold text-slate-900">
+                {selectedDevice === "ALL" ? "Todos los equipos" : selectedDevice}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedDevice}
+                onChange={(e) => setSelectedDevice(e.target.value)}
+                className="px-3 py-2 text-sm bg-white border rounded-xl border-slate-200 text-slate-700"
+              >
+                <option value="ALL">Todos</option>
+                {deviceOptions.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+
+              {selectedDevice !== "ALL" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDevice("ALL")}
+                  className="px-3 py-2 text-sm font-semibold border rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+
+
           <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total de equipos"
@@ -325,19 +419,45 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <ChartCard title="Top tipos de equipo" right="Top 8">
-              {({ width, height }) => (
-                <BarChart width={width} height={height} data={top8Devices} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip content={<FancyTooltip />} />
-                  <Bar dataKey="Cantidad" fill="#8b5cf6" radius={[10, 10, 0, 0]}>
-                    <LabelList dataKey="Cantidad" position="top" style={{ fontSize: 11, fontWeight: 700 }} />
-                  </Bar>
-                </BarChart>
-              )}
-            </ChartCard>
+            {selectedDevice === "ALL" && (
+              <ChartCard title="Top tipos de equipo" right="Click en una barra para filtrar">
+
+                {({ width, height }) => (
+                  <BarChart width={width} height={height} data={top8Devices} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip content={<FancyTooltip />} />
+                    <Bar
+                      dataKey="Cantidad"
+                      fill="#8b5cf6"
+                      radius={[10, 10, 0, 0]}
+                      onClick={(data) => {
+                        // recharts te pasa el payload del item clickeado
+                        const name = data?.name;
+                        handleDeviceBarClick(name);
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <LabelList
+                        dataKey="Cantidad"
+                        position="top"
+                        style={{ fontSize: 11, fontWeight: 700 }}
+                      />
+
+                      {/* Opcional: resaltar visualmente el seleccionado */}
+                      {top8Devices.map((entry, idx) => (
+                        <Cell
+                          key={`cell-${idx}`}
+                          fill={entry.name === selectedDevice ? "#4c1d95" : "#8b5cf6"}
+                        />
+                      ))}
+                    </Bar>
+
+                  </BarChart>
+                )}
+              </ChartCard>
+            )}
 
             <ChartCard title="Top marcas" right="Top 8">
               {({ width, height }) => (
@@ -372,6 +492,7 @@ export default function Dashboard() {
               </ChartCard>
             </div>
           )}
+
         </div>
       </main>
     </div>
