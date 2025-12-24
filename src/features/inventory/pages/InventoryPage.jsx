@@ -1,6 +1,6 @@
 // src/pages/inventory/InventoryPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Tag, Printer } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import useAuth from '@/shared/hooks/useAuth';
 import { Inventory } from '@/features/inventory/services/inventory.api';
@@ -10,7 +10,6 @@ import DeletePrint from '@/shared/components/Print/DeletePrint';
 import { useReactToPrint } from "react-to-print";
 import { useNotifications } from '@/app/providers/NotificationContext';
 import { exportInventoryToExcel } from '@/shared/utils/exportExcel';
-import UbiDepSelector from '@/shared/common/UbiDepSelector';
 import PrintWizardModal from '@/features/inventory/components/modals/PrintWizardModal';
 import InventoryFormModal from '@/features/inventory/components/forms/InventoryForm';
 

@@ -58,15 +58,10 @@ export default function SummaryCards({ incidents = [], userType, loggedUserId })
       return [
         { title: "Mis incidencias asignadas", value: assignedMine, color: "yellow" },
         { title: "Mis incidencias resueltas", value: resolvedMine, color: "green" },
-        // opcional: total global (si quieres que el técnico vea volumen)
-        { title: "Total global", value: total, color: "blue" },
-        // opcional: pendientes sin asignar global (si el técnico puede “tomarlas”)
-        { title: "Pendientes sin asignar", value: pendingUnassigned, color: "orange" },
       ];
     }
 
-    // Otros roles (secretaria/usuario/reportante, etc.)
-    // Si solo deben ver lo propio, necesitarías un campo "id_user" o "email"
+    // Otros roles
     return [
       { title: "Total de Incidencias", value: total, color: "blue" },
       { title: "Resueltas", value: resolvedAll, color: "green" },
