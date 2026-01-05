@@ -27,8 +27,8 @@ model bd_carnet {
 model bd_incidents {
   id                                      Int         @id(map: "pk_incidents") @default(autoincrement())
   id_user                                 Int
-  reporter_name                           String      @db.VarChar(25)
-  email                                   String?     @db.VarChar(25)
+  reporter_name                           String      @db.VarChar(35)
+  email                                   String?     @db.VarChar(50)
   id_ubication                            Int
   id_department                           Int
   description                             String      @db.VarChar(255)
@@ -39,6 +39,7 @@ model bd_incidents {
   id_technician                           Int?
   solution_date                           DateTime?
   solution                                String      @db.VarChar(255)
+  client_ip                               String?     @db.VarChar(50)
   categories                              categories  @relation(fields: [id_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_categories")
   departments                             departments @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_departments")
   status                                  status      @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_status")
@@ -60,7 +61,7 @@ model bd_inventory {
   ip            String?     @db.VarChar(50)
   id_status     Int
   transferdate  DateTime?   @db.Date
-  observation   String?     @db.VarChar(100)
+  observation   String?     @db.VarChar(255)
   brands        brands      @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
   departments   departments @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
   devices       devices     @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
@@ -89,6 +90,7 @@ model departments {
   bd_incidents bd_incidents[]
   bd_inventory bd_inventory[]
   ubications   ubications?    @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
+  users        users[]
 }
 
 model devices {
@@ -139,6 +141,7 @@ model ubications {
   bd_incidents bd_incidents[]
   bd_inventory bd_inventory[]
   departments  departments[]
+  users        users[]
 }
 
 model users {
@@ -149,7 +152,11 @@ model users {
   email                                          String?        @db.VarChar(50)
   id_rol                                         Int
   active                                         Int
+  id_department                                  Int?
+  id_ubication                                   Int?
   bd_incidents_bd_incidents_id_userTousers       bd_incidents[] @relation("bd_incidents_id_userTousers")
   bd_incidents_bd_incidents_id_technicianTousers bd_incidents[] @relation("bd_incidents_id_technicianTousers")
+  departments                                    departments?   @relation(fields: [id_department], references: [id], map: "fk_users_departments")
   roles                                          roles          @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+  ubications                                     ubications?    @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
 }

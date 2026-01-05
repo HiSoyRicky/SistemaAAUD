@@ -1,7 +1,8 @@
 // src/components/admin/UserForm.jsx
 import React from "react";
+import UbiDepSelector from "@/shared/common/UbiDepSelector";
 
-export default function UserForm({ form, setForm, roles, handleSubmit, onCancel }) {
+export default function UserForm({ form, setForm, roles, handleSubmit, onCancel}) {
     return (
         <form
             onSubmit={handleSubmit}
@@ -34,6 +35,24 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel 
                     required
                 />
             </div>
+
+            {/* Ubicación + Departamento (filtrado) */}
+            <div className="md:col-span-2">
+                <UbiDepSelector
+                    mode="inventory"               
+                    id_ubication={form.id_ubication}
+                    id_department={form.id_department}
+                    errors={{}}        
+                    onChange={({ id_ubication, id_department }) => {
+                        setForm((prev) => ({
+                            ...prev,
+                            id_ubication,
+                            id_department,
+                        }));
+                    }}
+                />
+            </div>
+
 
             {/* Correo */}
             <div>

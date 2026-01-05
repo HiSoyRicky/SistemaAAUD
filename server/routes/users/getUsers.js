@@ -14,9 +14,12 @@ router.get('/', catchAsync(async (req, res) => {
             id: true,
             nombre_completo: true,
             username: true,
+            id_department: true,
             email: true,
             id_rol: true,
-            active: true
+            active: true,
+            ubications: { select: { id: true, name: true } },
+            departments: { select: { id: true, name: true } }
         }
     });
     res.json(users);
@@ -30,9 +33,12 @@ router.get('/technicians', catchAsync(async (req, res) => {
             id: true,
             nombre_completo: true,
             username: true,
+            id_department: true,
             email: true,
             id_rol: true,
-            active: true
+            active: true,
+            ubications: { select: { id: true, name: true } },
+            departments: { select: { id: true, name: true } }
         },
         where: {
             id_rol: 2,
@@ -43,7 +49,7 @@ router.get('/technicians', catchAsync(async (req, res) => {
 }));
 
 // Obtener todos los roles
-router.get('/roles', async (req, res) => {
+router.get('/roles', catchAsync(async (req, res) => {
 
     const roles = await prisma.roles.findMany({
         select: {
@@ -53,7 +59,7 @@ router.get('/roles', async (req, res) => {
     });
 
     res.json(roles);
-});
+}));
 
 // Buscar usuarios (autocomplete) - SOLO Consultor
 router.get(

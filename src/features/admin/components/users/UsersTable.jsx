@@ -31,7 +31,7 @@ export default function UsersTable({
             </div>
 
             {/* Barra de búsqueda */}
-            <div div className="flex mb-4" >
+            <div className="flex mb-4" >
                 <input
                     type="text"
                     placeholder="Buscar por nombre, usuario, correo o rol..."
@@ -50,6 +50,8 @@ export default function UsersTable({
                         <th className="p-2 text-center border">#</th>
                         <th className="p-2 border">Nombre completo</th>
                         <th className="p-2 border">Usuario</th>
+                        <th className="p-2 border">Ubicación</th>
+                        <th className="p-2 border">Departamento</th>
                         <th className="p-2 border">Correo</th>
                         <th className="p-2 border">Rol</th>
                         <th className="p-2 text-center border">Activo</th>
@@ -64,6 +66,12 @@ export default function UsersTable({
                             <td className="p-2 text-center border">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                             <td className="p-2 border">{u.nombre_completo}</td>
                             <td className="p-2 border">{u.username}</td>
+                            <td className="p-2 border">
+                                {u.ubications?.name || "-"}
+                            </td>
+                            <td className="p-2 border">
+                                {u.departments?.name ?? "-"}
+                            </td>
                             <td className="p-2 border">{u.email}</td>
                             <td className="p-2 border">{roles.find(r => r.id === u.id_rol)?.name || "Desconocido"}</td>
                             <td className="p-2 text-center border">{u.active ? "Sí" : "No"}</td>

@@ -98,9 +98,6 @@ app.use('/api/login', loginLimiter);
 app.use('/api', authRouter);
 app.use('/api', AllRoutes);
 
-app.use('/api/system/version', require('./routes/system/version'));
-
-
 // Redirigir raíz hacia /login
 app.get("/", (req, res) => {
   return res.redirect("/login");

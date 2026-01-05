@@ -207,16 +207,6 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                                 >
                                                 </ActionButton>
                                             )}
-
-                                            {/* Botón Eliminar */}
-                                            {userType === 'admin' && (
-                                                <ActionButton
-                                                    type={"delete"}
-                                                    title="Eliminar incidencia"
-                                                    onClick={() => onDelete(incident.id_incident)}
-                                                >
-                                                </ActionButton>
-                                            )}
                                         </div>
                                     </td>
                                 </tr>

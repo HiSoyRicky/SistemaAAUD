@@ -22,6 +22,7 @@ export default function UbicationsManager() {
             setUbications(res.data);
         } catch (err) {
             console.error("Error al cargar ubicaciones:", err);
+            setMessage("Error al cargar ubicaciones");
         }
     };
 

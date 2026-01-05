@@ -357,23 +357,6 @@ export default function Dashboard() {
             />
           </div>
 
-          <ChartCard title="Incidencias por estado" right="Últimos datos">
-            {({ width, height }) => (
-              <BarChart width={width} height={height} data={chartIncidents} barSize={42}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
-                <YAxis allowDecimals={false} />
-                <Tooltip content={<FancyTooltip />} />
-                <Bar dataKey="Cantidad" radius={[10, 10, 0, 0]}>
-                  {chartIncidents.map((_, idx) => (
-                    <Cell key={`cell-${idx}`} fill={incidentBarColors[idx]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            )}
-          </ChartCard>
-
-
           {/* =======================
               INVENTARIO
           ======================= */}

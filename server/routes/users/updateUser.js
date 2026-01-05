@@ -27,7 +27,7 @@ router.put('/:id', validateUserUpdate, catchAsync(async (req, res) => {
 
     console.log(" BODY RECIBIDO EN /usuarios/:id =>", req.body);
 
-    const { username, id_rol, nombre_completo, email, active } = req.body;
+    const { username, id_rol, nombre_completo, email, active, id_ubication, id_department } = req.body;
 
     // Armamos el objeto de actualización SOLO con lo que venga
     const dataToUpdate = {};
@@ -36,6 +36,15 @@ router.put('/:id', validateUserUpdate, catchAsync(async (req, res) => {
     if (nombre_completo !== undefined) dataToUpdate.nombre_completo = nombre_completo;
     if (id_rol !== undefined) dataToUpdate.id_rol = Number(id_rol);
     if (email !== undefined) dataToUpdate.email = email;
+    if (id_ubication !== undefined) {
+        dataToUpdate.id_ubication =
+            id_ubication === null || id_ubication === "" ? null : Number(id_ubication);
+    }
+
+    if (id_department !== undefined) {
+        dataToUpdate.id_department =
+            id_department === null || id_department === "" ? null : Number(id_department);
+    }
 
     if (active !== undefined) {
         dataToUpdate.active = Number(active);

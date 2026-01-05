@@ -12,6 +12,7 @@ export default function UsersManager() {
         nombre_completo: "",
         username: "",
         email: "",
+        id_department: "",
         password: "",
         id_rol: 1,
         active: 1
@@ -49,7 +50,16 @@ export default function UsersManager() {
             console.log("Creando usuario con:", form);
             await Users.create(form);
         }
-        setForm({ id: null, nombre_completo: "", username: "", email: "", password: "", id_rol: 1, active: 1 });
+        setForm({ 
+            id: null, 
+            nombre_completo: "", 
+            username: "",
+            id_department: "",
+            email: "", 
+            password: "", 
+            id_rol: 1, 
+            active: 1 
+        });
         setEditing(false);
         setShowForm(false);
         loadUsers();
@@ -60,6 +70,7 @@ export default function UsersManager() {
             id: user.id,
             nombre_completo: user.nombre_completo || "",
             username: user.username || "",
+            id_department: user.id_department || "",
             email: user.email || "",
             password: "",
             id_rol: Number(user.id_rol),
@@ -88,6 +99,7 @@ export default function UsersManager() {
             id: null,
             nombre_completo: "",
             username: "",
+            id_department: "",
             email: "",
             password: "",
             id_rol: 1,
@@ -96,7 +108,6 @@ export default function UsersManager() {
         setEditing(false);
         setShowForm(false);
     };
-
 
     // Filtrado por búsqueda
     const filteredUsers = users.filter(user => {
