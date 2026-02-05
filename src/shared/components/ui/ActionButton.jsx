@@ -1,12 +1,17 @@
 // src/components/ui/ActionButton.jsx
 import React from "react";
-import { Pencil, Trash2, CheckCircle2, Save, Wrench, Printer, Key, Repeat,  } from "lucide-react";
+import { Pencil, Trash2, CheckCircle2, Save, Wrench, Printer, Key, Repeat, Eye } from "lucide-react";
 
 const actionConfig = {
     edit: {
         icon: Pencil,
         color: "blue",
         tooltip: "Editar",
+    },
+    view: {
+        icon: Eye,
+        color: "blue",
+        tooltip: "Ver detalles",
     },
     delete: {
         icon: Trash2,

@@ -2,14 +2,26 @@ import React from 'react';
 import { formatDateToDDMMYYYY, formatDateTime } from '@/shared/utils/formatDate.js';
 import Pagination from "@/shared/components/ui/Pagination";
 import ActionButton from '@/shared/components/ui/ActionButton.jsx';
+import IncidentDetailModal from '@/features/incidents/components/modals/IncidentDetailModal.jsx';
 
 // Función para obtener el nombre legible del estado
-const getStatusName = (id_status) => {
+const getStatusName = (id_status, technician_full_name) => {
     switch (id_status) {
-        case 1: return <span title="Pendiente">P</span>;
-        case 2: return <span title="Asignado">A</span>;
-        case 3: return <span title="Resuelto">R</span>;
-        default: return <span title="Desconocido">❓</span>;
+        case 1:
+            return <span title="Pendiente">P</span>;
+
+        case 2:
+            return (
+                <span title={`Asignado a: ${technician_full_name || 'Sin asignar'}`}>
+                    A
+                </span>
+            );
+
+        case 3:
+            return <span title={`Resuelto por ${technician_full_name || 'Sin asignar'}`}>R</span>;
+
+        default:
+            return <span title="Desconocido">❓</span>;
     }
 };
 
@@ -24,11 +36,10 @@ const getCategoryName = (id_category) => {
     }
 };
 
-function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onEdit }) {
+function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
     if (!Array.isArray(incidents)) incidents = [];
     const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = React.useState(1);
-    const [showExtraColumns, setShowExtraColumns] = React.useState(false);
 
     // Filtrar y paginar los incidentes
     const totalPages = Math.ceil(incidents.length / itemsPerPage);
@@ -40,25 +51,28 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
     const thClass = "px-4 py-0 text-center text-sm text-gray-700 border";
 
-    const handlePageChange = (page) => setCurrentPage(page);
-    const toggleExtraColumns = () => setShowExtraColumns(prev => !prev);
-    const formatId = (id) => id.toString().padStart(6, '0');
+    const [showDetailModal, setShowDetailModal] = React.useState(false);
+    const [selectedIncident, setSelectedIncident] = React.useState(null);
+
+    const handleViewDetails = (incident) => {
+        setSelectedIncident(incident);
+        setShowDetailModal(true);
+    };
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [incidents]);
+
 
     return (
-        <div className="p-1 bg-white rounded-lg shadow-md">
+        <div className="relative w-full mx-auto overflow-x-auto">
 
             {/* Contenedor scrollable SOLO para la tabla */}
-            <div className="overflow-x-scroll overflow-y-visible">
-                <table className="min-w-full divide-y divide-gray-200">
+            <div className="w-full overflow-x-auto custom-scrollbar">
+                <table className="min-w-[1400px] border-collapse divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
                             {/* Encabezados de la tabla */}
-                            {showExtraColumns && (
-                                <>
-                                    <th className={tdClass}>ID</th>
-                                    <th className={tdClass}>ID Usuario</th>
-                                </>
-                            )}
                             <th className={tdClass}>Usuario</th>
                             <th className={tdClass}>Correo</th>
                             <th className={tdClass}>Ubicación</th>
@@ -67,14 +81,6 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                             <th className={tdClass}>Descripción</th>
                             <th className={tdClass}>Fecha Creación</th>
                             <th className={tdClass}>Estado</th>
-                            {showExtraColumns && (
-                                <>
-                                    <th className={tdClass}>Técnico Asignado</th>
-                                    <th className={tdClass}>Fecha Solución</th>
-                                    <th className={tdClass}>Solución</th>
-                                </>
-                            )}
-
                             <th className={thClass}>
                                 Acciones
                             </th>
@@ -94,14 +100,6 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                             // Mapeo de incidentes paginados
                             paginatedIncidents.map((incident, index) => (
                                 <tr key={`${incident.id_incident}-${index}`}>
-                                    {showExtraColumns && (
-                                        <>
-                                            {/* ID de la incidencia */}
-                                            <td className={`${thClass} border`}>{formatId(incident.id_incident)}</td>
-
-                                            <td className={`${thClass} border`}>{incident.id_user}</td>
-                                        </>
-                                    )}
                                     <td className={`${thClass} border`}>{incident.reporter_name}</td>
                                     <td className={`${thClass} border`}>{incident.reporter_email || 'S/C'}</td>
                                     <td className={`${thClass} border`}>{incident.ubication_name || `ID: ${incident.id_ubication}`}</td>
@@ -116,7 +114,11 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                             getCategoryName(incident.id_category)
                                         )}
                                     </td>
-                                    <td className={`${thClass} border`}>{incident.description}</td>
+                                    <td className={`${thClass} border max-w-[200px]`}>
+                                        <div className="truncate" title={incident.description}>
+                                            {incident.description}
+                                        </div>
+                                    </td>
                                     <td className={`${thClass} border`}>
                                         <div className="flex flex-col">
                                             <span>{formatDateToDDMMYYYY(incident.creation_date)}</span>
@@ -131,52 +133,19 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                                                 incident.id_status === 3 ? 'text-green-600' :
                                                     'text-gray-500'
                                             }`}>
-                                        {getStatusName(incident.id_status)}
+                                        {getStatusName(incident.id_status, incident.technician_full_name)}
                                     </td>
-
-                                    {showExtraColumns && (
-                                        <>
-                                            {/* Técnico asignado */}
-                                            <td className={`${thClass} border`}>
-                                                {incident.technician_full_name || (incident.id_technician ? `ID: ${incident.id_technician}` : <span title="Sin asignar">N/A</span>)}
-                                            </td>
-
-                                            {/* Fecha de solución */}
-                                            <td className={`${thClass} border`}>
-                                                {incident.solution_date ? (
-                                                    <div className="flex flex-col">
-                                                        <span>{formatDateToDDMMYYYY(incident.solution_date)}</span>
-                                                        <span className="text-xs text-gray-400">
-                                                            {formatDateTime(incident.solution_date).split(' ')[1] + ' ' + formatDateTime(incident.solution_date).split(' ')[2]}
-                                                        </span>
-
-                                                    </div>
-                                                ) : (
-                                                    <span title="Sin resolver">N/A</span>
-                                                )}
-                                            </td>
-
-                                            {/* Solución de la incidencia */}
-                                            <td className={`${thClass} border`}>
-                                                <div className="max-w-[300px] max-h-[120px] overflow-y-auto whitespace-pre-wrap text-left text-sm">
-                                                    {incident.solution || <span className="italic text-gray-400">Sin resolver</span>}
-                                                </div>
-                                            </td>
-
-                                        </>
-                                    )}
 
                                     {/* Acciones según el tipo de usuario */}
                                     <td className={`${thClass} border`}>
                                         <div className="flex items-center justify-center gap-x-2">
 
-                                            <button
-                                                className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
-                                                title={showExtraColumns ? 'Ocultar columnas' : 'Mostrar columnas'}
-                                                onClick={toggleExtraColumns}
+                                            <ActionButton
+                                                type='view'
+                                                title="Ver detalles de la incidencia"
+                                                onClick={() => handleViewDetails(incident)}
                                             >
-                                                🔍
-                                            </button>
+                                            </ActionButton>
 
                                             {/* Botón Asignar técnico */}
                                             {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
@@ -222,6 +191,13 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onDelete, onE
                 totalPages={totalPages}
                 onPageChange={(page) => setCurrentPage(page)}
             />
+
+            <IncidentDetailModal
+                isOpen={showDetailModal}
+                incident={selectedIncident}
+                onClose={() => setShowDetailModal(false)}
+            />
+
         </div>
     )
 }

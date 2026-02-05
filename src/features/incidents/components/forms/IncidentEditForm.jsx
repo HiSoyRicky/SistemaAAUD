@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { API_BASE_URL } from '@/shared/config/apiBaseUrl.js';
 
 function IncidentEditForm({ incident, onCancel, onSave }) {
     const [description, setDescription] = useState(incident.description || '');
@@ -8,14 +7,13 @@ function IncidentEditForm({ incident, onCancel, onSave }) {
     const [solution, setSolution] = useState(incident.solution || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const API_URL = API_BASE_URL;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.put(`${API_URL}/api/incidents/${incident.id_incident}`, {
+            const response = await axios.put(`/api/incidents/${incident.id_incident}`, {
                 description,
                 id_category: category,
                 solution,

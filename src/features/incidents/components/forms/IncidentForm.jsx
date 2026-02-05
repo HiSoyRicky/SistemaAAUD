@@ -24,7 +24,7 @@ function IncidentForm({ onSubmit }) {
     <section className="px-4 py-6">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white border border-gray-100 shadow-md rounded-2xl">
-          <form onSubmit={submit} noValidate className="p-6 space-y-6 md:p-8">
+          <form key={state.formKey} onSubmit={submit} noValidate className="p-6 space-y-6 md:p-8">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label htmlFor="reporter_name" className="block mb-1 text-sm font-medium text-gray-700">

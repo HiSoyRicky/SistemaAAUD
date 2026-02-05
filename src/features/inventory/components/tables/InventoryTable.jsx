@@ -1,22 +1,16 @@
 // InventoryTable.jsx
 import React, { useState } from 'react';
-import { formatDateToDDMMYYYY } from '@/shared/utils/formatDate';
 import useAuth from '@/shared/hooks/useAuth';
 import ActionButton from "@/shared/components/ui/ActionButton";
 import Pagination from '@/shared/components/ui/Pagination';
 
-function InventoryTable({ inventory, onPrint, onEdit, search }) {
+function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
     const itemsPerPage = 15;
     const [currentPage, setCurrentPage] = useState(1);
-    const [showExtraColumns, setShowExtraColumns] = useState(false);
     const { userType } = useAuth();
 
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
     const thClass = "px-4 py-0 text-center text-sm text-gray-700 border";
-
-    const toggleExtraColumns = () => {
-        setShowExtraColumns(prev => !prev);
-    };
 
     React.useEffect(() => {
         setCurrentPage(1);
@@ -177,43 +171,7 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                 </select>
                             </th>
                             <th className={`${tdClass} border`}>Serie</th>
-                            {showExtraColumns && <th className={`${tdClass} border`}>IP</th>}
-                            {showExtraColumns && <th className={`${tdClass} border`}>Estado
-                                <br />
-                                <select
-                                    value={filters.status_name}
-                                    onChange={(e) => handleFilterChange("status_name", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {options.status_name.map((val, idx) => (
-                                        <option key={val} value={val}>
-                                            {val}
-                                        </option>
-                                    ))}
-                                </select>
-                            </th>}
-                            {showExtraColumns && <th className={`${tdClass} border`}>Fecha Traslado
-                                <br />
-                                <select
-                                    value={filters.transferdate}
-                                    onChange={(e) => handleFilterChange("transferdate", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {sortedInventory
-                                        .map(i => i.transferdate)
-                                        .filter((value, index, self) => value && self.indexOf(value) === index)
-                                        .sort()
-                                        .map(val => (
-                                            <option key={val} value={val}>
-                                                {formatDateToDDMMYYYY(val)}
-                                            </option>
-                                        ))}
 
-                                </select>
-                            </th>}
-                            {showExtraColumns && <th className={`${tdClass} border`}>Observación / Ubicación Anterior</th>}
                             <th className={`${tdClass} border`}>
                                 Acciones
                             </th>
@@ -250,12 +208,12 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                     >
                                         <th
                                             className={`${thClass} border ${isDiscarded
-                                                    ? "text-red-600 font-bold"
-                                                    : isForDiscard
-                                                        ? "text-yellow-600 font-bold"
-                                                        : isBadCondition
-                                                            ? "text-orange-600 font-bold"
-                                                            : ""
+                                                ? "text-red-600 font-bold"
+                                                : isForDiscard
+                                                    ? "text-yellow-600 font-bold"
+                                                    : isBadCondition
+                                                        ? "text-orange-600 font-bold"
+                                                        : ""
                                                 }`}
                                         >
                                             {item.tag}
@@ -269,31 +227,15 @@ function InventoryTable({ inventory, onPrint, onEdit, search }) {
                                         <td className={`${thClass} border`}>{item.model_name}</td>
                                         <td className={`${thClass} border`}>{item.serie}</td>
 
-                                        {showExtraColumns && (
-                                            <td className={`${thClass} border`}>{item.ip ? item.ip : 'N/A'}</td>
-                                        )}
-                                        {showExtraColumns && (
-                                            <td className={`${thClass} border`}>{item.status_name}</td>
-                                        )}
-                                        {showExtraColumns && (
-                                            <td className={`${thClass} border`}>
-                                                {item.transferdate ? formatDateToDDMMYYYY(item.transferdate) : 'N/A'}
-                                            </td>
-                                        )}
-                                        {showExtraColumns && (
-                                            <td className={`${thClass} border`}>{item.observation || 'N/A'}</td>
-                                        )}
-
                                         {/* Acciones */}
                                         <td className={`${thClass} border`}>
                                             <div className="flex items-center justify-center h-full gap-2">
-                                                <button
-                                                    className="p-1 text-gray-600 rounded hover:text-gray-800 hover:bg-blue-200"
-                                                    title={showExtraColumns ? 'Ocultar columnas' : 'Mostrar columnas'}
-                                                    onClick={toggleExtraColumns}
-                                                >
-                                                    🔍
-                                                </button>
+
+                                                <ActionButton
+                                                    type='view'
+                                                    title="Ver detalles del equipo"
+                                                    onClick={() => item && onView(item)}
+                                                />
 
                                                 {userType === 'admin' && (
                                                     <ActionButton

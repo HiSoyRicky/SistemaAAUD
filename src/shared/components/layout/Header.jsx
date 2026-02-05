@@ -1,8 +1,6 @@
+// header.jsx
 import {
   LogOut,
-  LayoutDashboard,
-  List,
-  Cpu,
   Settings,
   ChevronDown,
   Menu,
@@ -12,20 +10,17 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useAuth from "@/shared/hooks/useAuth";
 import LogoSistemaAAUD from "@/assets/images/LogoSistemaAAUD.png";
+import { getNavigation } from "@/shared/config/Navegation";
 
-function Header() {
-  const {
-    isAuthenticated = false,
-    userType = null,
-    loggedUserName = "",
-    loggedUserId,
-    logout,
-  } = useAuth();
+function Header({ sidebarFixed }) {
+
+  const { isAuthenticated, userType, loggedUserName, logout } = useAuth();
 
   const navigate = useNavigate();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuItems = getNavigation(userType);
 
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
@@ -48,42 +43,9 @@ function Header() {
         ? "Técnico"
         : userType === "consultor"
           ? "Consultor"
-          : "Trabajador";
-
-  const menuItems = useMemo(
-    () => [
-      {
-        icon: <LayoutDashboard className="w-5 h-5" />,
-        label: "Dashboard",
-        path: "/dashboard",
-        allowed: ["admin", "tecnico" ,"consultor"],
-      },
-      {
-        icon: <List className="w-5 h-5" />,
-        label: "Incidencias",
-        path: "/incidencias",
-        allowed: ["trabajador", "admin", "tecnico", "consultor"],
-      },
-      {
-        icon: <Cpu className="w-5 h-5" />,
-        label: "Inventario",
-        path: "/inventario",
-        allowed: ["admin", "tecnico", "consultor"],
-      },
-      {
-        icon: <Settings className="w-5 h-5" />,
-        label: "Admin Panel",
-        path: "/admin",
-        allowed: ["admin"],
-      },
-    ],
-    []
-  );
-
-  const filteredMenuItems = useMemo(
-    () => menuItems.filter((item) => item.allowed.includes(userType)),
-    [menuItems, userType]
-  );
+          : userType === "mensajeria"
+            ? "Mensajería"
+            : "Trabajador";
 
   const goTo = (path) => {
     setMobileOpen(false);
@@ -118,8 +80,8 @@ function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-900">
-      <div className="px-3 mx-auto max-w-7xl md:px-6">
+    <header className="fixed top-0 left-0 right-0 border-b border-white/10 bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-900">
+      <div className="px-3 md:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Brand */}
           <button
@@ -144,29 +106,6 @@ function Header() {
               </span>
             </div>
           </button>
-
-          {/* Desktop nav */}
-          {isAuthenticated && (
-            <nav className="items-center hidden gap-2 md:flex">
-              {filteredMenuItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    [
-                      "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-                      isActive
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-white/90 hover:bg-white/10 hover:text-white",
-                    ].join(" ")
-                  }
-                >
-                  {item.icon}
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-          )}
 
           <div className="flex items-center gap-2">
             {/* Mobile menu button */}
@@ -218,13 +157,16 @@ function Header() {
                     </div>
 
                     <div className="p-2">
-                      <button
-                        onClick={() => goTo("/perfil")}
-                        className="flex items-center w-full gap-2 px-3 py-2 text-sm transition rounded-xl text-slate-700 hover:bg-slate-100"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Mi perfil
-                      </button>
+                      {/* SOLO si NO es trabajador */}
+                      {userType !== "trabajador" && (
+                        <button
+                          onClick={() => goTo("/perfil")}
+                          className="flex items-center w-full gap-2 px-3 py-2 text-sm transition rounded-xl text-slate-700 hover:bg-slate-100"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Mi perfil
+                        </button>
+                      )}
 
                       <button
                         onClick={() => {
@@ -250,7 +192,7 @@ function Header() {
           <div ref={mobileMenuRef} className="pb-3 md:hidden">
             <div className="p-2 mt-2 rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
               <div className="grid gap-2">
-                {filteredMenuItems.map((item) => (
+                {menuItems.map((item) => (
                   <NavLink
                     key={item.path}
                     to={item.path}
@@ -264,7 +206,8 @@ function Header() {
                       ].join(" ")
                     }
                   >
-                    {item.icon}
+                    {/* Renderizamos el componente de icono correctamente */}
+                    <item.icon className="w-5 h-5" />
                     {item.label}
                   </NavLink>
                 ))}

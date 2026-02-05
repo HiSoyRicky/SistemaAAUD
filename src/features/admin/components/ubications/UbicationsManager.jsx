@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import UbicationsTable from "./UbicationsTable";
-import { API_BASE_URL } from '@/shared/config/apiBaseUrl.js';
+
 
 export default function UbicationsManager() {
     const [ubications, setUbications] = useState([]);
@@ -10,7 +10,7 @@ export default function UbicationsManager() {
     const [editingName, setEditingName] = useState("");
     const [successMessage, setSuccessMessage] = useState('');
     const [message, setMessage] = useState('');
-    const API_URL = `${API_BASE_URL}/api/ubications`;
+    const API_URL = `/api/ubications`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");

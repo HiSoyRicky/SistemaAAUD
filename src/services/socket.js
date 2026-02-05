@@ -1,9 +1,9 @@
 // socket.js
 
 import { io } from 'socket.io-client';
-import { API_BASE_URL } from '@/shared/config/apiBaseUrl.js';
 
-const socket = io(API_BASE_URL, {
+
+const socket = io( {
     autoConnect: false,
     transports: ['websocket', 'polling'],
 });

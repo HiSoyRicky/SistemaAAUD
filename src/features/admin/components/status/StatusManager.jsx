@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "@/shared/components/ui/Pagination";
 import ActionButton from "@/shared/components/ui/ActionButton";
-import { API_BASE_URL } from '@/shared/config/apiBaseUrl.js';
+
 
 export default function StatusesManager() {
     const [statuses, setStatuses] = useState([]);
@@ -10,7 +10,7 @@ export default function StatusesManager() {
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const API_URL = `${API_BASE_URL}/api/statuses`;
+    const API_URL = `/api/statuses`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");

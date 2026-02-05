@@ -14,7 +14,7 @@ export default function NotificationsContainer() {
 
     return (
         // Fondo oscuro semi-transparente
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black pointer-events-none bg-opacity-40">
             <div className="flex flex-col gap-4">
                 {visibleNotifications.map(({ id, message, type, visible }) => {
                     const bgColor = type === 'success' ? 'bg-green-600'

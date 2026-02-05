@@ -1,4 +1,5 @@
 export const INCIDENT_INITIAL_STATE = {
+    formKey: 0,
     showModal: false,
     id_incident: null,
     isSubmitting: false,
@@ -69,6 +70,7 @@ export function incidentFormReducer(state, action) {
         case "RESET_FORM":
             return {
                 ...state,
+                formKey: state.formKey + 1,
                 showModal: false,
                 id_incident: null,
                 errors: {},

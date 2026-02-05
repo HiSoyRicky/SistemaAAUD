@@ -18,6 +18,10 @@ function IncidentsPage() {
     const {
         technicians,
         sortedIncidentsForTable,
+        filteredIncidentsForTable,
+        search,
+        setSearch,
+
         showAssignModal,
         showResolveModal,
         selectedIncidentId,
@@ -29,7 +33,6 @@ function IncidentsPage() {
         setShowAssignModal,
         setShowResolveModal,
         setSelectedIncidentId,
-        setCurrentIncidentToResolve,
         setShowIncidentForm,
         setIncidentToEdit,
         setNotification,
@@ -37,7 +40,6 @@ function IncidentsPage() {
         showNotification,
 
         handleAddIncident,
-        handleDeleteIncident,
         handleOpenAssignModal,
         handleOpenResolveModal,
         confirmAssign,
@@ -46,7 +48,7 @@ function IncidentsPage() {
     } = useIncidentsPage({ userType, loggedUserName, loggedUserId });
 
     return (
-        <Container fluid className="p-4">
+        <Container fluid className="px-2 py-1">
             {notification.message && (
                 <SuccessMessage
                     message={notification.message}
@@ -69,20 +71,21 @@ function IncidentsPage() {
             )}
 
             {userType === "trabajador" ? (
-                <section className="mb-4">
-                    <h2 className="mb-3 h3">Reportar Nueva Incidencia</h2>
+                <section className="mb-2">
+                    <h2 className="mt-0 mb-2 text-center h4">Reportar Nueva Incidencia</h2>
                     <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
                 </section>
             ) : (
                 showIncidentForm && (
-                    <section className="mb-4">
+                    <section className="mb-2">
                         <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
                     </section>
                 )
             )}
 
+
             {userType && userType !== "trabajador" && (
-                <section className="mb-4">
+                <section className="mb-2">
                     <SummaryCards
                         incidents={sortedIncidentsForTable}
                         userType={userType}
@@ -103,15 +106,26 @@ function IncidentsPage() {
                         </div>
                     )}
 
-                    <div id="scroll-container" className="overflow-x-auto w-100">
-                        <IncidentTable
-                            incidents={sortedIncidentsForTable}
-                            userType={userType}
-                            onAssign={["admin", "consultor"].includes(userType) ? handleOpenAssignModal : null}
-                            onResolve={userType === "tecnico" ? handleOpenResolveModal : null}
-                            onDelete={userType === "admin" ? handleDeleteIncident : null}
-                            onEdit={setIncidentToEdit}
+                    <div className="flex justify-center mb-3">
+                        <input
+                            type="text"
+                            placeholder="Buscar por usuario, correo, ubicación, departamento, categoría, estado o descripción…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full max-w-xl px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
+                    </div>
+
+                    <div className="flex justify-center">
+                        <div className="w-full max-w-[1600px]">
+                            <IncidentTable
+                                incidents={filteredIncidentsForTable}
+                                userType={userType}
+                                onAssign={["admin", "consultor"].includes(userType) ? handleOpenAssignModal : null}
+                                onResolve={userType === "tecnico" ? handleOpenResolveModal : null}
+                                onEdit={setIncidentToEdit}
+                            />
+                        </div>
                     </div>
                 </section>
             )}

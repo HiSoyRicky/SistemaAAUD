@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import BrandsTable from "./BrandsTable";
 import Pagination from "@/shared/components/ui/Pagination";
-import { API_BASE_URL } from '@/shared/config/apiBaseUrl.js';
 
 export default function BrandsManager() {
     const [brands, setbrands] = useState([]);
@@ -11,7 +10,7 @@ export default function BrandsManager() {
     const [editingName, setEditingName] = useState("");
     const [message, setMessage] = useState('');
     const [SuccessMessage, setSuccessMessage] = useState('success');
-    const API_URL = `${API_BASE_URL}/api/brands`;
+    const API_URL = `/api/brands`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");

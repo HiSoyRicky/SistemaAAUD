@@ -5,10 +5,9 @@ import {
     disconnectSocket,
     onIncidentCreated,
     onIncidentUpdated,
-    onIncidentDeleted,
 } from "@/services/socket";
 import { exportIncidentsToExcel } from "@/shared/utils/exportExcel";
-import { Incidents, Users } from "@/features/incidents/services/incidents.api"; // AJUSTA RUTA
+import { Incidents, Users } from "@/features/incidents/services/incidents.api";
 
 export default function useIncidentsPage({ userType, loggedUserName, loggedUserId }) {
     const [incidents, setIncidents] = useState([]);
@@ -21,8 +20,9 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
     const [incidentToEdit, setIncidentToEdit] = useState(null);
     const [notification, setNotification] = useState({ message: "", type: "" });
 
-    // Para abandonar rooms en cleanup sin depender de "incidents" en deps
     const joinedRoomsRef = useRef(new Set());
+
+    const [search, setSearch] = useState('');
 
     const showNotification = useCallback((msg, type) => {
         setNotification({ message: msg, type });
@@ -52,7 +52,7 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
             }
 
             setIncidents(fetched);
-            fetched.forEach((inc) => joinRoom(inc.id));
+            fetched.forEach((inc) => joinRoom(inc.id_incident));
         } catch (error) {
             console.error("Error al cargar incidencias:", error);
             showNotification("Error al cargar incidencias: " + error.message, "error");
@@ -77,32 +77,70 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         connectSocket();
 
         const offCreated = onIncidentCreated((newIncident) => {
-            setIncidents((prev) =>
-                [...prev, newIncident].sort(
-                    (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
-                )
-            );
-            joinRoom(newIncident.id);
-            showNotification("Nueva incidencia creada", "success");
+            const techId = parseInt(loggedUserId);
+
+            if (
+                userType === "tecnico" &&
+                newIncident.id_technician !== techId
+            ) {
+                return;
+            }
+
+            setIncidents((prev) => {
+                // 🚫 Evitar duplicados
+                const exists = prev.some(
+                    (i) => i.id_incident === newIncident.id_incident
+                );
+                if (exists) return prev;
+
+                return [...prev, newIncident].sort(
+                    (a, b) =>
+                        new Date(b.creation_date) - new Date(a.creation_date)
+                );
+            });
+
+            joinRoom(newIncident.id_incident);
         });
 
         const offUpdated = onIncidentUpdated((updated) => {
-            setIncidents((prev) =>
-                prev
-                    .map((inc) => (inc.id === updated.id ? updated : inc))
-                    .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date))
+            setIncidents((prev) => {
+                const techId = parseInt(loggedUserId);
+                const exists = prev.some(
+                    (i) => i.id_incident === updated.id_incident
+                );
+
+                // Técnico: solo incidencias propias
+                if (userType === "tecnico") {
+                    if (updated.id_technician !== techId) {
+                        return prev.filter(
+                            (i) => i.id_incident !== updated.id_incident
+                        );
+                    }
+
+                    if (!exists) {
+                        return [...prev, updated].sort(
+                            (a, b) =>
+                                new Date(b.creation_date) - new Date(a.creation_date)
+                        );
+                    }
+                }
+
+                return prev
+                    .map((inc) =>
+                        inc.id_incident === updated.id_incident ? updated : inc
+                    )
+                    .sort(
+                        (a, b) =>
+                            new Date(b.creation_date) - new Date(a.creation_date)
+                    );
+            });
+
+            showNotification(
+                updated.id_status === 3
+                    ? "Incidencia resuelta por técnico"
+                    : "Incidencia actualizada",
+                "success"
             );
-
-            const message =
-                updated.id_status === 3 ? "Incidencia resuelta por técnico" : "Incidencia actualizada";
-            showNotification(message, "success");
-        });
-
-        const offDeleted = onIncidentDeleted(({ id }) => {
-            setIncidents((prev) => prev.filter((inc) => inc.id !== id));
-            joinedRoomsRef.current.delete(id);
-            socket.emit("leaveIncidentRoom", id);
-            showNotification("Incidencia eliminada", "success");
         });
 
         fetchIncidents();
@@ -111,8 +149,7 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         return () => {
             offCreated?.();
             offUpdated?.();
-            offDeleted?.();
-            
+            leaveAllRooms();
             disconnectSocket();
         };
     }, [userType, fetchIncidents, fetchTechnicians, showNotification, joinRoom, leaveAllRooms]);
@@ -150,25 +187,6 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         [loggedUserName, showNotification, joinRoom]
     );
 
-    const handleDeleteIncident = useCallback(
-        async (id_incident) => {
-            const password = prompt("Por favor, ingresa tu contraseña para confirmar la eliminación:");
-            if (!password) return showNotification("Eliminación cancelada", "warning");
-
-            try {
-                await Incidents.delete(id_incident, password);
-                showNotification("Incidencia eliminada con éxito", "success");
-            } catch (error) {
-                console.error("Error al eliminar incidencia:", error);
-                showNotification(
-                    "Error al eliminar incidencia: " + (error.response?.data?.error || error.message),
-                    "error"
-                );
-            }
-        },
-        [showNotification]
-    );
-
     const handleOpenAssignModal = useCallback((id_incident) => {
         setSelectedIncidentId(id_incident);
         setShowAssignModal(true);
@@ -180,18 +198,33 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
     }, []);
 
     const confirmAssign = useCallback(
-        async (technicianUsername) => {
-            if (!selectedIncidentId || !technicianUsername) {
-                return showNotification("Selecciona una incidencia y un técnico válidos", "error");
+        async (technicianId) => {
+            if (!selectedIncidentId || !technicianId) {
+                return showNotification(
+                    "Selecciona una incidencia y un técnico válidos",
+                    "error"
+                );
             }
 
             try {
-                await Incidents.assignTechnician(selectedIncidentId, technicianUsername);
+                // ✅ USA la respuesta REAL del backend
+                const updated = await Incidents.assignTechnician(
+                    selectedIncidentId,
+                    technicianId
+                );
+
+                setIncidents((prev) =>
+                    prev.map((inc) =>
+                        inc.id_incident === updated.id_incident ? updated : inc
+                    )
+                );
+
                 showNotification("Técnico asignado correctamente", "success");
             } catch (error) {
                 console.error("Error al asignar técnico:", error);
                 showNotification(
-                    "Error al asignar técnico: " + (error.response?.data?.error || error.message),
+                    "Error al asignar técnico: " +
+                    (error.response?.data?.error || error.message),
                     "error"
                 );
             } finally {
@@ -206,20 +239,42 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         async (solutionText) => {
             if (!currentIncidentToResolve || !solutionText) return;
 
+            const idToResolve = currentIncidentToResolve;
+            setIncidents((prev) =>
+                prev.map((inc) =>
+                    inc.id_incident === idToResolve
+                        ? {
+                            ...inc,
+                            id_status: 3,
+                            solution: solutionText,
+                            solution_date: new Date().toISOString(),
+                        }
+                        : inc
+                )
+            );
+
             try {
-                await Incidents.resolve(currentIncidentToResolve, solutionText);
+                const updated = await Incidents.resolve(currentIncidentToResolve, solutionText);
+                if (updated) {
+                    setIncidents((prev) =>
+                        prev.map((inc) =>
+                            inc.id_incident === idToResolve ? { ...inc, ...updated } : inc
+                        )
+                    );
+                }
                 showNotification("Incidencia resuelta correctamente", "success");
                 setShowResolveModal(false);
                 setCurrentIncidentToResolve(null);
             } catch (error) {
                 console.error("Error al resolver incidencia:", error);
+                await fetchIncidents();
                 showNotification(
                     "Error al resolver incidencia: " + (error.response?.data?.error || error.message),
                     "error"
                 );
             }
         },
-        [currentIncidentToResolve, showNotification]
+        [currentIncidentToResolve, showNotification, fetchIncidents]
     );
 
     const handleExportIncidents = useCallback(() => {
@@ -239,10 +294,52 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         return filtered.slice().sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
     }, [incidents, userType, loggedUserId]);
 
+    const getCategoryText = (id) => {
+        switch (id) {
+            case 1: return "internet";
+            case 2: return "equipo";
+            case 3: return "programa";
+            case 4: return "otro";
+            default: return "";
+        }
+    };
+
+    const getStatusText = (id) => {
+        switch (id) {
+            case 1: return "pendiente";
+            case 2: return "asignado";
+            case 3: return "resuelto";
+            default: return "";
+        }
+    };
+
+    const filteredIncidentsForTable = useMemo(() => {
+        if (!search.trim()) return sortedIncidentsForTable;
+
+        const text = search.toLowerCase();
+
+        const safe = (val) =>
+            val === null || val === undefined ? "" : String(val).toLowerCase();
+
+        return sortedIncidentsForTable.filter((inc) =>
+            safe(inc.reporter_name).includes(text) ||
+            safe(inc.reporter_email).includes(text) ||
+            safe(inc.ubication_name).includes(text) ||
+            safe(inc.department_name).includes(text) ||
+            safe(inc.description).includes(text) ||
+            safe(inc.other_category_detail).includes(text) ||
+            getCategoryText(inc.id_category).includes(text) ||
+            getStatusText(inc.id_status).includes(text)
+        );
+    }, [search, sortedIncidentsForTable]);
+
     return {
         incidents,
         technicians,
         sortedIncidentsForTable,
+        filteredIncidentsForTable,
+        search,
+        setSearch,
 
         showAssignModal,
         showResolveModal,
@@ -263,7 +360,6 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         showNotification,
 
         handleAddIncident,
-        handleDeleteIncident,
         handleOpenAssignModal,
         handleOpenResolveModal,
         confirmAssign,

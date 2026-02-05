@@ -28,6 +28,7 @@ import BrandsManager from "@/features/admin/components/brands/BrandsManager";
 import ModelsManager from '@/features/admin/components/models/ModelsManager';
 import TonersManager from '@/features/admin/components/toners/TonersManager';
 import StatusManager from '@/features/admin/components/status/StatusManager';
+import DocumentsPage from '@/features/documents/pages/DocumentsPage';
 
 
 import PrivateLayout from "@/shared/components/layout/PrivateLayout";
@@ -69,7 +70,7 @@ function App() {
         <Route
           path="/"
           element={
-            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
+            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor', 'mensajeria']}>
               <Navigate to="/incidencias" replace />
             </PrivateRoute>
           }
@@ -82,7 +83,7 @@ function App() {
         <Route
           path="/incidencias"
           element={
-            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
               <PrivateLayout>
                 <IncidentsPage />
               </PrivateLayout>
@@ -113,9 +114,20 @@ function App() {
         <Route
           path="/perfil"
           element={
-            <PrivateRoute allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'mensajeria']}>
               <PrivateLayout>
                 <ProfilePage />
+              </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/documentos"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'mensajeria']}>
+              <PrivateLayout>
+                <DocumentsPage />
               </PrivateLayout>
             </PrivateRoute>
           }

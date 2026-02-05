@@ -13,6 +13,8 @@ export const AuthProvider = ({ children }) => {
   const [username, setUsername] = useState(null);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
     const storedUser = sessionStorage.getItem('user');
     const storedUserType = sessionStorage.getItem('userType');
     const storedUserName = sessionStorage.getItem('loggedUserName');
@@ -25,7 +27,7 @@ export const AuthProvider = ({ children }) => {
         ? storedUsername
         : null;
 
-    if (storedUser && storedUserType && storedUserName && storedUserId && safeUsername) {
+    if (token && storedUser && storedUserType && storedUserName && storedUserId && safeUsername) {
       try {
         setIsAuthenticated(true);
         setUserType(storedUserType);
@@ -43,13 +45,16 @@ export const AuthProvider = ({ children }) => {
   const login = async (loginIdentifier, password) => {
     try {
       const response = await axios.post('/api/login', { username: loginIdentifier, password });
-      const { usuario } = response.data;
+      const { usuario, token } = response.data;
+
+      localStorage.setItem("token", token);
 
       const userRoleMap = {
         1: 'admin',
         2: 'tecnico',
         3: 'consultor',
         4: 'trabajador',
+        5: 'mensajeria',
       };
 
       const type = userRoleMap[usuario.id_rol] || 'trabajador';
@@ -92,7 +97,7 @@ export const AuthProvider = ({ children }) => {
 
   const setAuthData = (data) => {
     setIsAuthenticated(true);
-    setUserType(data.userType);
+    setUserType(data.userType);s
     setLoggedUserName(data.loggedUserName);
     setLoggedUserId(data.user ? data.user.id : null);
 
@@ -113,7 +118,9 @@ export const AuthProvider = ({ children }) => {
     setLoggedUserName(null);
     setLoggedUserId(null);
     setUsername(null);
+
     sessionStorage.clear();
+    localStorage.removeItem("token");
   };
 
   return (

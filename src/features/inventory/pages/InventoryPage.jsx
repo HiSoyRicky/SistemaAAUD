@@ -12,6 +12,7 @@ import { useNotifications } from '@/app/providers/NotificationContext';
 import { exportInventoryToExcel } from '@/shared/utils/exportExcel';
 import PrintWizardModal from '@/features/inventory/components/modals/PrintWizardModal';
 import InventoryFormModal from '@/features/inventory/components/forms/InventoryForm';
+import InventoryDetailModal from '@/features/inventory/components/modals/InventoryDetailModal';
 
 function InventoryPage() {
     const { authData, userType, loggedUserName } = useAuth();
@@ -29,6 +30,9 @@ function InventoryPage() {
     const [deviceToPrint, setDeviceToPrint] = useState(null);
 
     const [pendingPrint, setPendingPrint] = useState(false);
+
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
 
     const openPrintModal = (device) => {
         if (!device) return;
@@ -256,6 +260,19 @@ function InventoryPage() {
                 onEdit={editDevice}
                 authData={authData}
                 search={search}
+                onView={(item) => {
+                    setSelectedItem(item);
+                    setShowDetailModal(true);
+                }}
+            />
+
+            <InventoryDetailModal
+                isOpen={showDetailModal}
+                item={selectedItem}
+                onClose={() => {
+                    setShowDetailModal(false);
+                    setSelectedItem(null);
+                }}
             />
 
             {/* Modal para editrar equipo */}

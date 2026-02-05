@@ -5,6 +5,9 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
     const [selectedTechnician, setSelectedTechnician] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [showConfirm, setShowConfirm] = useState(false);
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -13,22 +16,34 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
             return;
         }
 
+        setShowConfirm(true);
+    };
+
+    const confirmAssign = async () => {
         setIsSubmitting(true);
 
         try {
-            console.log('Asignando técnico:', selectedTechnician, 'a la incidencia:', id_incident);
-            await onConfirm(selectedTechnician);
+            const technicianId = Number(selectedTechnician);
+            console.log('Asignando técnico:', technicianId, 'a la incidencia:', id_incident);
+            await onConfirm(technicianId);
             onClose();
         } catch (error) {
             console.error('Error al asignar técnico:', error);
             alert(`Ocurrió un error al asignar el técnico: ${error.response?.data?.error || error.message}`);
         } finally {
             setIsSubmitting(false);
+            setShowConfirm(false);
         }
     };
 
-    // Validar technicians
-    const validTechnicians = Array.isArray(technicians) ? technicians : [];
+    // Validación de técnicos y ordenados alfabéticamente
+    const validTechnicians = Array.isArray(technicians)
+        ? [...technicians].sort((a, b) =>
+            a.nombre_completo.localeCompare(b.nombre_completo, 'es', {
+                sensitivity: 'base'
+            })
+        )
+        : [];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
@@ -50,7 +65,7 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
                             <option value="">-- Seleccione --</option>
                             {validTechnicians.length > 0 ? (
                                 validTechnicians.map((tech) => (
-                                    <option key={tech.id} value={tech.username}>
+                                    <option key={tech.id} value={tech.id}>
                                         {tech.nombre_completo}
                                     </option>
                                 ))
@@ -79,6 +94,64 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
                     </div>
                 </form>
             </div>
+            {showConfirm && (
+                <div className="fixed inset-0 flex items-center justify-center z-60 bg-black/50">
+                    <div className="w-full max-w-sm p-5 bg-white shadow-xl rounded-xl">
+                        <h4 className="mb-3 text-lg font-extrabold text-gray-800">
+                            Confirmar asignación
+                        </h4>
+
+                        <p className="mb-5 text-sm text-gray-700">
+                            ¿Estás seguro de asignar esta incidencia al técnico
+                            <strong> {validTechnicians.find((t) => t.id === Number(selectedTechnician))?.nombre_completo}</strong>?
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowConfirm(false)}
+                                className="px-4 py-2 text-sm font-bold bg-gray-200 rounded hover:bg-gray-300"
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                onClick={confirmAssign}
+                                disabled={isSubmitting}
+                                className={`px-4 py-2 text-sm font-bold text-white rounded flex items-center justify-center gap-2
+                                        ${isSubmitting
+                                        ? 'bg-blue-400 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-700'
+                                    }`}
+                            >
+                                {isSubmitting && (
+                                    <svg
+                                        className="w-4 h-4 text-white animate-spin"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                        />
+                                    </svg>
+                                )}
+
+                                {isSubmitting ? 'Asignando...' : 'Confirmar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

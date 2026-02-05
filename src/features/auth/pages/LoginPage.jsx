@@ -1,3 +1,4 @@
+// LoginPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '@/shared/hooks/useAuth';
@@ -12,9 +13,6 @@ function LoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated, setAuthData } = useAuth();
   const [retryAfter, setRetryAfter] = useState(0);
-
-  // Guardar en localStorage el tiempo hasta el que está bloqueado el login
-  localStorage.setItem('loginBlockedUntil', Date.now() + retryAfter * 1000);
 
   // En useEffect al cargar LoginPage
   useEffect(() => {
@@ -39,6 +37,8 @@ function LoginPage() {
       }, 1000);
       return () => clearInterval(timer);
     }
+    // Guardar en localStorage el tiempo hasta el que está bloqueado el login
+    localStorage.setItem('loginBlockedUntil', Date.now() + retryAfter * 1000);
   }, [retryAfter]);
 
   const handleSubmit = async (e) => {

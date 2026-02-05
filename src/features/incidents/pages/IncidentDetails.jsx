@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { socket, connectSocket, disconnectSocket, onIncidentUpdated } from '@/services/socket';
 import { formatDateToDDMMYYYY, formatDateTime } from '@/shared/utils/formatDate';
-import { API_BASE_URL } from '@/shared/config/apiBaseUrl.js';
+
 
 function IncidentDetails() {
     const { id } = useParams();
@@ -30,10 +30,10 @@ function IncidentDetails() {
             try {
                 let response;
                 if (token) {
-                    response = await axios.get(`${API_BASE_URL}/api/incidents/public/${token}`);
+                    response = await axios.get(`/api/incidents/public/${token}`);
                     setIncident(response.data.data);
                 } else if (id) {
-                    response = await axios.get(`${API_BASE_URL}/api/incidents/${id}`);
+                    response = await axios.get(`/api/incidents/${id}`);
                     setIncident(response.data);
                 } else {
                     throw new Error('ID o token no proporcionado');

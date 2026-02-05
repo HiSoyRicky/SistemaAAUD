@@ -84,21 +84,6 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel}
                 </select>
             </div>
 
-            {/* Contraseña */}
-            <div>
-                <label className="block mb-2 text-sm font-semibold text-gray-700">
-                    Contraseña
-                </label>
-                <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Escribe una nueva contraseña"
-                    autoComplete="new-password"
-                />
-            </div>
-
             {/* Activo con Toggle Switch */}
             <div className="flex items-center col-span-2 gap-3 mt-6 md:mt-0">
                 <span className="font-medium">Activo</span>

@@ -41,13 +41,15 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Insertar en la base de datos
-        await pool.query(
+        const newUser = await pool.query(
             `INSERT INTO users (username, password, nombre_completo, id_rol, active)
-             VALUES ($1, $2, $3, $4, 1)`,
+                VALUES ($1, $2, $3, $4, 1)
+                RETURNING id, username, nombre_completo, id_rol, active`,
             [username, hashedPassword, nombre_completo, id_rol]
         );
 
-        res.json({ mensaje: 'Usuario registrado exitosamente', usuario: newUser.rows[0] });
+        res.json({ mensaje: "Usuario registrado exitosamente", usuario: newUser.rows[0] });
+
     } catch (err) {
         if (err.isJoi) {
             // Error de validación Joi
@@ -67,7 +69,10 @@ router.post('/login', async (req, res) => {
         const { username, password } = req.body;
 
         const result = await pool.query(
-            'SELECT id, nombre_completo, id_rol, password FROM users WHERE username = $1 AND active = 1',
+            `SELECT u.id, u.username, u.nombre_completo, u.id_rol, r.name AS role_name, u.password
+                FROM users u
+                JOIN roles r ON r.id = u.id_rol
+                WHERE u.username = $1 AND u.active = 1`,
             [username]
         );
 
@@ -88,7 +93,9 @@ router.post('/login', async (req, res) => {
             {
                 id: user.id,
                 username: user.username,
-                rol: user.id_rol
+                rol: user.id_rol,
+                roleId: user.id_rol,
+                role_name: user.role_name
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }

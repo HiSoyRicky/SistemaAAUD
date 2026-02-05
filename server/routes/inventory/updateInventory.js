@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { prisma } = require('../../Prisma');
+const authMiddleware = require('../../middleware/authMiddleware');
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
 const { body, validationResult, check } = require('express-validator');
@@ -19,6 +20,8 @@ const validateInventoryUpdate = [
     body('transferdate').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('El campo transferdate debe ser una fecha válida'),
 ];
 
+router.use(authMiddleware);
+
 router.put('/:id', validateInventoryUpdate, catchAsync(async (req, res) => {
 
     const errors = validationResult(req);
@@ -26,6 +29,9 @@ router.put('/:id', validateInventoryUpdate, catchAsync(async (req, res) => {
         return res.status(400).json({ success: false, errors: errors.array() });
     }
     const { id } = req.params;
+
+    const userId = req.user?.id;
+
     const {
         tag,
         id_ubication,
@@ -74,7 +80,9 @@ router.put('/:id', validateInventoryUpdate, catchAsync(async (req, res) => {
             throw new AppError('El dispositivo proporcionado no existe', 400);
     }
 
-    const updateData = {};
+    const updateData = {
+        updated_by: userId
+    };
     if (tag !== undefined) updateData.tag = tag;
     if (id_ubication !== undefined) updateData.id_ubication = parseInt(id_ubication);
     if (id_department !== undefined) updateData.id_department = parseInt(id_department);
@@ -89,6 +97,9 @@ router.put('/:id', validateInventoryUpdate, catchAsync(async (req, res) => {
 
     if (transferdate !== undefined) {
         updateData.transferdate = transferdate ? new Date(transferdate) : null;
+    }
+    if (Object.keys(updateData).length === 1) {
+        throw new AppError('No hay campos para actualizar', 400);
     }
     console.log('Datos a actualizar:', updateData);
 

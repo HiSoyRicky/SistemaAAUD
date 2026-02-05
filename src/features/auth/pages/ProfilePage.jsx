@@ -14,7 +14,10 @@ function ProfilePage() {
                 ? "Técnico"
                 : userType === "consultor"
                     ? "Consultor"
-                    : "Trabajador";
+                    : userType === "mensajeria"
+                        ? "Mensajería"
+                        : "Trabajador";
+
 
     const initials = loggedUserName
         ? loggedUserName

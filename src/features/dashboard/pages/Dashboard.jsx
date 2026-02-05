@@ -36,81 +36,152 @@ const groupCount = (arr, keyGetter) => {
     .sort((a, b) => b.Cantidad - a.Cantidad);
 };
 
-function StatCard({ title, value, subtitle, icon: Icon, gradient = "from-slate-600 to-slate-800" }) {
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  gradient = "from-slate-600 to-slate-800",
+}) {
   return (
-    <div className="relative overflow-hidden bg-white border shadow-sm rounded-2xl border-slate-200/70">
-      {/* Glow */}
-      <div className={`absolute -top-24 -right-24 h-48 w-48 rounded-full bg-gradient-to-br ${gradient} opacity-20 blur-2xl`} />
-      <div className="relative flex items-center gap-4 p-5">
-        <div className={`grid place-items-center rounded-2xl p-3 text-white bg-gradient-to-br ${gradient} shadow-sm`}>
-          <Icon className="w-6 h-6" />
+    <div className="bg-white border shadow-sm border-slate-200/70 rounded-xl">
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Icon */}
+        <div
+          className={`
+            grid
+            w-9 h-9
+            place-items-center
+            rounded-lg
+            bg-gradient-to-br ${gradient}
+            text-white
+            shrink-0
+          `}
+        >
+          <Icon className="w-4 h-4" />
         </div>
 
-        <div className="flex-1">
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+        {/* Text */}
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 truncate">
+            {title}
+          </p>
+
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-extrabold text-slate-900">
               {value}
             </span>
-            {subtitle ? (
-              <span className="text-sm font-medium text-slate-500">{subtitle}</span>
-            ) : null}
+
+            {subtitle && (
+              <span className="text-[11px] text-slate-500 truncate">
+                {subtitle}
+              </span>
+            )}
           </div>
         </div>
       </div>
-
-      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-      <div className="px-5 py-3 text-xs text-slate-500">
-        Actualizado en tiempo real
-      </div>
     </div>
   );
 }
+
 
 function SectionHeader({ title, desc, icon: Icon }) {
   return (
-    <div className="flex items-start gap-3 mb-4">
-      <div className="grid w-10 h-10 text-white shadow-sm rounded-2xl place-items-center bg-slate-900">
+    <div className="flex items-start gap-4 mb-6">
+      {/* Icon */}
+      <div className="grid text-white shadow-sm w-11 h-11 shrink-0 place-items-center rounded-2xl bg-slate-900">
         <Icon className="w-5 h-5" />
       </div>
-      <div>
-        <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{title}</h2>
-        {desc ? <p className="text-sm text-slate-500">{desc}</p> : null}
+
+      {/* Text */}
+      <div className="flex-1">
+        <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+          {title}
+        </h2>
+
+        {desc && (
+          <p className="max-w-2xl mt-1 text-sm leading-relaxed text-slate-500">
+            {desc}
+          </p>
+        )}
+
+        {/* subtle divider */}
+        <div className="mt-2 h-[2px] w-12 rounded-full bg-slate-900/70" />
       </div>
     </div>
   );
 }
+
 
 function ChartCard({ title, children, right }) {
   const [containerRef, size] = useElementSize();
 
   const width = Math.max(0, Math.floor(size.width));
-  const height = 280;
+  const height = 300;
 
   return (
-    <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200/70">
-      <div className="flex items-center justify-between gap-4 mb-3">
-        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-        {right ? <div className="text-xs text-slate-500">{right}</div> : null}
+    <div className="
+    group relative
+    bg-white
+    border border-slate-200/70
+    rounded-3xl
+    shadow-sm
+    transition-all
+    hover:shadow-md
+    hover:-translate-y-[1px]
+  ">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 pt-5 pb-3">
+        <div>
+          <h3 className="text-sm font-semibold tracking-wide text-slate-800">
+            {title}
+          </h3>
+          <div className="mt-0.5 h-[2px] w-10 rounded-full bg-slate-900/80" />
+        </div>
+
+        {right && (
+          <div className="
+          text-xs font-medium
+          text-slate-500
+          bg-slate-100
+          px-2.5 py-1
+          rounded-full
+        ">
+            {right}
+          </div>
+        )}
       </div>
 
-      <div ref={containerRef} className="w-full h-[280px] min-w-0">
+      {/* Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+      {/* Chart */}
+      <div
+        ref={containerRef}
+        className="
+        relative
+        w-full
+        min-w-0
+        h-[300px]
+        px-4
+        pb-5
+      "
+      >
         {width > 0 ? (
           typeof children === "function"
             ? children({ width, height })
             : children
         ) : (
-          <div className="flex items-center justify-center h-full text-sm text-slate-400">
-            Cargando gráfica...
+          <div className="flex items-center justify-center h-full">
+            <span className="text-sm text-slate-400 animate-pulse">
+              Cargando gráfica…
+            </span>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-
-
 
 function FancyTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -171,10 +242,16 @@ export default function Dashboard() {
   // Filtro (tipo de equipo)
   const [selectedDevice, setSelectedDevice] = useState("ALL");
 
-  // Opciones de equipos (para el select)
   const deviceOptions = useMemo(() => {
-    const names = groupCount(inventory, (i) => i.device?.name || i.device_name).map(x => x.name);
-    return names; // ya viene ordenado por cantidad desc
+    return Array.from(
+      new Set(
+        inventory
+          .map(i => i.device?.name || i.device_name)
+          .filter(Boolean)
+      )
+    ).sort((a, b) =>
+      a.localeCompare(b, 'es', { sensitivity: 'base' })
+    );
   }, [inventory]);
 
   const [selectedBrand, setSelectedBrand] = useState("ALL");
@@ -324,232 +401,235 @@ export default function Dashboard() {
           {/* =======================
               INCIDENCIAS
           ======================= */}
-          <SectionHeader
-            title="Incidencias"
-            desc="Estado actual de solicitudes y seguimiento"
-            icon={ClipboardList}
-          />
-
-          <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total"
-              value={loadingIncidences ? "..." : totalIncidences}
+          <section className="p-6 mb-10 bg-white border shadow-sm border-slate-200 rounded-3xl">
+            <SectionHeader
+              title="Incidencias"
+              desc="Estado actual de solicitudes y seguimiento"
               icon={ClipboardList}
-              gradient="from-indigo-500 to-indigo-700"
             />
-            <StatCard
-              title="Pendientes"
-              value={loadingIncidences ? "..." : pendientes}
-              icon={Clock3}
-              gradient="from-amber-400 to-amber-600"
-            />
-            <StatCard
-              title="En proceso"
-              value={loadingIncidences ? "..." : enProceso}
-              icon={Wrench}
-              gradient="from-sky-400 to-sky-700"
-            />
-            <StatCard
-              title="Resueltas"
-              value={loadingIncidences ? "..." : resueltas}
-              icon={CheckCircle2}
-              gradient="from-emerald-400 to-emerald-700"
-            />
-          </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                title="Total"
+                value={loadingIncidences ? "..." : totalIncidences}
+                icon={ClipboardList}
+                gradient="from-indigo-500 to-indigo-700"
+              />
+              <StatCard
+                title="Pendientes"
+                value={loadingIncidences ? "..." : pendientes}
+                icon={Clock3}
+                gradient="from-amber-400 to-amber-600"
+              />
+              <StatCard
+                title="En proceso"
+                value={loadingIncidences ? "..." : enProceso}
+                icon={Wrench}
+                gradient="from-sky-400 to-sky-700"
+              />
+              <StatCard
+                title="Resueltas"
+                value={loadingIncidences ? "..." : resueltas}
+                icon={CheckCircle2}
+                gradient="from-emerald-400 to-emerald-700"
+              />
+            </div>
+          </section>
 
           {/* =======================
               INVENTARIO
           ======================= */}
-          <div className="mt-10" />
-          <SectionHeader
-            title="Inventario"
-            desc="Clasificación por tipo, marca y estado"
-            icon={Boxes}
-          />
-
-          <div className="flex flex-col gap-2 mb-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-slate-600">
-              Filtro actual:{" "}
-              <span className="font-semibold text-slate-900">
-                {selectedDevice === "ALL" ? "Todos los equipos" : selectedDevice}
-              </span>
-              {selectedDevice !== "ALL" && (
-                <>
-                  {" "}
-                  • Marca:{" "}
-                  <span className="font-semibold text-slate-900">
-                    {selectedBrand === "ALL" ? "Todas" : selectedBrand}
-                  </span>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedDevice}
-                onChange={(e) => setSelectedDevice(e.target.value)}
-                className="px-3 py-2 text-sm bg-white border rounded-xl border-slate-200 text-slate-700"
-              >
-                <option value="ALL">Todos</option>
-                {deviceOptions.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-
-              {selectedDevice !== "ALL" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedDevice("ALL");
-                    setSelectedBrand("ALL");
-                  }}
-                  className="px-3 py-2 text-sm font-semibold border rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
-                >
-                  Limpiar
-                </button>
-              )}
-            </div>
-          </div>
-
-
-          <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total de equipos"
-              value={loadingInventory ? "..." : totalInventory}
+          <section className="p-6 bg-white border shadow-sm border-slate-200 rounded-3xl">
+            <div className="mt-10" />
+            <SectionHeader
+              title="Inventario"
+              desc="Clasificación por tipo, marca y estado"
               icon={Boxes}
-              gradient="from-slate-700 to-slate-900"
             />
-            <StatCard
-              title="Tipos únicos"
-              value={loadingInventory ? "..." : byDevice.length}
-              subtitle="(Device)"
-              icon={Cpu}
-              gradient="from-violet-500 to-violet-800"
-            />
-            <StatCard
-              title="Marcas únicas"
-              value={loadingInventory ? "..." : byBrand.length}
-              icon={BadgeCheck}
-              gradient="from-teal-400 to-teal-700"
-            />
-            <StatCard
-              title="Sin clasificar"
-              value={loadingInventory ? "..." : unclassified}
-              icon={AlertTriangle}
-              gradient="from-rose-400 to-rose-700"
-            />
-          </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="flex flex-wrap items-center gap-3 p-4 mb-4 border bg-slate-50 rounded-2xl">
+              <div className="text-sm text-slate-600">
+                Filtro actual:{" "}
+                <span className="font-semibold text-slate-900">
+                  {selectedDevice === "ALL" ? "Todos los equipos" : selectedDevice}
+                </span>
+                {selectedDevice !== "ALL" && (
+                  <>
+                    {" "}
+                    • Marca:{" "}
+                    <span className="font-semibold text-slate-900">
+                      {selectedBrand === "ALL" ? "Todas" : selectedBrand}
+                    </span>
+                  </>
+                )}
+              </div>
 
-            <ChartCard title="Top tipos de equipo" right="Click en una barra para filtrar">
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedDevice}
+                  onChange={(e) => setSelectedDevice(e.target.value)}
+                  className="px-3 py-2 text-sm bg-white border rounded-lg shadow-sm border-slate-200"
+                >
+                  <option value="ALL">Todos</option>
+                  {deviceOptions.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
 
-              {({ width, height }) => (
-                <BarChart width={width} height={height} data={top8Devices} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip content={<FancyTooltip />} />
-                  <Bar
-                    dataKey="Cantidad"
-                    radius={[10, 10, 0, 0]}
-                    activeBar={null}
-                    onClick={(data) => {
-                      const name = data?.name;
-                      handleDeviceBarClick(name);
+                {selectedDevice !== "ALL" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDevice("ALL");
+                      setSelectedBrand("ALL");
                     }}
-                    style={{ cursor: "pointer" }}
+                    className="px-3 py-2 text-sm font-semibold bg-white border rounded-lg shadow-sm border-slate-200 text-slate-700 hover:bg-slate-50"
                   >
-                    {top8Devices.map((entry, idx) => {
-                      const isSelected = entry.name === selectedDevice;
-                      const isFiltering = selectedDevice !== "ALL";
+                    Limpiar
+                  </button>
+                )}
+              </div>
+            </div>
 
-                      return (
-                        <Cell
-                          key={`cell-device-${idx}`}
-                          fill={isSelected ? "#6d28d9" : "#8b5cf6"}
-                          opacity={isFiltering && !isSelected ? 0.4 : 1}
-                        />
-                      );
-                    })}
-                    <LabelList
-                      dataKey="Cantidad"
-                      position="top"
-                      style={{ fontSize: 11, fontWeight: 700 }}
-                    />
-                  </Bar>
+            <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                title="Total de equipos"
+                value={loadingInventory ? "..." : totalInventory}
+                icon={Boxes}
+                gradient="from-slate-700 to-slate-900"
+              />
+              <StatCard
+                title="Tipos únicos"
+                value={loadingInventory ? "..." : byDevice.length}
+                subtitle="(Device)"
+                icon={Cpu}
+                gradient="from-violet-500 to-violet-800"
+              />
+              <StatCard
+                title="Marcas únicas"
+                value={loadingInventory ? "..." : byBrand.length}
+                icon={BadgeCheck}
+                gradient="from-teal-400 to-teal-700"
+              />
+              <StatCard
+                title="Sin clasificar"
+                value={loadingInventory ? "..." : unclassified}
+                icon={AlertTriangle}
+                gradient="from-rose-400 to-rose-700"
+              />
+            </div>
 
-                </BarChart>
-              )}
-            </ChartCard>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
-            <ChartCard title="Top marcas" right="Top 8">
-              {({ width, height }) => (
+              <ChartCard title="Top tipos de equipo" right="Click en una barra para filtrar">
 
-                <BarChart width={width} height={height} data={top8Brands} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip content={<FancyTooltip />} />
-                  <Bar
-                    dataKey="Cantidad"
-                    radius={[10, 10, 0, 0]}
-                    activeBar={false}
-                    onClick={(data) => {
-                      const name = data?.name;
-                      handleBrandBarClick(name);
-                    }}
-                    style={{
-                      cursor: selectedDevice === "ALL" ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {top8Brands.map((entry, idx) => {
-                      const isSelected = entry.name === selectedBrand;
-                      const isFiltering = selectedBrand !== "ALL";
-
-                      return (
-                        <Cell
-                          key={`cell-brand-${idx}`}
-                          fill={isSelected ? "#065f46" : "#14b8a6"}
-                          opacity={isFiltering && !isSelected ? 0.4 : 1}
-                        />
-                      );
-                    })}
-                    <LabelList
-                      dataKey="Cantidad"
-                      position="top"
-                      style={{ fontSize: 11, fontWeight: 700 }}
-                    />
-
-                  </Bar>
-                </BarChart>
-              )}
-            </ChartCard>
-
-          </div>
-
-          {byStatus.length > 0 && (
-            <div className="mt-6">
-              <ChartCard title="Inventario por estado" right="Todos los estados">
                 {({ width, height }) => (
-                  <BarChart width={width} height={height} data={byStatus} barSize={30} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <BarChart width={width} height={height} data={top8Devices} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
                     <YAxis allowDecimals={false} />
                     <Tooltip content={<FancyTooltip />} />
-                    <Bar dataKey="Cantidad" fill="#f97316" radius={[10, 10, 0, 0]}>
-                      <LabelList dataKey="Cantidad" position="top" style={{ fontSize: 11, fontWeight: 700 }} />
+                    <Bar
+                      dataKey="Cantidad"
+                      radius={[10, 10, 0, 0]}
+                      activeBar={null}
+                      onClick={(data) => {
+                        const name = data?.name;
+                        handleDeviceBarClick(name);
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {top8Devices.map((entry, idx) => {
+                        const isSelected = entry.name === selectedDevice;
+                        const isFiltering = selectedDevice !== "ALL";
+
+                        return (
+                          <Cell
+                            key={`cell-device-${idx}`}
+                            fill={isSelected ? "#6d28d9" : "#8b5cf6"}
+                            opacity={isFiltering && !isSelected ? 0.4 : 1}
+                          />
+                        );
+                      })}
+                      <LabelList
+                        dataKey="Cantidad"
+                        position="top"
+                        style={{ fontSize: 11, fontWeight: 700 }}
+                      />
+                    </Bar>
+
+                  </BarChart>
+                )}
+              </ChartCard>
+
+              <ChartCard title="Top marcas" right="Top 8">
+                {({ width, height }) => (
+
+                  <BarChart width={width} height={height} data={top8Brands} barSize={34} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip content={<FancyTooltip />} />
+                    <Bar
+                      dataKey="Cantidad"
+                      radius={[10, 10, 0, 0]}
+                      activeBar={false}
+                      onClick={(data) => {
+                        const name = data?.name;
+                        handleBrandBarClick(name);
+                      }}
+                      style={{
+                        cursor: selectedDevice === "ALL" ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {top8Brands.map((entry, idx) => {
+                        const isSelected = entry.name === selectedBrand;
+                        const isFiltering = selectedBrand !== "ALL";
+
+                        return (
+                          <Cell
+                            key={`cell-brand-${idx}`}
+                            fill={isSelected ? "#065f46" : "#14b8a6"}
+                            opacity={isFiltering && !isSelected ? 0.4 : 1}
+                          />
+                        );
+                      })}
+                      <LabelList
+                        dataKey="Cantidad"
+                        position="top"
+                        style={{ fontSize: 11, fontWeight: 700 }}
+                      />
+
                     </Bar>
                   </BarChart>
                 )}
               </ChartCard>
-            </div>
-          )}
 
+            </div>
+
+            {byStatus.length > 0 && (
+              <div className="mt-6">
+                <ChartCard title="Inventario por estado" right="Todos los estados">
+                  {({ width, height }) => (
+                    <BarChart width={width} height={height} data={byStatus} barSize={30} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip content={<FancyTooltip />} />
+                      <Bar dataKey="Cantidad" fill="#f97316" radius={[10, 10, 0, 0]}>
+                        <LabelList dataKey="Cantidad" position="top" style={{ fontSize: 11, fontWeight: 700 }} />
+                      </Bar>
+                    </BarChart>
+                  )}
+                </ChartCard>
+              </div>
+
+            )}
+          </section>
         </div>
       </main>
-    </div>
+    </div >
   );
 }

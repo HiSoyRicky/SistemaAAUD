@@ -62,6 +62,10 @@ model bd_inventory {
   id_status     Int
   transferdate  DateTime?   @db.Date
   observation   String?     @db.VarChar(255)
+  created_by    Int?
+  created_at    DateTime?   @db.Timetz(6)
+  updated_at    DateTime?   @db.Timetz(6)
+  updated_by    Int?
   brands        brands      @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
   departments   departments @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
   devices       devices     @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
@@ -87,6 +91,7 @@ model departments {
   id           Int            @id(map: "pk_department") @default(autoincrement())
   name         String         @db.VarChar(50)
   id_ubication Int?
+  bd_documents bd_documents[]
   bd_incidents bd_incidents[]
   bd_inventory bd_inventory[]
   ubications   ubications?    @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
@@ -95,7 +100,7 @@ model departments {
 
 model devices {
   id           Int            @id(map: "pk_device") @default(autoincrement())
-  name         String         @db.VarChar(50)
+  name         String         @unique(map: "name_devices_unique") @db.VarChar(50)
   bd_inventory bd_inventory[]
   models       models[]
 }
@@ -113,7 +118,7 @@ model models {
 
 model roles {
   id    Int     @id(map: "pk_roles") @default(autoincrement())
-  name  String  @db.VarChar(50)
+  name  String  @unique(map: "name_rol_unico") @db.VarChar(50)
   users users[]
 }
 
@@ -137,7 +142,8 @@ model toners {
 
 model ubications {
   id           Int            @id(map: "pk_ubication") @default(autoincrement())
-  name         String         @db.VarChar(50)
+  name         String         @unique(map: "name_ubications_unique") @db.VarChar(50)
+  bd_documents bd_documents[]
   bd_incidents bd_incidents[]
   bd_inventory bd_inventory[]
   departments  departments[]
@@ -154,9 +160,53 @@ model users {
   active                                         Int
   id_department                                  Int?
   id_ubication                                   Int?
+  bd_documents                                   bd_documents[]
   bd_incidents_bd_incidents_id_userTousers       bd_incidents[] @relation("bd_incidents_id_userTousers")
   bd_incidents_bd_incidents_id_technicianTousers bd_incidents[] @relation("bd_incidents_id_technicianTousers")
   departments                                    departments?   @relation(fields: [id_department], references: [id], map: "fk_users_departments")
   roles                                          roles          @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
   ubications                                     ubications?    @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
+
+  @@unique([nombre_completo, username, email], map: "name_users_unique")
+}
+
+model bd_documents {
+  id                    Int                    @unique(map: "ux_docs_seq") @default(autoincrement())
+  id_ubication          Int
+  id_department         Int
+  id_doc_type           Int
+  consecutive           Int
+  id_origin             Int?
+  sent_by               String?                @db.VarChar(150)
+  sent_to               String?                @db.VarChar(150)
+  document_date         DateTime?              @db.Date
+  received_at           DateTime?              @db.Timestamp(6)
+  sent_at               DateTime?              @db.Timestamp(6)
+  closed_at             DateTime?              @db.Timestamp(6)
+  subject               String?                @db.VarChar(255)
+  description           String?
+  observations          String?
+  attachment            String?                @db.VarChar(255)
+  created_by            Int?
+  created_at            DateTime               @db.Timestamp(6)
+  updated_at            DateTime               @db.Timestamp(6)
+  departments           departments            @relation(fields: [id_department], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_bd_documents_departments")
+  doc_type              doc_type               @relation(fields: [id_doc_type], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_bd_documents_doc_doc.type")
+  doc_external_entities doc_external_entities? @relation(fields: [id_origin], references: [id], onUpdate: NoAction, map: "fk_bd_documents_doc_external.entities")
+  ubications            ubications             @relation(fields: [id_ubication], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_bd_documents_ubications")
+  users                 users?                 @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_bd_documents_users")
+
+  @@id([id, id_ubication, id_department, id_doc_type])
+}
+
+model doc_type {
+  id           Int            @id(map: "doc_doc.type_pkey") @default(autoincrement())
+  name         String?        @unique(map: "uq_doc_extenal.entities_name") @db.VarChar(35)
+  bd_documents bd_documents[]
+}
+
+model doc_external_entities {
+  id           Int            @id(map: "bd_external_entities_pkey") @default(autoincrement())
+  name         String?        @unique(map: "uq_bd_external_entities_name") @db.VarChar(150)
+  bd_documents bd_documents[]
 }
