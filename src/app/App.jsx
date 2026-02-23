@@ -101,7 +101,7 @@ function App() {
 
         {/* Página de inventario protegida */}
         <Route
-          path="/inventario"
+          path="/inventario/equipos"
           element={
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>

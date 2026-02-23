@@ -89,12 +89,14 @@ function Header({ sidebarFixed }) {
             onClick={() => goTo("/dashboard")}
             className="flex items-center gap-3 group"
           >
-            <div className="flex items-center justify-center overflow-hidden rounded-full w-14 h-14 bg-white/10 ring-1 ring-white/15 backdrop-blur">
-              <img
-                src={LogoSistemaAAUD}
-                alt="Logo AAUD"
-                className="object-cover w-full h-full"
-              />
+            <div className="logo-badge">
+              <div className="logo-badge__inner">
+                <img
+                  src={LogoSistemaAAUD}
+                  alt="Logo AAUD"
+                  className="logo-badge__img"
+                />
+              </div>
             </div>
 
             <div className="flex flex-col items-start leading-none">

@@ -1,5 +1,4 @@
 import React from "react";
-import { formatDateToDDMMYYYY, formatDateTime } from "@/shared/utils/formatDate";
 
 export const formatDateTimeLocal = (date) => {
     if (!date) return "";
@@ -34,8 +33,8 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b">
                     <div>
-                        <h2 className="text-lg font-semibold">
-                            Incidencia #{incident.id_incident.toString().padStart(6, "0")}
+                        <h2 className="text-lg font-bold">
+                            Incidencia #{incident.ticket_number}
                         </h2>
                         <span className={`inline-block mt-1 px-3 py-1 text-xs font-medium rounded-full ${status.color}`}>
                             {status.label}
@@ -102,7 +101,6 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
 }
 
 /* ---------- Helpers ---------- */
-
 const Info = ({ label, value, muted }) => (
     <div>
         <div className="text-xs font-medium text-gray-500">{label}</div>

@@ -117,7 +117,7 @@ function IncidentsPage() {
                     </div>
 
                     <div className="flex justify-center">
-                        <div className="w-full max-w-[1600px]">
+                        <div className="w-full">
                             <IncidentTable
                                 incidents={filteredIncidentsForTable}
                                 userType={userType}

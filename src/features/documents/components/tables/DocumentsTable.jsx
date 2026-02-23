@@ -17,7 +17,7 @@ const DirectionBadge = ({ type }) => {
 export default function DocumentsTable({ filtered, loading, onDetail }) {
   return (
     <div className="overflow-hidden bg-white border shadow-sm border-slate-200 rounded-2xl">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100dvh-16rem)]">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b bg-slate-50/50 border-slate-200">

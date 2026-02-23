@@ -85,7 +85,7 @@ function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
                 </button>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100dvh-16rem)]">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>

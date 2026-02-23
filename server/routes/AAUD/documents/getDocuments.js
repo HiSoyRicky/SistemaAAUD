@@ -21,7 +21,7 @@ router.get("/doc-types", catchAsync(async (req, res) => {
 }));
 
 router.get("/external-entities", catchAsync(async (req, res) => {
-    const data = await prisma.doc_external_entities.findMany({
+    const data = await prisma.external_entities.findMany({
         select: { id: true, name: true },
         orderBy: { name: "asc" },
     });
@@ -82,7 +82,7 @@ router.get(
                 ubications: { select: { name: true } },
                 departments: { select: { name: true } },
                 doc_type: { select: { name: true } },
-                doc_external_entities: { select: { name: true } },
+                external_entities: { select: { name: true } },
                 users: { select: { id: true, nombre_completo: true, username: true } },
             },
             orderBy: [{ year: "desc" }, { consecutive: "desc" }],
@@ -100,7 +100,7 @@ router.get(
             doc_type_name: d.doc_type?.name ?? null,
 
             id_origin: d.id_origin,
-            origin_name: d.doc_external_entities?.name ?? null,
+            origin_name: d.external_entities?.name ?? null,
 
             direction: d.direction,
             year: d.year,

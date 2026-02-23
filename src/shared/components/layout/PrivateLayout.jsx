@@ -20,10 +20,10 @@ export default function PrivateLayout({ children }) {
   const isIncidentsPage = location.pathname.startsWith("/incidencias");
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex flex-col min-h-screen bg-slate-50">
       <Header />
 
-      <div className="flex pt-16">
+      <div className="flex min-h-0 pt-16">
         {showSidebar && (
           <Sidebar
             open={isSidebarOpen}
@@ -34,24 +34,24 @@ export default function PrivateLayout({ children }) {
 
         <div
           className={`
-            flex-1 transition-all duration-300
+            flex-1 min-w-0 transition-all duration-300
             ${showSidebar ? (isFixed ? "md:ml-64" : "md:ml-20") : "md:ml-0"}
           `}
         >
-
-          <main
-            className={`min-h-[calc(100vh-4rem)] ${isIncidentsPage ? "p-2 md:p-4" : "p-4 md:p-8"
-              }`}
-          >
-            <div
-              className={`mx-auto ${isIncidentsPage ? "max-w-none w-full" : "max-w-7xl"
-                }`}
+          <div className="flex flex-col h-full overflow-auto">
+            <main
+              className={`${isIncidentsPage ? "p-2 md:p-4" : "p-4 md:p-8"} flex-1 min-h-0 overflow-auto`}
             >
-              {children}
-            </div>
-          </main>
+              <div
+                className={`mx-auto ${isIncidentsPage ? "max-w-none w-full" : "max-w-7xl"
+                  }`}
+              >
+                {children}
+              </div>
+            </main>
 
-          <Footer />
+            <Footer />
+          </div>
         </div>
       </div>
     </div>

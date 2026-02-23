@@ -104,7 +104,7 @@ function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
                             </p>
                             <div className="flex items-baseline gap-2">
                                 <h3 className="text-lg font-extrabold tracking-tight">
-                                    #{String(id_incident).padStart(6, "0")}
+                                    #{incident?.ticket_number || "—"}
                                 </h3>
                                 <span className="text-xs truncate text-white/70">{labelTitle}</span>
                             </div>

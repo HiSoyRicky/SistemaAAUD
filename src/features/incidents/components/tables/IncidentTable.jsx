@@ -45,7 +45,25 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
     const totalPages = Math.ceil(incidents.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const sortedIncidents = [...incidents].sort((a, b) => b.id_incident - a.id_incident);
+
+    const statusPriority = {
+        1: 1, // Pendientes
+        2: 2, // Asignadas
+        3: 3  // Resueltas
+    };
+
+    const sortedIncidents = [...incidents].sort((a, b) => {
+        const priorityA = statusPriority[a.id_status] || 99;
+        const priorityB = statusPriority[b.id_status] || 99;
+
+        // Primero ordenar por estado
+        if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+        }
+
+        // Luego por id_incident descendente
+        return b.id_incident - a.id_incident;
+    });
     const paginatedIncidents = sortedIncidents.slice(startIndex, endIndex);
 
     const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
@@ -65,12 +83,12 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
 
 
     return (
-        <div className="relative w-full mx-auto overflow-x-auto">
+        <div className="relative w-full mx-auto">
 
             {/* Contenedor scrollable SOLO para la tabla */}
-            <div className="w-full overflow-x-auto custom-scrollbar">
-                <table className="min-w-[1400px] border-collapse divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+            <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[calc(100dvh-16rem)]">
+                <table className="border-collapse divide-y divide-gray-200 min-w-[1700px]">
+                    <thead className="sticky top-0 z-10 bg-gray-50">
                         <tr>
                             {/* Encabezados de la tabla */}
                             <th className={tdClass}>Usuario</th>
@@ -99,7 +117,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
 
                             // Mapeo de incidentes paginados
                             paginatedIncidents.map((incident, index) => (
-                                <tr key={`${incident.id_incident}-${index}`}>
+                                <tr key={`${incident.ticket_number}-${index}`}>
                                     <td className={`${thClass} border`}>{incident.reporter_name}</td>
                                     <td className={`${thClass} border`}>{incident.reporter_email || 'S/C'}</td>
                                     <td className={`${thClass} border`}>{incident.ubication_name || `ID: ${incident.id_ubication}`}</td>
@@ -114,7 +132,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
                                             getCategoryName(incident.id_category)
                                         )}
                                     </td>
-                                    <td className={`${thClass} border max-w-[200px]`}>
+                                    <td className={`${thClass} border max-w-[300px]`}>
                                         <div className="truncate" title={incident.description}>
                                             {incident.description}
                                         </div>
@@ -147,15 +165,21 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
                                             >
                                             </ActionButton>
 
-                                            {/* Botón Asignar técnico */}
-                                            {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
-                                                <ActionButton
-                                                    type={"assign"}
-                                                    title="Asignar técnico"
-                                                    onClick={() => onAssign(incident.id_incident)}
-                                                >
-                                                </ActionButton>
-                                            )}
+                                            {/* Botón Asignar/Reasignar técnico */}
+                                            {(
+                                                (userType === 'consultor' && incident.id_status === 1) ||
+                                                (userType === 'admin' && (incident.id_status === 1 || incident.id_status === 2))
+                                            ) && (
+                                                    <ActionButton
+                                                        type={"assign"}
+                                                        title={
+                                                            incident.id_status === 1
+                                                                ? "Asignar técnico"
+                                                                : "Reasignar técnico"
+                                                        }
+                                                        onClick={() => onAssign(incident.id_incident)}
+                                                    />
+                                                )}
 
                                             {/* Botón Resolver */}
                                             {userType === 'tecnico' && incident.id_status !== 3 && (
@@ -186,11 +210,13 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit }) {
             </div>
 
             {/* Paginación */}
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => setCurrentPage(page)}
-            />
+            <div className="p-2 bg-white border-t">
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                />
+            </div>
 
             <IncidentDetailModal
                 isOpen={showDetailModal}

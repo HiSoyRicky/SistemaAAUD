@@ -8,6 +8,7 @@ router.get('/', catchAsync(async (req, res) => {
     const incidents = await prisma.bd_incidents.findMany({
         select: {
             id: true,
+            ticket_number: true,
             id_user: true,
             reporter_name: true,
             email: true,
@@ -35,6 +36,7 @@ router.get('/', catchAsync(async (req, res) => {
     // Mapear los resultados para que coincidan con el formato original
     const mappedIncidents = incidents.map(incident => ({
         id_incident: incident.id,
+        ticket_number: incident.ticket_number,
         id_user: incident.id_user,
         reporter_name: incident.reporter_name,
         reporter_email: incident.email,
@@ -63,6 +65,7 @@ router.get('/:id', catchAsync(async (req, res) => {
         where: { id },
         select: {
             id: true,
+            ticket_number: true,
             reporter_name: true,
             email: true,
             description: true,
@@ -92,6 +95,7 @@ router.get('/:id', catchAsync(async (req, res) => {
     // Mapear el resultado al formato original
     const mappedIncident = {
         id_incident: incident.id,
+        ticket_number: incident.ticket_number,
         reporter_name: incident.reporter_name,
         reporter_email: incident.email,
         ubication_name: incident.ubications?.name || null,

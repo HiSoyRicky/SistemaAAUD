@@ -121,6 +121,12 @@ app.use(errorHandler);
 // Manejar conexiones de Socket.IO
 io.on('connection', (socket) => {
 
+  const userId = socket.handshake.auth?.userId;
+
+  if (userId) {
+    socket.join(`user_${userId}`);
+  }
+
   // Unirse a una sala por ID
   socket.on('joinIncidentRoom', (id_incident) => {
     socket.join(`incident_${id_incident}`);

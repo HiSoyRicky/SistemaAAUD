@@ -6,107 +6,175 @@ const { generarTokenIncidencia } = require('../../utils/token');
 const frontendUrl = process.env.FRONTEND_BASE_URL;
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
+const authMiddleware = require('../../middleware/authMiddleware');
 
-router.put('/:id', catchAsync(async (req, res) => {
-    const id = Number(req.params.id);
+router.put('/:id',
+    authMiddleware,
+    catchAsync(async (req, res) => {
+        const id = Number(req.params.id);
 
-    if (isNaN(id)) throw new AppError('ID inválido', 400);
+        if (isNaN(id)) throw new AppError('ID inválido', 400);
 
-    const {
-        description,
-        category,
-        status,
-        solution,
-        solution_date,
-        id_technician,
-        silent
-    } = req.body;
+        const {
+            description,
+            category,
+            status,
+            solution,
+            solution_date,
+            id_technician,
+            silent
+        } = req.body;
 
-    // 3. Mapear status a id_status
-    const statusMap = { 'Pendiente': 1, 'Asignado': 2, 'Resuelto': 3 };
-    const id_status = statusMap[status] || undefined;
+        // 3. Mapear status a id_status
+        const statusMap = { 'Pendiente': 1, 'Asignado': 2, 'Resuelto': 3 };
+        const id_status = statusMap[status] || undefined;
 
-    if (id_status === 3 && (!solution || solution.trim() === '')) {
-        throw new Error('Solución requerida para status Resuelto');
-    }
+        if (id_status === 3 && (!solution || solution.trim() === '')) {
+            throw new AppError('Solución requerida para status Resuelto');
+        }
 
-    const { updated, previous } = await prisma.$transaction(async (tx) => {
+        const { updated, previous } = await prisma.$transaction(async (tx) => {
 
-        const previous = await tx.bd_incidents.findUnique({
-            where: { id },
-            select: {
-                id_status: true,
-                email: true,
-                reporter_name: true
+            const previous = await tx.bd_incidents.findUnique({
+                where: { id },
+                select: {
+                    id_status: true,
+                    id_technician: true,
+                    email: true,
+                    reporter_name: true
+                }
+            });
+
+            if (!previous) {
+                throw new AppError('Incidencia no encontrada', 404);
             }
-        });
 
-        if (!previous) throw new AppError('Incidencia no encontrada', 404);
+            const currentUser = req.user;
 
-        const data = {};
-        if (description !== undefined) data.description = description;
-        if (category !== undefined) data.id_category = category;
-        if (id_status !== undefined) data.id_status = id_status;
-        if (solution !== undefined) data.solution = solution;
-
-        if (id_status === 2) {
-            if (!id_technician) {
+            // Incidencia resuelta no se puede modificar
+            if (previous.id_status === 3) {
                 throw new AppError(
-                    'No se puede asignar una incidencia sin técnico',
+                    'No se puede modificar una incidencia resuelta',
                     400
                 );
             }
 
-            const tech = await tx.users.findFirst({
-                where: {
-                    id: Number(id_technician),
-                    id_rol: 2,
-                    active: 1
+            const data = {};
+
+            if (description !== undefined) data.description = description;
+            if (category !== undefined) data.id_category = category;
+            if (solution !== undefined) data.solution = solution;
+
+            if (id_status !== undefined) {
+                data.id_status = id_status;
+            }
+
+            if (id_technician !== undefined) {
+                // Permiso de asignar solo si es consultor
+                if (
+                    currentUser.id_rol === 3 &&
+                    previous.id_status !== 1
+                ) {
+                    throw new AppError(
+                        'No tiene permiso para reasignar incidencias',
+                        403
+                    );
+                }
+
+                const tech = await tx.users.findFirst({
+                    where: {
+                        id: Number(id_technician),
+                        id_rol: 2,
+                        active: 1
+                    }
+                });
+
+                if (!tech) {
+                    throw new AppError('Técnico no válido', 400);
+                }
+
+                data.id_technician = Number(id_technician);
+
+                if (previous.id_status === 1) {
+                    data.id_status = 2;
+                }
+            }
+
+            if (solution_date !== undefined) {
+                const dateValue = solution_date ? new Date(solution_date) : null;
+
+                if (dateValue && isNaN(dateValue.getTime())) {
+                    throw new AppError('Fecha de solución inválida', 400);
+                }
+
+                data.solution_date = dateValue;
+            }
+
+            if (id_technician !== undefined && previous.id_status === 1) {
+                const assignmentResult = await tx.bd_incidents.updateMany({
+                    where: {
+                        id,
+                        id_status: 1
+                    },
+                    data
+                });
+
+                if (assignmentResult.count === 0) {
+                    throw new AppError(
+                        'La incidencia ya fue asignada por otro usuario. Actualiza la lista para ver el estado real.',
+                        409
+                    );
+                }
+            } else {
+                await tx.bd_incidents.update({
+                    where: { id },
+                    data
+                });
+            }
+
+            const updated = await tx.bd_incidents.findUnique({
+                where: { id },
+                select: {
+                    id: true,
+                    ticket_number: true,
+                    id_user: true,
+                    reporter_name: true,
+                    email: true,
+                    description: true,
+                    id_category: true,
+                    other_category_detail: true,
+                    id_status: true,
+                    creation_date: true,
+                    solution_date: true,
+                    solution: true,
+                    id_technician: true,
+
+                    ubications: { select: { name: true } },
+                    departments: { select: { name: true } },
+                    categories: { select: { name: true } },
+                    users_bd_incidents_id_technicianTousers: {
+                        select: { nombre_completo: true, email: true }
+                    }
                 }
             });
 
-            if (!tech) throw new AppError('Técnico no válido', 400);
-
-            data.id_technician = Number(id_technician);
-            data.id_status = 2;
-        }
-
-        if (solution_date !== undefined) {
-            const dateValue = solution_date ? new Date(solution_date) : null;
-            if (dateValue && isNaN(dateValue.getTime())) {
-                throw new AppError('Fecha de solución inválida', 400);
-            }
-            data.solution_date = dateValue;
-        }
-
-        await tx.bd_incidents.update({
-            where: { id },
-            data
+            return { updated, previous };
         });
 
-        const updated = await tx.bd_incidents.findUnique({
-            where: { id },
-            include: {
-                ubications: true,
-                departments: true,
-                categories: true,
-                users_bd_incidents_id_technicianTousers: true
-            }
-        });
+        // 6. Enviar correo al técnico asignado
+        const technicianChanged =
+            id_technician !== undefined &&
+            previous.id_technician !== updated.id_technician;
 
-        return { updated, previous };
-    });
-
-    // 6. Enviar correo al técnico asignado
-    if (id_technician &&
-        !silent &&
-        updated.users_bd_incidents_id_technicianTousers) {
-        const formattedId = id.toString().padStart(6, '0');
-        const privateViewUrl = `${frontendUrl}/incidencias/${formattedId}`;
-        await sendMail({
-            to: updated.users_bd_incidents_id_technicianTousers.email,
-            subject: `🔧 Nueva incidencia asignada (#${formattedId})`,
-            html: `
+        if (technicianChanged &&
+            !silent &&
+            updated.users_bd_incidents_id_technicianTousers) {
+            const formattedTicket = String(updated.ticket_number).padStart(6, '0');
+            const privateViewUrl = `${frontendUrl}/incidencias/${formattedTicket}`;
+            await sendMail({
+                to: updated.users_bd_incidents_id_technicianTousers.email,
+                subject: `🔧 Nueva incidencia asignada (#${formattedTicket})`,
+                html: `
                     <div style="
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                         background-color: #f9f9f9;
@@ -134,7 +202,7 @@ router.put('/:id', catchAsync(async (req, res) => {
                             <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
-                                    <td style="padding: 8px;">${formattedId}</td>
+                                    <td style="padding: 8px;">${formattedTicket}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
@@ -189,24 +257,24 @@ router.put('/:id', catchAsync(async (req, res) => {
                         </div>
                     </div>
                     `
-        });
-    }
+            });
+        }
 
-    // 7. Enviar correo al reportero si se resolvió
-    if (
-        previous.id_status !== 3 &&
-        id_status === 3 &&
-        previous.email &&
-        !silent
-    ) {
-        const formattedId = id.toString().padStart(6, '0');
-        const token = generarTokenIncidencia(id, previous.email);
-        const publicViewUrl = `${frontendUrl}/public/incidencia/${formattedId}?token=${token}`;
+        // 7. Enviar correo al reportero si se resolvió
+        if (
+            previous.id_status !== 3 &&
+            id_status === 3 &&
+            previous.email &&
+            !silent
+        ) {
+            const formattedTicket = String(updated.ticket_number).padStart(6, '0');
+            const token = generarTokenIncidencia(id, previous.email);
+            const publicViewUrl = `${frontendUrl}/public/incidencia/${updated.id}?token=${token}`;
 
-        await sendMail({
-            to: previous.email,
-            subject: `✅ Tu incidencia #${formattedId} ha sido resuelta`,
-            html: `
+            await sendMail({
+                to: previous.email,
+                subject: `✅ Tu incidencia #${formattedTicket} ha sido resuelta`,
+                html: `
                     <div style="
                                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                                 background-color: #f9f9f9;
@@ -234,7 +302,7 @@ router.put('/:id', catchAsync(async (req, res) => {
                             <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
-                                    <td style="padding: 8px;">${formattedId}</td>
+                                    <td style="padding: 8px;">${formattedTicket}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
@@ -299,32 +367,39 @@ router.put('/:id', catchAsync(async (req, res) => {
                         </div>
                     </div>
                     `
-        });
-    }
+            });
+        }
 
-    const mappedUpdated = {
-        id_incident: updated.id,
-        id_user: updated.id_user,
-        reporter_name: updated.reporter_name,
-        reporter_email: updated.email,
-        ubication_name: updated.ubications?.name || null,
-        department_name: updated.departments?.name || null,
-        description: updated.description,
-        id_category: updated.id_category,
-        other_category_detail: updated.other_category_detail,
-        id_status: updated.id_status,
-        creation_date: updated.creation_date,
-        solution_date: updated.solution_date,
-        solution: updated.solution,
-        id_technician: updated.id_technician,
-        technician_full_name: updated.users_bd_incidents_id_technicianTousers?.nombre_completo || null
-    };
+        const mappedUpdated = {
+            id_incident: updated.id,
+            ticket_number: updated.ticket_number,
+            id_user: updated.id_user,
+            reporter_name: updated.reporter_name,
+            reporter_email: updated.email,
+            ubication_name: updated.ubications?.name || null,
+            department_name: updated.departments?.name || null,
+            description: updated.description,
+            id_category: updated.id_category,
+            other_category_detail: updated.other_category_detail,
+            id_status: updated.id_status,
+            creation_date: updated.creation_date,
+            solution_date: updated.solution_date,
+            solution: updated.solution,
+            id_technician: updated.id_technician,
+            technician_full_name: updated.users_bd_incidents_id_technicianTousers?.nombre_completo || null
+        };
 
-    // 8. Notificar por Socket.IO
-    const io = req.app.get('io');
-    io.to(`incident_${id}`).emit('incidentUpdated', mappedUpdated);
+        if (updated.id_technician) {
+            const io = req.app.get('io');
+            io.to(`user_${updated.id_technician}`)
+                .emit('incidentUpdated', mappedUpdated);
+        }
 
-    res.json(mappedUpdated);
-}));
+        // 8. Notificar por Socket.IO
+        const io = req.app.get('io');
+        io.to(`incident_${id}`).emit('incidentUpdated', mappedUpdated);
+
+        res.json(mappedUpdated);
+    }));
 
 module.exports = router;

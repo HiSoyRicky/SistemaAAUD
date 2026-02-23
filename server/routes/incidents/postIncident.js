@@ -98,10 +98,28 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
 
         return tx.bd_incidents.findUnique({
             where: { id: created.id },
-            include: {
-                ubications: { select: { name: true } },
-                departments: { select: { name: true } },
-                categories: { select: { name: true } },
+            select: {
+                id: true,
+                ticket_number: true,
+                reporter_name: true,
+                email: true,
+                description: true,
+                other_category_detail: true,
+                creation_date: true,
+                solution: true,
+                solution_date: true,
+                id_status: true,
+                id_technician: true,
+
+                ubications: {
+                    select: { name: true }
+                },
+                departments: {
+                    select: { name: true }
+                },
+                categories: {
+                    select: { name: true }
+                },
                 users_bd_incidents_id_technicianTousers: {
                     select: { nombre_completo: true }
                 }
@@ -109,10 +127,13 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
         });
     });
 
-    const formattedId = newIncident.id.toString().padStart(6, '0');
+    const formattedTicket = newIncident.ticket_number
+        .toString()
+        .padStart(6, '0');
 
     const response = {
         id_incident: newIncident.id,
+        ticket_number: formattedTicket,
         reporter_name: newIncident.reporter_name,
         reporter_email: newIncident.email,
         ubication_name: newIncident.ubications?.name,
@@ -133,8 +154,8 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
     try {
         await sendMail({
             from: '"No responder" <no-responder@aaud.gob.pa>',
-            to: 'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa',
-            subject: `📥 Nueva incidencia registrada (#${formattedId})`,
+            to: 'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa, aramos@aaud.gob.pa',
+            subject: `📥 Nueva incidencia registrada (#${formattedTicket})`,
             html: `
                     <div style="
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -163,7 +184,7 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
                             <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
-                                    <td style="padding: 8px;">${formattedId}</td>
+                                    <td style="padding: 8px;">${formattedTicket}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Reportado por:</td>
@@ -223,7 +244,7 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
         if (email) {
             await sendMail({
                 to: email,
-                subject: `🕒 Confirmación de reporte de incidencia (#${formattedId})`,
+                subject: `🕒 Confirmación de reporte de incidencia (#${formattedTicket})`,
                 html: `
                         <div style="
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -252,7 +273,7 @@ router.post('/', validateIncident, catchAsync(async (req, res) => {
                         <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Incidencia N°:</td>
-                                    <td style="padding: 8px;">${formattedId}</td>
+                                    <td style="padding: 8px;">${formattedTicket}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 8px; font-weight: bold;">Reportado por:</td>

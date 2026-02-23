@@ -29,6 +29,15 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         setTimeout(() => setNotification({ message: "", type: "" }), 5000);
     }, []);
 
+    const getApiErrorMessage = useCallback((error) => {
+        return (
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.message ||
+            "Error inesperado"
+        );
+    }, []);
+
     const joinRoom = useCallback((incidentId) => {
         if (!incidentId) return;
         if (joinedRoomsRef.current.has(incidentId)) return;
@@ -74,7 +83,13 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
     useEffect(() => {
         if (!userType) return;
 
-        connectSocket();
+        connectSocket(loggedUserId);
+
+        const handleSocketConnect = () => {
+            joinedRoomsRef.current.forEach((id) => socket.emit("joinIncidentRoom", id));
+            fetchIncidents();
+        };
+        socket.on("connect", handleSocketConnect);
 
         const offCreated = onIncidentCreated((newIncident) => {
             const techId = parseInt(loggedUserId);
@@ -125,9 +140,18 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
                     }
                 }
 
+                if (!exists) {
+                    return [...prev, updated].sort(
+                        (a, b) =>
+                            new Date(b.creation_date) - new Date(a.creation_date)
+                    );
+                }
+
                 return prev
                     .map((inc) =>
-                        inc.id_incident === updated.id_incident ? updated : inc
+                        inc.id_incident === updated.id_incident
+                            ? { ...inc, ...updated }
+                            : inc
                     )
                     .sort(
                         (a, b) =>
@@ -147,6 +171,7 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         fetchTechnicians();
 
         return () => {
+            socket.off("connect", handleSocketConnect);
             offCreated?.();
             offUpdated?.();
             leaveAllRooms();
@@ -207,15 +232,19 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
             }
 
             try {
-                // ✅ USA la respuesta REAL del backend
+                // Usa la respuesta REAL del backend
                 const updated = await Incidents.assignTechnician(
                     selectedIncidentId,
                     technicianId
                 );
 
+                await fetchIncidents();
+
                 setIncidents((prev) =>
                     prev.map((inc) =>
-                        inc.id_incident === updated.id_incident ? updated : inc
+                        inc.id_incident === updated.id_incident
+                            ? { ...inc, ...updated }
+                            : inc
                     )
                 );
 
@@ -224,7 +253,7 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
                 console.error("Error al asignar técnico:", error);
                 showNotification(
                     "Error al asignar técnico: " +
-                    (error.response?.data?.error || error.message),
+                    getApiErrorMessage(error),
                     "error"
                 );
             } finally {
@@ -232,7 +261,7 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
                 setSelectedIncidentId(null);
             }
         },
-        [selectedIncidentId, showNotification]
+        [selectedIncidentId, showNotification, fetchIncidents, getApiErrorMessage]
     );
 
     const submitSolution = useCallback(
@@ -240,18 +269,6 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
             if (!currentIncidentToResolve || !solutionText) return;
 
             const idToResolve = currentIncidentToResolve;
-            setIncidents((prev) =>
-                prev.map((inc) =>
-                    inc.id_incident === idToResolve
-                        ? {
-                            ...inc,
-                            id_status: 3,
-                            solution: solutionText,
-                            solution_date: new Date().toISOString(),
-                        }
-                        : inc
-                )
-            );
 
             try {
                 const updated = await Incidents.resolve(currentIncidentToResolve, solutionText);
