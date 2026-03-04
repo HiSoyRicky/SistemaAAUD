@@ -1,166 +1,146 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { pool } from './db/db';
-import { io } from '../server';
 import dotenv from 'dotenv';
-import sendMail from './mailer';
+import sendMail from './mailer.js';
+import { prisma } from '../Prisma.js';
 
 dotenv.config();
 
-async function procesarRespuestasTecnicos() {
-    console.log('Iniciando procesamiento de respuestas técnicas...'); // Depuración
+let ioInstance = null;
 
+function setSocketIO(io) {
+    ioInstance = io;
+}
+
+async function procesarRespuestasTecnicos() {
     const client = new ImapFlow({
         host: process.env.IMAP_HOST,
-        port: parseInt(process.env.IMAP_PORT),
+        port: parseInt(process.env.IMAP_PORT, 10),
         secure: true,
         auth: {
             user: process.env.IMAP_USER,
             pass: process.env.IMAP_PASS,
         },
-        logger: {
-            info: (msg) => console.log('IMAP INFO:', msg),
-            debug: (msg) => console.log('IMAP DEBUG:', msg),
-            error: (msg) => console.error('IMAP ERROR:', msg),
-        },
     });
 
     try {
-        console.log('Conectando al servidor IMAP...');
         await client.connect();
-        console.log('Conexión IMAP establecida.');
+        const lock = await client.getMailboxLock("INBOX");
 
-        let lock = await client.getMailboxLock('INBOX');
-        console.log('Buzón INBOX bloqueado para procesamiento.');
         try {
-            // Buscar correos no leídos
-            const messages = client.fetch({ seen: false }, { envelope: true, source: true });
-            let foundMessages = false;
+            const messages = client.fetch({ seen: false }, { source: true });
 
-            for await (let message of messages) {
-                foundMessages = true;
-                console.log('Procesando correo con UID:', message.uid);
-                let parsed = await simpleParser(message.source);
+            for await (const message of messages) {
+                try {
+                    const parsed = await simpleParser(message.source);
+                    const match = parsed.subject?.match(/\(#(\d+)\)/);
 
-                // Extraer ID de incidencia del asunto
-                const match = parsed.subject?.match(/\(#(\d+)\)/);
-                if (!match) {
-                    console.log(`Correo UID ${message.uid} no tiene ID de incidencia válido en el asunto: ${parsed.subject}`);
-                    await client.messageFlagsAdd(message.uid, ['\\Seen']);
-                    continue;
-                }
+                    if (!match) {
+                        continue;
+                    }
 
-                const idIncidencia = parseInt(match[1], 10);
-                if (isNaN(idIncidencia)) {
-                    console.log(`ID de incidencia no válido en correo UID ${message.uid}: ${match[1]}`);
-                    await client.messageFlagsAdd(message.uid, ['\\Seen']);
-                    continue;
-                }
+                    const idIncidencia = Number(match[1]);
+                    if (Number.isNaN(idIncidencia)) {
+                        continue;
+                    }
 
-                // Validar remitente
-                const emailRemitente = parsed.from?.value[0]?.address?.toLowerCase();
-                if (!emailRemitente) {
-                    console.log(`Correo UID ${message.uid} no tiene remitente válido.`);
-                    await client.messageFlagsAdd(message.uid, ['\\Seen']);
-                    continue;
-                }
-                console.log(`Correo de: ${emailRemitente} para incidencia #${idIncidencia}`);
+                    const emailRemitente =
+                        parsed.from?.value?.[0]?.address?.toLowerCase() || "";
 
-                // Consultar técnico asignado y datos del reporter
-                
-                const techResult = await pool.request()
-                    .input('id', idIncidencia)
-                    .query(`
-                        SELECT t.email AS technician_email, i.email AS reporter_email, i.reporter_name
-                        FROM BD_Incidents i
-                        LEFT JOIN users t ON i.id_technician = t.id
-                        WHERE i.id = @id
-                    `);
+                    if (!emailRemitente) {
+                        continue;
+                    }
 
-                if (techResult.rows.length === 0 || !techResult.rows[0].technician_email) {
-                    console.log(`Incidencia #${idIncidencia} no encontrada o sin técnico asignado.`);
-                    await client.messageFlagsAdd(message.uid, ['\\Seen']);
-                    continue;
-                }
-
-                const technicianEmail = techResult.rows[0].technician_email.toLowerCase();
-                const reporterEmail = techResult.rows[0].reporter_email;
-                const reporterName = techResult.rows[0].reporter_name;
-
-                if (emailRemitente !== technicianEmail) {
-                    console.log(`Remitente ${emailRemitente} no coincide con técnico asignado ${technicianEmail} para incidencia #${idIncidencia}.`);
-                    await client.messageFlagsAdd(message.uid, ['\\Seen']);
-                    continue;
-                }
-
-                // Actualizar incidencia
-                const solutionText = (parsed.text || '').trim() || 'Solución proporcionada por correo.';
-                console.log(`Actualizando incidencia #${idIncidencia} con solución: ${solutionText}`);
-                await pool.request()
-                    .input('id', idIncidencia)
-                    .input('solution', solutionText)
-                    .input('solution_date', new Date())
-                    .input('id_status', 3)
-                    .query(`
-                        UPDATE BD_Incidents
-                        SET solution = @solution,
-                            solution_date = @solution_date,
-                            id_status = @id_status
-                        WHERE id = @id
-                    `);
-
-                // Obtener incidencia actualizada
-                const updatedIncidentResult = await pool.request()
-                    .input('id', idIncidencia)
-                    .query(`
-                        SELECT i.*, t.nombre_completo AS technician_full_name
-                        FROM BD_Incidents i
-                        LEFT JOIN users t ON i.id_technician = t.id
-                        WHERE i.id = @id
-                    `);
-
-                if (updatedIncidentResult.rows.length > 0) {
-                    const updatedIncident = updatedIncidentResult.rows[0];
-                    console.log(`Emitiendo incidentUpdated para incidencia #${idIncidencia}`);
-                    io.to(`incident_${idIncidencia}`).emit('incidentUpdated', updatedIncident);
-                } else {
-                    console.log(`No se encontró la incidencia #${idIncidencia} tras actualizar.`);
-                }
-
-                // Notificar al reporter
-                if (reporterEmail) {
-                    const formattedId = idIncidencia.toString().padStart(6, '0');
-                    console.log(`Enviando notificación a ${reporterEmail} para incidencia #${formattedId}`);
-                    await sendMail({
-                        to: reporterEmail,
-                        subject: `✅ Incidencia #${formattedId} resuelta por técnico`,
-                        html: `
-                            <h3>Hola ${reporterName},</h3>
-                            <p>El técnico ha resuelto tu incidencia vía correo.</p>
-                            <p><strong>Solución:</strong> ${solutionText}</p>
-                            <p>Sistema de Incidencias AAUD</p>
-                        `
+                    const incident = await prisma.bd_incidents.findUnique({
+                        where: { id: idIncidencia },
+                        select: {
+                            id: true,
+                            ticket_number: true,
+                            reporter_name: true,
+                            email: true,
+                            users_bd_incidents_id_technicianTousers: {
+                                select: {
+                                    email: true,
+                                    nombre_completo: true,
+                                },
+                            },
+                        },
                     });
+
+                    const technicianEmail =
+                        incident?.users_bd_incidents_id_technicianTousers?.email?.toLowerCase() ||
+                        null;
+
+                    if (!incident || !technicianEmail) {
+                        continue;
+                    }
+
+                    if (emailRemitente !== technicianEmail) {
+                        continue;
+                    }
+
+                    const solutionText =
+                        (parsed.text || "").trim() || "Solución proporcionada por correo.";
+
+                    const updatedIncident = await prisma.bd_incidents.update({
+                        where: { id: idIncidencia },
+                        data: {
+                            solution: solutionText,
+                            solution_date: new Date(),
+                            id_status: 3,
+                        },
+                        include: {
+                            users_bd_incidents_id_technicianTousers: {
+                                select: { nombre_completo: true },
+                            },
+                        },
+                    });
+
+                    if (ioInstance) {
+                        ioInstance.to(`incident_${idIncidencia}`).emit("incidentUpdated", {
+                            ...updatedIncident,
+                            technician_full_name:
+                                updatedIncident.users_bd_incidents_id_technicianTousers
+                                    ?.nombre_completo || null,
+                        });
+                    }
+
+                    if (incident.email) {
+                        const formattedId = String(
+                            incident.ticket_number || idIncidencia
+                        ).padStart(6, "0");
+
+                        await sendMail({
+                            to: incident.email,
+                            subject: `✅ Incidencia #${formattedId} resuelta por técnico`,
+                            html: `
+                                <h3>Hola ${incident.reporter_name || "usuario"},</h3>
+                                <p>El técnico ha resuelto tu incidencia vía correo.</p>
+                                <p><strong>Solución:</strong> ${solutionText}</p>
+                                <p>Sistema de Incidencias AAUD</p>
+                            `,
+                        });
+                    }
+                } catch (messageError) {
+                    console.error("Error procesando correo:", messageError);
+                } finally {
+                    await client.messageFlagsAdd(message.uid, ["\\Seen"]).catch(() => { });
                 }
-
-                // Marcar como leído
-                await client.messageFlagsAdd(message.uid, ['\\Seen']);
-                console.log(`Correo UID ${message.uid} marcado como leído.`);
-            }
-
-            if (!foundMessages) {
-                console.log('No se encontraron correos no leídos para procesar.');
             }
         } finally {
-            console.log('Liberando buzón INBOX.');
             lock.release();
         }
-        console.log('Cerrando conexión IMAP.');
-        await client.logout();
     } catch (error) {
-        console.error('Error procesando respuestas técnicas:', error);
+        console.error("Error procesando respuestas técnicas:", error);
+    } finally {
+        await client.logout().catch(() => { });
     }
 }
 
-// Ejecutar cada 30 segundos para pruebas (cambiar a 60 * 1000 en producción)
-setInterval(procesarRespuestasTecnicos, 30 * 1000);
+function startTechnicianEmailProcessor(intervalMs = 60 * 1000) {
+    return setInterval(procesarRespuestasTecnicos, intervalMs);
+}
+
+export { procesarRespuestasTecnicos,
+    startTechnicianEmailProcessor,
+    setSocketIO, };

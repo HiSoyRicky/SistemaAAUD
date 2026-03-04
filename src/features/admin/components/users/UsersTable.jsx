@@ -44,7 +44,7 @@ export default function UsersTable({
                 />
             </div >
 
-            <table className="bg-white rounded-lg shadow-md">
+            <table className="w-full text-sm border">
                 <thead>
                     <tr className="bg-gray-200">
                         <th className="p-2 text-center border">#</th>
@@ -84,7 +84,7 @@ export default function UsersTable({
                                 </ActionButton>
                                 <ActionButton
                                     type={"reset"}
-                                    title="Cambiar contraseña"
+                                    title="Resetear contraseña"
                                     onClick={() => handleResetPassword(u)}
                                 >
                                 </ActionButton>

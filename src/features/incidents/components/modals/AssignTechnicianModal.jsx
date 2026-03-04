@@ -1,7 +1,7 @@
 // src/components/incidents/AssignTechnicianModal.jsx
 import React, { useState } from 'react';
 
-function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm }) {
+function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
     const [selectedTechnician, setSelectedTechnician] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,7 +24,7 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
 
         try {
             const technicianId = Number(selectedTechnician);
-            console.log('Asignando técnico:', technicianId, 'a la incidencia:', id_incident);
+            console.log('Asignando técnico:', technicianId + ' a incidencia ' + onConfirm);
             await onConfirm(technicianId);
             onClose();
         } catch (error) {
@@ -48,7 +48,7 @@ function AssignTechnicianModal({ id_incident, technicians, onClose, onConfirm })
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
             <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-xl">
-                <h3 className="mb-4 text-lg font-bold">Asignar Técnico a Incidencia #{id_incident || 'N/A'}</h3>
+                <h3 className="mb-4 text-lg font-bold">Asignar Técnico</h3>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label htmlFor="technicianSelect" className="block mb-2 text-sm font-bold text-gray-700">

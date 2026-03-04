@@ -38,7 +38,7 @@ export const getNavigation = (userType) => {
           label: "Tóners",
           path: "/inventario/toners",
           icon: Printer,
-          roles: ["admin"],
+          roles: ["admin", "tecnico", "consultor"],
         },
       ],
     },

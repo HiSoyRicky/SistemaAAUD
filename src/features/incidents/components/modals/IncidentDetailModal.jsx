@@ -58,7 +58,7 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
                         <Info label="Correo" value={incident.reporter_email || "S/C"} />
                         <Info label="Ubicación" value={incident.ubication_name} />
                         <Info label="Departamento" value={incident.department_name} />
-                        <Info label="Categoría" value={incident.category_name} />
+                        <Info label="Categoría" value={incident.category_name || "S/C" } />
                         <Info label="Técnico" value={incident.technician_full_name || "Sin asignar"} />
                         <Info
                             label="Fecha de creación"

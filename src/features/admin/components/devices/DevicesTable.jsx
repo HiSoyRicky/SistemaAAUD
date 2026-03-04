@@ -74,7 +74,7 @@ export default function DevicesTable({
             </div>
 
             {/* Tabla */}
-            <table className="p-1 bg-white rounded-lg shadow-md">
+            <table className="w-full text-sm border">
                 <thead className="bg-gray-100">
                     <tr>
                         <th className="px-3 py-1 text-center border">#</th>

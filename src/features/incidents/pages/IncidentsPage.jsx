@@ -9,7 +9,6 @@ import SuccessMessage from "@/shared/common/SuccessMessage";
 import IncidentEditForm from "@/features/incidents/components/forms/IncidentEditForm";
 import AssignTechnicianModal from "@/features/incidents/components/modals/AssignTechnicianModal";
 
-import { Button, Container, Row, Col } from "react-bootstrap";
 import useIncidentsPage from "@/features/incidents/hooks/useIncidentsPage";
 
 function IncidentsPage() {
@@ -48,7 +47,7 @@ function IncidentsPage() {
     } = useIncidentsPage({ userType, loggedUserName, loggedUserId });
 
     return (
-        <Container fluid className="px-2 py-1">
+        <div className="w-full px-2 py-1">
             {notification.message && (
                 <SuccessMessage
                     message={notification.message}
@@ -58,21 +57,20 @@ function IncidentsPage() {
             )}
 
             {["admin", "tecnico", "consultor"].includes(userType) && (
-                <Row className="mb-4 text-center">
-                    <Col>
-                        <Button
-                            onClick={() => setShowIncidentForm((prev) => !prev)}
-                            variant={showIncidentForm ? "secondary" : "primary"}
-                        >
+                <div className="mb-4 text-center">
+                    <button
+                        onClick={() => setShowIncidentForm((prev) => !prev)}
+                        className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold text-white transition
+                            ${showIncidentForm ? "bg-slate-600 hover:bg-slate-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                    >
                             {showIncidentForm ? "Cerrar formulario" : "Reportar Nueva Incidencia"}
-                        </Button>
-                    </Col>
-                </Row>
+                    </button>
+                </div>
             )}
 
             {userType === "trabajador" ? (
                 <section className="mb-2">
-                    <h2 className="mt-0 mb-2 text-center h4">Reportar Nueva Incidencia</h2>
+                    <h2 className="mt-0 mb-2 text-center text-xl font-semibold">Reportar Nueva Incidencia</h2>
                     <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
                 </section>
             ) : (
@@ -96,13 +94,17 @@ function IncidentsPage() {
 
             {userType && userType !== "trabajador" && (
                 <section>
-                    <h2 className="mb-3 text-center h3">Listado de Incidencias</h2>
+                    <h2 className="mb-3 text-center text-2xl font-bold">Listado de Incidencias</h2>
 
                     {["admin", "consultor", "tecnico"].includes(userType) && (
                         <div className="mb-3 text-center">
-                            <Button variant="success" onClick={handleExportIncidents}>
+                            <button
+                                type="button"
+                                onClick={handleExportIncidents}
+                                className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                            >
                                 Exportar a Excel
-                            </Button>
+                            </button>
                         </div>
                     )}
 
@@ -164,7 +166,7 @@ function IncidentsPage() {
                     onConfirm={submitSolution}
                 />
             )}
-        </Container>
+        </div>
     );
 }
 

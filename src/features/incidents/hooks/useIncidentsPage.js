@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
+    onIncidentCreated,
+    onIncidentUpdated,
+} from "@/services/socket/incidentsSocket";
+import {
     socket,
     connectSocket,
     disconnectSocket,
-    onIncidentCreated,
-    onIncidentUpdated,
-} from "@/services/socket";
+} from "@/services/socket/socketClient";
 import { exportIncidentsToExcel } from "@/shared/utils/exportExcel";
 import { Incidents, Users } from "@/features/incidents/services/incidents.api";
 

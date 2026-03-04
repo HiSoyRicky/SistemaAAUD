@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import useAuth from "@/shared/hooks/useAuth";
-import ChangePasswordForm from "@/features/auth/pages/ChangePasswordForm";
+import ChangePasswordForm from "@/features/auth/forms/ChangePasswordForm";
 import { User, Shield, KeyRound, ChevronDown } from "lucide-react";
 
 function ProfilePage() {

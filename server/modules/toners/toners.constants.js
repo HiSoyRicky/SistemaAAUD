@@ -1,0 +1,5 @@
+const TONER_COLORS = ['BLACK', 'CYAN', 'MAGENTA', 'YELLOW'];
+const DEFAULT_MIN_STOCK = 0;
+
+export { TONER_COLORS,
+  DEFAULT_MIN_STOCK };

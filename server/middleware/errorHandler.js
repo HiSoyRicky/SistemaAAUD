@@ -1,3 +1,5 @@
+// errorHandler.js
+
 function errorHandler(err, req, res, next) {
     console.error(`[${new Date().toISOString()}]`, err);
 
@@ -9,4 +11,4 @@ function errorHandler(err, req, res, next) {
     });
 }
 
-module.exports = errorHandler;
+export default errorHandler;

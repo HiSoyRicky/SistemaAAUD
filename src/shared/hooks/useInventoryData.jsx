@@ -20,7 +20,7 @@ export function useInventoryData() {
                     axios.get(`/api/devices`),
                     axios.get(`/api/brands`),
                     axios.get(`/api/models`),
-                    axios.get(`/api/statuses`),
+                    axios.get(`/api/status`),
                 ]);
                 setDepartments(depRes.data);
                 setUbications(ubiRes.data);

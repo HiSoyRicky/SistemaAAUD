@@ -3,14 +3,13 @@ import axios from "axios";
 import Pagination from "@/shared/components/ui/Pagination";
 import ActionButton from "@/shared/components/ui/ActionButton";
 
-
 export default function StatusesManager() {
     const [statuses, setStatuses] = useState([]);
-    const [newStatus, setnewStatus] = useState("");
+    const [newStatus, setNewStatus] = useState("");
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const API_URL = `/api/statuses`;
+    const API_URL = `/api/status`;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [search, setSearch] = useState("");
@@ -36,12 +35,12 @@ export default function StatusesManager() {
         fetchStatuses();
     }, []);
 
-    //  Agregar nueva marca
+    //  Agregar nuevo estado
     const addStatus = async () => {
         if (!newStatus.trim()) return;
         try {
             await axios.post(`${API_URL}`, { name: newStatus });
-            setnewStatus("");
+            setNewStatus("");
             fetchStatuses();
         }
         catch (err) {
@@ -100,7 +99,7 @@ export default function StatusesManager() {
             )}
 
             {/* Tabla */}
-            <table className="p-1 bg-white rounded-lg shadow-md">
+            <table className="w-full text-sm border">
                 <thead className="bg-gray-100">
                     <tr>
                         <th className="px-3 py-1 text-center border">#</th>

@@ -68,7 +68,7 @@ export default function UbicationsManager({
             )}
 
             {/* Tabla */}
-            <table className="p-1 bg-white rounded-lg shadow-md">
+            <table className="w-full text-sm border">
                 <thead className="bg-gray-100">
                     <tr>
                         <th className="px-2 text-center border">#</th>

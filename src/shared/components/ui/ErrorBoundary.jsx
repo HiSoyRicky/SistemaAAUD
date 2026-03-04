@@ -64,94 +64,89 @@ class ErrorBoundary extends Component {
         if (!hasError) return this.props.children;
 
         return (
-            <div className="p-3 min-vh-100 d-flex align-items-center justify-content-center bg-light">
-                <div className="border-0 shadow-lg card" style={{ maxWidth: 760, width: "100%" }}>
-                    <div className="p-4 card-body p-md-5">
-                        <div className="gap-3 d-flex align-items-start">
+            <div className="flex min-h-screen items-center justify-center bg-slate-100 p-3">
+                <div className="w-full max-w-[760px] rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="p-4 md:p-5">
+                        <div className="flex items-start gap-3">
                             <div
-                                className="rounded-circle d-flex align-items-center justify-content-center"
+                                className="flex h-11 w-11 items-center justify-center rounded-full"
                                 style={{ width: 44, height: 44, background: "rgba(220,53,69,0.12)" }}
                                 aria-hidden="true"
                             >
                                 <span style={{ fontSize: 22 }}>⚠️</span>
                             </div>
 
-                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                                <div className="flex-wrap gap-2 d-flex align-items-center justify-content-between">
-                                    <h1 className="mb-0 h4">Algo salió mal</h1>
-                                    <span className="badge text-bg-danger">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h1 className="mb-0 text-xl font-bold text-slate-900">Algo salió mal</h1>
+                                    <span className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">
                                         {errorId ? `ID: ${errorId}` : "Error"}
                                     </span>
                                 </div>
 
-                                <p className="mt-2 mb-0 text-secondary">
+                                <p className="mb-0 mt-2 text-sm text-slate-600">
                                     La aplicación encontró un error inesperado. Puedes recargar o copiar los detalles
                                     para depurarlo más rápido.
                                 </p>
 
-                                <div className="mt-3 mb-0 alert alert-danger" role="alert">
-                                    <div className="fw-semibold">Mensaje:</div>
-                                    <div className="mt-1">{error?.message || "Error desconocido"}</div>
+                                <div className="mb-0 mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800" role="alert">
+                                    <div className="font-semibold">Mensaje:</div>
+                                    <div className="mt-1 text-sm">{error?.message || "Error desconocido"}</div>
                                 </div>
 
-                                <div className="flex-wrap gap-2 mt-4 d-flex">
-                                    <button className="btn btn-danger" onClick={() => window.location.reload()}>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <button
+                                        className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                                        onClick={() => window.location.reload()}
+                                    >
                                         Recargar
                                     </button>
-                                    <button className="btn btn-outline-secondary" onClick={() => window.history.back()}>
+                                    <button
+                                        className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                                        onClick={() => window.history.back()}
+                                    >
                                         Volver atrás
                                     </button>
-                                    <button className="btn btn-outline-primary" onClick={this.copyDetails}>
+                                    <button
+                                        className="rounded-md border border-blue-300 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+                                        onClick={this.copyDetails}
+                                    >
                                         {copied ? "Copiado ✅" : "Copiar detalles"}
                                     </button>
-                                    <button className="btn btn-link ms-auto" onClick={this.reset}>
+                                    <button
+                                        className="ml-auto rounded-md px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                                        onClick={this.reset}
+                                    >
                                         Intentar continuar
                                     </button>
                                 </div>
 
-                                <hr className="my-4" />
+                                <hr className="my-4 border-slate-200" />
 
                                 <details>
-                                    <summary className="fw-semibold" style={{ cursor: "pointer" }}>
+                                    <summary className="cursor-pointer font-semibold text-slate-800">
                                         Ver detalles técnicos
                                     </summary>
 
                                     <div className="mt-3">
-                                        <div className="row g-3">
-                                            <div className="col-12 col-md-6">
-                                                <div className="mb-1 small text-secondary">Tipo</div>
-                                                <div className="font-monospace">{error?.name || "N/A"}</div>
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                            <div>
+                                                <div className="mb-1 text-xs text-slate-500">Tipo</div>
+                                                <div className="font-mono text-sm text-slate-800">{error?.name || "N/A"}</div>
                                             </div>
-                                            <div className="col-12 col-md-6">
-                                                <div className="mb-1 small text-secondary">Ruta</div>
-                                                <div className="font-monospace text-truncate">
+                                            <div>
+                                                <div className="mb-1 text-xs text-slate-500">Ruta</div>
+                                                <div className="truncate font-mono text-sm text-slate-800">
                                                     {window.location.pathname}
                                                 </div>
                                             </div>
 
-                                            <div className="col-12">
-                                                <div className="mb-1 small text-secondary">Stack</div>
+                                            <div className="md:col-span-2">
+                                                <div className="mb-1 text-xs text-slate-500">Stack</div>
                                                 <pre
-                                                    className="p-3 mb-0 border rounded bg-body-tertiary w-100"
+                                                    className="mb-0 w-full overflow-auto rounded border border-slate-200 bg-slate-100 p-3 text-xs text-slate-800"
                                                     style={{
                                                         maxHeight: 220,
-                                                        overflow: "auto",
-                                                        whiteSpace: "pre-wrap",      // ✅ envuelve líneas
-                                                        wordBreak: "break-word",     // ✅ corta palabras largas
-                                                        overflowWrap: "anywhere",    // ✅ corta URLs sin espacios
-                                                    }}
-                                                >
-                                                    {error?.stack || "N/A"}
-                                                </pre>
-                                            </div>
-
-                                            <div className="col-12">
-                                                <div className="mb-1 small text-secondary">Component stack (React)</div>
-                                                <pre
-                                                    className="p-3 mb-0 border rounded bg-body-tertiary w-100"
-                                                    style={{
-                                                        maxHeight: 220,
-                                                        overflow: "auto",
                                                         whiteSpace: "pre-wrap",
                                                         wordBreak: "break-word",
                                                         overflowWrap: "anywhere",
@@ -160,14 +155,15 @@ class ErrorBoundary extends Component {
                                                     {error?.stack || "N/A"}
                                                 </pre>
                                             </div>
+
                                         </div>
                                     </div>
                                 </details>
 
-                                <div className="mt-4 text-secondary small">
-                                    Tip rápido: si ves <span className="font-monospace">.find is not a function</span>,
+                                <div className="mt-4 text-xs text-slate-600">
+                                    Tip rápido: si ves <span className="font-mono">.find is not a function</span>,
                                     revisa que el valor sea un <b>array</b> antes de llamar{" "}
-                                    <span className="font-monospace">find()</span>.
+                                    <span className="font-mono">find()</span>.
                                 </div>
                             </div>
                         </div>

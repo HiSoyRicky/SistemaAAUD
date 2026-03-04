@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import UsersTable from "./UsersTable";
 import UserForm from "./UsersForm";
-import { Users } from "@/features/inventory/services/inventory.api";
+import { Users } from "@/features/inventory/devices/services/inventory.api";
 import Pagination from "@/shared/components/ui/Pagination";
 
 export default function UsersManager() {
@@ -15,7 +15,7 @@ export default function UsersManager() {
         id_department: "",
         password: "",
         id_rol: 1,
-        active: 1
+        active: true
     });
     const [editing, setEditing] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -58,7 +58,7 @@ export default function UsersManager() {
             email: "", 
             password: "", 
             id_rol: 1, 
-            active: 1 
+            active: true
         });
         setEditing(false);
         setShowForm(false);
@@ -81,15 +81,21 @@ export default function UsersManager() {
     };
 
     const handleResetPassword = async (user) => {
-        const newPassword = prompt(`Nueva contraseña para ${user.username}:`);
-        if (!newPassword) return;
+        const genericPassword = prompt(
+            `Contraseña genérica temporal para ${user.username}:`,
+            "aaud.123456"
+        );
+        if (!genericPassword) return;
 
         try {
-            await Users.updatePassword(user.id, newPassword);
-            setMessage('Contraseña actualizada correctamente');
+            await Users.updatePassword(user.id, genericPassword, {
+                requirePasswordChange: true,
+            });
+            setMessage('Contraseña reseteada correctamente');
             setMessageType('success');
+            alert(`Contraseña temporal asignada a ${user.username}: ${genericPassword}`);
         } catch (err) {
-            setMessage('Error al actualizar la contraseña');
+            setMessage('Error al resetear la contraseña');
             setMessageType('error');
         }
     };
@@ -103,7 +109,7 @@ export default function UsersManager() {
             email: "",
             password: "",
             id_rol: 1,
-            active: 1
+            active: true
         });
         setEditing(false);
         setShowForm(false);

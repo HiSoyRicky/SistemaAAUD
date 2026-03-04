@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '@/shared/hooks/useAuth';
-import LogoGobNal from '@/assets/images/LogoGobNacAAUD.png';
+import LogoGobNal from '@/assets/images/LogoIzquierda.png';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -11,7 +11,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [loginMode, setLoginMode] = useState('guest');
   const navigate = useNavigate();
-  const { login, isAuthenticated, setAuthData } = useAuth();
+  const { login, isAuthenticated, mustChangePassword, setAuthData } = useAuth();
   const [retryAfter, setRetryAfter] = useState(0);
 
   // En useEffect al cargar LoginPage
@@ -26,9 +26,9 @@ function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(mustChangePassword ? '/cambiar-contrasena' : '/dashboard');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, mustChangePassword, navigate]);
 
   useEffect(() => {
     if (retryAfter > 0) {

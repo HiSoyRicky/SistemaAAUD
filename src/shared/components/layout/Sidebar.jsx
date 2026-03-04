@@ -79,14 +79,14 @@ export default function Sidebar({ open, onToggleFixed }) {
     ${overflowXClass}
   `}
         >
-            {/* ✅ ESTE contenedor permite que el tooltip salga (NO se recorta) */}
+            {/* ESTE contenedor permite que el tooltip salga (NO se recorta) */}
             <div className="flex-1 p-3 overflow-visible">
 
-                {/* ✅ ESTE es el que hace scroll SOLO hacia abajo */}
+                {/* ESTE es el que hace scroll SOLO hacia abajo */}
                 <div className={`h-full ${scrollClass}`}>
                     <nav className="space-y-0 overflow-visible">
 
-                        {/* ✅ Menú */}
+                        {/* Menú */}
                         <button
                             onClick={onToggleFixed}
                             className="relative flex items-center w-full gap-4 px-3 py-3 text-left transition-colors duration-200 group rounded-xl text-slate-400 hover:bg-white/5 hover:text-white"
@@ -97,11 +97,11 @@ export default function Sidebar({ open, onToggleFixed }) {
                             {!open && <Tooltip text="Menú de navegación" />}
                         </button>
 
-                        {/* ✅ Links */}
+                        {/* Links */}
                         {menuItems.map((item) => {
                             const isOpen = openMenus[item.label];
 
-                            // 👉 ITEM CON SUBMENÚ
+                            // ITEM CON SUBMENÚ
                             if (item.children) {
                                 return (
                                     <div key={item.label} className="space-y-1">
@@ -155,7 +155,7 @@ export default function Sidebar({ open, onToggleFixed }) {
                                     to={item.path}
                                     className={({ isActive }) =>
                                         `relative group flex items-center gap-4 px-3 py-3 rounded-xl transition-colors
-        ${isActive
+                                        ${isActive
                                             ? "bg-indigo-600 text-white"
                                             : "text-slate-400 hover:bg-white/5 hover:text-white"
                                         }`

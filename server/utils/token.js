@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const { pool } = require('../db/db');
+import jwt from 'jsonwebtoken';
+import { prisma } from '../Prisma.js';
 
 const secretKey = process.env.JWT_SECRET;
 
@@ -13,46 +13,61 @@ async function getIncidentByToken(token) {
         const decoded = jwt.verify(token, secretKey);
         const { id /*, email*/ } = decoded;
 
-        const result = await pool.query(`
-            SELECT
-                i.id,
-                i.reporter_name,
-                i.email AS reporter_email,
-                u.name AS ubication_name,
-                d.name AS department_name,
-                c.name AS category_name,
-                i.description,
-                i.other_category_detail,
-                i.creation_date,
-                i.solution,
-                i.solution_date,
-                i.id_status,
-                s.name AS status,
-                i.id_technician,
-                t.nombre_completo AS technician_full_name,
-                t.email AS technician_email
-            FROM bd_incidents i
-            LEFT JOIN ubications u ON i.id_ubication = u.id
-            LEFT JOIN departments d ON i.id_department = d.id
-            LEFT JOIN categories c ON i.id_category = c.id
-            LEFT JOIN status s ON i.id_status = s.id
-            LEFT JOIN users t ON i.id_technician = t.id
-            WHERE i.id = $1
-        `, [id]);
+        const incident = await prisma.bd_incidents.findUnique({
+            where: { id: Number(id) },
+            select: {
+                id: true,
+                reporter_name: true,
+                email: true,
+                description: true,
+                other_category_detail: true,
+                creation_date: true,
+                solution: true,
+                solution_date: true,
+                id_status: true,
+                id_technician: true,
+                ubications: { select: { name: true } },
+                departments: { select: { name: true } },
+                categories: { select: { name: true } },
+                status: { select: { name: true } },
+                users_bd_incidents_id_technicianTousers: {
+                    select: {
+                        nombre_completo: true,
+                        email: true,
+                    },
+                },
+            },
+        });
 
-        if (result.rows.length === 0) {
+        if (!incident) {
             console.log('No incident found for id:', id);
             return null;
         }
 
-        return result.rows[0];
+        return {
+            id: incident.id,
+            reporter_name: incident.reporter_name,
+            reporter_email: incident.email,
+            ubication_name: incident.ubications?.name || null,
+            department_name: incident.departments?.name || null,
+            category_name: incident.categories?.name || null,
+            description: incident.description,
+            other_category_detail: incident.other_category_detail,
+            creation_date: incident.creation_date,
+            solution: incident.solution,
+            solution_date: incident.solution_date,
+            id_status: incident.id_status,
+            status: incident.status?.name || null,
+            id_technician: incident.id_technician,
+            technician_full_name:
+                incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
+            technician_email:
+                incident.users_bd_incidents_id_technicianTousers?.email || null,
+        };
     } catch (err) {
-        if (err.name === 'TokenExpiredError') {
-            throw new Error('Token expirado');
-        }
         console.error('Error validating token:', err);
         throw err;
     }
 }
 
-module.exports = { generarTokenIncidencia, getIncidentByToken };
+export { generarTokenIncidencia, getIncidentByToken };

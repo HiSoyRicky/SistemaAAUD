@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { socket, connectSocket, disconnectSocket, onIncidentUpdated } from '@/services/socket';
+import { onIncidentUpdated } from '@/services/socket/incidentsSocket';
+import { connectSocket, disconnectSocket } from '@/services/socket/socketClient';
 import { formatDateToDDMMYYYY, formatDateTime } from '@/shared/utils/formatDate';
 
 

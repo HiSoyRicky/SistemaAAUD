@@ -1,14 +1,14 @@
-// middleware/requireDeptRole.js
+// requireDeptRole.js
+
 const normalize = (s) =>
     (s ?? "")
         .toString()
         .trim()
         .toLowerCase()
-        // quitar tildes: Técnico -> tecnico
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
 
-module.exports = (allowedRoles = []) => (req, res, next) => {
+const requireDeptRole = (allowedRoles = []) => (req, res, next) => {
     const roleRaw = req.ctx?.roleName ?? req.user?.role_name;
     if (!roleRaw) return res.status(401).json({ message: "No autenticado" });
 
@@ -27,3 +27,5 @@ module.exports = (allowedRoles = []) => (req, res, next) => {
 
     next();
 };
+
+export default requireDeptRole;

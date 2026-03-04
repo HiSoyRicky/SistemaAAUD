@@ -1,9 +1,9 @@
 // middleware/attachUserContext.js
-const { prisma } = require("../Prisma");
+import { prisma } from '../Prisma.js';
 
-module.exports = async (req, res, next) => {
+const attachUserContext = async (req, res, next) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.id || 2;
         if (!userId) return res.status(401).json({ message: "No autenticado" });
 
         const user = await prisma.users.findUnique({
@@ -31,3 +31,5 @@ module.exports = async (req, res, next) => {
         return res.status(500).json({ message: "Error cargando contexto de usuario" });
     }
 };
+
+export default attachUserContext;

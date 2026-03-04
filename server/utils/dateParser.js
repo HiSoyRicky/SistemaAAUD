@@ -1,5 +1,3 @@
-const express = require("express");
-
 const TZ_PANAMA = "-05:00";
 
 // Para <input type="date">  → "YYYY-MM-DD"
@@ -28,4 +26,4 @@ function parseDateTime(value) {
     return Number.isNaN(d.getTime()) ? null : d;
 }
 
-module.exports = { parseDateOnly, parseDateTime };
+export { parseDateOnly, parseDateTime };

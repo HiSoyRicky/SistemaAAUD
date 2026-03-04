@@ -1,6 +1,6 @@
 // authMiddleware.js
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+import 'dotenv/config';
+import jwt from 'jsonwebtoken';
 
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers["authorization"];
@@ -16,8 +16,22 @@ const authMiddleware = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        return next();
+
+        if (!decoded.id || (!decoded.role && !decoded.roleId)) {
+            return res.status(401).json({
+                success: false,
+                message: "Token mal formado"
+            });
+        }
+
+        req.user = {
+            id: decoded.id,
+            role: decoded.role ?? null,
+            roleId: decoded.roleId ? Number(decoded.roleId) : null,
+            mustChangePassword: Boolean(decoded.mustChangePassword)
+        };
+
+        next();
 
     } catch (err) {
 
@@ -35,4 +49,4 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-module.exports = authMiddleware;
+export default authMiddleware;

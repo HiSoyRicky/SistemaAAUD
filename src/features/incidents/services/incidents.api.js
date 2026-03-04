@@ -13,8 +13,10 @@ const Incidents = {
 
   // Helpers semánticos (opcional, pero más legible)
   assignTechnician: (id, technicianId) =>
-    api
-      .put(`/api/incidents/${id}`, { id_technician: technicianId, status: "Asignado" })
+    api.put(`/api/incidents/${id}`, {
+      id_technician: technicianId,
+      id_status: 2
+    })
       .then((res) => res.data),
 
   resolve: (id, solutionText) =>
@@ -34,7 +36,8 @@ const Users = {
 
   create: (user) => api.post('/api/users', user).then(res => res.data),
   update: (user) => api.put(`/api/users/${user.id}`, user).then(res => res.data),
-  updatePassword: (id, newPassword) => api.put(`/api/users/${id}/password`, { newPassword }).then(res => res.data),
+  updatePassword: (id, newPassword, options = {}) =>
+    api.put(`/api/users/${id}/password`, { newPassword, ...options }).then(res => res.data),
 };
 
 export { Incidents, Users };

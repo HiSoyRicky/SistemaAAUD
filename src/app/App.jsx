@@ -1,9 +1,10 @@
 // App.jsx
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoginPage from '@/features/auth/pages/LoginPage';
+import ForcedPasswordChangePage from '@/features/auth/pages/ForcedPasswordChangePage';
 
 // Incidencias
 import IncidentsPage from '@/features/incidents/pages/IncidentsPage';
@@ -14,8 +15,10 @@ import Dashboard from '@/features/dashboard/pages/Dashboard';
 import useAuth from '@/shared/hooks/useAuth';
 
 // Inventario
-import InventoryPage from '@/features/inventory/pages/InventoryPage';
+import InventoryPage from '@/features/inventory/devices/pages/InventoryPage';
 import ProfilePage from '@/features/auth/pages/ProfilePage';
+import TonersPage from '@/features/inventory/toners/pages/TonersPage';
+import TonerMovementsPage from '@/features/inventory/toners/pages/TonerMovementsPage';
 
 // Rutas de administración
 import AdminRoute from '@/features/admin/AdminRoute';
@@ -34,8 +37,9 @@ import DocumentsPage from '@/features/documents/pages/DocumentsPage';
 import PrivateLayout from "@/shared/components/layout/PrivateLayout";
 
 // Componente para proteger rutas
-const PrivateRoute = ({ children, allowedUserTypes }) => {
-  const { isAuthenticated, userType, loading } = useAuth();
+const PrivateRoute = ({ children, allowedUserTypes, allowForcedPasswordChange = false }) => {
+  const { isAuthenticated, userType, loading, mustChangePassword } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Cargando...</div>; // O un spinner
@@ -44,6 +48,10 @@ const PrivateRoute = ({ children, allowedUserTypes }) => {
   if (!isAuthenticated) {
     // Si no está autenticado, redirige al login
     return <Navigate to="/login" replace />;
+  }
+
+  if (mustChangePassword && !allowForcedPasswordChange && location.pathname !== '/cambiar-contrasena') {
+    return <Navigate to="/cambiar-contrasena" replace />;
   }
 
   if (allowedUserTypes && !allowedUserTypes.includes(userType)) {
@@ -66,6 +74,18 @@ function App() {
       <Routes>
         {/* Login público */}
         <Route path="/login" element={<LoginPage />} />
+
+        <Route
+          path="/cambiar-contrasena"
+          element={
+            <PrivateRoute
+              allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor', 'mensajeria']}
+              allowForcedPasswordChange
+            >
+              <ForcedPasswordChangePage />
+            </PrivateRoute>
+          }
+        />
 
         <Route
           path="/"
@@ -106,6 +126,28 @@ function App() {
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <InventoryPage />
+              </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventario/toners"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+              <PrivateLayout>
+                <TonersPage />
+              </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventario/toners/history"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+              <PrivateLayout>
+                <TonerMovementsPage />
               </PrivateLayout>
             </PrivateRoute>
           }

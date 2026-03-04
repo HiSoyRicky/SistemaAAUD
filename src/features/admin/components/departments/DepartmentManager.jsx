@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DepartmentsTable from "./DepartmentsTable";
-import { Departments } from "@/features/inventory/services/inventory.api";
+import { Departments } from "@/features/inventory/devices/services/inventory.api";
 
 export default function DepartmentsManager() {
     const [departments, setDepartments] = useState([]);

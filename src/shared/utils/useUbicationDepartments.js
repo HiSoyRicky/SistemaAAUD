@@ -1,6 +1,6 @@
 // src/hooks/useUbicactionDepartments.js
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from "@/shared/api/apiClient";
 
 
 export const useUbicationDepartments = () => {
@@ -12,14 +12,14 @@ export const useUbicationDepartments = () => {
 
     // Cargar ubicaciones
     useEffect(() => {
-        axios.get(`/api/ubications`)
+        api.get(`/api/ubications`)
             .then(res => setUbications(res.data))
             .catch(err => console.error('Error cargando ubicaciones:', err));
     }, []);
 
     // Cargar todos los departamentos
     useEffect(() => {
-        axios.get(`/api/departments`)
+        api.get(`/api/departments`)
             .then(res => {
                 const data = res.data;
 
