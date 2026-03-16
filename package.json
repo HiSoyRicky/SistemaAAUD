@@ -12,13 +12,12 @@
     "start": "npm run start -w apps/backend",
     "prisma:format": "npm exec -w apps/backend prisma format",
     "prisma:validate": "npm exec -w apps/backend prisma validate",
-    "prisma:migrate": "npm exec -w apps/backend prisma migrate dev",
     "prisma:generate": "npm exec -w apps/backend prisma generate",
-    "prisma:push": "npm exec -w apps/backend prisma db push",
+    "prisma:dev": "npm exec -w apps/backend prisma migrate dev",
     "prisma:deploy": "npm exec -w apps/backend prisma migrate deploy",
     "prisma:studio": "npm exec -w apps/backend prisma studio",
-    "prisma:safe": "npm run prisma:format && npm run prisma:validate && npm run prisma:migrate --",
-    "tree": "node tools/generateTree.cjs"
+    "prisma:safe:dev": "npm run prisma:format && npm run prisma:validate && npm run prisma:dev && npm run prisma:generate",
+    "prisma:safe:deploy": "npm run prisma:format && npm run prisma:validate && npm run prisma:deploy"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

@@ -95,8 +95,8 @@ model departments {
   bd_incidents    bd_incidents[]
   bd_inventory    bd_inventory[]
   ubications      ubications?       @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
-  users           users[]
   toner_movements toner_movements[] @relation("DepartmentTonerMovements")
+  users           users[]
 }
 
 model devices {
@@ -136,8 +136,8 @@ model ubications {
   bd_incidents    bd_incidents[]
   bd_inventory    bd_inventory[]
   departments     departments[]
-  users           users[]
   toner_movements toner_movements[] @relation("UbicationTonerMovements")
+  users           users[]
 }
 
 model users {
@@ -145,31 +145,91 @@ model users {
   nombre_completo                                String            @db.VarChar(50)
   username                                       String            @db.VarChar(50)
   password                                       String?           @db.VarChar(255)
-  must_change_password                           Boolean           @default(false)
   email                                          String?           @db.VarChar(50)
   id_rol                                         Int
   active                                         Boolean           @default(false)
   id_department                                  Int?
   id_ubication                                   Int?
+  must_change_password                           Boolean           @default(false)
+  activityLogs                                   activity_logs[]
   bd_incidents_bd_incidents_id_userTousers       bd_incidents[]    @relation("bd_incidents_id_userTousers")
   bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]    @relation("bd_incidents_id_technicianTousers")
+  toner_movements                                toner_movements[] @relation("UserTonerMovements")
   departments                                    departments?      @relation(fields: [id_department], references: [id], map: "fk_users_departments")
   roles                                          roles             @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
   ubications                                     ubications?       @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
-  toner_movements                                toner_movements[] @relation("UserTonerMovements")
-  activityLogs                                   activity_logs[]
 
   @@unique([nombre_completo, username, email], map: "name_users_unique")
 }
 
-model doc_type {
-  id   Int     @id(map: "doc_doc.type_pkey") @default(autoincrement())
-  name String? @unique(map: "uq_doc_extenal.entities_name") @db.VarChar(35)
+model toners {
+  id               Int               @id(map: "pk_toners") @default(autoincrement())
+  color            TonerColor
+  toner_model      String?           @db.VarChar(20)
+  id_printer_model Int?
+  min_stock        Int               @default(0)
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  movements        toner_movements[]
+  stock            toner_stock?
+  models           models?           @relation(fields: [id_printer_model], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model external_entities {
-  id   Int     @id(map: "bd_external_entities_pkey") @default(autoincrement())
-  name String? @unique(map: "uq_bd_external_entities_name") @db.VarChar(150)
+model toner_movements {
+  id                   Int                  @id @default(autoincrement())
+  id_toner             Int
+  quantity             Int
+  movement_type        TonerMovementType
+  id_user              Int?
+  id_department        Int?
+  id_ubication         Int?
+  reference            String?              @db.VarChar(100)
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
+  created_by           Int?
+  id_incident          Int?
+  new_stock            Int
+  previous_stock       Int
+  document_status      TonerDocumentStatus? @default(PENDING)
+  document_uploaded_at DateTime?            @db.Timestamptz(6)
+  document_uploaded_by Int?
+  receiver_name        String?              @db.VarChar(100)
+  signed_document      String?              @db.VarChar(255)
+  department           departments?         @relation("DepartmentTonerMovements", fields: [id_department], references: [id])
+  incident             bd_incidents?        @relation("IncidentTonerMovements", fields: [id_incident], references: [id])
+  toner                toners               @relation(fields: [id_toner], references: [id])
+  ubication            ubications?          @relation("UbicationTonerMovements", fields: [id_ubication], references: [id])
+  user                 users?               @relation("UserTonerMovements", fields: [id_user], references: [id])
+
+  @@index([id_toner])
+  @@index([id_department])
+  @@index([id_ubication])
+}
+
+model toner_stock {
+  id         Int      @id @default(autoincrement())
+  id_toner   Int      @unique
+  quantity   Int      @default(0)
+  updated_at DateTime @updatedAt
+  toner      toners   @relation(fields: [id_toner], references: [id])
+}
+
+model activity_logs {
+  id          Int            @id @default(autoincrement())
+  entity_type String?        @db.VarChar(50)
+  entity_id   Int?
+  action      ActivityAction
+  old_values  Json?
+  new_values  Json?
+  user_id     Int?
+  ip_address  String?        @db.VarChar(50)
+  user_agent  String?        @db.VarChar(255)
+  source      String?        @db.VarChar(50)
+  created_at  DateTime       @default(now())
+  user        users?         @relation(fields: [user_id], references: [id])
+
+  @@index([entity_type, entity_id])
+  @@index([user_id])
+  @@index([created_at])
 }
 
 enum TonerMovementType {
@@ -185,68 +245,10 @@ enum TonerColor {
   YELLOW
 }
 
-model toners {
-  id               Int               @id(map: "pk_toners") @default(autoincrement())
-  color            TonerColor
-  toner_model      String?           @db.VarChar(20)
-  id_printer_model Int?
-  min_stock        Int               @default(0)
-  created_at       DateTime          @default(now())
-  updated_at       DateTime          @updatedAt
-  models           models?           @relation(fields: [id_printer_model], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  movements        toner_movements[]
-  stock            toner_stock?
-}
-
 enum TonerDocumentStatus {
   PENDING
   SIGNED
   REJECTED
-}
-
-model toner_movements {
-  id             Int               @id @default(autoincrement())
-  id_toner       Int
-  movement_type  TonerMovementType
-  quantity       Int
-  previous_stock Int
-  new_stock      Int
-
-  id_user       Int?
-  id_department Int?
-  id_ubication  Int?
-
-  reference  String?  @db.VarChar(100)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  created_by Int?
-
-  receiver_name String? @db.VarChar(100)
-
-  signed_document      String?              @db.VarChar(255)
-  document_status      TonerDocumentStatus? @default(PENDING)
-  document_uploaded_at DateTime?            @db.Timestamptz(6)
-  document_uploaded_by Int?
-
-  id_incident Int?
-  incident    bd_incidents? @relation("IncidentTonerMovements", fields: [id_incident], references: [id])
-
-  toner      toners       @relation(fields: [id_toner], references: [id])
-  user       users?       @relation("UserTonerMovements", fields: [id_user], references: [id])
-  department departments? @relation("DepartmentTonerMovements", fields: [id_department], references: [id])
-  ubication  ubications?  @relation("UbicationTonerMovements", fields: [id_ubication], references: [id])
-
-  @@index([id_toner])
-  @@index([id_department])
-  @@index([id_ubication])
-}
-
-model toner_stock {
-  id         Int      @id @default(autoincrement())
-  id_toner   Int      @unique
-  quantity   Int      @default(0)
-  updated_at DateTime @updatedAt
-
-  toner toners @relation(fields: [id_toner], references: [id])
 }
 
 enum ActivityAction {
@@ -257,30 +259,4 @@ enum ActivityAction {
   STATUS_CHANGE
   LOGIN
   LOGOUT
-}
-
-model activity_logs {
-  id Int @id @default(autoincrement())
-
-  entity_type String? @db.VarChar(50)
-  entity_id   Int?
-
-  action ActivityAction
-
-  old_values Json?
-  new_values Json?
-
-  user_id Int?
-  user    users? @relation(fields: [user_id], references: [id])
-
-  ip_address String? @db.VarChar(50)
-  user_agent String? @db.VarChar(255)
-
-  source String? @db.VarChar(50)
-
-  created_at DateTime @default(now())
-
-  @@index([entity_type, entity_id])
-  @@index([user_id])
-  @@index([created_at])
 }
