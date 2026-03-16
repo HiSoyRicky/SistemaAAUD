@@ -1,23 +1,48 @@
-# Ignorar node_modules en todos lados
-node_modules/
+# Node
+**/node_modules/
 
-# Ignorar archivos .env en todos lados
+# Environment variables
 .env
+.env.*
 
-# Ignorar fotos personales subidas por los usuarios
-server/public/fotos_personal
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
-# Ignorar Notas
-Notas/
-
-# Ignorar archivos de estructura generados
-docs/tree.txt
-
-# Ignorar archivos de tareas pendientes
-All.md
-
-# Ignorar archivos generados por Prisma
-/src/generated/prisma
-
-# Hola
+# Build
 dist/
+apps/frontend/dist
+apps/frontend/.vite
+
+# Cache
+.cache
+.eslintcache
+
+# Prisma
+.prisma
+**/generated/
+query-engine*
+libquery_engine*
+
+# Uploads
+apps/backend/public/uploads/
+apps/backend/public/fotos_personal
+
+# Tests
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Project files
+Notas/
+All.md
+docs/tree.txt

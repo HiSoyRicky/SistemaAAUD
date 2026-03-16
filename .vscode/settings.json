@@ -12,5 +12,11 @@
             "database": "aaud_system",
             "username": "postgres"
         }
+    ],
+    "cSpell.words": [
+        "aaud",
+        "ubication",
+        "Ubication",
+        "ubications"
     ]
 }

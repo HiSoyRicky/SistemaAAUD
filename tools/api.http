@@ -1,0 +1,25 @@
+@baseUrl = http://localhost:3000
+
+### LOGIN
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+ "username": "rvargas",
+ "password": "rv.562265"
+}
+
+
+
+### INCIDENTS
+GET {{baseUrl}}/api/incidents
+
+
+
+### USERS
+GET {{baseUrl}}/api/users
+
+
+
+### INVENTORY
+GET {{baseUrl}}/api/inventory
