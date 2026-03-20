@@ -85,7 +85,12 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
     useEffect(() => {
         if (!userType) return;
 
-        connectSocket(loggedUserId);
+        const token = localStorage.getItem("token");
+        const canReadIncidents = userType !== "trabajador" && Boolean(token);
+
+        if (canReadIncidents) {
+            connectSocket(token);
+        }
 
         const handleSocketConnect = () => {
             console.log("Socket conectado:", socket.id);
@@ -94,7 +99,9 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
                 socket.emit("joinIncidentRoom", id)
             );
 
-            fetchIncidents();
+            if (canReadIncidents) {
+                fetchIncidents();
+            }
         };
 
         const handleDisconnect = () => {
@@ -103,7 +110,9 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
 
         const handleReconnect = () => {
             console.log("Socket reconectado");
-            fetchIncidents();
+            if (canReadIncidents) {
+                fetchIncidents();
+            }
         };
 
         socket.on("connect", handleSocketConnect);
@@ -186,8 +195,10 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
             );
         });
 
-        fetchIncidents();
-        fetchTechnicians();
+        if (canReadIncidents) {
+            fetchIncidents();
+            fetchTechnicians();
+        }
 
         return () => {
             socket.off("connect", handleSocketConnect);
@@ -196,7 +207,9 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
             offCreated?.();
             offUpdated?.();
             leaveAllRooms();
-            disconnectSocket();
+            if (canReadIncidents) {
+                disconnectSocket();
+            }
         };
     }, [userType, fetchIncidents, fetchTechnicians, showNotification, joinRoom, leaveAllRooms]);
 

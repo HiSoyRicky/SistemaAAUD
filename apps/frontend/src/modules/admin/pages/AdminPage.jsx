@@ -1,11 +1,12 @@
 // src/pages/admin/AdminPage.jsx
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { Users, Home, MapPin, Building, Cpu, Tag, Layers, Droplet } from "lucide-react";
+import { Users, Home, MapPin, Building, Cpu, Tag, Layers, Droplet, ShieldCheck } from "lucide-react";
 
 export default function AdminPage() {
     const menuItems = [
         { path: "users", label: "Usuarios", icon: <Users className="w-5 h-5" /> },
+        { path: "permissions", label: "Permisos", icon: <ShieldCheck className="w-5 h-5" /> },
         { path: "ubications", label: "Ubicaciones", icon: <MapPin className="w-5 h-5" /> },
         { path: "departments", label: "Departamentos", icon: <Building className="w-5 h-5" /> },
         { path: "devices", label: "Equipos", icon: <Cpu className="w-5 h-5" /> },

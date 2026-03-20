@@ -1,6 +1,6 @@
 // src/components/admin/DepartmentManager.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../../shared/api/apiClient";
 import DepartmentsTable from "./DepartmentsTable";
 import { Departments } from "../../../inventory/devices/services/inventory.api";
 
@@ -23,7 +23,7 @@ export default function DepartmentsManager() {
     //  Cargar departamentos
     const fetchDepartments = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const res = await api.get(API_URL);
             // Ordenar alfabéticamente por name
             const sortedDepartments = res.data.sort((a, b) =>
                 a.name.localeCompare(b.name)
@@ -38,7 +38,7 @@ export default function DepartmentsManager() {
     //  Cargar ubicaciones para los select
     const fetchUbications = async () => {
         try {
-            const res = await axios.get(`/api/ubications`);
+            const res = await api.get(`/api/ubications`);
             setUbications(res.data);
         } catch (err) {
             console.error("Error al cargar ubicaciones:", err);
@@ -59,7 +59,7 @@ export default function DepartmentsManager() {
         }
 
         try {
-            await axios.post(API_URL, { name: newName, id_ubication: newUbication });
+            await api.post(API_URL, { name: newName, id_ubication: newUbication });
             setNewName("");
             setNewUbication("");
             fetchDepartments();
@@ -89,7 +89,7 @@ export default function DepartmentsManager() {
 
         setLoading(true);
         try {
-            await axios.put(`${API_URL}/${id}`, { name: editingName, id_ubication: editingUbication });
+            await api.put(`${API_URL}/${id}`, { name: editingName, id_ubication: editingUbication });
             setEditingId(null);
             setEditingName("");
             setEditingUbication("");

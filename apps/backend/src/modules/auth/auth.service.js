@@ -4,6 +4,10 @@ import * as repository from './auth.repository.js';
 import * as validator from './auth.validator.js';
 import * as dto from './auth.dto.js';
 import AppError from '../../common/utils/AppError.js';
+import {
+  getEffectivePermissionCodesForUser,
+  normalizePermissionCodes
+} from '../../common/rbac/permissions.service.js';
 
 function getJwtSecret() {
   if (!process.env.JWT_SECRET) {
@@ -87,18 +91,26 @@ export const login = async (payload) => {
       throw new AuthServiceError('Contraseña incorrecta', 401);
     }
 
+    const permissions = normalizePermissionCodes(
+      await getEffectivePermissionCodesForUser({
+        userId: user.id,
+        roleId: user.id_rol
+      })
+    );
+
     const token = jwt.sign(
       {
         id: user.id,
         role: user.roles.name,
         roleId: user.id_rol,
-        mustChangePassword: Boolean(user.must_change_password)
+        mustChangePassword: Boolean(user.must_change_password),
+        permissions
       },
       getJwtSecret(),
       { expiresIn: '60m' }
     );
 
-    return dto.mapLoginResponse(user, token);
+    return dto.mapLoginResponse(user, token, permissions);
   } catch (error) {
     if (error instanceof AuthServiceError) {
       throw error;

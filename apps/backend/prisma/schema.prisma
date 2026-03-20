@@ -39,7 +39,7 @@ model bd_incidents {
   solution_date                           DateTime?
   solution                                String            @db.VarChar(255)
   client_ip                               String?           @db.VarChar(50)
-  ticket_number                           Int?              @unique(map: "bd_incidents_ticket_unique") @default(autoincrement())
+  ticket_number                           Int               @unique(map: "bd_incidents_ticket_unique")
   categories                              categories        @relation(fields: [id_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_categories")
   departments                             departments       @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_departments")
   status                                  status            @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_status")
@@ -118,9 +118,10 @@ model models {
 }
 
 model roles {
-  id    Int     @id(map: "pk_roles") @default(autoincrement())
-  name  String  @unique(map: "name_rol_unico") @db.VarChar(50)
-  users users[]
+  id              Int                @id(map: "pk_roles") @default(autoincrement())
+  name            String             @unique(map: "name_rol_unico") @db.VarChar(50)
+  users           users[]
+  rolePermissions role_permissions[]
 }
 
 model status {
@@ -141,23 +142,24 @@ model ubications {
 }
 
 model users {
-  id                                             Int               @id(map: "pk_users") @default(autoincrement())
-  nombre_completo                                String            @db.VarChar(50)
-  username                                       String            @db.VarChar(50)
-  password                                       String?           @db.VarChar(255)
-  email                                          String?           @db.VarChar(50)
+  id                                             Int                @id(map: "pk_users") @default(autoincrement())
+  nombre_completo                                String             @db.VarChar(50)
+  username                                       String             @db.VarChar(50)
+  password                                       String?            @db.VarChar(255)
+  email                                          String?            @db.VarChar(50)
   id_rol                                         Int
-  active                                         Boolean           @default(false)
+  active                                         Boolean            @default(false)
   id_department                                  Int?
   id_ubication                                   Int?
-  must_change_password                           Boolean           @default(false)
+  must_change_password                           Boolean            @default(false)
   activityLogs                                   activity_logs[]
-  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]    @relation("bd_incidents_id_userTousers")
-  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]    @relation("bd_incidents_id_technicianTousers")
-  toner_movements                                toner_movements[] @relation("UserTonerMovements")
-  departments                                    departments?      @relation(fields: [id_department], references: [id], map: "fk_users_departments")
-  roles                                          roles             @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
-  ubications                                     ubications?       @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
+  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]     @relation("bd_incidents_id_userTousers")
+  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]     @relation("bd_incidents_id_technicianTousers")
+  toner_movements                                toner_movements[]  @relation("UserTonerMovements")
+  departments                                    departments?       @relation(fields: [id_department], references: [id], map: "fk_users_departments")
+  roles                                          roles              @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+  user_permissions                               user_permissions[]
+  ubications                                     ubications?        @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
 
   @@unique([nombre_completo, username, email], map: "name_users_unique")
 }
@@ -259,4 +261,36 @@ enum ActivityAction {
   STATUS_CHANGE
   LOGIN
   LOGOUT
+}
+
+model permissions {
+  id     Int    @id @default(autoincrement())
+  module String
+  action String
+
+  role_permissions role_permissions[]
+  user_permissions user_permissions[]
+
+  @@unique([module, action])
+}
+
+model role_permissions {
+  id_permission Int
+  id_role       Int
+
+  permission permissions @relation(fields: [id_permission], references: [id])
+  role       roles       @relation(fields: [id_role], references: [id])
+
+  @@id([id_permission, id_role])
+}
+
+model user_permissions {
+  id_user       Int
+  id_permission Int
+  allow         Boolean @default(true)
+
+  user       users       @relation(fields: [id_user], references: [id])
+  permission permissions @relation(fields: [id_permission], references: [id])
+
+  @@id([id_user, id_permission])
 }

@@ -1,10 +1,11 @@
-export const mapLoginUser = (user) => ({
+export const mapLoginUser = (user, permissions = []) => ({
   id: user.id,
   username: user.username,
   nombre_completo: user.nombre_completo,
   id_rol: user.id_rol,
   role_name: user.roles?.name || null,
-  must_change_password: Boolean(user.must_change_password)
+  must_change_password: Boolean(user.must_change_password),
+  permissions
 });
 
 export const mapRegisterUser = (user) => ({
@@ -20,8 +21,8 @@ export const mapRegisterResponse = (user) => ({
   usuario: mapRegisterUser(user)
 });
 
-export const mapLoginResponse = (user, token) => ({
+export const mapLoginResponse = (user, token, permissions = []) => ({
   mensaje: 'Login exitoso',
-  usuario: mapLoginUser(user),
+  usuario: mapLoginUser(user, permissions),
   token
 });

@@ -1,5 +1,7 @@
 import express from 'express';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
+import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
+import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './incidents.controller.js';
 import {
   validateCreateIncident,
@@ -10,14 +12,24 @@ import {
 const router = express.Router();
 
 router.get(
-  '/', controller.getAll
+  '/',
+  authMiddleware,
+  requirePasswordChange,
+  requirePermission('incidents.read'),
+  controller.getAll
 );
+
 router.get(
   '/public/:token',
   controller.getPublicByToken
 );
+
 router.get(
-  '/:id', validateUpdateIncident,
+  '/:id',
+  authMiddleware,
+  requirePasswordChange,
+  requirePermission('incidents.read'),
+  validateUpdateIncident,
   controller.getById
 );
 
@@ -30,6 +42,8 @@ router.post(
 router.put(
   '/:id',
   authMiddleware,
+  requirePasswordChange,
+  requirePermission('incidents.update'),
   validateUpdateIncident,
   controller.update
 
@@ -37,6 +51,8 @@ router.put(
 router.delete(
   '/:id',
   authMiddleware,
+  requirePasswordChange,
+  requirePermission('incidents.delete'),
   validateDeleteIncident,
   controller.remove
 

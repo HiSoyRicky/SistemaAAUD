@@ -1,4 +1,7 @@
 import express from 'express';
+import authMiddleware from '../../common/middleware/authMiddleware.js';
+import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
+import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './brands.controller.js';
 import {
   validateCreateBrand,
@@ -7,8 +10,20 @@ import {
 
 const router = express.Router();
 
-router.get('/', controller.getAll);
-router.post('/', validateCreateBrand, controller.create);
-router.put('/:id', validateUpdateBrand, controller.update);
+router.use(authMiddleware, requirePasswordChange);
+
+router.get('/', requirePermission('brands.read'), controller.getAll);
+router.post(
+  '/',
+  requirePermission('brands.create'),
+  validateCreateBrand,
+  controller.create
+);
+router.put(
+  '/:id',
+  requirePermission('brands.update'),
+  validateUpdateBrand,
+  controller.update
+);
 
 export default router;

@@ -52,8 +52,8 @@ function FlyoutMenu({ label, items }) {
 }
 
 export default function Sidebar({ open, onToggleFixed }) {
-    const { userType } = useAuth();
-    const menuItems = getNavigation(userType);
+    const { userType, hasPermission } = useAuth();
+    const menuItems = getNavigation(userType, hasPermission);
     const [openMenus, setOpenMenus] = useState({});
     const [hovered, setHovered] = useState(false);
     const isExpanded = open || hovered;

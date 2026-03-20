@@ -1,6 +1,6 @@
 // src/hooks/useInventoryData.jsx
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/apiClient';
 
 export function useInventoryData() {
     const [departments, setDepartments] = useState([]);
@@ -15,12 +15,12 @@ export function useInventoryData() {
         const fetchData = async () => {
             try {
                 const [depRes, ubiRes, devicesRes, brandsRes, modelsRes, statusesRes] = await Promise.all([
-                    axios.get(`/api/departments`),
-                    axios.get(`/api/ubications`),
-                    axios.get(`/api/devices`),
-                    axios.get(`/api/brands`),
-                    axios.get(`/api/models`),
-                    axios.get(`/api/status`),
+                    api.get(`/api/departments`),
+                    api.get(`/api/ubications`),
+                    api.get(`/api/devices`),
+                    api.get(`/api/brands`),
+                    api.get(`/api/models`),
+                    api.get(`/api/status`),
                 ]);
                 setDepartments(depRes.data);
                 setUbications(ubiRes.data);

@@ -1,4 +1,5 @@
 import express from 'express';
+import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './inventory.controller.js';
 import {
   validateCreateInventory,
@@ -8,17 +9,21 @@ import {
 const router = express.Router();
 
 router.get(
-  '/', controller.getAll
+  '/',
+  requirePermission('inventory.read'),
+  controller.getAll
 );
 
 router.post(
   '/',
+  requirePermission('inventory.create'),
   validateCreateInventory,
   controller.create
 );
 
 router.put(
   '/:id',
+  requirePermission('inventory.update'),
   validateUpdateInventory,
   controller.update
 

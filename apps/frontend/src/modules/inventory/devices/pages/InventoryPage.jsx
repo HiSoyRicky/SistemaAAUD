@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import useAuth from '../../../../shared/hooks/useAuth';
+import api from '../../../../shared/api/apiClient';
 import { Inventory } from '../services/inventory.api';
 import InventoryTable from '../components/tables/InventoryTable';
 import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
@@ -86,9 +87,8 @@ function InventoryPage() {
     useEffect(() => {
         const fetchDepartments = async () => {
             try {
-                const res = await fetch("/api/departments"); // o usa tu servicio de api si ya existe
-                const data = await res.json();
-                setDepartments(data);
+                const res = await api.get("/api/departments");
+                setDepartments(Array.isArray(res.data) ? res.data : []);
             } catch (error) {
                 console.error("Error cargando departamentos:", error);
             }

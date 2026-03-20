@@ -16,6 +16,7 @@
     "prisma:dev": "npm exec -w apps/backend prisma migrate dev",
     "prisma:deploy": "npm exec -w apps/backend prisma migrate deploy",
     "prisma:studio": "npm exec -w apps/backend prisma studio",
+    "prisma:seed:permissions": "npm run prisma:seed:permissions -w apps/backend",
     "prisma:safe:dev": "npm run prisma:format && npm run prisma:validate && npm run prisma:dev && npm run prisma:generate",
     "prisma:safe:deploy": "npm run prisma:format && npm run prisma:validate && npm run prisma:deploy"
   },

@@ -9,12 +9,12 @@ import {
   devicesRouter,
   modelsRouter,
   departmentsRouter,
-  documentsRouter,
   ubicationsRouter,
   statusRouter,
   tonersRouter,
   tonerMovementsRouter,
-  usersRouter
+  usersRouter,
+  permissionsRouter
 } from './index.js';
 
 const router = express.Router();
@@ -35,8 +35,8 @@ router.use(authMiddleware);
 router.use(requirePasswordChange);
 
 router.use('/inventory', inventoryRouter);
-router.use('/documents', documentsRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
+router.use('/permissions', permissionsRouter);
 
 export default router;

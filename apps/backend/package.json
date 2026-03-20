@@ -5,7 +5,8 @@
   "main": "src/Server.js",
   "scripts": {
     "dev": "nodemon src/Server.js",
-    "start": "node src/Server.js"
+    "start": "node src/Server.js",
+    "prisma:seed:permissions": "node prisma/seed.permissions.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

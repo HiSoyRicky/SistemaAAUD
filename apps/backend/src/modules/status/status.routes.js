@@ -1,4 +1,7 @@
 import express from 'express';
+import authMiddleware from '../../common/middleware/authMiddleware.js';
+import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
+import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './status.controller.js';
 import {
   validateCreateStatus,
@@ -7,8 +10,20 @@ import {
 
 const router = express.Router();
 
-router.get('/', controller.getAll);
-router.post('/', validateCreateStatus, controller.create);
-router.put('/:id', validateUpdateStatus, controller.update);
+router.use(authMiddleware, requirePasswordChange);
+
+router.get('/', requirePermission('status.read'), controller.getAll);
+router.post(
+  '/',
+  requirePermission('status.create'),
+  validateCreateStatus,
+  controller.create
+);
+router.put(
+  '/:id',
+  requirePermission('status.update'),
+  validateUpdateStatus,
+  controller.update
+);
 
 export default router;

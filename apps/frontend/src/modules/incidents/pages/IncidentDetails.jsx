@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../shared/api/apiClient';
 import { onIncidentUpdated } from '../../../services/socket/incidentsSocket';
 import { connectSocket, disconnectSocket } from '../../../services/socket/socketClient';
 import { formatDateToDDMMYYYY } from '../../../shared/utils/formatDate';
@@ -30,10 +30,10 @@ function IncidentDetails() {
             try {
                 let response;
                 if (token) {
-                    response = await axios.get(`/api/incidents/public/${token}`);
+                    response = await api.get(`/api/incidents/public/${token}`);
                     setIncident(response.data.data);
                 } else if (id) {
-                    response = await axios.get(`/api/incidents/${id}`);
+                    response = await api.get(`/api/incidents/${id}`);
                     setIncident(response.data);
                 } else {
                     throw new Error('ID o token no proporcionado');

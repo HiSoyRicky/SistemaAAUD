@@ -1,3 +1,18 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
+-- CreateEnum
+CREATE TYPE "TonerMovementType" AS ENUM ('IN', 'OUT', 'ADJUSTMENT');
+
+-- CreateEnum
+CREATE TYPE "TonerColor" AS ENUM ('BLACK', 'CYAN', 'MAGENTA', 'YELLOW');
+
+-- CreateEnum
+CREATE TYPE "TonerDocumentStatus" AS ENUM ('PENDING', 'SIGNED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "ActivityAction" AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'ASSIGN', 'STATUS_CHANGE', 'LOGIN', 'LOGOUT');
+
 -- CreateTable
 CREATE TABLE "bd_carnet" (
     "id" SERIAL NOT NULL,
@@ -34,6 +49,7 @@ CREATE TABLE "bd_incidents" (
     "solution_date" TIMESTAMP(3),
     "solution" VARCHAR(255) NOT NULL,
     "client_ip" VARCHAR(50),
+    "ticket_number" SERIAL,
 
     CONSTRAINT "pk_incidents" PRIMARY KEY ("id")
 );
@@ -121,19 +137,6 @@ CREATE TABLE "status" (
 );
 
 -- CreateTable
-CREATE TABLE "toners" (
-    "id" SERIAL NOT NULL,
-    "stock" INTEGER NOT NULL,
-    "status" VARCHAR(50),
-    "last_update" DATE,
-    "toner_model" VARCHAR(20),
-    "color" VARCHAR(10),
-    "id_printer_model" INTEGER,
-
-    CONSTRAINT "pk_toners" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "ubications" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(50) NOT NULL,
@@ -149,53 +152,80 @@ CREATE TABLE "users" (
     "password" VARCHAR(255),
     "email" VARCHAR(50),
     "id_rol" INTEGER NOT NULL,
-    "active" INTEGER NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT false,
     "id_department" INTEGER,
     "id_ubication" INTEGER,
+    "must_change_password" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "pk_users" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "bd_documents" (
+CREATE TABLE "toners" (
     "id" SERIAL NOT NULL,
-    "id_ubication" INTEGER NOT NULL,
-    "id_department" INTEGER NOT NULL,
-    "id_doc_type" INTEGER NOT NULL,
-    "consecutive" INTEGER NOT NULL,
-    "id_origin" INTEGER,
-    "sent_by" VARCHAR(150),
-    "sent_to" VARCHAR(150),
-    "document_date" DATE,
-    "received_at" TIMESTAMP(6),
-    "sent_at" TIMESTAMP(6),
-    "closed_at" TIMESTAMP(6),
-    "subject" VARCHAR(255),
-    "description" TEXT,
-    "observations" TEXT,
-    "attachment" VARCHAR(255),
+    "color" "TonerColor" NOT NULL,
+    "toner_model" VARCHAR(20),
+    "id_printer_model" INTEGER,
+    "min_stock" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "pk_toners" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "toner_movements" (
+    "id" SERIAL NOT NULL,
+    "id_toner" INTEGER NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "movement_type" "TonerMovementType" NOT NULL,
+    "id_user" INTEGER,
+    "id_department" INTEGER,
+    "id_ubication" INTEGER,
+    "reference" VARCHAR(100),
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "created_by" INTEGER,
-    "created_at" TIMESTAMP(6) NOT NULL,
-    "updated_at" TIMESTAMP(6) NOT NULL,
+    "id_incident" INTEGER,
+    "new_stock" INTEGER NOT NULL,
+    "previous_stock" INTEGER NOT NULL,
+    "document_status" "TonerDocumentStatus" DEFAULT 'PENDING',
+    "document_uploaded_at" TIMESTAMPTZ(6),
+    "document_uploaded_by" INTEGER,
+    "receiver_name" VARCHAR(100),
+    "signed_document" VARCHAR(255),
 
-    CONSTRAINT "bd_documents_pkey" PRIMARY KEY ("id","id_ubication","id_department","id_doc_type")
+    CONSTRAINT "toner_movements_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "doc_type" (
+CREATE TABLE "toner_stock" (
     "id" SERIAL NOT NULL,
-    "name" VARCHAR(35),
+    "id_toner" INTEGER NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "doc_doc.type_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "toner_stock_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "doc_external_entities" (
+CREATE TABLE "activity_logs" (
     "id" SERIAL NOT NULL,
-    "name" VARCHAR(150),
+    "entity_type" VARCHAR(50),
+    "entity_id" INTEGER,
+    "action" "ActivityAction" NOT NULL,
+    "old_values" JSONB,
+    "new_values" JSONB,
+    "user_id" INTEGER,
+    "ip_address" VARCHAR(50),
+    "user_agent" VARCHAR(255),
+    "source" VARCHAR(50),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "bd_external_entities_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "activity_logs_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bd_incidents_ticket_unique" ON "bd_incidents"("ticket_number");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "brands_name_key" ON "brands"("name");
@@ -213,13 +243,25 @@ CREATE UNIQUE INDEX "name_ubications_unique" ON "ubications"("name");
 CREATE UNIQUE INDEX "name_users_unique" ON "users"("nombre_completo", "username", "email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ux_docs_seq" ON "bd_documents"("id");
+CREATE INDEX "toner_movements_id_toner_idx" ON "toner_movements"("id_toner");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "uq_doc_extenal.entities_name" ON "doc_type"("name");
+CREATE INDEX "toner_movements_id_department_idx" ON "toner_movements"("id_department");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "uq_bd_external_entities_name" ON "doc_external_entities"("name");
+CREATE INDEX "toner_movements_id_ubication_idx" ON "toner_movements"("id_ubication");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "toner_stock_id_toner_key" ON "toner_stock"("id_toner");
+
+-- CreateIndex
+CREATE INDEX "activity_logs_entity_type_entity_id_idx" ON "activity_logs"("entity_type", "entity_id");
+
+-- CreateIndex
+CREATE INDEX "activity_logs_user_id_idx" ON "activity_logs"("user_id");
+
+-- CreateIndex
+CREATE INDEX "activity_logs_created_at_idx" ON "activity_logs"("created_at");
 
 -- AddForeignKey
 ALTER TABLE "bd_incidents" ADD CONSTRAINT "fk_bd_incidents_categories" FOREIGN KEY ("id_category") REFERENCES "categories"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
@@ -267,9 +309,6 @@ ALTER TABLE "models" ADD CONSTRAINT "fk_models_brands" FOREIGN KEY ("id_brand") 
 ALTER TABLE "models" ADD CONSTRAINT "fk_models_devices" FOREIGN KEY ("id_device") REFERENCES "devices"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "toners" ADD CONSTRAINT "toners_id_printer_model_fkey" FOREIGN KEY ("id_printer_model") REFERENCES "models"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "fk_users_departments" FOREIGN KEY ("id_department") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -279,17 +318,26 @@ ALTER TABLE "users" ADD CONSTRAINT "fk_users_roles" FOREIGN KEY ("id_rol") REFER
 ALTER TABLE "users" ADD CONSTRAINT "fk_users_ubications" FOREIGN KEY ("id_ubication") REFERENCES "ubications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bd_documents" ADD CONSTRAINT "fk_bd_documents_departments" FOREIGN KEY ("id_department") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE "toners" ADD CONSTRAINT "toners_id_printer_model_fkey" FOREIGN KEY ("id_printer_model") REFERENCES "models"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "bd_documents" ADD CONSTRAINT "fk_bd_documents_doc_doc.type" FOREIGN KEY ("id_doc_type") REFERENCES "doc_type"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE "toner_movements" ADD CONSTRAINT "toner_movements_id_department_fkey" FOREIGN KEY ("id_department") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bd_documents" ADD CONSTRAINT "fk_bd_documents_external.entities" FOREIGN KEY ("id_origin") REFERENCES "doc_external_entities"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE "toner_movements" ADD CONSTRAINT "toner_movements_id_incident_fkey" FOREIGN KEY ("id_incident") REFERENCES "bd_incidents"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bd_documents" ADD CONSTRAINT "fk_bd_documents_ubications" FOREIGN KEY ("id_ubication") REFERENCES "ubications"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE "toner_movements" ADD CONSTRAINT "toner_movements_id_toner_fkey" FOREIGN KEY ("id_toner") REFERENCES "toners"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bd_documents" ADD CONSTRAINT "fk_bd_documents_users" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE "toner_movements" ADD CONSTRAINT "toner_movements_id_ubication_fkey" FOREIGN KEY ("id_ubication") REFERENCES "ubications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "toner_movements" ADD CONSTRAINT "toner_movements_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "toner_stock" ADD CONSTRAINT "toner_stock_id_toner_fkey" FOREIGN KEY ("id_toner") REFERENCES "toners"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

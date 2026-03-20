@@ -38,12 +38,45 @@ function resolveUserType({ roleId, roleName }) {
   return 'trabajador';
 }
 
+function normalizePermissionCode(code) {
+  return String(code || '').trim().toLowerCase();
+}
+
+function normalizePermissionCodes(codes = []) {
+  return [...new Set(codes.map((code) => normalizePermissionCode(code)).filter(Boolean))];
+}
+
+function hasPermissionCode(grantedPermissions = [], requiredPermission) {
+  const required = normalizePermissionCode(requiredPermission);
+
+  if (!required) {
+    return true;
+  }
+
+  const granted = new Set(normalizePermissionCodes(grantedPermissions));
+  if (granted.has('*.*')) {
+    return true;
+  }
+
+  const [module, action] = required.split('.');
+  if (!module || !action) {
+    return false;
+  }
+
+  return (
+    granted.has(required) ||
+    granted.has(`${module}.*`) ||
+    granted.has(`*.${action}`)
+  );
+}
+
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userType, setUserType] = useState(null);
   const [loggedUserName, setLoggedUserName] = useState(null);
   const [loggedUserId, setLoggedUserId] = useState(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
 
@@ -55,14 +88,38 @@ export const AuthProvider = ({ children }) => {
     const storedUserId = sessionStorage.getItem('loggedUserId');
     const storedUsername = sessionStorage.getItem('username');
     const storedMustChangePassword = sessionStorage.getItem('mustChangePassword');
+    const storedPermissions = sessionStorage.getItem('permissions');
+    let parsedStoredPermissions = [];
+
+    if (storedPermissions) {
+      try {
+        parsedStoredPermissions = JSON.parse(storedPermissions);
+      } catch (_error) {
+        parsedStoredPermissions = [];
+      }
+    }
 
     if (token && storedUserType && storedUserName && storedUserId) {
+      let fallbackPermissions = parsedStoredPermissions;
+
+      if (!fallbackPermissions.length) {
+        try {
+          const decoded = jwtDecode(token);
+          fallbackPermissions = Array.isArray(decoded.permissions)
+            ? decoded.permissions
+            : [];
+        } catch (_error) {
+          fallbackPermissions = [];
+        }
+      }
+
       setIsAuthenticated(true);
       setUserType(storedUserType);
       setLoggedUserName(storedUserName);
       setLoggedUserId(storedUserId);
       setUsername(storedUsername);
       setMustChangePassword(storedMustChangePassword === 'true');
+      setPermissions(normalizePermissionCodes(fallbackPermissions));
     }
     else if (token) {
       try {
@@ -73,6 +130,9 @@ export const AuthProvider = ({ children }) => {
           roleName: decoded.role
         });
         const decodedMustChange = Boolean(decoded.mustChangePassword);
+        const decodedPermissions = normalizePermissionCodes(
+          Array.isArray(decoded.permissions) ? decoded.permissions : []
+        );
 
         setIsAuthenticated(true);
         setUserType(type);
@@ -80,12 +140,14 @@ export const AuthProvider = ({ children }) => {
         setLoggedUserId(decoded.id);
         setUsername(decoded.username);
         setMustChangePassword(decodedMustChange);
+        setPermissions(decodedPermissions);
 
         sessionStorage.setItem('userType', type);
         sessionStorage.setItem('loggedUserName', decoded.nombre_completo || decoded.username || '');
         sessionStorage.setItem('loggedUserId', decoded.id);
         sessionStorage.setItem('username', decoded.username || '');
         sessionStorage.setItem('mustChangePassword', String(decodedMustChange));
+        sessionStorage.setItem('permissions', JSON.stringify(decodedPermissions));
 
       } catch (error) {
         logout();
@@ -100,6 +162,9 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/auth/login', { username: loginIdentifier, password });
       const { usuario, token } = response.data;
       const mustChange = Boolean(usuario?.must_change_password);
+      const nextPermissions = normalizePermissionCodes(
+        Array.isArray(usuario?.permissions) ? usuario.permissions : []
+      );
 
       localStorage.setItem("token", token);
       const type = resolveUserType({
@@ -121,6 +186,7 @@ export const AuthProvider = ({ children }) => {
       setLoggedUserId(usuario.id);
       setUsername(resolvedUsername);
       setMustChangePassword(mustChange);
+      setPermissions(nextPermissions);
 
       sessionStorage.setItem('user', JSON.stringify(usuario));
       sessionStorage.setItem('userType', type);
@@ -128,6 +194,7 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem('loggedUserId', usuario.id);
       sessionStorage.setItem('username', resolvedUsername);
       sessionStorage.setItem('mustChangePassword', String(mustChange));
+      sessionStorage.setItem('permissions', JSON.stringify(nextPermissions));
 
       return { success: true, userType: type, mustChangePassword: mustChange };
     } catch (error) {
@@ -147,17 +214,22 @@ export const AuthProvider = ({ children }) => {
 
   const setAuthData = (data) => {
     const nextMustChangePassword = Boolean(data.mustChangePassword);
+    const nextPermissions = normalizePermissionCodes(
+      Array.isArray(data.permissions) ? data.permissions : []
+    );
     setIsAuthenticated(true);
     setUserType(data.userType);
     setLoggedUserName(data.loggedUserName);
     setLoggedUserId(data.user ? data.user.id : null);
     setMustChangePassword(nextMustChangePassword);
+    setPermissions(nextPermissions);
 
     sessionStorage.setItem('user', JSON.stringify(data.user));
     sessionStorage.setItem('userType', data.userType);
     sessionStorage.setItem('loggedUserName', data.loggedUserName);
     sessionStorage.setItem('loggedUserId', data.user ? data.user.id : null);
     sessionStorage.setItem('mustChangePassword', String(nextMustChangePassword));
+    sessionStorage.setItem('permissions', JSON.stringify(nextPermissions));
 
     if (data.username) {
       setUsername(data.username);
@@ -172,6 +244,7 @@ export const AuthProvider = ({ children }) => {
     setLoggedUserId(null);
     setUsername(null);
     setMustChangePassword(false);
+    setPermissions([]);
 
     sessionStorage.clear();
     localStorage.removeItem("token");
@@ -186,6 +259,13 @@ export const AuthProvider = ({ children }) => {
         loggedUserId,
         username,
         mustChangePassword,
+        permissions,
+        hasPermission: (permissionCode) =>
+          hasPermissionCode(permissions, permissionCode),
+        hasAnyPermission: (permissionCodes = []) =>
+          permissionCodes.some((permissionCode) =>
+            hasPermissionCode(permissions, permissionCode)
+          ),
         loading,
         login,
         logout,

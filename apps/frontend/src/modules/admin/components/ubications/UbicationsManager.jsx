@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../../../shared/api/apiClient";
 import UbicationsTable from "./UbicationsTable";
 
 
@@ -18,7 +18,7 @@ export default function UbicationsManager() {
     //  Cargar ubicaciones desde backend
     const fetchUbications = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const res = await api.get(API_URL);
             setUbications(res.data);
         } catch (err) {
             console.error("Error al cargar ubicaciones:", err);
@@ -39,7 +39,7 @@ export default function UbicationsManager() {
 
         try {
 
-            await axios.post(API_URL, { name });
+            await api.post(API_URL, { name });
 
             setNewUbication("");
             fetchUbications();
@@ -59,7 +59,7 @@ export default function UbicationsManager() {
     const saveUbication = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${API_URL}/${id}`, { name: editingName });
+            await api.put(`${API_URL}/${id}`, { name: editingName });
             setEditingId(null);
             setEditingName("");
             fetchUbications();

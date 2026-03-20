@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../../shared/api/apiClient";
 import Pagination from "../../../../shared/components/ui/Pagination";
 import ActionButton from "../../../../shared/components/ui/ActionButton";
 
@@ -24,7 +24,7 @@ export default function StatusesManager() {
     //  Cargar dispositivos desde backend
     const fetchStatuses = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const res = await api.get(API_URL);
             setStatuses(res.data);
         } catch (err) {
             console.error("Error al cargar dispositivos:", err);
@@ -39,7 +39,7 @@ export default function StatusesManager() {
     const addStatus = async () => {
         if (!newStatus.trim()) return;
         try {
-            await axios.post(`${API_URL}`, { name: newStatus });
+            await api.post(`${API_URL}`, { name: newStatus });
             setNewStatus("");
             fetchStatuses();
         }
@@ -58,7 +58,7 @@ export default function StatusesManager() {
     const saveStatus = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${API_URL}/${id}`, { name: editingName });
+            await api.put(`${API_URL}/${id}`, { name: editingName });
             setEditingId(null);
             setEditingName("");
             fetchStatuses();

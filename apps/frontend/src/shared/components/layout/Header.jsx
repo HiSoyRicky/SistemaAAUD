@@ -14,13 +14,13 @@ import { getNavigation } from "../../config/Navegation";
 
 function Header({ sidebarFixed }) {
 
-  const { isAuthenticated, userType, loggedUserName, logout } = useAuth();
+  const { isAuthenticated, userType, loggedUserName, logout, hasPermission } = useAuth();
 
   const navigate = useNavigate();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuItems = getNavigation(userType);
+  const menuItems = getNavigation(userType, hasPermission);
 
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
@@ -89,15 +89,13 @@ function Header({ sidebarFixed }) {
             onClick={() => goTo("/dashboard")}
             className="flex items-center gap-3 group"
           >
-            <div className="logo-badge">
-              <div className="logo-badge__inner">
+            <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-md">
                 <img
                   src={LogoSistemaAAUD}
                   alt="Logo AAUD"
-                  className="logo-badge__img"
+                  className="object-contain"
                 />
               </div>
-            </div>
 
             <div className="flex flex-col items-start leading-none">
               <span className="text-base font-extrabold tracking-wide text-white md:text-lg">

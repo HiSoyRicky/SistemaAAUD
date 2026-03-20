@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../../shared/api/apiClient";
 import BrandsTable from "./BrandsTable";
 import Pagination from "../../../../shared/components/ui/Pagination";
 
@@ -18,7 +18,7 @@ export default function BrandsManager() {
     //  Cargar dispositivos desde backend
     const fetchbrands = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const res = await api.get(API_URL);
             setbrands(res.data);
         } catch (err) {
             console.error("Error al cargar dispositivos:", err);
@@ -33,7 +33,7 @@ export default function BrandsManager() {
     const addBrand = async () => {
         if (!newBrand.trim()) return;
         try {
-            await axios.post(`${API_URL}`, {
+            await api.post(`${API_URL}`, {
                 name: newBrand
             });
             setnewBrand("");
@@ -54,7 +54,7 @@ export default function BrandsManager() {
     const saveBrand = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`${API_URL}/${id}`, { name: editingName });
+            await api.put(`${API_URL}/${id}`, { name: editingName });
             setEditingId(null);
             setEditingName("");
             fetchbrands();

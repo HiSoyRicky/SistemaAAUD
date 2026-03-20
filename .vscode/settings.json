@@ -18,5 +18,9 @@
         "ubication",
         "Ubication",
         "ubications"
+    ],
+    "cSpell.ignoreWords": [
+        "Timestamptz",
+        "autoincrement"
     ]
 }

@@ -1,6 +1,7 @@
 // authMiddleware.js
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
+import { normalizePermissionCodes } from '../rbac/permissions.service.js';
 
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers["authorization"];
@@ -28,7 +29,11 @@ const authMiddleware = (req, res, next) => {
             id: decoded.id,
             role: decoded.role ?? null,
             roleId: decoded.roleId ? Number(decoded.roleId) : null,
-            mustChangePassword: Boolean(decoded.mustChangePassword)
+            mustChangePassword: Boolean(decoded.mustChangePassword),
+            permissions: normalizePermissionCodes(
+                Array.isArray(decoded.permissions) ? decoded.permissions : []
+            ),
+            permissionsLoaded: false
         };
 
         next();

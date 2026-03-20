@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../../../shared/api/apiClient';
 
 function IncidentEditForm({ incident, onCancel, onSave }) {
     const [description, setDescription] = useState(incident.description || '');
@@ -13,7 +13,7 @@ function IncidentEditForm({ incident, onCancel, onSave }) {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.put(`/api/incidents/${incident.id_incident}`, {
+            const response = await api.put(`/api/incidents/${incident.id_incident}`, {
                 description,
                 id_category: category,
                 solution,

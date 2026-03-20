@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../../shared/api/apiClient";
 import Pagination from "../../../../shared/components/ui/Pagination";
 import ModelsTable from "./ModelsTable";
 
@@ -29,7 +29,7 @@ export default function ModelsManager() {
     // Cargar modelos desde backend
     const fetchModels = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const res = await api.get(API_URL);
             setModels(res.data);
         } catch (err) {
             console.error("Error al cargar modelos:", err);
@@ -38,7 +38,7 @@ export default function ModelsManager() {
 
     const fetchDevices = async () => {
         try {
-            const res = await axios.get(`/api/devices`);
+            const res = await api.get(`/api/devices`);
             setDevices(res.data);
         } catch (err) {
             console.error(err);
@@ -47,7 +47,7 @@ export default function ModelsManager() {
 
     const fetchBrands = async () => {
         try {
-            const res = await axios.get(`/api/brands`);
+            const res = await api.get(`/api/brands`);
             setBrands(res.data);
         } catch (err) {
             console.error(err);
@@ -64,7 +64,7 @@ export default function ModelsManager() {
     const addModel = async () => {
         if (!newModel.trim() || !selectedBrand || !selectedDevice) return;
         try {
-            await axios.post(`/api/models`, {
+            await api.post(`/api/models`, {
                 name: newModel,
                 id_brand: Number(selectedBrand),
                 id_device: Number(selectedDevice)
@@ -91,7 +91,7 @@ export default function ModelsManager() {
     const saveModel = async (id) => {
         if (!editingName.trim() || !editingBrand) return;
         try {
-            await axios.put(`/api/models/${id}`, {
+            await api.put(`/api/models/${id}`, {
                 name: editingName,
                 id_brand: editingBrand,
                 id_device: editingDevice
@@ -111,7 +111,7 @@ export default function ModelsManager() {
     const deleteModel = async (id) => {
         if (!window.confirm("¿Está seguro de que desea eliminar este modelo?")) return;
         try {
-            await axios.delete(`/api/models/${id}`);
+            await api.delete(`/api/models/${id}`);
             fetchModels();
             setSuccessMessage("Modelo eliminado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);

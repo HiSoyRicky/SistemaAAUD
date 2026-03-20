@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Pagination from "../../../../shared/components/ui/Pagination";
+import api from "../../../../shared/api/apiClient";
 import { Toners } from "../../../inventory/toners/services/toners.api";
 import ActionButton from "../../../../shared/components/ui/ActionButton";
 import TonerForm from "./TonerForm";
@@ -48,9 +49,8 @@ export default function TonersManager() {
 
     const fetchPrinterModels = async () => {
         try {
-            const response = await fetch("/api/models/printers");
-            const data = await response.json();
-            setModels(data);
+            const response = await api.get("/api/models/printers");
+            setModels(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error("Error cargando modelos:", err);
         }

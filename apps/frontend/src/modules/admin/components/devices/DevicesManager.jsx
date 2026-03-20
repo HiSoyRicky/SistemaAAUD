@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../../shared/api/apiClient";
 import DevicesTable from "./DevicesTable";
 
 
@@ -18,7 +18,7 @@ export default function DevicesManager() {
     //  Cargar dispositivos desde backend
     const fetchDevices = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const res = await api.get(API_URL);
             setDevices(res.data);
         } catch (err) {
             console.error("Error al cargar dispositivos:", err);
@@ -37,7 +37,7 @@ export default function DevicesManager() {
         }
 
         try {
-            await axios.post(API_URL, { name: newDevice });
+            await api.post(API_URL, { name: newDevice });
             setnewDevice("");
             fetchDevices();
             setErrorMessage("");
@@ -75,7 +75,7 @@ export default function DevicesManager() {
     const saveDevice = async (id) => {
         if (!editingName.trim()) return;
         try {
-            await axios.put(`/api/devices/${id}`, {
+            await api.put(`/api/devices/${id}`, {
                 name: editingName
             });
             setEditingId(null);
@@ -92,7 +92,7 @@ export default function DevicesManager() {
     const deleteDevice = async (id) => {
         if (!window.confirm("¿Está seguro de que desea eliminar este dispositivo?")) return;
         try {
-            await axios.delete(`/api/devices/${id}`);
+            await api.delete(`/api/devices/${id}`);
             fetchDevices();
             setSuccessMessage("Dispositivo eliminado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);

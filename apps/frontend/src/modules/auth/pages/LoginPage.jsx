@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from "react-router-dom";
 import useAuth from '../../../shared/hooks/useAuth';
-import LogoGobNal from '@/assets/images/LogoIzquierda.png';
+import LogoGobNal from '@/assets/images/LogoSistema.png';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -98,12 +98,8 @@ function LoginPage() {
         <img
           src={LogoGobNal}
           alt="Logo"
-          className="object-contain max-w-xs mx-auto mb-6 w-1/8"
+          className="object-contain max-w-xs mx-auto"
         />
-
-        <p className="mb-6 text-center text-gray-600">
-          Accede a nuestro Sistema AAUD
-        </p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-6">
           {/* Si estamos en login mode, mostrar el formulario */}

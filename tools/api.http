@@ -23,3 +23,4 @@ GET {{baseUrl}}/api/users
 
 ### INVENTORY
 GET {{baseUrl}}/api/inventory
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwicm9sZSI6IlTDqWNuaWNvIiwicm9sZUlkIjoyLCJtdXN0Q2hhbmdlUGFzc3dvcmQiOmZhbHNlLCJpYXQiOjE3NzM4NDI1MjYsImV4cCI6MTc3Mzg0NjEyNn0.DoOPpHl12OzcRO-Z_AaVPAbWRwy7cDzos8HkJHdzaPo

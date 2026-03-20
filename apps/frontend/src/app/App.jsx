@@ -32,7 +32,7 @@ import BrandsManager from "../modules/admin/components/brands/BrandsManager";
 import ModelsManager from '../modules/admin/components/models/ModelsManager';
 import TonersManager from '../modules/admin/components/toners/TonersManager';
 import StatusManager from '../modules/admin/components/status/StatusManager';
-import DocumentsPage from '../modules/documents/pages/DocumentsPage';
+import PermissionsManager from '../modules/admin/components/permissions/PermissionsManager';
 
 
 import PrivateLayout from "../shared/components/layout/PrivateLayout";
@@ -194,17 +194,6 @@ function App() {
         />
 
         <Route
-          path="/documentos"
-          element={
-            <PrivateRoute allowedUserTypes={['admin', 'mensajeria']}>
-              <PrivateLayout>
-                <DocumentsPage />
-              </PrivateLayout>
-            </PrivateRoute>
-          }
-        />
-
-        <Route
           path="/dashboard"
           element={
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
@@ -233,6 +222,7 @@ function App() {
           <Route path="departments" element={<DepartmentsManager />} />
           <Route path="statuses" element={<StatusManager />} />
           <Route path="toners" element={<TonersManager />} />
+          <Route path="permissions" element={<PermissionsManager />} />
           <Route
             index
             element={

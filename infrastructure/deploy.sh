@@ -7,8 +7,20 @@ PM2_NAME="aaud-backend"
 
 cd "$APP_DIR"
 
+echo "⬇️ Actualizando código..."
+git pull origin main
+
 echo "📦 Instalando dependencias..."
 npm ci --include=dev
+
+echo "💾 Backup rápido antes del deploy..."
+sudo -u postgres pg_dump -Fc aaud_system > /var/backups/aaud-system/predeploy_$(date +%F_%H:%M).backup
+
+echo "📦 Último backup creado:"
+ls -lh /var/backups/aaud-system/predeploy_*.backup | tail -1
+
+echo "🚀 Verificando estado de migraciones..."
+npx prisma migrate status --schema=apps/backend/prisma/schema.prisma
 
 echo "🗄️ Ejecutando migraciones..."
 npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
