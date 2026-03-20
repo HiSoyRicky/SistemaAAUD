@@ -39,7 +39,7 @@ model bd_incidents {
   solution_date                           DateTime?
   solution                                String            @db.VarChar(255)
   client_ip                               String?           @db.VarChar(50)
-  ticket_number                           Int               @unique(map: "bd_incidents_ticket_unique")
+  ticket_number                           Int               @default(autoincrement()) @unique(map: "bd_incidents_ticket_unique")
   categories                              categories        @relation(fields: [id_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_categories")
   departments                             departments       @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_departments")
   status                                  status            @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_status")
