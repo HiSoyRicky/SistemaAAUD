@@ -122,13 +122,6 @@ const ROLE_DEFAULT_PERMISSION_CODES = {
     'departments.read',
     'ubications.read'
   ],
-  mensajeria: [
-    'incidents.read',
-    'toner_movements.read',
-    'toner_movements.create',
-    'departments.read',
-    'ubications.read'
-  ]
 };
 
 export const resolveRoleDefaultPermissionCodes = (roleName) => {
@@ -144,10 +137,6 @@ export const resolveRoleDefaultPermissionCodes = (roleName) => {
 
   if (normalized.includes('consultor')) {
     return ROLE_DEFAULT_PERMISSION_CODES.consultor;
-  }
-
-  if (normalized.includes('mensajeria')) {
-    return ROLE_DEFAULT_PERMISSION_CODES.mensajeria;
   }
 
   if (normalized.includes('trabajador') || normalized.includes('usuario')) {

@@ -1,7 +1,6 @@
 // AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext(null);
 
@@ -19,7 +18,6 @@ function resolveUserType({ roleId, roleName }) {
     2: 'tecnico',
     3: 'consultor',
     4: 'trabajador',
-    5: 'mensajeria',
   };
 
   if (Number.isInteger(Number(roleId))) {
@@ -33,7 +31,6 @@ function resolveUserType({ roleId, roleName }) {
   if (normalized.includes('admin')) return 'admin';
   if (normalized.includes('tecnico')) return 'tecnico';
   if (normalized.includes('consultor')) return 'consultor';
-  if (normalized.includes('mensajeria')) return 'mensajeria';
 
   return 'trabajador';
 }
@@ -104,7 +101,6 @@ export const AuthProvider = ({ children }) => {
 
       if (!fallbackPermissions.length) {
         try {
-          const decoded = jwtDecode(token);
           fallbackPermissions = Array.isArray(decoded.permissions)
             ? decoded.permissions
             : [];

@@ -14,8 +14,6 @@ function ProfilePage() {
                 ? "Técnico"
                 : userType === "consultor"
                     ? "Consultor"
-                    : userType === "mensajeria"
-                        ? "Mensajería"
                         : "Trabajador";
 
 

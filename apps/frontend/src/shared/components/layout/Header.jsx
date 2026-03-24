@@ -43,8 +43,6 @@ function Header({ sidebarFixed }) {
         ? "Técnico"
         : userType === "consultor"
           ? "Consultor"
-          : userType === "mensajeria"
-            ? "Mensajería"
             : "Trabajador";
 
   const goTo = (path) => {

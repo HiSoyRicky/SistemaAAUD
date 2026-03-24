@@ -198,7 +198,7 @@ function InventoryPage() {
                     <div className="flex flex-wrap items-center gap-6">
                         <input
                             type="text"
-                            placeholder="Buscar por Serie, Marbete o Nombre"
+                            placeholder="Buscar por serie, marbete o nombre"
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value)

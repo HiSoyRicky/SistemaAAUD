@@ -46,3 +46,6 @@ Thumbs.db
 Notas/
 All.md
 docs/tree.txt
+
+#Tools
+tools/api.http

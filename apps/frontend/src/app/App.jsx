@@ -88,7 +88,7 @@ function App() {
           path="/cambiar-contrasena"
           element={
             <PrivateRoute
-              allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor', 'mensajeria']}
+              allowedUserTypes={['trabajador', 'admin', 'tecnico', 'consultor']}
               allowForcedPasswordChange
             >
               <ForcedPasswordChangePage />
@@ -185,7 +185,7 @@ function App() {
         <Route
           path="/perfil"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'mensajeria']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <ProfilePage />
               </PrivateLayout>
