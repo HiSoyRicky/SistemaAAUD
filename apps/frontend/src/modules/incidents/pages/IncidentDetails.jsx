@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../../../shared/api/apiClient';
+import { socket } from '../../../services/socket/socketClient';
 import { onIncidentUpdated } from '../../../services/socket/incidentsSocket';
 import { connectSocket, disconnectSocket } from '../../../services/socket/socketClient';
 import { formatDateToDDMMYYYY } from '../../../shared/utils/formatDate';
@@ -101,7 +102,7 @@ function IncidentDetails() {
         <div className="flex items-center justify-center min-h-screen p-6 text-white bg-gradient-to-br from-gray-900 to-gray-700">
             <div className="bg-gray-800 p-8 md:p-12 rounded-lg shadow-2xl border border-gray-700 max-w-xl w-full transform transition-all duration-300 ease-in-out hover:scale-[1.01]">
                 <h2 className="mb-6 text-3xl font-bold text-center text-blue-400 md:text-4xl">
-                    Detalle de la Incidencia #{String(incident.id).padStart(6, '0')}
+                    Detalle de la Incidencia #{String(incident.ticket_number).padStart(6, '0')}
                 </h2>
 
                 <div className="space-y-4 text-gray-200">

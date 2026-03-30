@@ -10,6 +10,7 @@
     "dev": "concurrently -k \"npm run dev -w apps/backend\" \"npm run dev -w apps/frontend\"",
     "build": "npm run build -w apps/frontend",
     "start": "npm run start -w apps/backend",
+    "tree": "node tools/generateTree.cjs",
     "prisma:format": "npm exec -w apps/backend prisma format",
     "prisma:validate": "npm exec -w apps/backend prisma validate",
     "prisma:generate": "npm exec -w apps/backend prisma generate",

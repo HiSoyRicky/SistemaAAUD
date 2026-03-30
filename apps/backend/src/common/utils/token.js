@@ -17,6 +17,7 @@ async function getIncidentByToken(token) {
             where: { id: Number(id) },
             select: {
                 id: true,
+                ticket_number: true,
                 reporter_name: true,
                 email: true,
                 description: true,
@@ -46,6 +47,7 @@ async function getIncidentByToken(token) {
 
         return {
             id: incident.id,
+            ticket_number: incident.ticket_number,
             reporter_name: incident.reporter_name,
             reporter_email: incident.email,
             ubication_name: incident.ubications?.name || null,

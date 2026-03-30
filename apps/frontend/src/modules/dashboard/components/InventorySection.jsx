@@ -9,7 +9,7 @@ import {
   CartesianGrid,
   LabelList,
 } from "recharts";
-import { Boxes, Cpu, BadgeCheck, AlertTriangle } from "lucide-react";
+import { Boxes, Cpu, BadgeCheck } from "lucide-react";
 
 import ChartCard from "./ChartCard.jsx";
 import FancyTooltip from "./FancyTooltip.jsx";
@@ -95,8 +95,6 @@ export default function InventorySection({ inventory, loading }) {
     });
   }, [filteredInventory]);
 
-  const unclassified = filteredInventory.filter((item) => !getDeviceName(item)).length;
-
   useEffect(() => {
     if (selectedDevice === "ALL") return;
     const stillExists = inventory.some((item) => getDeviceName(item) === selectedDevice);
@@ -159,7 +157,7 @@ export default function InventorySection({ inventory, loading }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-wrap justify-center gap-3 mb-4">
         <StatCard
           title="Total de equipos"
           value={loading ? "..." : totalInventory}
@@ -178,12 +176,6 @@ export default function InventorySection({ inventory, loading }) {
           value={loading ? "..." : byBrand.length}
           icon={BadgeCheck}
           gradient="from-teal-400 to-teal-700"
-        />
-        <StatCard
-          title="Sin clasificar"
-          value={loading ? "..." : unclassified}
-          icon={AlertTriangle}
-          gradient="from-rose-400 to-rose-700"
         />
       </div>
 

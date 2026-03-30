@@ -16,7 +16,7 @@ echo "📦 Instalando dependencias..."
 npm ci --include=dev
 
 echo "💾 Backup rápido antes del deploy..."
-sudo -u postgres pg_dump -Fc aaud_system > /var/backups/aaud-system/predeploy_$(date +%F_%H-%M).backup
+sudo -u postgres pg_dump -Fc aaud_system -f /var/backups/aaud-system/predeploy_$(date +%F_%H-%M).backup
 
 echo "📦 Último backup creado:"
 ls -lh /var/backups/aaud-system/predeploy_*.backup | tail -1

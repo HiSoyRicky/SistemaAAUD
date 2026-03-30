@@ -109,8 +109,18 @@ async function createIncident({ payload, req, io }) {
     const createData = buildCreateData(payload, clientIp);
 
     const newIncident = await prisma.$transaction(async (tx) => {
+        const last = await tx.bd_incidents.findFirst({
+            orderBy: { ticket_number: 'desc' },
+            select: { ticket_number: true }
+        });
+
+        const nextTicket = (last?.ticket_number || 0) + 1;
+
         const created = await tx.bd_incidents.create({
-            data: createData
+            data: {
+                ...createData,
+                ticket_number: nextTicket
+            }
         });
 
         return tx.bd_incidents.findUnique({

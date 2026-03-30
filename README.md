@@ -1,111 +1,63 @@
-📌 Sistema AAUD
+# Sistema AAUD
 
-📖 Descripción
+# Descripción
 
 Sistema web para la gestión de incidencias, inventario y de funcionarios de la AAUD.
 Permite la autenticación de usuarios, la creación, seguimiento y visualización de incidencias.
 
-El sistema está desarrollado en React (frontend) y Express con SQL Server (backend).
+# Instalación
 
+1.  Clonar el repositorio
+    - git clone https://github.com/HiSoyRicky/SistemaAAUD.git
 
-⚙️ Instalación
+2.  Instalar dependencias
+    - npm install
 
-    1. Clonar el repositorio
+3.  Configurar la base de datos
+    - Importar el script SQL ubicado en:
+      - apps/backend/prisma/migrations/20260319_init/migration.sql
 
-git clone https://github.com/HiSoyRicky/SistemaAAUD.git
+4.  Variables de entorno
+    Crear un archivo .env en la raíz del proyecto con la siguiente estructura (ejemplo):
 
-cd SistemaAAUD
+        - PORT=3000
+        - JWT_SECRET=ce0c6e4b0d7f4a99a66b3ed9f2f3b1b8c1a4f774b9b8b7c3e8f1d2a9c4e7f0a
+        - FRONTEND_BASE_URL=http://localhost:5173
+        - DATABASE_URL="postgresql://postgres:123456789@localhost:5432/aaud_system?schema=public"
+        - MAIL_HOST=smtp.office365.com
+        - MAIL_PORT=587
+        - MAIL_USER=
+        - MAIL_PASS=
 
-    2. Instalar dependencias
+5.  Arrancar
+    - npm run dev
 
-npm install
-
-    3. Configurar la base de datos
-
-Importar el script SQL ubicado en:
-
-server/Soporte AAUD.sql
-
-
-en SQL Server para crear las tablas necesarias.
-
-    4. Variables de entorno
-
-Crear un archivo .env en la raíz del proyecto con la siguiente estructura (ejemplo):
-
-PORT=3000
-
-SQL_USER=tu_usuario_sql
-
-SQL_PASSWORD=tu_password_sql
-
-SQL_DATABASE=Soporte_AAUD
-
-SQL_SERVER=localhost
-
-
-(Ajustar según tu configuración de SQL Server)
-
-    5. Iniciar el backend
-
-npm run server
-
-    6. Iniciar el frontend
-
-npm run dev
-
-
-🚀 Uso
+# Uso
 
 Acceder al frontend en:
 
 👉 http://localhost:5173
 
-Iniciar sesión con credenciales de prueba:
-
-Usuario: admin
-
-Contraseña: admin123
+    Iniciar sesión con credenciales de prueba:
+    - Usuario: admin
+    - Contraseña: admin123
 
 Crear, editar y visualizar incidencias en el dashboard, administrar los dispositivos del inventario y los funcionarios de la institución.
 
+# Tecnologías
 
-🛠️ Tecnologías
+## Frontend
 
- Frontend
+    -React
+    -Vite
+    -Tailwind CSS
+    -React Router
 
--React
+## Backend
 
--Vite
+    -Express
+    -PostgreSQL
 
--Tailwind CSS
-
--React Router
-
-
- Backend
-
--Express
-
--SQL Server
-
-
- Dependencias principales
-
--axios
-
--mssql
-
--cors
-
--dotenv
-
-Performance
-El archivo `stats.html` muestra el análisis del bundle del frontend
-(generado con Vite) y se usa para identificar oportunidades de optimización
-como lazy loading y reducción de dependencias.
-
-
-👨‍💻 Autor
+# Autor
 
 Desarrollado por Ricardo Vargas (Ricky)
