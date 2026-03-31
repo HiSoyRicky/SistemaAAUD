@@ -1,25 +1,21 @@
-# server/Dockerfile
 FROM node:22-alpine
 
-# Carpeta de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiamos package.json y package-lock.json de la RAÍZ del proyecto
-COPY package*.json ./
+# Copiamos solo lo necesario para instalar dependencias primero
+# (aprovecha cache de Docker si no cambia package.json)
+COPY apps/backend/package*.json ./
 
-# Instalamos dependencias (solo producción si quieres)
 RUN npm install --omit=dev
 
-# Copiamos el backend y el schema de Prisma desde la raíz
-COPY server ./server
-COPY prisma ./prisma
+# Copiamos el código del backend
+COPY apps/backend/src ./src
+COPY apps/backend/prisma ./prisma
 
-# Generamos Prisma Client dentro del contenedor
+# Generamos Prisma Client (solo el cliente, NO migrate)
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-# Variables y puertos
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Arranque del servidor
-CMD ["node", "server/Server.js"]
+CMD ["node", "src/Server.js"]

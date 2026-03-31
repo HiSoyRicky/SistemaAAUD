@@ -94,7 +94,7 @@ rsync -a --delete apps/frontend/dist/ "$WEB_ROOT/"
 
 log "Reiniciando backend..."
 if pm2 describe "$PM2_NAME" > /dev/null 2>&1; then
-  pm2 restart "$PM2_NAME"
+  pm2 restart "$PM2_NAME" --update-env
 else
   pm2 start apps/backend/src/Server.js --name "$PM2_NAME"
 fi

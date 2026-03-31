@@ -1,27 +1,29 @@
 services:
   backend:
     build:
-      context: .
-      dockerfile: server/Dockerfile
+      context: ../..          # raíz del monorepo
+      dockerfile: apps/backend/Dockerfile
     container_name: aaud-backend
     env_file:
-      - .env
-    restart: always
+      - ../../.env
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"  # Solo accesible desde el host, no expuesto al mundo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Para conectar a PostgreSQL del host
     networks:
       - aaud-net
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ../..
+      dockerfile: apps/frontend/Dockerfile
     container_name: aaud-frontend
     depends_on:
       - backend
-    restart: always
+    restart: unless-stopped
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"   # Solo accesible desde el host
     networks:
       - aaud-net
 

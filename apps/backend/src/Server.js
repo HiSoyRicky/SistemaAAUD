@@ -21,6 +21,7 @@ async function startServer() {
 
     const io = initSocket(server);
     app.set("io", io);
+    app.set('trust proxy', 1);
 
     server.listen(env.PORT, "0.0.0.0", () => {
       logger.info(
