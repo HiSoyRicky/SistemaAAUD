@@ -17,11 +17,11 @@ export const findAll = async (search) => {
             { serie: { contains: search, mode: 'insensitive' } },
             { tag: { contains: search, mode: 'insensitive' } },
             { user: { contains: search, mode: 'insensitive' } },
-            { devices: { name: { contains: search, mode: 'insensitive' } } },
-            { brands: { name: { contains: search, mode: 'insensitive' } } },
-            { models: { name: { contains: search, mode: 'insensitive' } } },
-            { departments: { name: { contains: search, mode: 'insensitive' } } },
-            { ubications: { name: { contains: search, mode: 'insensitive' } } }
+            { devices: { is: { name: { contains: search, mode: 'insensitive' } } } },
+            { brands: { is: { name: { contains: search, mode: 'insensitive' } } } },
+            { models: { is: { name: { contains: search, mode: 'insensitive' } } } },
+            { departments: { is: { name: { contains: search, mode: 'insensitive' } } } },
+            { ubications: { is: { name: { contains: search, mode: 'insensitive' } } } }
           ]
         }
       : {},

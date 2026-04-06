@@ -1,9 +1,9 @@
 // middleware/attachUserContext.js
-import { prisma } from '../../config/prisma.js';
+import { prisma, activityContext } from '../../config/prisma.js';
 
 const attachUserContext = async (req, res, next) => {
     try {
-        const userId = req.user?.id || 2;
+        const userId = req.user?.id;
         if (!userId) return res.status(401).json({ message: "No autenticado" });
 
         const user = await prisma.users.findUnique({
@@ -16,6 +16,12 @@ const attachUserContext = async (req, res, next) => {
             },
         });
 
+        const store = {
+            userId: req.user?.id ?? null,
+            ipAddress: req.ip ?? req.headers['x-forwarded-for'] ?? null,
+            userAgent: req.headers['user-agent'] ?? null,
+        };
+
         if (!user) return res.status(401).json({ message: "Usuario no válido" });
 
         req.ctx = {
@@ -25,7 +31,7 @@ const attachUserContext = async (req, res, next) => {
             roleName: user.roles?.name ?? req.user?.role_name ?? null,
         };
 
-        next();
+        activityContext.run(store, () => next());
     } catch (e) {
         console.error("attachUserContext error:", e);
         return res.status(500).json({ message: "Error cargando contexto de usuario" });

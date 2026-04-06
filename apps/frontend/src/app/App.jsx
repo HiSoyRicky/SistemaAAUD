@@ -13,6 +13,7 @@ import IncidentsMonitorPage from '../modules/incidents/pages/IncidentsMonitorPag
 
 import NotFoundPage from './NotFoundPage';
 import Dashboard from '../modules/dashboard/pages/Dashboard';
+import ActivityLogsPage from '../modules/activity/pages/ActivityLogsPage';
 import useAuth from '../shared/hooks/useAuth';
 
 // Inventario
@@ -199,6 +200,17 @@ function App() {
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <Dashboard />
+              </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/actividad"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+              <PrivateLayout>
+                <ActivityLogsPage />
               </PrivateLayout>
             </PrivateRoute>
           }

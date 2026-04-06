@@ -1,3 +1,5 @@
+import { activityContext } from "../../config/prisma.js";
+
 const ACTIONS = {
     create: "CREATE",
     createMany: "CREATE",
@@ -118,6 +120,7 @@ export function getPrismaWithActivityLogger(prisma) {
         query: {
             $allModels: {
                 async $allOperations({ model, operation, args, query }) {
+
                     if (!model || model === "activity_logs") {
                         return query(args);
                     }
@@ -137,6 +140,22 @@ export function getPrismaWithActivityLogger(prisma) {
                         return result;
                     }
 
+                    let newValues = null;
+
+                    if (action === 'UPDATE' && result?.id) {
+                        try {
+                            const repository = prisma[model];
+                            newValues = await repository.findFirst({ where: { id: result.id } });
+                        } catch {
+                            // fallback al delta si falla
+                            newValues = getNewValues({ operation, args, oldValues });
+                        }
+                    } else {
+                        newValues = getNewValues({ operation, args, oldValues });
+                    }
+
+                    const ctx = activityContext.getStore();
+
                     try {
                         await prisma.activity_logs.create({
                             data: {
@@ -144,7 +163,10 @@ export function getPrismaWithActivityLogger(prisma) {
                                 entity_id: getEntityId({ operation, result, args }),
                                 action,
                                 old_values: toSafeJson(oldValues),
-                                new_values: toSafeJson(getNewValues({ operation, args, oldValues }))
+                                new_values: toSafeJson(newValues),
+                                user_id: ctx?.userId ?? null,
+                                ip_address: ctx?.ipAddress ?? null,
+                                user_agent: ctx?.userAgent ?? null,
                             }
                         });
                     } catch (err) {

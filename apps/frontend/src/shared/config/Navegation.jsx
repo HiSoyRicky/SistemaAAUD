@@ -19,6 +19,13 @@ export const getNavigation = (userType, hasPermission = () => true) => {
       permission: "incidents.read",
     },
     {
+      label: "Actividad",
+      path: "/actividad",
+      icon: FileText,
+      roles: ["admin", "tecnico", "consultor"],
+      permission: "users.read",
+    },
+    {
       label: "Incidencias",
       path: "/incidencias",
       icon: AlertTriangle,

@@ -12,7 +12,8 @@ function parseIntSafe(value) {
 }
 
 export const getAll = async (query) => {
-  const search = query?.search;
+  const rawSearch = typeof query?.search === 'string' ? query.search.trim() : '';
+  const search = rawSearch || undefined;
   const inventory = await repository.findAll(search);
   return mapInventoryResponse(inventory);
 };

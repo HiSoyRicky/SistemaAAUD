@@ -7,7 +7,7 @@ PM2_NAME="aaud-backend"
 BACKUP_DIR="/var/backups/aaud-system"
 BACKUP_FILE="$BACKUP_DIR/predeploy_$(date +%F_%H:%M).backup"
 SCHEMA="apps/backend/prisma/schema.prisma"
-HEALTH_URL="http://localhost:3000/health"  # ajusta el puerto
+HEALTH_URL="http://localhost:3000/health"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,6 @@ fi
 # ── Dependencias ──────────────────────────────────────────────────────────────
 
 log "Instalando dependencias..."
-# --omit=dev si el backend no necesita devDeps en runtime
 npm ci --include=dev
 
 # ── Base de datos ─────────────────────────────────────────────────────────────

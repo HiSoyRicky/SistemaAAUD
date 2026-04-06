@@ -1,6 +1,7 @@
 import express from 'express';
 import authMiddleware from '../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../common/middleware/requirePasswordChange.js';
+import attachUserContext from '../common/middleware/attachUserContext.js';
 import {
   authRouter,
   incidentsRouter,
@@ -14,7 +15,8 @@ import {
   tonersRouter,
   tonerMovementsRouter,
   usersRouter,
-  permissionsRouter
+  permissionsRouter,
+  activityRouter
 } from './index.js';
 
 const router = express.Router();
@@ -32,8 +34,9 @@ router.use('/status', statusRouter);
 
 // Rutas protegidas
 router.use(authMiddleware);
+router.use(attachUserContext);
 router.use(requirePasswordChange);
-
+router.use('/activity', activityRouter);
 router.use('/inventory', inventoryRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
