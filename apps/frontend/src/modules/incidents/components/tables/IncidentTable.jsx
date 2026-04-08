@@ -3,6 +3,7 @@ import { formatDateToDDMMYYYY, formatDateTime } from '../../../../shared/utils/f
 import Pagination from "../../../../shared/components/ui/Pagination";
 import ActionButton from '../../../../shared/components/ui/ActionButton.jsx';
 import IncidentDetailModal from '../modals/IncidentDetailModal.jsx';
+import { ac } from '../../../../../dist/assets/ui-C8ENmNRm.js';
 
 // Función para obtener el nombre legible del estado
 const getStatusName = (id_status, technician_full_name) => {
@@ -88,7 +89,9 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
         department: true,
         category: true,
         description: true,
-        date: true
+        date: true,
+        id_status: true,
+        actions: true
     };
 
     const show = { ...columns, ...visibleColumns };
@@ -109,10 +112,12 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
                             {show.category && <th className={tdClass}>Categoría</th>}
                             {show.description && <th className={tdClass}>Descripción</th>}
                             {show.date && <th className={tdClass}>Fecha Creación</th>}
-                            <th className={tdClass}>Estado</th>
-                            <th className={thClass}>
-                                Acciones
-                            </th>
+                            {show.id_status && <th className={tdClass}>Estado</th>}
+                            {show.actions &&
+                                <th className={thClass}>
+                                    Acciones
+                                </th>
+                            }
                         </tr>
                     </thead>
 
@@ -161,63 +166,67 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
                                             </div>
                                         </td>
                                     )}
-                                    <td
-                                        className={`${thClass} border ${incident.id_status === 1 ? 'text-red-600' :
-                                            incident.id_status === 2 ? 'text-yellow-600' :
-                                                incident.id_status === 3 ? 'text-green-600' :
-                                                    'text-gray-500'
-                                            }`}>
-                                        {getStatusName(incident.id_status, incident.technician_full_name)}
-                                    </td>
+                                    {show.id_status && (
+                                        <td
+                                            className={`${thClass} border ${incident.id_status === 1 ? 'text-red-600' :
+                                                incident.id_status === 2 ? 'text-yellow-600' :
+                                                    incident.id_status === 3 ? 'text-green-600' :
+                                                        'text-gray-500'
+                                                }`}>
+                                            {getStatusName(incident.id_status, incident.technician_full_name)}
+                                        </td>
+                                    )}
 
                                     {/* Acciones según el tipo de usuario */}
-                                    <td className={`${thClass} border`}>
-                                        <div className="flex items-center justify-center gap-x-2">
+                                    {show.actions && (
+                                        <td className={`${thClass} border`}>
+                                            <div className="flex items-center justify-center gap-x-2">
 
-                                            <ActionButton
-                                                type='view'
-                                                title="Ver detalles de la incidencia"
-                                                onClick={() => handleViewDetails(incident)}
-                                            >
-                                            </ActionButton>
+                                                <ActionButton
+                                                    type='view'
+                                                    title="Ver detalles de la incidencia"
+                                                    onClick={() => handleViewDetails(incident)}
+                                                >
+                                                </ActionButton>
 
-                                            {/* Botón Asignar/Reasignar técnico */}
-                                            {(
-                                                (userType === 'consultor' && incident.id_status === 1) ||
-                                                (userType === 'admin' && (incident.id_status === 1 || incident.id_status === 2))
-                                            ) && (
+                                                {/* Botón Asignar/Reasignar técnico */}
+                                                {(
+                                                    (userType === 'consultor' && incident.id_status === 1) ||
+                                                    (userType === 'admin' && (incident.id_status === 1 || incident.id_status === 2))
+                                                ) && (
+                                                        <ActionButton
+                                                            type={"assign"}
+                                                            title={
+                                                                incident.id_status === 1
+                                                                    ? "Asignar técnico"
+                                                                    : "Reasignar técnico"
+                                                            }
+                                                            onClick={() => onAssign(incident.id_incident)}
+                                                        />
+                                                    )}
+
+                                                {/* Botón Resolver */}
+                                                {userType === 'tecnico' && incident.id_status !== 3 && (
                                                     <ActionButton
-                                                        type={"assign"}
-                                                        title={
-                                                            incident.id_status === 1
-                                                                ? "Asignar técnico"
-                                                                : "Reasignar técnico"
-                                                        }
-                                                        onClick={() => onAssign(incident.id_incident)}
-                                                    />
+                                                        type={"resolve"}
+                                                        title="Resolver"
+                                                        onClick={() => onResolve(incident.id_incident)}
+                                                    >
+                                                    </ActionButton>
                                                 )}
 
-                                            {/* Botón Resolver */}
-                                            {userType === 'tecnico' && incident.id_status !== 3 && (
-                                                <ActionButton
-                                                    type={"resolve"}
-                                                    title="Resolver"
-                                                    onClick={() => onResolve(incident.id_incident)}
-                                                >
-                                                </ActionButton>
-                                            )}
-
-                                            {/* Botón Editar */}
-                                            {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
-                                                <ActionButton
-                                                    type={"edit"}
-                                                    title="Editar incidencia"
-                                                    onClick={() => onEdit(incident)}
-                                                >
-                                                </ActionButton>
-                                            )}
-                                        </div>
-                                    </td>
+                                                {/* Botón Editar */}
+                                                {['admin', 'consultor'].includes(userType) && incident.id_status === 1 && (
+                                                    <ActionButton
+                                                        type={"edit"}
+                                                        title="Editar incidencia"
+                                                        onClick={() => onEdit(incident)}
+                                                    >
+                                                    </ActionButton>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             ))
                         )}

@@ -6,7 +6,9 @@ import {
   Monitor,
   Printer,
   FileText,
-  Users
+  Users,
+  Users2,
+  UserSquare
 } from "lucide-react";
 
 export const getNavigation = (userType, hasPermission = () => true) => {
@@ -17,13 +19,6 @@ export const getNavigation = (userType, hasPermission = () => true) => {
       icon: LayoutDashboard,
       roles: ["admin", "tecnico", "consultor"],
       permission: "incidents.read",
-    },
-    {
-      label: "Actividad",
-      path: "/actividad",
-      icon: FileText,
-      roles: ["admin", "tecnico", "consultor"],
-      permission: "users.read",
     },
     {
       label: "Incidencias",
@@ -56,10 +51,25 @@ export const getNavigation = (userType, hasPermission = () => true) => {
     },
     {
       label: "Administración",
-      path: "/admin",
       icon: Users,
-      roles: ["admin"],
-      permission: "users.read",
+      roles: ["admin", "tecnico", "consultor"],
+      permission: "inventory.read",
+      children: [
+        {
+          label: "Actividad",
+          path: "/actividad",
+          icon: FileText,
+          roles: ["admin"],
+          permission: "users.read",
+        },
+        {
+          label: "Panel principal",
+          path: "/admin",
+          icon: UserSquare,
+          roles: ["admin"],
+          permission: "users.read",
+        },
+      ],
     },
   ];
 

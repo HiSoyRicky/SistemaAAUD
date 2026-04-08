@@ -23,7 +23,7 @@ export default function IncidentsMonitorPage() {
     return (
         <div className="p-6">
 
-            <h1 className="mb-10 text-5xl font-bold">
+            <h1 className="mb-10 text-5xl font-bold text-center">
                 Monitor de Incidencias
             </h1>
 
@@ -34,7 +34,10 @@ export default function IncidentsMonitorPage() {
 
             <IncidentTable
                 incidents={incidents}
-                visibleColumns={{ email: false }}
+                visibleColumns={{
+                    email: false,
+                    actions: false
+                }}
             />
 
         </div>
