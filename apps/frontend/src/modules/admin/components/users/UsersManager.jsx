@@ -13,7 +13,6 @@ export default function UsersManager() {
         username: "",
         email: "",
         id_department: "",
-        password: "",
         id_rol: 1,
         active: true
     });
@@ -43,23 +42,43 @@ export default function UsersManager() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (editing) {
-            console.log("Actualizando usuario con:", form);
-            await Users.update(form);
-        } else {
-            console.log("Creando usuario con:", form);
-            await Users.create(form);
+
+        const payload = {
+            nombre_completo: form.nombre_completo,
+            username: form.username,
+            email: form.email || null,
+            password: form.password,
+            id_rol: Number(form.id_rol),
+            active: Boolean(form.active),
+            id_department: form.id_department
+                ? Number(form.id_department)
+                : null,
+        };
+
+        try {
+            if (editing) {
+                console.log("Actualizando usuario con:", payload);
+                await Users.update({ ...payload, id: form.id });
+            } else {
+                console.log("Creando usuario con:", payload);
+                await Users.create(payload);
+            }
+        } catch (error) {
+            console.log("ERROR BACKEND:", error.response?.data);
+            return;
         }
-        setForm({ 
-            id: null, 
-            nombre_completo: "", 
+
+        // reset
+        setForm({
+            id: null,
+            nombre_completo: "",
             username: "",
             id_department: "",
-            email: "", 
-            password: "", 
-            id_rol: 1, 
+            email: "",
+            id_rol: 1,
             active: true
         });
+
         setEditing(false);
         setShowForm(false);
         loadUsers();
@@ -72,9 +91,8 @@ export default function UsersManager() {
             username: user.username || "",
             id_department: user.id_department || "",
             email: user.email || "",
-            password: "",
-            id_rol: Number(user.id_rol),
-            active: Number(user.active),  
+            id_rol: user.id_rol || 1,
+            active: user.active,
         });
         setEditing(true);
         setShowForm(true);
@@ -107,7 +125,6 @@ export default function UsersManager() {
             username: "",
             id_department: "",
             email: "",
-            password: "",
             id_rol: 1,
             active: true
         });

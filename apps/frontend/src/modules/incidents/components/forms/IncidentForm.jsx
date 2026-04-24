@@ -14,6 +14,11 @@ function IncidentForm({ onSubmit }) {
     watch,
     showModal,
     incidentId,
+    isTonerCategory,
+    tonerPrinters,
+    availableTonerColors,
+    isLoadingTonerOptions,
+    tonerOptionsError,
     selectedUbication,
     selectedDepartment,
     newIncident,
@@ -24,10 +29,14 @@ function IncidentForm({ onSubmit }) {
     { value: 1, label: "Problemas con el internet" },
     { value: 2, label: "Problemas con el equipo" },
     { value: 3, label: "Problemas con un programa" },
+    { value: 5, label: "Solicitud de tóner" },
     { value: 4, label: "Otro" },
   ];
 
   const selectedCategory = watch("id_category");
+  const descriptionPlaceholder = isTonerCategory
+    ? "Se autocompleta al elegir color; puedes agregar más detalle si lo deseas."
+    : "Describa el problema con el mayor detalle posible";
 
   return (
     <section className="px-4 py-6">
@@ -70,6 +79,7 @@ function IncidentForm({ onSubmit }) {
 
             <input type="hidden" {...register("id_ubication")} />
             <input type="hidden" {...register("id_department")} />
+            <input type="hidden" {...register("id_toner")} />
 
             <div className="space-y-2">
               <UbiDepSelector
@@ -123,15 +133,86 @@ function IncidentForm({ onSubmit }) {
               )}
             </div>
 
+            {isTonerCategory && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-900">Solicitud de tóner</h3>
+                  <p className="mt-1 text-xs text-blue-800/80">
+                    Selecciona la impresora y luego el color. La descripción se completará automáticamente.
+                  </p>
+                </div>
+
+                {isLoadingTonerOptions && (
+                  <p className="text-xs text-blue-700">Cargando impresoras disponibles...</p>
+                )}
+
+                {tonerOptionsError && (
+                  <p className="text-xs text-red-600">{tonerOptionsError}</p>
+                )}
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="id_printer_model" className="block mb-1 text-sm font-medium text-gray-700">
+                      Impresora:
+                    </label>
+                    <select
+                      id="id_printer_model"
+                      {...register("id_printer_model")}
+                      disabled={isLoadingTonerOptions || tonerPrinters.length === 0}
+                      className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm disabled:bg-gray-100 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                    >
+                      <option value="" disabled>
+                        -- Seleccione una impresora --
+                      </option>
+                      {tonerPrinters.map((printer) => (
+                        <option key={printer.id_printer_model} value={printer.id_printer_model}>
+                          {`${printer.brand || "Sin marca"} / ${printer.printer_model}`}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.id_printer_model?.message && (
+                      <p className="mt-1 text-xs text-red-500">{errors.id_printer_model.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="toner_color" className="block mb-1 text-sm font-medium text-gray-700">
+                      Color del tóner:
+                    </label>
+                    <select
+                      id="toner_color"
+                      {...register("toner_color")}
+                      disabled={!watch("id_printer_model") || availableTonerColors.length === 0}
+                      className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm disabled:bg-gray-100 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+                    >
+                      <option value="" disabled>
+                        -- Seleccione un color --
+                      </option>
+                      {availableTonerColors.map((tonerColor) => (
+                        <option key={`${tonerColor.id_toner}-${tonerColor.color}`} value={tonerColor.color}>
+                          {tonerColor.toner_model
+                            ? `${tonerColor.label} (${tonerColor.toner_model})`
+                            : tonerColor.label}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.toner_color?.message && (
+                      <p className="mt-1 text-xs text-red-500">{errors.toner_color.message}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">
-                Descripción del problema:
+                {isTonerCategory ? "Descripción de la solicitud:" : "Descripción del problema:"}
               </label>
               <textarea
                 id="description"
                 {...register("description")}
                 className="w-full px-3 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
-                placeholder="Describa el problema con el mayor detalle posible"
+                placeholder={descriptionPlaceholder}
                 rows={4}
               />
               {errors.description?.message && (

@@ -6,6 +6,7 @@ import { getClientIp } from '../../common/utils/clientInfo.js';
 import { scheduleIncidentCreatedNotification } from './incidentNotificationService.js';
 
 const statusMap = { Pendiente: 1, 'En proceso': 2, Resuelto: 3 };
+const TONER_CATEGORY_ID = 5;
 
 const incidentSelect = {
     id: true,
@@ -45,6 +46,60 @@ function parseSolutionDate(solutionDateInput) {
     }
 
     return solutionDate;
+}
+
+function parseOptionalPositiveInt(value) {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
+async function resolveTonerRequestContext(payload, tx) {
+    const categoryId = Number(payload.id_category);
+    if (categoryId !== TONER_CATEGORY_ID) {
+        return {
+            isTonerRequest: false,
+            isOutOfStock: false
+        };
+    }
+
+    const tonerId = parseOptionalPositiveInt(payload.id_toner);
+    if (!tonerId) {
+        return {
+            isTonerRequest: true,
+            isOutOfStock: false
+        };
+    }
+
+    const toner = await tx.toners.findUnique({
+        where: { id: tonerId },
+        include: { stock: true }
+    });
+
+    if (!toner) {
+        return {
+            isTonerRequest: true,
+            isOutOfStock: false
+        };
+    }
+
+    const currentStock = toner.stock?.quantity ?? 0;
+
+    return {
+        isTonerRequest: true,
+        isOutOfStock: currentStock <= 0,
+        tonerId,
+        currentStock,
+        tonerColor: toner.color ? String(toner.color).toUpperCase() : null,
+        tonerModel: toner.toner_model || null
+    };
 }
 
 function buildCreateData(payload, clientIp) {
@@ -108,7 +163,9 @@ async function createIncident({ payload, req, io }) {
     const clientIp = getClientIp(req);
     const createData = buildCreateData(payload, clientIp);
 
-    const newIncident = await prisma.$transaction(async (tx) => {
+    const { newIncident, tonerRequestContext } = await prisma.$transaction(async (tx) => {
+        const requestContext = await resolveTonerRequestContext(payload, tx);
+
         const last = await tx.bd_incidents.findFirst({
             orderBy: { ticket_number: 'desc' },
             select: { ticket_number: true }
@@ -123,10 +180,15 @@ async function createIncident({ payload, req, io }) {
             }
         });
 
-        return tx.bd_incidents.findUnique({
+        const createdIncident = await tx.bd_incidents.findUnique({
             where: { id: created.id },
             select: incidentSelect
         });
+
+        return {
+            newIncident: createdIncident,
+            tonerRequestContext: requestContext
+        };
     });
 
     if (!newIncident) {
@@ -138,7 +200,8 @@ async function createIncident({ payload, req, io }) {
     scheduleIncidentCreatedNotification({
         incident: newIncident,
         response,
-        io
+        io,
+        tonerRequestContext
     });
 
     return response;

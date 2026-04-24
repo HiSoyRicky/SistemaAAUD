@@ -25,7 +25,15 @@ const Incidents = {
       solution: solutionText,
       solution_date: new Date().toISOString(),
     }).then((res) => res.data),
+
+  fetchTonerOptions: ({ id_ubication, id_department }) =>
+    api.get("/api/incidents/toner-options", {
+      params: { id_ubication, id_department },
+    }).then((res) => res.data),
 };
+
+export const getCategories = () =>
+  api.get('/api/categories').then(res => res.data.data);
 
 // --- Usuarios ---
 const Users = {

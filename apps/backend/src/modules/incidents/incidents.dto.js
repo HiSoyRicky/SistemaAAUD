@@ -1,5 +1,12 @@
 import { STATUS_TEXT, DEFAULT_STATUS_TEXT } from './incidents.constants.js';
 
+const TONER_COLOR_ORDER = {
+  BLACK: 1,
+  CYAN: 2,
+  MAGENTA: 3,
+  YELLOW: 4
+};
+
 export const mapIncidentListItem = (incident) => ({
   id_incident: incident.id,
   ticket_number: incident.ticket_number,
@@ -45,3 +52,51 @@ export const mapIncidentDetail = (incident) => ({
 export const mapDeleteIncidentResponse = () => ({
   message: 'Incidencia eliminada'
 });
+
+export const mapTonerRequestOptions = (printerModels = []) => {
+  const printers = printerModels
+    .map((printerModel) => {
+      const seenColors = new Set();
+
+      const toners = (Array.isArray(printerModel?.toners) ? printerModel.toners : [])
+        .filter((toner) => {
+          const color = String(toner?.color || '').trim().toUpperCase();
+          if (!color || seenColors.has(color)) {
+            return false;
+          }
+
+          seenColors.add(color);
+          return true;
+        })
+        .map((toner) => ({
+          id_toner: toner.id,
+          color: toner.color,
+          toner_model: toner.toner_model || null
+        }))
+        .sort((a, b) => {
+          const aOrder = TONER_COLOR_ORDER[a.color] || 99;
+          const bOrder = TONER_COLOR_ORDER[b.color] || 99;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return String(a.toner_model || '').localeCompare(String(b.toner_model || ''), 'es', {
+            sensitivity: 'base'
+          });
+        });
+
+      return {
+        id_printer_model: printerModel.id,
+        printer_model: printerModel.name,
+        brand: printerModel.brands?.name || null,
+        toners
+      };
+    })
+    .filter((printer) => printer.toners.length > 0)
+    .sort((a, b) =>
+      `${a.brand || ''} ${a.printer_model || ''}`.localeCompare(
+        `${b.brand || ''} ${b.printer_model || ''}`,
+        'es',
+        { sensitivity: 'base' }
+      )
+    );
+
+  return { printers };
+};

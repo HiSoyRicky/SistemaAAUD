@@ -14,6 +14,9 @@ const listSelect = {
   solution_date: true,
   solution: true,
   id_technician: true,
+  categories: {
+    select: { name: true }
+  },
   ubications: {
     select: { name: true }
   },
@@ -65,6 +68,53 @@ export const findUserPasswordById = async (id) => {
   return prisma.users.findUnique({
     where: { id: Number(id) },
     select: { password: true }
+  });
+};
+
+export const findDepartmentById = async (id) => {
+  return prisma.departments.findUnique({
+    where: { id: Number(id) },
+    select: {
+      id: true,
+      id_ubication: true
+    }
+  });
+};
+
+export const findPrinterModelsWithTonersByLocationDepartment = async ({
+  id_ubication,
+  id_department
+}) => {
+  return prisma.models.findMany({
+    where: {
+      devices: {
+        name: 'Impresora'
+      },
+      bd_inventory: {
+        some: {
+          id_ubication: Number(id_ubication),
+          id_department: Number(id_department)
+        }
+      }
+    },
+    select: {
+      id: true,
+      name: true,
+      brands: {
+        select: {
+          name: true
+        }
+      },
+      toners: {
+        select: {
+          id: true,
+          color: true,
+          toner_model: true
+        },
+        orderBy: [{ color: 'asc' }, { id: 'asc' }]
+      }
+    },
+    orderBy: { name: 'asc' }
   });
 };
 

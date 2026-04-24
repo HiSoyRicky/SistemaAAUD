@@ -216,17 +216,24 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
     const handleAddIncident = useCallback(
         async (newIncidentData) => {
             try {
+                const categoryId = Number(newIncidentData.id_category);
+
                 const incidentToCreate = {
                     ...newIncidentData,
                     username: loggedUserName,
                     status: newIncidentData.status || "Pendiente",
-                    id_category: parseInt(newIncidentData.id_category),
+                    id_category: categoryId,
                     id_device: newIncidentData.id_device ? parseInt(newIncidentData.id_device) : null,
                     id_ubication: newIncidentData.id_ubication ? parseInt(newIncidentData.id_ubication) : null,
                     id_department: newIncidentData.id_department ? parseInt(newIncidentData.id_department) : null,
+                    id_printer_model: newIncidentData.id_printer_model
+                        ? parseInt(newIncidentData.id_printer_model)
+                        : null,
+                    id_toner: newIncidentData.id_toner ? parseInt(newIncidentData.id_toner) : null,
+                    toner_color: newIncidentData.toner_color || null,
                     email: newIncidentData.email?.trim() || null,
                     other_category_detail:
-                        newIncidentData.id_category === 4
+                        categoryId === 4
                             ? newIncidentData.other_category_detail?.trim() || null
                             : null,
                 };

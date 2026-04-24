@@ -159,7 +159,7 @@ export default function InventorySection({ inventory, loading }) {
 
       <div className="flex flex-wrap justify-center gap-3 mb-4">
         <StatCard
-          title="Total de equipos"
+          title="Total"
           value={loading ? "..." : totalInventory}
           icon={Boxes}
           gradient="from-slate-700 to-slate-900"
@@ -167,7 +167,7 @@ export default function InventorySection({ inventory, loading }) {
         <StatCard
           title="Tipos únicos"
           value={loading ? "..." : byDevice.length}
-          subtitle="(Device)"
+          subtitle="(Equipos)"
           icon={Cpu}
           gradient="from-violet-500 to-violet-800"
         />

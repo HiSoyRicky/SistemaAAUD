@@ -7,7 +7,8 @@ import * as repository from './incidents.repository.js';
 import {
   mapIncidentListItem,
   mapIncidentDetail,
-  mapDeleteIncidentResponse
+  mapDeleteIncidentResponse,
+  mapTonerRequestOptions
 } from './incidents.dto.js';
 
 function parseIncidentId(idParam) {
@@ -16,6 +17,14 @@ function parseIncidentId(idParam) {
     throw new AppError('ID inválido', 400);
   }
   return id;
+}
+
+function parsePositiveInt(value, fieldName) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new AppError(`${fieldName} inválido`, 400);
+  }
+  return parsed;
 }
 
 export const getAll = async () => {
@@ -36,6 +45,28 @@ export const getById = async (idParam) => {
 
 export const getPublicByToken = async (token) => {
   return getIncidentByToken(token);
+};
+
+export const getTonerOptions = async (query) => {
+  const id_ubication = parsePositiveInt(query?.id_ubication, 'Ubicación');
+  const id_department = parsePositiveInt(query?.id_department, 'Departamento');
+
+  const department = await repository.findDepartmentById(id_department);
+
+  if (!department) {
+    throw new AppError('Departamento no encontrado', 404);
+  }
+
+  if (Number(department.id_ubication) !== id_ubication) {
+    throw new AppError('El departamento no pertenece a la ubicación seleccionada', 400);
+  }
+
+  const printerModels = await repository.findPrinterModelsWithTonersByLocationDepartment({
+    id_ubication,
+    id_department
+  });
+
+  return mapTonerRequestOptions(printerModels);
 };
 
 export const create = async ({ payload, req, io }) => {

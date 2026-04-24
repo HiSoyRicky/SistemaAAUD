@@ -1,19 +1,21 @@
 import sendMail from '../../common/utils/mailer.js';
 import { generarTokenIncidencia } from '../../common/utils/token.js';
 import { buildInternalIncidentEmail,
-    buildReporterIncidentEmail } from '../../templates/incidents/incidentEmailTemplate.js';
+    buildReporterIncidentEmail,
+    buildReporterOutOfStockTonerEmail } from '../../templates/incidents/incidentEmailTemplate.js';
 
 const frontendUrl = process.env.FRONTEND_BASE_URL;
 const internalRecipients =
     process.env.INCIDENT_INTERNAL_RECIPIENTS ||
-    'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa, aramos@aaud.gob.pa';
+    'rvargas@aayd.gob.pa';
+    //'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa, aramos@aaud.gob.pa';
 
 function getPublicViewUrl(incident) {
     const token = generarTokenIncidencia(incident.id, incident.email);
     return `${frontendUrl}/incidencias/view?token=${token}`;
 }
 
-async function notifyIncidentCreated({ incident, response, io }) {
+async function notifyIncidentCreated({ incident, response, io, tonerRequestContext }) {
     const formattedTicket = response.ticket_number;
     const publicViewUrl = getPublicViewUrl(incident);
 
@@ -39,6 +41,19 @@ async function notifyIncidentCreated({ incident, response, io }) {
                     publicViewUrl
                 })
             });
+
+            if (tonerRequestContext?.isTonerRequest && tonerRequestContext?.isOutOfStock) {
+                await sendMail({
+                    to: incident.email,
+                    subject: `⚠️ Solicitud de tóner sin existencias (#${formattedTicket})`,
+                    html: buildReporterOutOfStockTonerEmail({
+                        incident,
+                        formattedTicket,
+                        publicViewUrl,
+                        tonerRequestContext
+                    })
+                });
+            }
         }
     } catch (mailErr) {
         console.error('Error al enviar correo:', mailErr);

@@ -3,7 +3,6 @@ import { formatDateToDDMMYYYY, formatDateTime } from '../../../../shared/utils/f
 import Pagination from "../../../../shared/components/ui/Pagination";
 import ActionButton from '../../../../shared/components/ui/ActionButton.jsx';
 import IncidentDetailModal from '../modals/IncidentDetailModal.jsx';
-import { ac } from '../../../../../dist/assets/ui-C8ENmNRm.js';
 
 // Función para obtener el nombre legible del estado
 const getStatusName = (id_status, technician_full_name) => {
@@ -33,6 +32,7 @@ const getCategoryName = (id_category) => {
         case 2: return 'Problemas con el equipo';
         case 3: return 'Problemas con un programa';
         case 4: return 'Otro';
+        case 5: return 'Solicitud de tóner';
         default: return 'Desconocida';
     }
 };
@@ -84,7 +84,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
 
     const columns = {
         user: true,
-        email: true,
+        email: false,
         ubication: true,
         department: true,
         category: true,

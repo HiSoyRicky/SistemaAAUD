@@ -41,6 +41,11 @@ export const getPublicByToken = catchAsync(async (req, res, next) => {
   }
 });
 
+export const getTonerOptions = catchAsync(async (req, res) => {
+  const data = await service.getTonerOptions(req.query);
+  res.json(data);
+});
+
 export const create = catchAsync(async (req, res) => {
   const data = await service.create({
     payload: req.body,

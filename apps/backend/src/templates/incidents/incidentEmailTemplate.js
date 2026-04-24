@@ -108,5 +108,38 @@ function buildReporterIncidentEmail(params) {
     });
 }
 
+function formatRequestedToner(tonerRequestContext) {
+    const model = String(tonerRequestContext?.tonerModel || '').trim();
+    const color = String(tonerRequestContext?.tonerColor || '').trim();
+
+    if (model && color) {
+        return `${model} (${color})`;
+    }
+
+    if (model) {
+        return model;
+    }
+
+    if (color) {
+        return color;
+    }
+
+    return '';
+}
+
+function buildReporterOutOfStockTonerEmail(params) {
+    const requestedToner = formatRequestedToner(params.tonerRequestContext);
+    const tonerText = requestedToner
+        ? ` para el tóner solicitado (${requestedToner})`
+        : '';
+
+    return buildEmailLayout({
+        ...params,
+        title: 'Actualización de solicitud de tóner',
+        intro: `Recibimos tu solicitud de tóner y actualmente no hay existencias en inventario${tonerText}. Ya estamos gestionando la compra para atender tu requerimiento lo antes posible.`
+    });
+}
+
 export { buildInternalIncidentEmail,
-    buildReporterIncidentEmail };
+    buildReporterIncidentEmail,
+    buildReporterOutOfStockTonerEmail };

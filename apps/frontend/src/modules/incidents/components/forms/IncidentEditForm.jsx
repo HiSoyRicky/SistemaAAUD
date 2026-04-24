@@ -64,6 +64,7 @@ function IncidentEditForm({ incident, onCancel, onSave }) {
                     <option value={1}>Problemas con el internet</option>
                     <option value={2}>Problemas con el equipo</option>
                     <option value={3}>Problemas con un programa</option>
+                    <option value={5}>Solicitud de tóner</option>
                     <option value={4}>Otro</option>
                 </select>
                 

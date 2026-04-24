@@ -16,7 +16,8 @@ import {
   tonerMovementsRouter,
   usersRouter,
   permissionsRouter,
-  activityRouter
+  activityRouter,
+  categoriesRouter,
 } from './index.js';
 
 const router = express.Router();
@@ -41,5 +42,6 @@ router.use('/inventory', inventoryRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
 router.use('/permissions', permissionsRouter);
+router.use('/categories', categoriesRouter);
 
 export default router;

@@ -25,6 +25,11 @@ router.get(
 );
 
 router.get(
+  '/toner-options',
+  controller.getTonerOptions
+);
+
+router.get(
   '/:id',
   authMiddleware,
   requirePasswordChange,
@@ -48,6 +53,7 @@ router.put(
   controller.update
 
 );
+
 router.delete(
   '/:id',
   authMiddleware,
