@@ -6,7 +6,14 @@ import { getClientIp } from '../../common/utils/clientInfo.js';
 import { scheduleIncidentCreatedNotification } from './incidentNotificationService.js';
 
 const statusMap = { Pendiente: 1, 'En proceso': 2, Resuelto: 3 };
-const TONER_CATEGORY_ID = 5;
+
+function normalizeCategoryName(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
 
 const incidentSelect = {
     id: true,
@@ -61,9 +68,9 @@ function parseOptionalPositiveInt(value) {
     return parsed;
 }
 
-async function resolveTonerRequestContext(payload, tx) {
-    const categoryId = Number(payload.id_category);
-    if (categoryId !== TONER_CATEGORY_ID) {
+async function resolveTonerRequestContext({ categoryName, payload, tx }) {
+    const normalizedCategoryName = normalizeCategoryName(categoryName);
+    if (!normalizedCategoryName.includes('toner')) {
         return {
             isTonerRequest: false,
             isOutOfStock: false
@@ -164,7 +171,20 @@ async function createIncident({ payload, req, io }) {
     const createData = buildCreateData(payload, clientIp);
 
     const { newIncident, tonerRequestContext } = await prisma.$transaction(async (tx) => {
-        const requestContext = await resolveTonerRequestContext(payload, tx);
+        const category = await tx.categories.findUnique({
+            where: { id: createData.id_category },
+            select: { id: true, name: true }
+        });
+
+        if (!category) {
+            throw new AppError('Categoría inválida', 400);
+        }
+
+        const requestContext = await resolveTonerRequestContext({
+            categoryName: category.name,
+            payload,
+            tx
+        });
 
         const last = await tx.bd_incidents.findFirst({
             orderBy: { ticket_number: 'desc' },
@@ -189,6 +209,15 @@ async function createIncident({ payload, req, io }) {
             newIncident: createdIncident,
             tonerRequestContext: requestContext
         };
+    }).catch((error) => {
+        if (error?.code === 'P2003') {
+            throw new AppError(
+                'No se pudo crear la incidencia: verifique ubicación, departamento y categoría.',
+                400
+            );
+        }
+
+        throw error;
     });
 
     if (!newIncident) {

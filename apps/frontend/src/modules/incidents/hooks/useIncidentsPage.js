@@ -232,10 +232,7 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
                     id_toner: newIncidentData.id_toner ? parseInt(newIncidentData.id_toner) : null,
                     toner_color: newIncidentData.toner_color || null,
                     email: newIncidentData.email?.trim() || null,
-                    other_category_detail:
-                        categoryId === 4
-                            ? newIncidentData.other_category_detail?.trim() || null
-                            : null,
+                    other_category_detail: newIncidentData.other_category_detail?.trim() || null,
                 };
 
                 const created = await Incidents.create(incidentToCreate);

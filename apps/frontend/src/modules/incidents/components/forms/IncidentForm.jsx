@@ -14,7 +14,11 @@ function IncidentForm({ onSubmit }) {
     watch,
     showModal,
     incidentId,
+    categories,
+    isLoadingCategories,
+    categoriesError,
     isTonerCategory,
+    isOtherCategory,
     tonerPrinters,
     availableTonerColors,
     isLoadingTonerOptions,
@@ -25,15 +29,6 @@ function IncidentForm({ onSubmit }) {
     handleUbiDepChange
   } = useIncidentForm({ loggedUserId, onSubmit });
 
-  const CATEGORY_OPTIONS = [
-    { value: 1, label: "Problemas con el internet" },
-    { value: 2, label: "Problemas con el equipo" },
-    { value: 3, label: "Problemas con un programa" },
-    { value: 5, label: "Solicitud de tóner" },
-    { value: 4, label: "Otro" },
-  ];
-
-  const selectedCategory = watch("id_category");
   const descriptionPlaceholder = isTonerCategory
     ? "Se autocompleta al elegir color; puedes agregar más detalle si lo deseas."
     : "Describa el problema con el mayor detalle posible";
@@ -102,19 +97,26 @@ function IncidentForm({ onSubmit }) {
                 <select
                   id="id_category"
                   {...register("id_category")}
+                  disabled={isLoadingCategories || categories.length === 0}
                   className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
                 >
                   <option value="" disabled>Escoge una categoría</option>
-                  {CATEGORY_OPTIONS.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+                {isLoadingCategories && (
+                  <p className="mt-1 text-xs text-blue-600">Cargando categorías...</p>
+                )}
+                {categoriesError && (
+                  <p className="mt-1 text-xs text-red-500">{categoriesError}</p>
+                )}
                 {errors.id_category?.message && (
                   <p className="mt-1 text-xs text-red-500">{errors.id_category.message}</p>
                 )}
               </div>
 
-              {Number(selectedCategory) === 4 && (
+              {isOtherCategory && (
                 <div>
                   <label htmlFor="other_category_detail" className="block mb-1 text-sm font-medium text-gray-700">
                     Especifique otra categoría:
@@ -225,9 +227,11 @@ function IncidentForm({ onSubmit }) {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingCategories || categories.length === 0}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition
-                  ${isSubmitting ? "cursor-not-allowed bg-slate-500" : "bg-blue-600 hover:bg-blue-700"}`}
+                  ${isSubmitting || isLoadingCategories || categories.length === 0
+                    ? "cursor-not-allowed bg-slate-500"
+                    : "bg-blue-600 hover:bg-blue-700"}`}
               >
                 {isSubmitting ? "Enviando..." : "Reportar Incidencia"}
               </button>

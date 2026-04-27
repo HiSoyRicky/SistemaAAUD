@@ -1,8 +1,10 @@
 import sendMail from '../../common/utils/mailer.js';
 import { generarTokenIncidencia } from '../../common/utils/token.js';
-import { buildInternalIncidentEmail,
+import {
+    buildInternalIncidentEmail,
     buildReporterIncidentEmail,
-    buildReporterOutOfStockTonerEmail } from '../../templates/incidents/incidentEmailTemplate.js';
+    buildReporterOutOfStockTonerEmail
+} from '../../templates/incidents/incidentEmailTemplate.js';
 
 const frontendUrl = process.env.FRONTEND_BASE_URL;
 const internalRecipients =
@@ -71,5 +73,7 @@ function scheduleIncidentCreatedNotification(payload) {
     });
 }
 
-export { notifyIncidentCreated,
-    scheduleIncidentCreatedNotification };
+export {
+    notifyIncidentCreated,
+    scheduleIncidentCreatedNotification
+};

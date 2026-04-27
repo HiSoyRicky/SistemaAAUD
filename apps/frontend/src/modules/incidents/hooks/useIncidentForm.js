@@ -5,9 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { incidentSchema } from "../schemas/incident.schema";
 import { toast } from "react-toastify";
-import { Incidents } from "../services/incidents.api";
-
-const TONER_CATEGORY_ID = 5;
+import { getCategories, Incidents } from "../services/incidents.api";
 
 const TONER_COLOR_LABELS = {
     BLACK: "Negro",
@@ -16,11 +14,21 @@ const TONER_COLOR_LABELS = {
     YELLOW: "Amarillo",
 };
 
+const normalizeCategoryName = (value) =>
+    String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
 export function useIncidentForm({ loggedUserId, onSubmit }) {
     const [showModal, setShowModal] = useState(false);
     const [incidentId, setIncidentId] = useState(null);
     const [selectedUbication, setSelectedUbication] = useState("");
     const [selectedDepartment, setSelectedDepartment] = useState("");
+    const [categories, setCategories] = useState([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [categoriesError, setCategoriesError] = useState("");
     const [tonerPrinters, setTonerPrinters] = useState([]);
     const [isLoadingTonerOptions, setIsLoadingTonerOptions] = useState(false);
     const [tonerOptionsError, setTonerOptionsError] = useState("");
@@ -57,8 +65,14 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
     const selectedDepartmentId = watch("id_department");
     const selectedPrinterModelId = watch("id_printer_model");
     const selectedTonerColor = watch("toner_color");
-
-    const isTonerCategory = Number(selectedCategory) === TONER_CATEGORY_ID;
+    const selectedCategoryDef = useMemo(() => {
+        const categoryId = Number(selectedCategory);
+        if (!categoryId) return null;
+        return categories.find((category) => Number(category.id) === categoryId) || null;
+    }, [categories, selectedCategory]);
+    const selectedCategoryNameNormalized = normalizeCategoryName(selectedCategoryDef?.name);
+    const isTonerCategory = selectedCategoryNameNormalized.includes("toner");
+    const isOtherCategory = selectedCategoryNameNormalized.includes("otro");
 
     const setFieldValueIfChanged = (fieldName, nextValue, options) => {
         const currentValue = getValues(fieldName);
@@ -91,6 +105,42 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
             id_toner: toner.id_toner
         }));
     }, [selectedPrinter]);
+
+    useEffect(() => {
+        let ignore = false;
+
+        const loadCategories = async () => {
+            setIsLoadingCategories(true);
+            setCategoriesError("");
+
+            try {
+                const fetched = await getCategories();
+                if (ignore) return;
+
+                const list = Array.isArray(fetched) ? fetched : [];
+                setCategories(list);
+            } catch (error) {
+                if (ignore) return;
+
+                const message =
+                    error?.response?.data?.error ||
+                    error?.response?.data?.message ||
+                    "No fue posible cargar las categorías.";
+
+                setCategories([]);
+                setCategoriesError(message);
+            } finally {
+                if (!ignore) {
+                    setIsLoadingCategories(false);
+                }
+            }
+        };
+
+        loadCategories();
+        return () => {
+            ignore = true;
+        };
+    }, []);
 
     useEffect(() => {
         if (isTonerCategory) {
@@ -345,6 +395,49 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
 
     const submit = handleSubmit(async (data) => {
         clearErrors("root");
+        clearErrors(["id_category", "other_category_detail", "id_printer_model", "toner_color"]);
+
+        const categoryId = Number(data.id_category);
+        const categoryDef =
+            categories.find((category) => Number(category.id) === categoryId) || null;
+
+        if (!categoryDef) {
+            setError("id_category", {
+                type: "manual",
+                message: "Seleccione una categoría válida"
+            });
+            return;
+        }
+
+        const categoryNameNormalized = normalizeCategoryName(categoryDef.name);
+        const categoryIsOther = categoryNameNormalized.includes("otro");
+        const categoryIsToner = categoryNameNormalized.includes("toner");
+
+        if (categoryIsOther && !data.other_category_detail?.trim()) {
+            setError("other_category_detail", {
+                type: "manual",
+                message: "Especifique la categoría personalizada"
+            });
+            return;
+        }
+
+        if (categoryIsToner) {
+            if (!data.id_printer_model) {
+                setError("id_printer_model", {
+                    type: "manual",
+                    message: "Seleccione una impresora"
+                });
+                return;
+            }
+
+            if (!String(data.toner_color || "").trim()) {
+                setError("toner_color", {
+                    type: "manual",
+                    message: "Seleccione el color del tóner"
+                });
+                return;
+            }
+        }
 
         try {
             const payload = {
@@ -397,7 +490,11 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
         watch,
         showModal,
         incidentId,
+        categories,
+        isLoadingCategories,
+        categoriesError,
         isTonerCategory,
+        isOtherCategory,
         tonerPrinters,
         availableTonerColors,
         isLoadingTonerOptions,
