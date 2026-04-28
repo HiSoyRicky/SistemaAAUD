@@ -31,8 +31,8 @@ const getCategoryName = (id_category) => {
         case 1: return 'Problemas con el internet';
         case 2: return 'Problemas con el equipo';
         case 3: return 'Problemas con un programa';
-        case 4: return 'Otro';
-        case 5: return 'Solicitud de tóner';
+        case 4: return 'Solicitud de tóner';
+        case 5: return 'Otro';
         default: return 'Desconocida';
     }
 };

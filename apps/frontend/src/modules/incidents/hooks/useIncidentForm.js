@@ -118,7 +118,15 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
                 if (ignore) return;
 
                 const list = Array.isArray(fetched) ? fetched : [];
-                setCategories(list);
+                const orderedList = [...list].sort((a, b) => {
+                    const aIsOther = normalizeCategoryName(a?.name).includes("otro");
+                    const bIsOther = normalizeCategoryName(b?.name).includes("otro");
+
+                    if (aIsOther === bIsOther) return 0;
+                    return aIsOther ? 1 : -1;
+                });
+
+                setCategories(orderedList);
             } catch (error) {
                 if (ignore) return;
 
