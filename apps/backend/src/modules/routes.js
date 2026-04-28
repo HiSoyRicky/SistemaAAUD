@@ -32,6 +32,7 @@ router.use('/brands', brandsRouter);
 router.use('/devices', devicesRouter);
 router.use('/models', modelsRouter);
 router.use('/status', statusRouter);
+router.use('/categories', categoriesRouter);
 
 // Rutas protegidas
 router.use(authMiddleware);
@@ -42,6 +43,5 @@ router.use('/inventory', inventoryRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
 router.use('/permissions', permissionsRouter);
-router.use('/categories', categoriesRouter);
 
 export default router;
