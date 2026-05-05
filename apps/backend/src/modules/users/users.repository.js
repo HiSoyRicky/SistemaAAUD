@@ -21,7 +21,10 @@ export const findAll = async () => {
 
 export const findTechnicians = async () => {
   return prisma.users.findMany({
-    where: { id_rol: 2 },
+    where: {
+      id_rol: 2,
+      active: true
+    },
     select: userSelect
   });
 };

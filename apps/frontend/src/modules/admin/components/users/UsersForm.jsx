@@ -36,6 +36,21 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel}
                 />
             </div>
 
+            {!form.id && (
+                <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">
+                        Contraseña inicial
+                    </label>
+                    <input
+                        type="password"
+                        value={form.password || ""}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                    />
+                </div>
+            )}
+
             {/* Ubicación + Departamento (filtrado) */}
             <div className="md:col-span-2">
                 <UbiDepSelector
@@ -89,13 +104,13 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onCancel}
                 <span className="font-medium">Activo</span>
                 <button
                     type="button"
-                    onClick={() => setForm({ ...form, active: form.active === 1 ? 0 : 1 })}
+                    onClick={() => setForm({ ...form, active: !Boolean(form.active) })}
                     className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors 
-                ${form.active === 1 ? "bg-green-500" : "bg-gray-300"}`}
+                ${form.active ? "bg-green-500" : "bg-gray-300"}`}
                 >
                     <span
                         className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform
-                        ${form.active === 1 ? "translate-x-3" : "translate-x-0"}`}
+                        ${form.active ? "translate-x-3" : "translate-x-0"}`}
                     />
                 </button>
 
