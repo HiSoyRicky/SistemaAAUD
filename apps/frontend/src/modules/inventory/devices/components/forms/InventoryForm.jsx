@@ -32,6 +32,13 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 
     const ALLOWED_STATUS = ['Buen estado', 'Mal estado', 'Para descarte', 'Nuevo', 'Descartado'];
 
+    const normalizeText = (value) =>
+        String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toUpperCase()
+            .trim();
+
     //  Cargar opciones para los selectores
     useEffect(() => {
         async function fetchOptions() {
@@ -71,6 +78,22 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
             String(m.id_device) === String(formData.id_device)
     );
 
+    const selectedStatus = options.statuses.find((status) => String(status.id) === String(formData.id_status));
+    const isDiscardedStatus = normalizeText(selectedStatus?.name) === 'DESCARTADO';
+
+    useEffect(() => {
+        if (!isDiscardedStatus) return;
+
+        if (formData.id_ubication === null && formData.id_department === null) return;
+
+        setFormData((prev) => ({
+            ...prev,
+            id_ubication: null,
+            id_department: null
+        }));
+        setErrors((prev) => ({ ...prev, id_ubication: '', id_department: '' }));
+    }, [isDiscardedStatus, formData.id_ubication, formData.id_department]);
+
     // Manejo de cambios en los campos del formulario
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -107,8 +130,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         const newErrors = {};
 
         if (!formData.tag.trim()) newErrors.tag = 'El marbete es obligatorio';
-        if (!formData.id_ubication) newErrors.id_ubication = 'Seleccione una ubicación';
-        if (!formData.id_department) newErrors.id_department = 'Seleccione un departamento';
+        if (!isDiscardedStatus && !formData.id_ubication) newErrors.id_ubication = 'Seleccione una ubicación';
+        if (!isDiscardedStatus && !formData.id_department) newErrors.id_department = 'Seleccione un departamento';
         if (!formData.id_device) newErrors.id_device = 'Seleccione un equipo';
         if (!formData.id_brand) newErrors.id_brand = 'Seleccione una marca';
         if (!formData.id_model) newErrors.id_model = 'Seleccione un modelo';
@@ -130,6 +153,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
             const submitData = {
                 ...formData,
                 transferdate,
+                id_ubication: isDiscardedStatus ? null : formData.id_ubication,
+                id_department: isDiscardedStatus ? null : formData.id_department,
                 user: formData.user.trim() === '' ? null : formData.user,
                 ip: formData.ip.trim() === '' ? null : formData.ip,
                 observation: formData.observation.trim() === '' ? null : formData.observation
@@ -262,12 +287,18 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 id_ubication={formData.id_ubication}
                                 id_department={formData.id_department}
                                 onChange={handleUbiDepChange}
+                                disabled={isDiscardedStatus}
                                 errors={{
                                     ubication: errors.id_ubication,
                                     department: errors.id_department
                                 }}
                                 mode="inventory"
                             />
+                            {isDiscardedStatus && (
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Para estado descartado, ubicación y departamento se limpian automáticamente.
+                                </p>
+                            )}
                         </div>
 
                         {/* Fila 3: Equipo / Marca / Modelo */}

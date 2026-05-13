@@ -9,6 +9,8 @@ const includeRelations = {
   status: { select: { id: true, name: true } }
 };
 
+let inventoryLocationNullableCache = null;
+
 export const findAll = async (search) => {
   return prisma.bd_inventory.findMany({
     where: search
@@ -57,6 +59,118 @@ export const findModelById = async (id) => {
 
 export const findStatusById = async (id) => {
   return prisma.status.findUnique({ where: { id: Number(id) } });
+};
+
+export const findInventoryMovementLogs = async ({ action, from, to, inventoryId }) => {
+  return prisma.activity_logs.findMany({
+    where: {
+      entity_type: 'BD_INVENTORY',
+      ...(inventoryId && { entity_id: Number(inventoryId) }),
+      ...(action && { action }),
+      ...((from || to) && {
+        created_at: {
+          ...(from && { gte: from }),
+          ...(to && { lte: to })
+        }
+      })
+    },
+    orderBy: { created_at: 'desc' },
+    include: {
+      user: {
+        select: {
+          id: true,
+          nombre_completo: true
+        }
+      }
+    }
+  });
+};
+
+export const findUbicationsByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.ubications.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true }
+  });
+};
+
+export const findDepartmentsByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.departments.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true }
+  });
+};
+
+export const findStatusesByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.status.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true }
+  });
+};
+
+export const findDevicesByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.devices.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true }
+  });
+};
+
+export const findBrandsByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.brands.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true }
+  });
+};
+
+export const findModelsByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.models.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true }
+  });
+};
+
+export const findCurrentInventoryByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.bd_inventory.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      ubications: { select: { name: true } },
+      departments: { select: { name: true } },
+      status: { select: { name: true } }
+    }
+  });
+};
+
+export const areInventoryLocationFieldsNullable = async () => {
+  if (inventoryLocationNullableCache !== null) {
+    return inventoryLocationNullableCache;
+  }
+
+  const rows = await prisma.$queryRawUnsafe(`
+    SELECT BOOL_AND(is_nullable = 'YES') AS all_nullable
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bd_inventory'
+      AND column_name IN ('id_ubication', 'id_department');
+  `);
+
+  const value = rows?.[0]?.all_nullable;
+  inventoryLocationNullableCache = value === true || value === 't' || value === 'true';
+
+  return inventoryLocationNullableCache;
 };
 
 export const create = async (data) => {

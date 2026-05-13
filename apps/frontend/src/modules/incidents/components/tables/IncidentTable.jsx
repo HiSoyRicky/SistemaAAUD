@@ -111,7 +111,7 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
                             {show.department && <th className={tdClass}>Departamento</th>}
                             {show.category && <th className={tdClass}>Categoría</th>}
                             {show.description && <th className={tdClass}>Descripción</th>}
-                            {show.date && <th className={tdClass}>Fecha Creación</th>}
+                            {show.date && <th className={tdClass}>Fecha de creación</th>}
                             {show.id_status && <th className={tdClass}>Estado</th>}
                             {show.actions &&
                                 <th className={thClass}>

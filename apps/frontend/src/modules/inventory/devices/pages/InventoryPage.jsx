@@ -1,7 +1,8 @@
 // src/pages/inventory/InventoryPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, History } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import useAuth from '../../../../shared/hooks/useAuth';
 import api from '../../../../shared/api/apiClient';
 import { Inventory } from '../services/inventory.api';
@@ -16,6 +17,7 @@ import InventoryFormModal from '../components/forms/InventoryForm';
 import InventoryDetailModal from '../components/modals/InventoryDetailModal';
 
 function InventoryPage() {
+    const navigate = useNavigate();
     const { authData, userType, loggedUserName } = useAuth();
     const [search, setSearch] = useState('');
     const [departments, setDepartments] = useState([]);
@@ -227,15 +229,26 @@ function InventoryPage() {
 
                 </div>
 
-                {/* Botón para agregar nuevo dispositivo */}
-                {userType === 'admin' && (
-                    <button
-                        onClick={() => setShowInventoryForm(true)}
-                        className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-blue-500 rounded"
-                    >
-                        <Plus size={16} /> Nuevo equipo
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    {['admin', 'consultor', 'tecnico'].includes(userType) && (
+                        <button
+                            onClick={() => navigate('/inventario/equipos/history')}
+                            className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-slate-600 rounded hover:bg-slate-700"
+                        >
+                            <History size={16} /> Historial
+                        </button>
+                    )}
+
+                    {/* Botón para agregar nuevo dispositivo */}
+                    {userType === 'admin' && (
+                        <button
+                            onClick={() => setShowInventoryForm(true)}
+                            className="flex items-center h-8 gap-1 px-2 text-sm text-white bg-blue-500 rounded"
+                        >
+                            <Plus size={16} /> Nuevo equipo
+                        </button>
+                    )}
+                </div>
 
             </div>
 

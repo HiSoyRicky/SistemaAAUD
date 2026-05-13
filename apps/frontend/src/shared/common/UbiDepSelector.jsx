@@ -34,6 +34,7 @@ function UbiDepSelector({
     onChange,
     errors = {},
     mode = "incident",
+    disabled = false,
 }) {
     const {
         ubications,
@@ -92,6 +93,8 @@ function UbiDepSelector({
         "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400";
 
     const handleUbicationChange = (e) => {
+        if (disabled) return;
+
         const idUbi = e.target.value ? parseInt(e.target.value) : null;
         setSelectedUbication(idUbi);
         setSelectedDepartment(null);
@@ -110,6 +113,8 @@ function UbiDepSelector({
     };
 
     const handleDepartmentChange = (e) => {
+        if (disabled) return;
+
         const idDep = e.target.value ? parseInt(e.target.value) : null;
         setSelectedDepartment(idDep);
 
@@ -131,7 +136,7 @@ function UbiDepSelector({
         });
     };
 
-    const depDisabled = !selectedUbication || sortedDepartments.length === 0;
+    const depDisabled = disabled || !selectedUbication || sortedDepartments.length === 0;
 
     return (
         <div className="p-4 bg-white border border-gray-200 shadow-sm rounded-2xl md:p-5">
@@ -148,8 +153,9 @@ function UbiDepSelector({
                             id="id_ubication"
                             value={selectedUbication || ""}
                             onChange={handleUbicationChange}
+                            disabled={disabled}
                             className={`${baseSelect} ${errors.ubication ? selectWithError : "border-gray-300"
-                                }`}
+                                } ${disabled ? disabledSelect : ""}`}
                         >
                             <option value="" disabled>
                                 -- Seleccione una ubicación --
@@ -187,7 +193,9 @@ function UbiDepSelector({
                     htmlFor="id_department"
                     error={errors.department}
                     hint={
-                        depDisabled
+                        disabled
+                            ? "No aplica para equipos descartados."
+                            : depDisabled
                             ? "Primero elige una ubicación para habilitar departamentos."
                             : "Selecciona el departamento correspondiente."
                     }

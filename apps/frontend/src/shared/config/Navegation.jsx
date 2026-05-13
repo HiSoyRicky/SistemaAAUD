@@ -5,6 +5,7 @@ import {
   Package,
   Monitor,
   Printer,
+  History,
   FileText,
   Users,
   Users2,

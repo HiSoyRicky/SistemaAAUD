@@ -14,6 +14,12 @@ router.get(
   controller.getAll
 );
 
+router.get(
+  '/history',
+  requirePermission('inventory.read'),
+  controller.getHistory
+);
+
 router.post(
   '/',
   requirePermission('inventory.create'),

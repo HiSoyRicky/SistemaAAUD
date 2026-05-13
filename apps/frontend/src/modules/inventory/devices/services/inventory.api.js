@@ -5,6 +5,8 @@ import api from "../../../../shared/api/apiClient";
 const Inventory = {
   fetchDeviceTypes: () => api.get('/api/devices').then(res => res.data),
   fetchDevices: (search = '') => api.get('/api/inventory', { params: { search } }).then(res => res.data),
+  fetchMovementHistory: (params = {}) =>
+    api.get('/api/inventory/history', { params }).then((res) => res.data),
   addDevice: (data) => api.post('/api/inventory', data).then(res => res.data),
   updateDevice: (id, data) => api.put(`/api/inventory/${id}`, data).then(res => res.data),
   deleteDevice: (id) => api.delete(`/api/inventory/${id}`).then(res => res.data),

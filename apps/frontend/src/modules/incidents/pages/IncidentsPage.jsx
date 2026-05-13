@@ -101,7 +101,7 @@ function IncidentsPage() {
                             <button
                                 type="button"
                                 onClick={handleExportIncidents}
-                                className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                className="h-8 px-2 text-sm font-bold text-white bg-green-500 rounded hover:bg-green-700"
                             >
                                 Exportar a Excel
                             </button>
@@ -109,7 +109,7 @@ function IncidentsPage() {
                             <button
                                 type="button"
                                 onClick={() => window.open("/incidencias/monitor", "_blank")}
-                                className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                className="h-8 px-2 text-sm font-bold text-white bg-blue-500 rounded hover:bg-blue-700"
                             >
                                 Monitor
                             </button>

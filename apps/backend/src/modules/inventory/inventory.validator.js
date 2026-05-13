@@ -15,8 +15,14 @@ const inventoryIdParamsSchema = z.object({
 
 const createInventoryBodySchema = z.object({
   tag: zRequiredString('El campo tag es obligatorio'),
-  id_ubication: zRequiredInt('El campo id_ubication debe ser un número entero'),
-  id_department: zRequiredInt('El campo id_department debe ser un número entero'),
+  id_ubication: zOptionalInt('El campo id_ubication debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true
+  }),
+  id_department: zOptionalInt('El campo id_department debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true
+  }),
   id_device: zRequiredInt('El campo id_device debe ser un número entero'),
   id_brand: zRequiredInt('El campo id_brand debe ser un número entero'),
   id_model: zRequiredInt('El campo id_model debe ser un número entero'),
@@ -30,8 +36,14 @@ const createInventoryBodySchema = z.object({
 
 const updateInventoryBodySchema = z.object({
   tag: zOptionalNonEmptyField('El campo tag no puede estar vacío'),
-  id_ubication: zOptionalInt('El campo id_ubication debe ser un número entero'),
-  id_department: zOptionalInt('El campo id_department debe ser un número entero'),
+  id_ubication: zOptionalInt('El campo id_ubication debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true
+  }),
+  id_department: zOptionalInt('El campo id_department debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true
+  }),
   id_device: zOptionalInt('El campo id_device debe ser un número entero'),
   id_brand: zOptionalInt('El campo id_brand debe ser un número entero'),
   id_model: zOptionalInt('El campo id_model debe ser un número entero'),

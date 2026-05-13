@@ -50,29 +50,29 @@ model bd_incidents {
 }
 
 model bd_inventory {
-  id            Int         @id(map: "pk_bd_inventory") @default(autoincrement())
-  tag           String      @db.VarChar(50)
-  id_ubication  Int
-  id_department Int
-  user          String?     @db.VarChar(50)
+  id            Int          @id(map: "pk_bd_inventory") @default(autoincrement())
+  tag           String       @db.VarChar(50)
+  id_ubication  Int?
+  id_department Int?
+  user          String?      @db.VarChar(50)
   id_device     Int
   id_brand      Int
   id_model      Int
-  serie         String      @db.VarChar(50)
-  ip            String?     @db.VarChar(50)
+  serie         String       @db.VarChar(50)
+  ip            String?      @db.VarChar(50)
   id_status     Int
-  transferdate  DateTime?   @db.Date
-  observation   String?     @db.VarChar(255)
+  transferdate  DateTime?    @db.Date
+  observation   String?      @db.VarChar(255)
   created_by    Int?
-  created_at    DateTime?   @db.Timetz(6)
-  updated_at    DateTime?   @db.Timetz(6)
+  created_at    DateTime?    @db.Timetz(6)
+  updated_at    DateTime?    @db.Timetz(6)
   updated_by    Int?
-  brands        brands      @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
-  departments   departments @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
-  devices       devices     @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
-  models        models      @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
-  status        status      @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
-  ubications    ubications  @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
+  brands        brands       @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
+  departments   departments? @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
+  devices       devices      @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
+  models        models       @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
+  status        status       @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
+  ubications    ubications?  @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
 }
 
 model brands {

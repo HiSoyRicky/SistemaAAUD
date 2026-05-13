@@ -51,14 +51,15 @@ function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
 
     // Crear opciones ordenadas alfabéticamente
     const options = {
-        ubication_name: [...new Set(filteredInventory.map(i => i.ubication_name))].sort(),
-        department_name: [...new Set(filteredInventory.map(i => i.department_name))].sort(),
-        user: [...new Set(filteredInventory.map(i => i.user))].sort(),
-        device_name: [...new Set(filteredInventory.map(i => i.device_name))].sort(),
-        brand_name: [...new Set(filteredInventory.map(i => i.brand_name))].sort(),
-        model_name: [...new Set(filteredInventory.map(i => i.model_name))].sort(),
-        status_name: [...new Set(filteredInventory.map(i => i.status_name))].sort()
+        ubication_name: [...new Set(filteredInventory.map(i => i.ubication_name).filter(Boolean))].sort(),
+        department_name: [...new Set(filteredInventory.map(i => i.department_name).filter(Boolean))].sort(),
+        user: [...new Set(filteredInventory.map(i => i.user).filter(Boolean))].sort(),
+        device_name: [...new Set(filteredInventory.map(i => i.device_name).filter(Boolean))].sort(),
+        brand_name: [...new Set(filteredInventory.map(i => i.brand_name).filter(Boolean))].sort(),
+        model_name: [...new Set(filteredInventory.map(i => i.model_name).filter(Boolean))].sort(),
+        status_name: [...new Set(filteredInventory.map(i => i.status_name).filter(Boolean))].sort()
     };
+    const showIpColumn = String(filters.device_name || '').toUpperCase() === 'IMPRESORA';
 
     // ahora paginar sobre filteredInventory en vez de inventory
     const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
@@ -155,6 +156,7 @@ function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
                                 </select>
                             </th>
                             <th className={`${tdClass} border`}>Serie</th>
+                            {showIpColumn && <th className={`${tdClass} border`}>IP</th>}
 
                             <th className={`${tdClass} border`}>
                                 Acciones
@@ -166,7 +168,7 @@ function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
                     <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedItems.length === 0 ? (
                             <tr>
-                                <td colSpan="13" className="px-6 py-4 text-sm text-center text-gray-500 whitespace-normal">
+                                <td colSpan={showIpColumn ? 10 : 9} className="px-6 py-4 text-sm text-center text-gray-500 whitespace-normal">
                                     No hay dispositivos para mostrar.
                                 </td>
                             </tr>
@@ -208,13 +210,14 @@ function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
                                             {item.tag}
                                         </th>
 
-                                        <td className={`${thClass} border`}>{item.ubication_name}</td>
-                                        <td className={`${thClass} border`}>{item.department_name}</td>
-                                        <td className={`${thClass} border`}>{item.user}</td>
+                                        <td className={`${thClass} border`}>{item.ubication_name || '-'}</td>
+                                        <td className={`${thClass} border`}>{item.department_name || '-'}</td>
+                                        <td className={`${thClass} border`}>{item.user || '-'}</td>
                                         <td className={`${thClass} border`}>{item.device_name}</td>
                                         <td className={`${thClass} border`}>{item.brand_name}</td>
                                         <td className={`${thClass} border`}>{item.model_name}</td>
                                         <td className={`${thClass} border`}>{item.serie}</td>
+                                        {showIpColumn && <td className={`${thClass} border`}>{item.ip || '-'}</td>}
 
                                         {/* Acciones */}
                                         <td className={`${thClass} border`}>

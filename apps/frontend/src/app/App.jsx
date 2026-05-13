@@ -18,6 +18,7 @@ import useAuth from '../shared/hooks/useAuth';
 
 // Inventario
 import InventoryPage from '../modules/inventory/devices/pages/InventoryPage';
+import InventoryMovementsPage from '../modules/inventory/devices/pages/InventoryMovementsPage';
 import ProfilePage from '../modules/auth/pages/ProfilePage';
 import TonersPage from '../modules/inventory/toners/pages/TonersPage';
 import TonerMovementsPage from '../modules/inventory/toners/pages/TonerMovementsPage';
@@ -154,6 +155,17 @@ function App() {
             <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
               <PrivateLayout>
                 <InventoryPage />
+              </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventario/equipos/history"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+              <PrivateLayout>
+                <InventoryMovementsPage />
               </PrivateLayout>
             </PrivateRoute>
           }
