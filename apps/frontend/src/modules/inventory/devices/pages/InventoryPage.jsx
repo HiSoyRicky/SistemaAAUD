@@ -178,6 +178,8 @@ function InventoryPage() {
             toStrLower(d.device_name).includes(word) ||
             toStrLower(d.brand_name).includes(word) ||
             toStrLower(d.model_name).includes(word) ||
+            toStrLower(d.ip).includes(word) ||
+            toStrLower(d.observation).includes(word) ||
             toStrLower(d.transferdate).includes(word) ||   // ahora seguro
             toStrLower(d.serie).includes(word)
         );
@@ -200,7 +202,7 @@ function InventoryPage() {
                     <div className="flex flex-wrap items-center gap-6">
                         <input
                             type="text"
-                            placeholder="Buscar por serie, marbete o nombre"
+                            placeholder="Buscar por serie, marbete, nombre, IP u observación"
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value)

@@ -19,6 +19,8 @@ export const findAll = async (search) => {
             { serie: { contains: search, mode: 'insensitive' } },
             { tag: { contains: search, mode: 'insensitive' } },
             { user: { contains: search, mode: 'insensitive' } },
+            { ip: { contains: search, mode: 'insensitive' } },
+            { observation: { contains: search, mode: 'insensitive' } },
             { devices: { is: { name: { contains: search, mode: 'insensitive' } } } },
             { brands: { is: { name: { contains: search, mode: 'insensitive' } } } },
             { models: { is: { name: { contains: search, mode: 'insensitive' } } } },

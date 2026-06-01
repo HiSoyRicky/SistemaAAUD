@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../../../../shared/hooks/useAuth";
 import TonerMovementModal from "../modals/TonerMovementsModal";
 import Pagination from "../../../../../shared/components/ui/Pagination";
+import ActionButton from "../../../../../shared/components/ui/ActionButton";
 
 const COLOR_MAP = {
   BLACK: "NEGRO",
@@ -95,9 +96,8 @@ function TonerTable({ toners = [], onRefresh }) {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className={`flex items-center gap-1 px-3 py-1 text-white rounded ${
-              loading ? "bg-blue-300" : "bg-blue-500"
-            }`}
+            className={`flex items-center gap-1 px-3 py-1 text-white rounded ${loading ? "bg-blue-300" : "bg-blue-500"
+              }`}
           >
             <RefreshCw
               size={16}
@@ -181,10 +181,10 @@ function TonerTable({ toners = [], onRefresh }) {
                               t.color === "BLACK"
                                 ? "#000"
                                 : t.color === "CYAN"
-                                ? "#00bcd4"
-                                : t.color === "MAGENTA"
-                                ? "#e91e63"
-                                : "#fbc02d",
+                                  ? "#00bcd4"
+                                  : t.color === "MAGENTA"
+                                    ? "#e91e63"
+                                    : "#fbc02d",
                           }}
                         />
                         {translateColor(t.color)}
@@ -192,9 +192,8 @@ function TonerTable({ toners = [], onRefresh }) {
                     </td>
 
                     <td
-                      className={`px-3 py-2 border font-semibold ${
-                        lowStock ? "text-red-600" : "text-green-600"
-                      }`}
+                      className={`px-3 py-2 border font-semibold text-center ${lowStock ? "text-red-600" : "text-green-600"
+                        }`}
                     >
                       {t.stock}
                       {lowStock && (
@@ -205,15 +204,16 @@ function TonerTable({ toners = [], onRefresh }) {
                     </td>
 
                     <td className="px-3 py-2 border">
-                      {canCreateMovement && (
-                        <button
-                          onClick={() => openMovementModal(t)}
-                          className="flex items-center gap-1 px-2 py-1 text-white bg-purple-500 rounded"
-                        >
-                          <Plus size={14} />
-                          Movimiento
-                        </button>
-                      )}
+                      <div className="flex justify-center">
+                        {canCreateMovement && (
+                          <ActionButton
+                            onClick={() => openMovementModal(t)}
+                            type="refresh"
+                          >
+                            Movimiento
+                          </ActionButton>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
