@@ -48,6 +48,43 @@ async function exportToExcel({ sheetName, columns, rows, fileName }) {
     );
 }
 
+function formatDateTime(value) {
+    if (!value) return 'N/A';
+
+    const date = new Date(value);
+
+    return date.toLocaleString('es-PA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    });
+}
+
+export function mapTonerMovementToRow(movement) {
+    const movementLabels = {
+        IN: 'Entrada',
+        OUT: 'Salida',
+        ADJUSTMENT: 'Ajuste',
+    };
+
+    return {
+        fecha: formatDateTime(movement.created_at),
+        toner: movement.toner?.toner_model || 'N/A',
+        tipo: movementLabels[movement.movement_type] || movement.movement_type || 'N/A',
+        cantidad: movement.quantity ?? 'N/A',
+        ubicacion: movement.ubication?.name || 'N/A',
+        departamento: movement.department?.name || 'N/A',
+        nota: movement.reference || 'N/A',
+        stock_anterior: movement.previous_stock ?? 'N/A',
+        stock_nuevo: movement.new_stock ?? 'N/A',
+        entrego: movement.user?.nombre_completo || 'N/A',
+        retiro: movement.receiver_name || 'N/A',
+    };
+}
+
 // incidentExcelMapper.js
 export function mapIncidentToRow(i) {
     return {
@@ -156,6 +193,33 @@ export async function exportInventoryToExcel(devices) {
 
     await exportToExcel({
         sheetName: 'Inventario',
+        columns,
+        rows,
+        fileName,
+    });
+}
+
+export async function exportTonerMovementsToExcel(movements) {
+    const columns = [
+        { header: 'Fecha', key: 'fecha', width: 22 },
+        { header: 'Tóner', key: 'toner', width: 20 },
+        { header: 'Tipo', key: 'tipo', width: 14 },
+        { header: 'Cantidad', key: 'cantidad', width: 12 },
+        { header: 'Ubicación', key: 'ubicacion', width: 22 },
+        { header: 'Departamento', key: 'departamento', width: 24 },
+        { header: 'Nota', key: 'nota', width: 34 },
+        { header: 'Stock anterior', key: 'stock_anterior', width: 16 },
+        { header: 'Stock nuevo', key: 'stock_nuevo', width: 16 },
+        { header: 'Entregó', key: 'entrego', width: 26 },
+        { header: 'Retiró', key: 'retiro', width: 26 },
+    ];
+
+    const rows = movements.map(mapTonerMovementToRow);
+
+    const fileName = `Movimientos-Toner-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    await exportToExcel({
+        sheetName: 'Movimientos Toner',
         columns,
         rows,
         fileName,
