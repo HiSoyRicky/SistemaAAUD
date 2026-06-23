@@ -13,6 +13,15 @@ const Inventory = {
   fetchBrands: () => api.get('/api/brands').then(res => res.data),
   fetchModels: () => api.get('/api/models').then(res => res.data),
   fetchStatuses: () => api.get('/api/status').then(res => res.data),
+  createTransferRequest: (data) => api.post('/api/inventory-transfer-requests', data).then(res => res.data),
+  fetchTransferRequests: (params = {}) =>
+    api.get('/api/inventory-transfer-requests', { params }).then((res) => res.data),
+  approveTransferRequest: (id, data = {}) =>
+    api.post(`/api/inventory-transfer-requests/${id}/approve`, data).then((res) => res.data),
+  rejectTransferRequest: (id, data = {}) =>
+    api.post(`/api/inventory-transfer-requests/${id}/reject`, data).then((res) => res.data),
+  requestTransferCorrection: (id, data = {}) =>
+    api.post(`/api/inventory-transfer-requests/${id}/request-correction`, data).then((res) => res.data),
 };
 
 // --- Usuarios ---

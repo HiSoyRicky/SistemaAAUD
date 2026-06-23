@@ -1,7 +1,7 @@
 // src/pages/admin/AdminPage.jsx
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { Users, Home, MapPin, Building, Cpu, Tag, Layers, Droplet, ShieldCheck } from "lucide-react";
+import { Users, Home, MapPin, Building, Cpu, Tag, Layers, Droplet, ShieldCheck, GitBranch } from "lucide-react";
 
 export default function AdminPage() {
     const menuItems = [
@@ -14,6 +14,7 @@ export default function AdminPage() {
         { path: "models", label: "Modelos", icon: <Layers className="w-5 h-5" /> },
         // { path: "statuses", label: "Estados", icon: <Home className="w-5 h-5" /> },
         { path: "toners", label: "Toners", icon: <Droplet className="w-5 h-5" /> },
+        { path: "transfers", label: "Traslados", icon: <GitBranch className="w-5 h-5" /> },
     ];
 
     return (

@@ -35,6 +35,7 @@ import ModelsManager from '../modules/admin/components/models/ModelsManager';
 import TonersManager from '../modules/admin/components/toners/TonersManager';
 import StatusManager from '../modules/admin/components/status/StatusManager';
 import PermissionsManager from '../modules/admin/components/permissions/PermissionsManager';
+import TransferRequestsManager from '../modules/admin/components/transfers/TransferRequestsManager';
 
 
 import PrivateLayout from "../shared/components/layout/PrivateLayout";
@@ -247,6 +248,7 @@ function App() {
           <Route path="statuses" element={<StatusManager />} />
           <Route path="toners" element={<TonersManager />} />
           <Route path="permissions" element={<PermissionsManager />} />
+          <Route path="transfers" element={<TransferRequestsManager />} />
           <Route
             index
             element={

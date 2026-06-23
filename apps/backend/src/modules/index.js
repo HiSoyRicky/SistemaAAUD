@@ -13,3 +13,4 @@ export { default as authRouter } from './auth/auth.routes.js';
 export { default as permissionsRouter } from './permissions/permissions.routes.js';
 export { default as activityRouter } from './activity/activity.routes.js';
 export { default as categoriesRouter } from './categories/categories.routes.js';
+export { default as inventoryTransferRequestsRouter } from './inventoryTransferRequests/inventoryTransferRequests.routes.js';

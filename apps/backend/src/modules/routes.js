@@ -18,6 +18,7 @@ import {
   permissionsRouter,
   activityRouter,
   categoriesRouter,
+  inventoryTransferRequestsRouter,
 } from './index.js';
 
 const router = express.Router();
@@ -40,6 +41,7 @@ router.use(attachUserContext);
 router.use(requirePasswordChange);
 router.use('/activity', activityRouter);
 router.use('/inventory', inventoryRouter);
+router.use('/inventory-transfer-requests', inventoryTransferRequestsRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
 router.use('/permissions', permissionsRouter);

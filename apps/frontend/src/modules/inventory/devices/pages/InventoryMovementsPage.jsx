@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Inventory } from '../services/inventory.api';
 import Pagination from '../../../../shared/components/ui/Pagination';
+import { Printer, X } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
+import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
 
 const ACTION_OPTIONS = [
   { value: '', label: 'Todas las acciones' },
@@ -35,6 +38,14 @@ function valueOrDash(value) {
 
   const trimmed = String(value).trim();
   return trimmed === '' ? '-' : trimmed;
+}
+
+function entityValue(value) {
+  if (value && typeof value === 'object') {
+    return value.name || value.label || value.title || '-';
+  }
+
+  return valueOrDash(value);
 }
 
 function movementCell(previousValue, newValue) {
@@ -120,6 +131,38 @@ function changedFieldsCell(changedFields = []) {
   );
 }
 
+function changedFieldValue(changedFields = [], fieldName) {
+  if (!Array.isArray(changedFields)) return null;
+
+  const change = changedFields.find((item) => item?.field === fieldName);
+  if (!change) return null;
+
+  return change.to ?? change.from ?? null;
+}
+
+function buildTransferPreviewDevice(item) {
+  const previousUser = valueOrDash(item.previous_user) !== '-' ? valueOrDash(item.previous_user) : valueOrDash(item.moved_by?.name);
+  const newUser = valueOrDash(item.new_user);
+
+  return {
+    role: 'transfiere',
+    userName: previousUser,
+    userRecibe: newUser,
+    userTransfiere: previousUser,
+    ubication_name: entityValue(item.previous_ubication),
+    department_name: entityValue(item.previous_department),
+    ubication_destino_name: entityValue(item.new_ubication),
+    department_destino_name: entityValue(item.new_department),
+    device_name: changedFieldValue(item.changed_fields, 'Equipo') || '-',
+    brand_name: changedFieldValue(item.changed_fields, 'Marca') || '-',
+    model_name: changedFieldValue(item.changed_fields, 'Modelo') || '-',
+    serie: changedFieldValue(item.changed_fields, 'Serie') || valueOrDash(item.serie),
+    tag: changedFieldValue(item.changed_fields, 'Marbete') || valueOrDash(item.tag),
+    status_name: changedFieldValue(item.changed_fields, 'Estado') || entityValue(item.new_status),
+    observation: changedFieldValue(item.changed_fields, 'Observación') || valueOrDash(item.new_observation),
+  };
+}
+
 export default function InventoryMovementsPage() {
   const navigate = useNavigate();
 
@@ -133,10 +176,22 @@ export default function InventoryMovementsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [previewRow, setPreviewRow] = useState(null);
+  const printRef = useRef(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: 'Traslado de equipo',
+  });
 
   const summary = useMemo(() => {
     return `${total} movimiento${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`;
   }, [total]);
+
+  const previewDevice = useMemo(() => {
+    if (!previewRow) return null;
+    return buildTransferPreviewDevice(previewRow);
+  }, [previewRow]);
 
   const loadHistory = async () => {
     try {
@@ -181,6 +236,19 @@ export default function InventoryMovementsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, action, from, to]);
+
+  const openPreview = (row) => {
+    setPreviewRow(row);
+  };
+
+  const closePreview = () => {
+    setPreviewRow(null);
+  };
+
+  const handlePreviewPrint = () => {
+    if (!previewRow) return;
+    handlePrint();
+  };
 
   const thClass = 'px-3 py-2 text-xs font-semibold tracking-wide text-center uppercase border text-slate-600 bg-slate-50';
   const tdClass = 'px-3 py-2 text-xs text-center border text-slate-700 align-middle';
@@ -269,13 +337,14 @@ export default function InventoryMovementsPage() {
               <th className={thClass}>Ubicación actual</th>
               <th className={thClass}>Cambios</th>
               <th className={thClass}>Responsable</th>
+              <th className={thClass}>Vista previa</th>
             </tr>
           </thead>
 
           <tbody>
             {loading && (
               <tr>
-                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={12}>
+                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={13}>
                   Cargando historial de movimientos...
                 </td>
               </tr>
@@ -283,7 +352,7 @@ export default function InventoryMovementsPage() {
 
             {!loading && rows.length === 0 && (
               <tr>
-                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={12}>
+                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={13}>
                   No se encontraron movimientos con esos filtros
                 </td>
               </tr>
@@ -312,6 +381,20 @@ export default function InventoryMovementsPage() {
                   <td className={tdClass}>{currentLocationCell(item.current_active)}</td>
                   <td className={tdClass}>{changedFieldsCell(item.changed_fields)}</td>
                   <td className={tdClass}>{valueOrDash(item.moved_by?.name)}</td>
+                  <td className={tdClass}>
+                    {String(item.action || '').toUpperCase() === 'DELETE' ? (
+                      <span className="text-xs text-slate-400">Sin hoja</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openPreview(item)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-indigo-700 border border-indigo-300 rounded hover:bg-indigo-50"
+                      >
+                        <Printer size={14} />
+                        Ver
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -323,6 +406,80 @@ export default function InventoryMovementsPage() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
+
+      {previewRow && previewDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="flex w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
+              <div>
+                <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                  Vista previa de traslado
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {previewRow?.tag || 'Movimiento seleccionado'}
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handlePreviewPrint}
+                  className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-indigo-700"
+                >
+                  <Printer size={16} />
+                  Imprimir
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closePreview}
+                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  <X size={16} />
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-slate-800 p-10">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="rounded-lg bg-white shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+                    <div
+                      style={{
+                        width: '210mm',
+                        minHeight: '290mm',
+                        transform: 'scale(0.75)',
+                        transformOrigin: 'top center',
+                      }}
+                    >
+                      <TransferPrint
+                        movement={previewRow}
+                        device={previewDevice}
+                        fecha={previewRow?.moved_at ? new Date(previewRow.moved_at).toLocaleDateString('es-PA') : new Date().toLocaleDateString('es-PA')}
+                        setDevice={() => {}}
+                        departments={[]}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewRow && previewDevice && (
+        <div className="fixed left-[-10000px] top-0" aria-hidden="true">
+          <TransferPrint
+            ref={printRef}
+            device={previewDevice}
+            fecha={previewRow?.moved_at ? new Date(previewRow.moved_at).toLocaleDateString('es-PA') : new Date().toLocaleDateString('es-PA')}
+            setDevice={() => {}}
+            departments={[]}
+          />
+        </div>
+      )}
     </div>
   );
 }

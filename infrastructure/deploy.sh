@@ -14,10 +14,18 @@ HEALTH_URL="http://localhost:3000/health"
 log()  { echo "[$(date +%H:%M:%S)] $*"; }
 fail() { echo "[ERROR] $*" >&2; exit 1; }
 
+pm2_cmd() {
+  if command -v pm2 >/dev/null 2>&1; then
+    pm2 "$@"
+    return
+  fi
+
+  npx pm2 "$@"
+}
+
 # ── Prerequisitos ─────────────────────────────────────────────────────────────
 
 log "Verificando prerequisitos..."
-command -v pm2      >/dev/null || fail "pm2 no encontrado"
 command -v npx      >/dev/null || fail "npx no encontrado"
 command -v rsync    >/dev/null || fail "rsync no encontrado"
 command -v pg_dump  >/dev/null || fail "pg_dump no encontrado"
@@ -76,8 +84,13 @@ npx prisma migrate deploy --schema="$SCHEMA"
 log "Generando cliente Prisma..."
 npx prisma generate --schema="$SCHEMA"
 
+log "Validando schema Prisma..."
+npx prisma validate --schema="$SCHEMA"
+
+log "Verificando estado de migraciones..."
+npx prisma migrate status --schema="$SCHEMA"
+
 log "Sembrando catálogo de permisos..."
-# Asegúrate de que este seed use upsert, no insert ciego
 npm run prisma:seed:permissions -w apps/backend
 
 # ── Frontend ──────────────────────────────────────────────────────────────────
@@ -92,13 +105,13 @@ rsync -a --delete apps/frontend/dist/ "$WEB_ROOT/"
 # ── Backend ───────────────────────────────────────────────────────────────────
 
 log "Reiniciando backend..."
-if pm2 describe "$PM2_NAME" > /dev/null 2>&1; then
-  pm2 restart "$PM2_NAME" --update-env
+if pm2_cmd describe "$PM2_NAME" > /dev/null 2>&1; then
+  pm2_cmd restart "$PM2_NAME" --update-env
 else
-  pm2 start apps/backend/src/Server.js --name "$PM2_NAME"
+  pm2_cmd start apps/backend/src/Server.js --name "$PM2_NAME"
 fi
 
-pm2 save
+pm2_cmd save
 
 # ── Health check ──────────────────────────────────────────────────────────────
 
@@ -115,7 +128,7 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 
   if [[ "$i" == "$MAX_RETRIES" ]]; then
-    fail "Servicio no respondió tras $((MAX_RETRIES * RETRY_INTERVAL))s — revisa: pm2 logs $PM2_NAME"
+    fail "Servicio no respondió tras $((MAX_RETRIES * RETRY_INTERVAL))s — revisa: pm2_cmd logs $PM2_NAME"
   fi
 
   log "Intento $i/$MAX_RETRIES — HTTP $HTTP_CODE, esperando ${RETRY_INTERVAL}s..."

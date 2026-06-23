@@ -50,29 +50,30 @@ model bd_incidents {
 }
 
 model bd_inventory {
-  id            Int          @id(map: "pk_bd_inventory") @default(autoincrement())
-  tag           String       @db.VarChar(50)
-  id_ubication  Int?
-  id_department Int?
-  user          String?      @db.VarChar(50)
-  id_device     Int
-  id_brand      Int
-  id_model      Int
-  serie         String       @db.VarChar(50)
-  ip            String?      @db.VarChar(50)
-  id_status     Int
-  transferdate  DateTime?    @db.Date
-  observation   String?      @db.VarChar(255)
-  created_by    Int?
-  created_at    DateTime?    @db.Timetz(6)
-  updated_at    DateTime?    @db.Timetz(6)
-  updated_by    Int?
-  brands        brands       @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
-  departments   departments? @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
-  devices       devices      @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
-  models        models       @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
-  status        status       @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
-  ubications    ubications?  @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
+  id                Int                           @id(map: "pk_bd_inventory") @default(autoincrement())
+  tag               String                        @db.VarChar(50)
+  id_ubication      Int?
+  id_department     Int?
+  user              String?                       @db.VarChar(50)
+  id_device         Int
+  id_brand          Int
+  id_model          Int
+  serie             String                        @db.VarChar(50)
+  ip                String?                       @db.VarChar(50)
+  id_status         Int
+  transferdate      DateTime?                     @db.Date
+  observation       String?                       @db.VarChar(255)
+  created_by        Int?
+  created_at        DateTime?                     @db.Timetz(6)
+  updated_at        DateTime?                     @db.Timetz(6)
+  updated_by        Int?
+  transfer_requests inventory_transfer_requests[]
+  brands            brands                        @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
+  departments       departments?                  @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
+  devices           devices                       @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
+  models            models                        @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
+  status            status                        @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
+  ubications        ubications?                   @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
 }
 
 model brands {
@@ -142,24 +143,26 @@ model ubications {
 }
 
 model users {
-  id                                             Int                @id(map: "pk_users") @default(autoincrement())
-  nombre_completo                                String             @db.VarChar(50)
-  username                                       String             @db.VarChar(50)
-  password                                       String?            @db.VarChar(255)
-  email                                          String?            @db.VarChar(50)
+  id                                             Int                           @id(map: "pk_users") @default(autoincrement())
+  nombre_completo                                String                        @db.VarChar(50)
+  username                                       String                        @db.VarChar(50)
+  password                                       String?                       @db.VarChar(255)
+  email                                          String?                       @db.VarChar(50)
   id_rol                                         Int
-  active                                         Boolean            @default(false)
+  active                                         Boolean                       @default(false)
   id_department                                  Int?
   id_ubication                                   Int?
-  must_change_password                           Boolean            @default(false)
+  must_change_password                           Boolean                       @default(false)
   activityLogs                                   activity_logs[]
-  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]     @relation("bd_incidents_id_userTousers")
-  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]     @relation("bd_incidents_id_technicianTousers")
-  toner_movements                                toner_movements[]  @relation("UserTonerMovements")
-  departments                                    departments?       @relation(fields: [id_department], references: [id], map: "fk_users_departments")
-  roles                                          roles              @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]                @relation("bd_incidents_id_userTousers")
+  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]                @relation("bd_incidents_id_technicianTousers")
+  toner_movements                                toner_movements[]             @relation("UserTonerMovements")
+  inventory_transfer_requests_requested          inventory_transfer_requests[] @relation("InventoryTransferRequester")
+  inventory_transfer_requests_reviewed           inventory_transfer_requests[] @relation("InventoryTransferApprover")
+  departments                                    departments?                  @relation(fields: [id_department], references: [id], map: "fk_users_departments")
+  roles                                          roles                         @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
   user_permissions                               user_permissions[]
-  ubications                                     ubications?        @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
+  ubications                                     ubications?                   @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
 
   @@unique([nombre_completo, username, email], map: "name_users_unique")
 }
@@ -261,6 +264,33 @@ enum ActivityAction {
   STATUS_CHANGE
   LOGIN
   LOGOUT
+}
+
+enum InventoryTransferRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CORRECTION_REQUESTED
+}
+
+model inventory_transfer_requests {
+  id           Int                            @id @default(autoincrement())
+  inventory_id Int
+  requester_id Int
+  approver_id  Int?
+  status       InventoryTransferRequestStatus @default(PENDING)
+  snapshot     Json
+  review_notes String?                        @db.Text
+  requested_at DateTime                       @default(now()) @db.Timestamptz(6)
+  reviewed_at  DateTime?                      @db.Timestamptz(6)
+
+  inventory bd_inventory @relation(fields: [inventory_id], references: [id], onDelete: Cascade, map: "fk_inventory_transfer_requests_inventory")
+  requester users        @relation("InventoryTransferRequester", fields: [requester_id], references: [id], onDelete: Restrict, map: "fk_inventory_transfer_requests_requester")
+  approver  users?       @relation("InventoryTransferApprover", fields: [approver_id], references: [id], onDelete: SetNull, map: "fk_inventory_transfer_requests_approver")
+
+  @@index([status, requested_at])
+  @@index([inventory_id])
+  @@map("inventory_transfer_requests")
 }
 
 model permissions {

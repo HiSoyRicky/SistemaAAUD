@@ -19,9 +19,15 @@
     "prisma:studio": "npm exec -w apps/backend prisma studio",
     "prisma:seed:permissions": "npm run prisma:seed:permissions -w apps/backend",
     "prisma:safe:dev": "npm run prisma:format && npm run prisma:validate && npm run prisma:dev && npm run prisma:generate",
-    "prisma:safe:deploy": "npm run prisma:format && npm run prisma:validate && npm run prisma:deploy"
+    "prisma:safe:deploy": "npm run prisma:format && npm run prisma:validate && npm run prisma:deploy",
+    "prisma:status": "npm exec -w apps/backend prisma migrate status"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "pm2": "^6.0.14"
+  },
+  "dependencies": {
+    "nodemailer": "9.0.1",
+    "uuid": "14.0.0"
   }
 }

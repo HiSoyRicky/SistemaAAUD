@@ -1,9 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { getPrismaWithActivityLogger } from "../common/services/activityLogger.js";
-import {AsyncLocalStorage} from "async_hooks";
-
-export const activityContext = new AsyncLocalStorage();
+import { getPrismaWithActivityLogger, activityContext } from "../common/services/activityLogger.js";
 
 const prismaClient = new PrismaClient();
 
 export const prisma = getPrismaWithActivityLogger(prismaClient);
+export { activityContext };

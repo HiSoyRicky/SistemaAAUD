@@ -18,7 +18,7 @@ import InventoryDetailModal from '../components/modals/InventoryDetailModal';
 
 function InventoryPage() {
     const navigate = useNavigate();
-    const { authData, userType, loggedUserName } = useAuth();
+    const { authData, userType, loggedUserName, loggedUserId } = useAuth();
     const [search, setSearch] = useState('');
     const [departments, setDepartments] = useState([]);
     const [devices, setDevices] = useState([]);
@@ -260,11 +260,29 @@ function InventoryPage() {
                 departments={departments}
                 authData={authData}
                 onClose={() => setPrintModalOpen(false)}
-                onPrint={({ docType, payload }) => {
-                    setPrintType(docType);
-                    setSelectedDevice(payload);
-                    setPrintModalOpen(false);
-                    setPendingPrint(true);
+                onPrint={async ({ docType, payload }) => {
+                    try {
+                        setPrintType(docType);
+
+                        if (docType === "transfer") {
+                            await Inventory.createTransferRequest({
+                                inventory_id: payload.id,
+                                snapshot: payload,
+                                requester_id: loggedUserId,
+                            });
+                            addNotification('Solicitud de traslado enviada a aprobación ✅', 'success');
+                        }
+
+                        setSelectedDevice(payload);
+                        setPrintModalOpen(false);
+                        setPendingPrint(true);
+                    } catch (error) {
+                        addNotification(
+                            error.response?.data?.message || 'No se pudo registrar la solicitud de traslado ❌',
+                            'error'
+                        );
+                        throw error;
+                    }
                 }}
             />
 

@@ -12,6 +12,7 @@ export default function PrintWizardModal({
     const [docType, setDocType] = useState("transfer");
     const [step, setStep] = useState(1);
     const [localDevice, setLocalDevice] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (!open) return;
@@ -37,6 +38,7 @@ export default function PrintWizardModal({
             { label: "Serie", value: localDevice.serie || "No especificada" },
             { label: "Ubicación actual", value: localDevice.ubication_name || "Sin ubicación" },
             { label: "Departamento", value: localDevice.department_name || "Sin departamento" },
+            { label: "Usuario asignado", value: localDevice.userRecibe || "Sin asignar" },
         ];
     }, [localDevice]);
 
@@ -65,12 +67,20 @@ export default function PrintWizardModal({
 
     const back = () => setStep((s) => Math.max(s - 1, 1));
 
-    const handleConfirmPrint = () => {
+    const handleConfirmPrint = async () => {
         if (!localDevice) return;
-        onPrint?.({
-            docType,
-            payload: localDevice,
-        });
+
+        try {
+            setSubmitting(true);
+            await onPrint?.({
+                docType,
+                payload: localDevice,
+            });
+        } catch (_error) {
+            // El padre ya muestra la notificación correspondiente.
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (!open || !localDevice) return null;
@@ -200,6 +210,28 @@ export default function PrintWizardModal({
                                             />
                                         </div>
 
+                                        <div className="mt-4">
+                                            <label className="block mb-1 text-sm font-medium text-gray-700">
+                                                Usuario asignado
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={localDevice.userRecibe || ""}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setLocalDevice((prev) => ({
+                                                        ...prev,
+                                                        userRecibe: value,
+                                                    }));
+                                                }}
+                                                className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+                                                placeholder="Nombre completo de la persona que recibirá el equipo"
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Este dato se guarda en el traslado y queda visible en el historial.
+                                            </p>
+                                        </div>
+
                                         {(!localDevice.ubication_destino_id || !localDevice.department_destino_id) && (
                                             <p className="mt-2 text-xs text-red-600">
                                                 Selecciona ubicación y departamento para continuar.
@@ -241,6 +273,9 @@ export default function PrintWizardModal({
                                                     <div className="mt-1 text-blue-800/90">
                                                         <span className="font-medium">Departamento destino:</span> {localDevice.department_destino_name || "-"}
                                                     </div>
+                                                    <div className="mt-1 text-blue-800/90">
+                                                        <span className="font-medium">Usuario asignado:</span> {localDevice.userRecibe || "-"}
+                                                    </div>
                                                     <div className="mt-2 text-blue-800/90">
                                                         <span className="font-medium">Rol técnico:</span>{" "}
                                                         {localDevice.role === "transfiere" ? "Transfiere" : "Recibe"}
@@ -268,7 +303,7 @@ export default function PrintWizardModal({
                         <button
                             type="button"
                             onClick={back}
-                            disabled={step === 1}
+                            disabled={step === 1 || submitting}
                             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                         >
                             Atrás
@@ -279,7 +314,7 @@ export default function PrintWizardModal({
                                 <button
                                     type="button"
                                     onClick={next}
-                                    disabled={!canNext()}
+                                    disabled={!canNext() || submitting}
                                     className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                                 >
                                     Siguiente
@@ -290,12 +325,13 @@ export default function PrintWizardModal({
                                 <button
                                     type="button"
                                     onClick={handleConfirmPrint}
+                                    disabled={submitting}
                                     className={[
-                                        "rounded-lg px-4 py-2 text-sm font-semibold text-white",
+                                        "rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60",
                                         docType === "transfer" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700",
                                     ].join(" ")}
                                 >
-                                    {docType === "transfer" ? "Imprimir traslado" : "Imprimir descarte"}
+                                    {submitting ? "Procesando..." : (docType === "transfer" ? "Imprimir traslado" : "Imprimir descarte")}
                                 </button>
                             )}
                         </div>

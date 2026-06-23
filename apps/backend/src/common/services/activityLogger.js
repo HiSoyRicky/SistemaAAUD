@@ -1,4 +1,6 @@
-import { activityContext } from "../../config/prisma.js";
+import { AsyncLocalStorage } from "async_hooks";
+
+export const activityContext = new AsyncLocalStorage();
 
 const ACTIONS = {
     create: "CREATE",
@@ -17,7 +19,8 @@ const ENTITY_MAP = {
     users: "USERS",
     departments: "DEPARTMENTS",
     toner_movements: "TONER_MOVEMENTS",
-    toners: "TONERS"
+    toners: "TONERS",
+    inventory_transfer_requests: "INVENTORY_TRANSFER_REQUESTS"
 };
 
 const MANY_OPERATIONS = new Set([

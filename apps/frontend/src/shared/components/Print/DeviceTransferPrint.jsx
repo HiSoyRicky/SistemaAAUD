@@ -155,6 +155,11 @@ const TransferPrint = forwardRef(function TransferPrint({ device = {}, fecha, se
                         </tr>
 
                         <tr>
+                            <td className="w-1/4 px-2 font-semibold border border-black">Usuario asignado:</td>
+                            <td colSpan="5" className="px-2 py-1 border border-black">{device.userRecibe || "N/A"}</td>
+                        </tr>
+
+                        <tr>
                             <td className="w-1/4 px-2 font-semibold border border-black">Observación:</td>
                             <td colSpan="5" className="px-2 py-1 border border-black">{device.observation}</td>
                         </tr>
