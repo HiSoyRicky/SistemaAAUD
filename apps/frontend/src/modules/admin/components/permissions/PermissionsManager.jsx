@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShieldCheck, UserCog, Users } from 'lucide-react';
+import { MapPinned, RotateCcw, ShieldCheck, UserCog, Users } from 'lucide-react';
 import useAuth from '../../../../shared/hooks/useAuth';
 import PermissionsApi from '../../services/permissions.api';
 
@@ -24,6 +24,52 @@ function formatLabel(value) {
   return String(value || '')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+const MODULE_LABELS = {
+  incidents: 'Incidencias',
+  inventory: 'Inventario',
+  toner_movements: 'Movimientos de tóner',
+  toners: 'Tóneres',
+  users: 'Usuarios',
+  roles: 'Roles',
+  brands: 'Marcas',
+  devices: 'Equipos',
+  models: 'Modelos',
+  departments: 'Departamentos',
+  ubications: 'Ubicaciones',
+  status: 'Estados',
+  permissions: 'Permisos'
+};
+
+const ACTION_DETAILS = {
+  read: ['Ver', 'Permite consultar registros del módulo.'],
+  create: ['Crear', 'Permite registrar nuevos elementos.'],
+  update: ['Editar completamente', 'Permite modificar todos los campos disponibles.'],
+  delete: ['Eliminar', 'Permite eliminar registros.'],
+  update_password: ['Cambiar contraseñas', 'Permite actualizar contraseñas de usuarios.'],
+  assign: ['Asignar permisos', 'Permite cambiar permisos de roles y usuarios.'],
+  upload_document: ['Subir documentos', 'Permite adjuntar documentos firmados.'],
+  update_location: ['Editar ubicación', 'Permite cambiar únicamente la ubicación del equipo.'],
+  update_department: ['Editar departamento', 'Permite cambiar únicamente el departamento del equipo.'],
+  update_assignee: ['Editar usuario asignado', 'Permite cambiar únicamente el usuario responsable del equipo.']
+};
+
+const LIMITED_INVENTORY_PERMISSIONS = [
+  'inventory.update_location',
+  'inventory.update_department',
+  'inventory.update_assignee'
+];
+
+function getModuleLabel(moduleName) {
+  return MODULE_LABELS[moduleName] || formatLabel(moduleName);
+}
+
+function getActionDetail(actionName) {
+  return ACTION_DETAILS[actionName] || [
+    formatLabel(actionName),
+    'Controla esta acción dentro del módulo.'
+  ];
 }
 
 function toSortedArray(setValue) {
@@ -94,6 +140,22 @@ export default function PermissionsManager() {
       );
     });
   }, [users, userSearch]);
+
+  useEffect(() => {
+    if (!filteredUsers.length) {
+      setSelectedUserId(null);
+      setSelectedUserMeta(null);
+      return;
+    }
+
+    const selectedUserIsVisible = filteredUsers.some(
+      (user) => Number(user.id) === Number(selectedUserId)
+    );
+
+    if (!selectedUserIsVisible) {
+      setSelectedUserId(Number(filteredUsers[0].id));
+    }
+  }, [filteredUsers, selectedUserId]);
 
   const liveUserEffectiveSet = useMemo(() => {
     const effective = new Set(userRolePermissionSet);
@@ -263,6 +325,46 @@ export default function PermissionsManager() {
     });
   };
 
+  const applyLimitedInventoryPreset = async () => {
+    if (!selectedUserId) {
+      return;
+    }
+
+    const nextGrants = new Set(userGrantSet);
+    LIMITED_INVENTORY_PERMISSIONS.forEach((code) => nextGrants.add(code));
+    nextGrants.delete('inventory.update');
+
+    const nextDenies = new Set(userDenySet);
+    LIMITED_INVENTORY_PERMISSIONS.forEach((code) => nextDenies.delete(code));
+    nextDenies.add('inventory.update');
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const result = await PermissionsApi.updateUserPermissions(selectedUserId, {
+        grants: toSortedArray(nextGrants),
+        denies: toSortedArray(nextDenies)
+      });
+
+      setSelectedUserMeta(result?.user || selectedUserMeta);
+      setUserGrantSet(setFromList(result?.userOverrides?.grants || []));
+      setUserDenySet(setFromList(result?.userOverrides?.denies || []));
+      setSuccess(
+        'Permisos guardados. El técnico puede editar Ubicación, Departamento y Usuario.'
+      );
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clearUserOverrides = () => {
+    setUserGrantSet(new Set());
+    setUserDenySet(new Set());
+  };
+
   const saveUserOverrides = async () => {
     if (!selectedUserId) {
       return;
@@ -300,8 +402,8 @@ export default function PermissionsManager() {
       <div>
         <h2 className="text-xl font-semibold">Gestión de Permisos</h2>
         <p className="text-sm text-gray-600">
-          Controla permisos por módulo a nivel de rol y también por usuario con
-          herencia, permitir y denegar.
+          Define la base por rol y crea excepciones para usuarios específicos.
+          Los permisos denegados tienen prioridad sobre los heredados.
         </p>
       </div>
 
@@ -385,13 +487,16 @@ export default function PermissionsManager() {
               {groupedPermissions.map((group) => (
                 <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
                   <h3 className="mb-3 text-sm font-semibold text-gray-800">
-                    {formatLabel(group.module)}
+                    {getModuleLabel(group.module)}
                   </h3>
 
                   <div className="space-y-2">
                     {group.permissions.map((permission) => {
                       const code = normalizeCode(permission.code);
                       const checked = rolePermissionSet.has(code);
+                      const [actionLabel, actionDescription] = getActionDetail(
+                        permission.action
+                      );
 
                       return (
                         <label
@@ -399,8 +504,10 @@ export default function PermissionsManager() {
                           className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"
                         >
                           <span>
-                            {formatLabel(permission.action)}
-                            <span className="ml-2 text-xs text-gray-500">{code}</span>
+                            <span className="block font-medium">{actionLabel}</span>
+                            <span className="block text-xs text-gray-500">
+                              {actionDescription}
+                            </span>
                           </span>
 
                           <input
@@ -442,10 +549,19 @@ export default function PermissionsManager() {
                   Usuario
                 </label>
                 <select
-                  value={selectedUserId || ''}
+                  value={
+                    filteredUsers.some(
+                      (user) => Number(user.id) === Number(selectedUserId)
+                    )
+                      ? selectedUserId
+                      : ''
+                  }
                   onChange={(event) => setSelectedUserId(Number(event.target.value))}
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                 >
+                  {!filteredUsers.length && (
+                    <option value="">No se encontraron usuarios</option>
+                  )}
                   {filteredUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.nombre_completo || user.username} ({user.username})
@@ -470,14 +586,40 @@ export default function PermissionsManager() {
             </div>
 
             <div className="mt-3">
-              <button
-                type="button"
-                onClick={saveUserOverrides}
-                disabled={saving || loadingUser || !selectedUserId}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? 'Guardando...' : 'Guardar permisos del usuario'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={applyLimitedInventoryPreset}
+                  disabled={saving || loadingUser || !selectedUserId}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <MapPinned className="h-4 w-4" />
+                  Permitir solo reasignación de inventario
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearUserOverrides}
+                  disabled={loadingUser || !selectedUserId}
+                  className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Restablecer a permisos del rol
+                </button>
+
+                <button
+                  type="button"
+                  onClick={saveUserOverrides}
+                  disabled={saving || loadingUser || !selectedUserId}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving ? 'Guardando...' : 'Guardar permisos del usuario'}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Este botón guarda inmediatamente la configuración y deniega la
+                edición completa.
+              </p>
             </div>
           </div>
 
@@ -501,7 +643,7 @@ export default function PermissionsManager() {
               {groupedPermissions.map((group) => (
                 <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
                   <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    {formatLabel(group.module)}
+                    {getModuleLabel(group.module)}
                   </h3>
 
                   <div className="space-y-2">
@@ -509,6 +651,9 @@ export default function PermissionsManager() {
                       const code = normalizeCode(permission.code);
                       const roleHasPermission = userRolePermissionSet.has(code);
                       const effectiveHasPermission = liveUserEffectiveSet.has(code);
+                      const [actionLabel, actionDescription] = getActionDetail(
+                        permission.action
+                      );
 
                       const overrideValue = userGrantSet.has(code)
                         ? 'allow'
@@ -522,8 +667,10 @@ export default function PermissionsManager() {
                           className="grid grid-cols-1 gap-2 rounded-md bg-white px-3 py-2 text-sm md:grid-cols-[1.4fr_0.9fr_1fr_0.9fr] md:items-center"
                         >
                           <div>
-                            <div>{formatLabel(permission.action)}</div>
-                            <div className="text-xs text-gray-500">{code}</div>
+                            <div className="font-medium">{actionLabel}</div>
+                            <div className="text-xs text-gray-500">
+                              {actionDescription}
+                            </div>
                           </div>
 
                           <div>

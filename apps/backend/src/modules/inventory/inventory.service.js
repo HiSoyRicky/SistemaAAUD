@@ -5,6 +5,10 @@ import {
   mapCreateInventoryResponse,
   mapUpdateInventoryResponse
 } from './inventory.dto.js';
+import {
+  getResolvedUserPermissionCodes,
+  hasPermissionCode
+} from '../../common/rbac/permissions.service.js';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -25,6 +29,30 @@ const HISTORY_FIELD_LABELS = {
   observation: 'Observación',
   transferdate: 'Fecha de traslado'
 };
+const INVENTORY_FIELD_PERMISSIONS = {
+  id_ubication: 'inventory.update_location',
+  id_department: 'inventory.update_department',
+  user: 'inventory.update_assignee'
+};
+const INVENTORY_FIELD_LABELS = {
+  id_ubication: 'Ubicación',
+  id_department: 'Departamento',
+  user: 'Usuario asignado'
+};
+const INVENTORY_UPDATE_FIELDS = new Set([
+  'tag',
+  'id_ubication',
+  'id_department',
+  'user',
+  'id_device',
+  'id_brand',
+  'id_model',
+  'serie',
+  'ip',
+  'id_status',
+  'transferdate',
+  'observation'
+]);
 
 function normalizeText(value) {
   return String(value || '')
@@ -41,6 +69,46 @@ function isDiscardedStatus(statusName) {
 function parseIntSafe(value) {
   const parsed = Number(value);
   return Number.isInteger(parsed) ? parsed : NaN;
+}
+
+async function assertInventoryUpdatePermissions(payload, currentUser) {
+  const grantedCodes = await getResolvedUserPermissionCodes(currentUser);
+  const hasFullUpdate = hasPermissionCode({
+    grantedCodes,
+    requiredCode: 'inventory.update'
+  });
+
+  if (hasFullUpdate) {
+    return;
+  }
+
+  const requestedFields = Object.keys(payload || {}).filter(
+    (field) => INVENTORY_UPDATE_FIELDS.has(field) && payload[field] !== undefined
+  );
+
+  const unauthorizedFields = requestedFields.filter((field) => {
+    const requiredPermission = INVENTORY_FIELD_PERMISSIONS[field];
+
+    return (
+      !requiredPermission ||
+      !hasPermissionCode({
+        grantedCodes,
+        requiredCode: requiredPermission
+      })
+    );
+  });
+
+  if (unauthorizedFields.length) {
+    const labels = unauthorizedFields.map(
+      (field) => INVENTORY_FIELD_LABELS[field] || field
+    );
+
+    throw new AppError(
+      `No tienes permiso para modificar: ${labels.join(', ')}`,
+      403,
+      'INVENTORY_FIELDS_NOT_ALLOWED'
+    );
+  }
 }
 
 function parseOptionalPositiveInt(value) {
@@ -633,6 +701,8 @@ export const update = async (idParam, payload, currentUser) => {
   if (!existing) {
     throw new AppError('Equipo no encontrado', 404);
   }
+
+  await assertInventoryUpdatePermissions(payload, currentUser);
 
   const userId = currentUser?.id;
 

@@ -2,10 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
 import { formatDateToDDMMYYYY } from '../../../../../shared/utils/formatDate';
+import useAuth from '../../../../../shared/hooks/useAuth';
 import { Inventory } from '../../services/inventory.api';
 
 export default function InventoryFormModal({ initialData = {}, onCancel, onSubmit }) {
     const isEdit = !!initialData.id;
+    const { hasPermission } = useAuth();
+    const canFullEdit = !isEdit || hasPermission('inventory.update');
+    const canEditLocation =
+        !isEdit || canFullEdit || hasPermission('inventory.update_location');
+    const canEditDepartment =
+        !isEdit || canFullEdit || hasPermission('inventory.update_department');
+    const canEditAssignee =
+        !isEdit || canFullEdit || hasPermission('inventory.update_assignee');
 
     const [formData, setFormData] = useState({
         tag: initialData.tag || '',
@@ -118,8 +127,12 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     const handleUbiDepChange = ({ id_ubication, id_department }) => {
         setFormData((prev) => ({
             ...prev,
-            id_ubication: id_ubication ? parseInt(id_ubication) : null,
-            id_department: id_department ? parseInt(id_department) : null
+            id_ubication: canEditLocation
+                ? (id_ubication ? parseInt(id_ubication) : null)
+                : prev.id_ubication,
+            id_department: canEditDepartment
+                ? (id_department ? parseInt(id_department) : null)
+                : prev.id_department
         }));
         setErrors((prev) => ({ ...prev, id_ubication: '', id_department: '' }));
     };
@@ -150,7 +163,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                 ? new Date(formData.transferDateInput + 'T00:00:00Z').toISOString()
                 : null;
 
-            const submitData = {
+            const completeSubmitData = {
                 ...formData,
                 transferdate,
                 id_ubication: isDiscardedStatus ? null : formData.id_ubication,
@@ -159,6 +172,21 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                 ip: formData.ip.trim() === '' ? null : formData.ip,
                 observation: formData.observation.trim() === '' ? null : formData.observation
             };
+
+            const submitData =
+                isEdit && !canFullEdit
+                    ? {
+                        ...(canEditLocation && {
+                            id_ubication: completeSubmitData.id_ubication
+                        }),
+                        ...(canEditDepartment && {
+                            id_department: completeSubmitData.id_department
+                        }),
+                        ...(canEditAssignee && {
+                            user: completeSubmitData.user
+                        })
+                    }
+                    : completeSubmitData;
 
             onSubmit(submitData);
         }
@@ -201,12 +229,17 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 
     const isFieldLocked = (name) => {
         if (!isEdit) return false; // en crear todo normal
+        if (!canFullEdit) {
+            if (name === 'user') return !canEditAssignee;
+            return true;
+        }
         if (EDITABLE_ALWAYS.has(name)) return false; // estos siempre editables si quieres
         if (!LOCKED_ON_EDIT.has(name)) return false; // si no está en lista, no bloquees
         return safeMode && !unlocked[name]; // bloqueado si modo seguro y no lo has desbloqueado
     };
 
     const toggleField = (name) => {
+        if (!canFullEdit) return;
         setUnlocked(prev => ({ ...prev, [name]: !prev[name] }));
     };
 
@@ -228,7 +261,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                     </button>
                 </div>
 
-                {isEdit && (
+                {isEdit && canFullEdit && (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-600">Edición segura</span>
                         <button
@@ -265,6 +298,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 name="user"
                                 value={formData.user}
                                 onChange={handleChange}
+                                locked={!canEditAssignee}
                             />
                             <SelectField
                                 label="Estado *"
@@ -275,6 +309,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                     .filter((s) => ALLOWED_STATUS.includes(s.name))
                                     .map((s) => ({ id: s.id, name: s.name }))}
                                 error={errors.id_status}
+                                locked={!canFullEdit}
                             />
                         </div>
 
@@ -288,6 +323,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 id_department={formData.id_department}
                                 onChange={handleUbiDepChange}
                                 disabled={isDiscardedStatus}
+                                disabledUbication={!canEditLocation}
+                                disabledDepartment={!canEditDepartment}
                                 errors={{
                                     ubication: errors.id_ubication,
                                     department: errors.id_department
@@ -357,6 +394,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                 value={formData.ip}
                                 onChange={handleChange}
                                 error={errors.ip}
+                                locked={!canFullEdit}
                             />
                             <div>
                                 <label className="block mb-1 text-sm font-medium">
@@ -367,6 +405,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                                     name="transferDateInput"
                                     value={formData.transferDateInput}
                                     onChange={handleChange}
+                                    disabled={!canFullEdit}
                                     className="w-full px-3 py-2 border border-gray-300 rounded"
                                 />
                             </div>
@@ -378,6 +417,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                             name="observation"
                             value={formData.observation}
                             onChange={handleChange}
+                            disabled={!canFullEdit}
                         />
 
                         {/* Botones */}
@@ -410,7 +450,7 @@ function InputField({ label, name, value, onChange, error, locked, onToggle }) {
             <div className="flex items-center justify-between">
                 <label className="block mb-1 text-sm font-medium">{label}</label>
 
-                {locked !== undefined && (
+                {locked !== undefined && onToggle && (
                     <button
                         type="button"
                         onClick={onToggle}
@@ -445,7 +485,7 @@ function InputField({ label, name, value, onChange, error, locked, onToggle }) {
 }
 
 
-function TextAreaField({ label, name, value, onChange }) {
+function TextAreaField({ label, name, value, onChange, disabled = false }) {
     return (
         <div>
             <label className="block mb-1 text-sm font-medium">{label}</label>
@@ -454,7 +494,10 @@ function TextAreaField({ label, name, value, onChange }) {
                 name={name}
                 value={value}
                 onChange={onChange}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                disabled={disabled}
+                className={`w-full px-3 py-2 text-sm border border-gray-300 rounded ${
+                    disabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''
+                }`}
                 rows={3}
             />
         </div>
@@ -469,7 +512,7 @@ function SelectField({ label, name, value, onChange, options = [], disabled = fa
             <div className="flex items-center justify-between">
                 <label className="block mb-1 text-sm font-medium">{label}</label>
 
-                {locked !== undefined && (
+                {locked !== undefined && onToggle && (
                     <button
                         type="button"
                         onClick={onToggle}

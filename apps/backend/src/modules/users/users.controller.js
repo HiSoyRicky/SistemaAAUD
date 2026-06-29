@@ -32,14 +32,20 @@ export const update = catchAsync(async (req, res) => {
 });
 
 export const updatePassword = catchAsync(async (req, res) => {
-  const data = await service.updatePassword(req.params.id, req.body.newPassword, {
-    actor: req.user,
-    requirePasswordChange: req.body.requirePasswordChange
-  });
+  const data = await service.updatePassword(
+    req.params.id,
+    req.body.newPassword,
+    {
+      actor: req.user,
+      requirePasswordChange: req.body.requirePasswordChange,
+    }
+  );
   res.json(data);
 });
 
 export const remove = catchAsync(async (req, res) => {
-  const data = await service.remove(req.params.id);
+  const data = await service.remove(req.params.id, {
+    actor: req.user,
+  });
   res.status(200).json(data);
 });

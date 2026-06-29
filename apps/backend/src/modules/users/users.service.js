@@ -153,7 +153,7 @@ export const create = async (payload) => {
     must_change_password: true,
     email,
     id_rol,
-    active: parseOptionalActive(active) ?? true
+    active: parseOptionalActive(active) ?? true,
   });
 
   return dto.mapCreateUserResponse(created);
@@ -224,19 +224,61 @@ export const updatePassword = async (
     throw new AppError('La nueva contraseña es requerida', 400);
   }
 
-  const forceNextLoginChange = parseRequirePasswordChange(requirePasswordChange);
+  const forceNextLoginChange = parseRequirePasswordChange(
+    requirePasswordChange
+  );
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await repository.updateById(userId, {
     password: hashedPassword,
-    must_change_password: forceNextLoginChange
+    must_change_password: forceNextLoginChange,
   });
 
   return dto.mapUpdatePasswordResponse();
 };
 
-export const remove = async (idParam) => {
+export const remove = async (idParam, { actor } = {}) => {
   const userId = parseUserId(idParam);
+
+  const user = await repository.findById(userId);
+
+  if (!user) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  // No eliminar al administrador principal
+
+  if (user.username.toLowerCase() === 'admin') {
+    throw new AppError(
+      'El usuario administrador principal no puede eliminarse.',
+      400
+    );
+  }
+
+  // No eliminarse a sí mismo
+
+  if (actor?.id === userId) {
+    throw new AppError('No puede eliminar su propio usuario.', 400);
+  }
+
+  const history = await repository.countUserHistory(userId);
+
+  const hasHistory =
+    history.reportedIncidents > 0 ||
+    history.assignedIncidents > 0 ||
+    history.tonerMovements > 0 ||
+    history.transferRequests > 0 ||
+    history.approvedTransfers > 0 ||
+    history.activityLogs > 0;
+
+  if (hasHistory) {
+    throw new AppError(
+      'Este usuario posee historial de actividad. Puede desactivarlo, pero no eliminarlo.',
+      400
+    );
+  }
+
   const deleted = await repository.deleteById(userId);
+
   return dto.mapDeleteUserResponse(deleted);
 };

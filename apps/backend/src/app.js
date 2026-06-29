@@ -49,10 +49,15 @@ app.use(helmet({
 }));
 
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: {
-        error: "Demasiados intentos de inicio de sesión. Intente más tarde."
+    windowMs: 5 * 60 * 1000,
+    max: 5,
+    handler: (req, res) => {
+        const retryAfter = Math.ceil(req.rateLimit.resetTime.getTime() - Date.now()) / 1000;
+
+        res.status(429).json({
+            error: 'Demasiados intentos de inicio de sesión.',
+            retryAfter: Math.ceil(retryAfter)
+        });
     }
 });
 

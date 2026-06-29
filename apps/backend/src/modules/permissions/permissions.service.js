@@ -68,6 +68,18 @@ export const getOverview = async () => {
   };
 };
 
+export const getCurrentUserPermissions = async (currentUser) => {
+  const userId = Number(currentUser?.id);
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new AppError('Usuario no autenticado', 401);
+  }
+
+  return {
+    permissions: await getEffectivePermissionCodesForUser({ userId })
+  };
+};
+
 export const getRolePermissions = async (idRoleParam) => {
   const roleId = parseRoleId(idRoleParam);
 

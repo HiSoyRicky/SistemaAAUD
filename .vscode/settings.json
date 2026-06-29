@@ -1,26 +1,62 @@
 {
-    "javascript.updateImportsOnFileMove.enabled": "always",
-    "typescript.updateImportsOnFileMove.enabled": "always",
-    "sqltools.connections": [
-        {
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 5432,
-            "driver": "PostgreSQL",
-            "name": "Sistema AAUD LOCAL",
-            "database": "aaud_system",
-            "username": "postgres"
-        }
-    ],
-    "cSpell.words": [
-        "aaud",
-        "ubication",
-        "Ubication",
-        "ubications"
-    ],
-    "cSpell.ignoreWords": [
-        "Timestamptz",
-        "autoincrement"
-    ]
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabCompletion": "on",
+  "editor.rulers": [80, 120],
+  "editor.minimap.enabled": false,
+  "editor.inlineSuggest.enabled": true,
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always"
+  },
+
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  "explorer.confirmDelete": false,
+
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "askForPassword": true,
+      "driver": "PostgreSQL",
+      "name": "Sistema AAUD LOCAL",
+      "database": "aaud_system",
+      "username": "postgres"
+    }
+  ],
+
+  "cSpell.words": [
+    "aaud",
+    "ubication",
+    "Ubication",
+    "ubications",
+    "toners",
+    "Prisma",
+    "postgresql"
+  ],
+
+  "cSpell.ignoreWords": ["Timestamptz", "autoincrement"]
 }

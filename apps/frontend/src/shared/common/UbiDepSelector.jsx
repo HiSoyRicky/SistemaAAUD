@@ -35,6 +35,8 @@ function UbiDepSelector({
     errors = {},
     mode = "incident",
     disabled = false,
+    disabledUbication = false,
+    disabledDepartment = false,
 }) {
     const {
         ubications,
@@ -92,8 +94,11 @@ function UbiDepSelector({
     const caret =
         "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400";
 
+    const ubicationDisabled = disabled || disabledUbication;
+    const departmentDisabled = disabled || disabledDepartment;
+
     const handleUbicationChange = (e) => {
-        if (disabled) return;
+        if (ubicationDisabled) return;
 
         const idUbi = e.target.value ? parseInt(e.target.value) : null;
         setSelectedUbication(idUbi);
@@ -113,7 +118,7 @@ function UbiDepSelector({
     };
 
     const handleDepartmentChange = (e) => {
-        if (disabled) return;
+        if (departmentDisabled) return;
 
         const idDep = e.target.value ? parseInt(e.target.value) : null;
         setSelectedDepartment(idDep);
@@ -136,7 +141,8 @@ function UbiDepSelector({
         });
     };
 
-    const depDisabled = disabled || !selectedUbication || sortedDepartments.length === 0;
+    const depDisabled =
+        departmentDisabled || !selectedUbication || sortedDepartments.length === 0;
 
     return (
         <div className="p-4 bg-white border border-gray-200 shadow-sm rounded-2xl md:p-5">
@@ -153,9 +159,9 @@ function UbiDepSelector({
                             id="id_ubication"
                             value={selectedUbication || ""}
                             onChange={handleUbicationChange}
-                            disabled={disabled}
+                            disabled={ubicationDisabled}
                             className={`${baseSelect} ${errors.ubication ? selectWithError : "border-gray-300"
-                                } ${disabled ? disabledSelect : ""}`}
+                                } ${ubicationDisabled ? disabledSelect : ""}`}
                         >
                             <option value="" disabled>
                                 -- Seleccione una ubicación --
@@ -195,6 +201,8 @@ function UbiDepSelector({
                     hint={
                         disabled
                             ? "No aplica para equipos descartados."
+                            : disabledDepartment
+                            ? "No tienes permiso para modificar el departamento."
                             : depDisabled
                             ? "Primero elige una ubicación para habilitar departamentos."
                             : "Selecciona el departamento correspondiente."

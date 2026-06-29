@@ -1,266 +1,308 @@
 // InventoryTable.jsx
 import React, { useState } from 'react';
-import useAuth from "../../../../../shared/hooks/useAuth";
-import ActionButton from "../../../../../shared/components/ui/ActionButton";
+import useAuth from '../../../../../shared/hooks/useAuth';
+import ActionButton from '../../../../../shared/components/ui/ActionButton';
 import Pagination from '../../../../../shared/components/ui/Pagination';
 
 function InventoryTable({ inventory, onPrint, onEdit, onView, search }) {
-    const itemsPerPage = 15;
-    const [currentPage, setCurrentPage] = useState(1);
-    const { userType } = useAuth();
+  const itemsPerPage = 15;
+  const [currentPage, setCurrentPage] = useState(1);
+  const { hasAnyPermission } = useAuth();
+  const canEditInventory = hasAnyPermission([
+    'inventory.update',
+    'inventory.update_location',
+    'inventory.update_department',
+    'inventory.update_assignee',
+  ]);
 
-    const tdClass = "px-4 py-2 text-center text-sm text-gray-700 border";
-    const thClass = "px-4 py-0 text-center text-sm text-gray-700 border";
+  const tdClass = 'px-4 py-2 text-center text-sm text-gray-700 border';
+  const thClass = 'px-4 py-0 text-center text-sm text-gray-700 border';
 
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [search]);
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
+  // estado para filtros
+  const [filters, setFilters] = useState({
+    ubication_name: '',
+    department_name: '',
+    user: '',
+    device_name: '',
+    brand_name: '',
+    model_name: '',
+    status_name: '',
+  });
 
-    // estado para filtros
-    const [filters, setFilters] = useState({
-        ubication_name: "",
-        department_name: "",
-        user: "",
-        device_name: "",
-        brand_name: "",
-        model_name: "",
-        status_name: ""
+  // función para actualizar un filtro
+  const handleFilterChange = (column, value) => {
+    setFilters((prev) => ({ ...prev, [column]: value }));
+    setCurrentPage(1);
+  };
+
+  // aplicar filtros antes de paginar
+  const filteredInventory = inventory.filter((item) => {
+    return Object.keys(filters).every((key) => {
+      if (!filters[key]) return true;
+      return String(item[key]) === String(filters[key]);
     });
+  });
 
-    // función para actualizar un filtro
-    const handleFilterChange = (column, value) => {
-        setFilters(prev => ({ ...prev, [column]: value }));
-        setCurrentPage(1);
-    };
+  //  Ordenar por Marbete (tag) ascendente
+  const sortedInventory = [...filteredInventory].sort((a, b) => {
+    if (a.tag < b.tag) return -1;
+    if (a.tag > b.tag) return 1;
+    return 0;
+  });
 
-    // aplicar filtros antes de paginar
-    const filteredInventory = inventory.filter(item => {
-        return Object.keys(filters).every(key => {
-            if (!filters[key]) return true;
-            return String(item[key]) === String(filters[key]);
-        });
-    });
+  // Crear opciones ordenadas alfabéticamente
+  const options = {
+    ubication_name: [
+      ...new Set(
+        filteredInventory.map((i) => i.ubication_name).filter(Boolean)
+      ),
+    ].sort(),
+    department_name: [
+      ...new Set(
+        filteredInventory.map((i) => i.department_name).filter(Boolean)
+      ),
+    ].sort(),
+    user: [
+      ...new Set(filteredInventory.map((i) => i.user).filter(Boolean)),
+    ].sort(),
+    device_name: [
+      ...new Set(filteredInventory.map((i) => i.device_name).filter(Boolean)),
+    ].sort(),
+    brand_name: [
+      ...new Set(filteredInventory.map((i) => i.brand_name).filter(Boolean)),
+    ].sort(),
+    model_name: [
+      ...new Set(filteredInventory.map((i) => i.model_name).filter(Boolean)),
+    ].sort(),
+    status_name: [
+      ...new Set(filteredInventory.map((i) => i.status_name).filter(Boolean)),
+    ].sort(),
+  };
+  const showIpColumn =
+    String(filters.device_name || '').toUpperCase() === 'IMPRESORA';
 
-    //  Ordenar por Marbete (tag) ascendente
-    const sortedInventory = [...filteredInventory].sort((a, b) => {
-        if (a.tag < b.tag) return -1;
-        if (a.tag > b.tag) return 1;
-        return 0;
-    });
+  // ahora paginar sobre filteredInventory en vez de inventory
+  const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = sortedInventory.slice(startIndex, endIndex);
 
-    // Crear opciones ordenadas alfabéticamente
-    const options = {
-        ubication_name: [...new Set(filteredInventory.map(i => i.ubication_name).filter(Boolean))].sort(),
-        department_name: [...new Set(filteredInventory.map(i => i.department_name).filter(Boolean))].sort(),
-        user: [...new Set(filteredInventory.map(i => i.user).filter(Boolean))].sort(),
-        device_name: [...new Set(filteredInventory.map(i => i.device_name).filter(Boolean))].sort(),
-        brand_name: [...new Set(filteredInventory.map(i => i.brand_name).filter(Boolean))].sort(),
-        model_name: [...new Set(filteredInventory.map(i => i.model_name).filter(Boolean))].sort(),
-        status_name: [...new Set(filteredInventory.map(i => i.status_name).filter(Boolean))].sort()
-    };
-    const showIpColumn = String(filters.device_name || '').toUpperCase() === 'IMPRESORA';
+  return (
+    <div className="p-1 bg-white rounded-lg shadow-md">
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100dvh-16rem)]">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {/* Encabezados de la tabla */}
+              <th className={`${tdClass} border`}>Marbete</th>
+              <th className={tdClass}>
+                <span>Ubicación</span>
+                <br />
+                <select
+                  value={filters.ubication_name}
+                  onChange={(e) =>
+                    handleFilterChange('ubication_name', e.target.value)
+                  }
+                  className="w-full mt-1 text-xs text-center border rounded"
+                >
+                  <option value="">Todos</option>
+                  {options.ubication_name.map((val, idx) => (
+                    <option key={val} value={val}>
+                      {val}
+                    </option>
+                  ))}
+                </select>
+              </th>
 
-    // ahora paginar sobre filteredInventory en vez de inventory
-    const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedItems = sortedInventory.slice(startIndex, endIndex);
+              <th className={tdClass}>
+                <span>Departamento</span>
+                <br />
+                <select
+                  value={filters.department_name}
+                  onChange={(e) =>
+                    handleFilterChange('department_name', e.target.value)
+                  }
+                  className="w-full mt-1 text-xs text-center border rounded"
+                >
+                  <option value="">Todos</option>
+                  {options.department_name.map((val, idx) => (
+                    <option key={val} value={val}>
+                      {val}
+                    </option>
+                  ))}
+                </select>
+              </th>
+              <th className={`${tdClass} border`}>Usuario</th>
+              <th className={`${tdClass} border`}>
+                Equipo
+                <br />
+                <select
+                  value={filters.device_name}
+                  onChange={(e) =>
+                    handleFilterChange('device_name', e.target.value)
+                  }
+                  className="w-full mt-1 text-xs text-center border rounded"
+                >
+                  <option value="">Todos</option>
+                  {options.device_name.map((val, idx) => (
+                    <option key={val} value={val}>
+                      {val}
+                    </option>
+                  ))}
+                </select>
+              </th>
+              <th className={`${tdClass} border`}>
+                Marca
+                <br />
+                <select
+                  value={filters.brand_name}
+                  onChange={(e) =>
+                    handleFilterChange('brand_name', e.target.value)
+                  }
+                  className="w-full mt-1 text-xs text-center border rounded"
+                >
+                  <option value="">Todos</option>
+                  {options.brand_name.map((val, idx) => (
+                    <option key={val} value={val}>
+                      {val}
+                    </option>
+                  ))}
+                </select>
+              </th>
+              <th className={`${tdClass} border`}>
+                Modelo
+                <br />
+                <select
+                  value={filters.model_name}
+                  onChange={(e) =>
+                    handleFilterChange('model_name', e.target.value)
+                  }
+                  className="w-full mt-1 text-xs text-center border rounded"
+                >
+                  <option value="">Todos</option>
+                  {options.model_name.map((val, idx) => (
+                    <option key={val} value={val}>
+                      {val}
+                    </option>
+                  ))}
+                </select>
+              </th>
+              <th className={`${tdClass} border`}>Serie</th>
+              {showIpColumn && <th className={`${tdClass} border`}>IP</th>}
 
-    return (
-        <div className="p-1 bg-white rounded-lg shadow-md">
+              <th className={`${tdClass} border`}>Acciones</th>
+            </tr>
+          </thead>
 
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100dvh-16rem)]">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            {/* Encabezados de la tabla */}
-                            <th className={`${tdClass} border`}>Marbete</th>
-                            <th className={tdClass}>
-                                <span>Ubicación</span>
-                                <br />
-                                <select
-                                    value={filters.ubication_name}
-                                    onChange={(e) => handleFilterChange("ubication_name", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {options.ubication_name.map((val, idx) => (
-                                        <option key={val} value={val}>
-                                            {val}
-                                        </option>
-                                    ))}
-                                </select>
-                            </th>
+          {/* Cuerpo de la tabla */}
+          <tbody className="bg-white divide-y divide-gray-200">
+            {paginatedItems.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={showIpColumn ? 10 : 9}
+                  className="px-6 py-4 text-sm text-center text-gray-500 whitespace-normal"
+                >
+                  No hay dispositivos para mostrar.
+                </td>
+              </tr>
+            ) : (
+              paginatedItems.map((item) => {
+                const status = item.status_name?.toUpperCase() || '';
+                const isDiscarded = status === 'DESCARTADO';
+                const isForDiscard = status === 'PARA DESCARTE';
+                const isBadCondition = status === 'MAL ESTADO';
+                const isNew = status === 'NUEVO';
 
-                            <th className={tdClass}>
-                                <span>Departamento</span>
-                                <br />
-                                <select
-                                    value={filters.department_name}
-                                    onChange={(e) => handleFilterChange("department_name", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {options.department_name.map((val, idx) => (
-                                        <option key={val} value={val}>
-                                            {val}
-                                        </option>
-                                    ))}
-                                </select>
-                            </th>
-                            <th className={`${tdClass} border`}>Usuario</th>
-                            <th className={`${tdClass} border`}>Equipo
-                                <br />
-                                <select
-                                    value={filters.device_name}
-                                    onChange={(e) => handleFilterChange("device_name", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {options.device_name.map((val, idx) => (
-                                        <option key={val} value={val}>
-                                            {val}
-                                        </option>
-                                    ))}
-                                </select>
-                            </th>
-                            <th className={`${tdClass} border`}>Marca
-                                <br />
-                                <select
-                                    value={filters.brand_name}
-                                    onChange={(e) => handleFilterChange("brand_name", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {options.brand_name.map((val, idx) => (
-                                        <option key={val} value={val}>
-                                            {val}
-                                        </option>
-                                    ))}
-                                </select>
-                            </th>
-                            <th className={`${tdClass} border`}>Modelo
-                                <br />
-                                <select
-                                    value={filters.model_name}
-                                    onChange={(e) => handleFilterChange("model_name", e.target.value)}
-                                    className="w-full mt-1 text-xs text-center border rounded"
-                                >
-                                    <option value="">Todos</option>
-                                    {options.model_name.map((val, idx) => (
-                                        <option key={val} value={val}>
-                                            {val}
-                                        </option>
-                                    ))}
-                                </select>
-                            </th>
-                            <th className={`${tdClass} border`}>Serie</th>
-                            {showIpColumn && <th className={`${tdClass} border`}>IP</th>}
+                return (
+                  <tr
+                    key={item.id}
+                    className={
+                      isDiscarded
+                        ? 'bg-red-50'
+                        : isForDiscard
+                          ? 'bg-yellow-50'
+                          : isBadCondition
+                            ? 'bg-orange-50'
+                            : isNew
+                              ? 'bg-green-50'
+                              : ''
+                    }
+                  >
+                    <th
+                      className={`${thClass} border ${
+                        isDiscarded
+                          ? 'text-red-600 font-bold'
+                          : isForDiscard
+                            ? 'text-yellow-600 font-bold'
+                            : isBadCondition
+                              ? 'text-orange-600 font-bold'
+                              : isNew
+                                ? 'text-green-600 font-bold'
+                                : ''
+                      }`}
+                    >
+                      {item.tag}
+                    </th>
 
-                            <th className={`${tdClass} border`}>
-                                Acciones
-                            </th>
-                        </tr>
-                    </thead>
+                    <td className={`${thClass} border`}>
+                      {item.ubication_name || '-'}
+                    </td>
+                    <td className={`${thClass} border`}>
+                      {item.department_name || '-'}
+                    </td>
+                    <td className={`${thClass} border`}>{item.user || '-'}</td>
+                    <td className={`${thClass} border`}>{item.device_name}</td>
+                    <td className={`${thClass} border`}>{item.brand_name}</td>
+                    <td className={`${thClass} border`}>{item.model_name}</td>
+                    <td className={`${thClass} border`}>{item.serie}</td>
+                    {showIpColumn && (
+                      <td className={`${thClass} border`}>{item.ip || '-'}</td>
+                    )}
 
-                    {/* Cuerpo de la tabla */}
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {paginatedItems.length === 0 ? (
-                            <tr>
-                                <td colSpan={showIpColumn ? 10 : 9} className="px-6 py-4 text-sm text-center text-gray-500 whitespace-normal">
-                                    No hay dispositivos para mostrar.
-                                </td>
-                            </tr>
-                        ) : (
-                            paginatedItems.map(item => {
-                                const status = item.status_name?.toUpperCase() || "";
-                                const isDiscarded = status === "DESCARTADO";
-                                const isForDiscard = status === "PARA DESCARTE";
-                                const isBadCondition = status === "MAL ESTADO";
-                                const isNew = status === "NUEVO";
+                    {/* Acciones */}
+                    <td className={`${thClass} border`}>
+                      <div className="flex items-center justify-center h-full gap-2">
+                        <ActionButton
+                          type="view"
+                          title="Ver detalles del equipo"
+                          onClick={() => item && onView(item)}
+                        />
 
-                                return (
-                                    <tr
-                                        key={item.id}
-                                        className={
-                                            isDiscarded
-                                                ? "bg-red-50"
-                                                : isForDiscard
-                                                    ? "bg-yellow-50"
-                                                    : isBadCondition
-                                                        ? "bg-orange-50"
-                                                        : isNew
-                                                            ? "bg-green-50"
-                                                            : ""
-                                        }
-                                    >
-                                        <th
-                                            className={`${thClass} border ${isDiscarded
-                                                ? "text-red-600 font-bold"
-                                                : isForDiscard
-                                                    ? "text-yellow-600 font-bold"
-                                                    : isBadCondition
-                                                        ? "text-orange-600 font-bold"
-                                                        : isNew
-                                                            ? "text-green-600 font-bold"
-                                                            : ""
-                                                }`}
-                                        >
-                                            {item.tag}
-                                        </th>
-
-                                        <td className={`${thClass} border`}>{item.ubication_name || '-'}</td>
-                                        <td className={`${thClass} border`}>{item.department_name || '-'}</td>
-                                        <td className={`${thClass} border`}>{item.user || '-'}</td>
-                                        <td className={`${thClass} border`}>{item.device_name}</td>
-                                        <td className={`${thClass} border`}>{item.brand_name}</td>
-                                        <td className={`${thClass} border`}>{item.model_name}</td>
-                                        <td className={`${thClass} border`}>{item.serie}</td>
-                                        {showIpColumn && <td className={`${thClass} border`}>{item.ip || '-'}</td>}
-
-                                        {/* Acciones */}
-                                        <td className={`${thClass} border`}>
-                                            <div className="flex items-center justify-center h-full gap-2">
-
-                                                <ActionButton
-                                                    type='view'
-                                                    title="Ver detalles del equipo"
-                                                    onClick={() => item && onView(item)}
-                                                />
-
-                                                {userType === 'admin' && (
-                                                    <ActionButton
-                                                        type={'edit'}
-                                                        title="Editar equipo"
-                                                        onClick={() => item && onEdit(item)}
-                                                    />
-                                                )}
-
-                                                <ActionButton
-                                                    type={'print'}
-                                                    title="Imprimir equipo"
-                                                    onClick={() => item && onPrint(item)}
-                                                />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
+                        {canEditInventory && (
+                          <ActionButton
+                            type={'edit'}
+                            title="Editar equipo"
+                            onClick={() => item && onEdit(item)}
+                          />
                         )}
-                    </tbody>
-                </table>
-            </div>
 
-            {/* Paginación */}
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => setCurrentPage(page)}
-            />
+                        <ActionButton
+                          type={'print'}
+                          title="Imprimir equipo"
+                          onClick={() => item && onPrint(item)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        </div >
-    )
+      {/* Paginación */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={(page) => setCurrentPage(page)}
+      />
+    </div>
+  );
 }
 
 export default InventoryTable;

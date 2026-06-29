@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import UbiDepSelector from "../../../../../shared/common/UbiDepSelector";
 
+function normalizeText(value) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .trim();
+}
+
 export default function PrintWizardModal({
     open,
     device,
@@ -41,6 +49,21 @@ export default function PrintWizardModal({
             { label: "Usuario asignado", value: localDevice.userRecibe || "Sin asignar" },
         ];
     }, [localDevice]);
+
+    const isInformaticsDestination = useMemo(() => {
+        return normalizeText(localDevice?.department_destino_name).includes("INFORMATICA");
+    }, [localDevice?.department_destino_name]);
+
+    useEffect(() => {
+        if (!open || !localDevice) return;
+
+        if (isInformaticsDestination && localDevice.userRecibe) {
+            setLocalDevice((prev) => ({
+                ...prev,
+                userRecibe: "",
+            }));
+        }
+    }, [open, isInformaticsDestination, localDevice?.userRecibe]);
 
     const setRole = (role) => {
         const techName = authData?.name;
@@ -210,27 +233,33 @@ export default function PrintWizardModal({
                                             />
                                         </div>
 
-                                        <div className="mt-4">
-                                            <label className="block mb-1 text-sm font-medium text-gray-700">
-                                                Usuario asignado
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={localDevice.userRecibe || ""}
-                                                onChange={(e) => {
-                                                    const value = e.target.value;
-                                                    setLocalDevice((prev) => ({
-                                                        ...prev,
-                                                        userRecibe: value,
-                                                    }));
-                                                }}
-                                                className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                                                placeholder="Nombre completo de la persona que recibirá el equipo"
-                                            />
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Este dato se guarda en el traslado y queda visible en el historial.
-                                            </p>
-                                        </div>
+                                        {!isInformaticsDestination ? (
+                                            <div className="mt-4">
+                                                <label className="block mb-1 text-sm font-medium text-gray-700">
+                                                    Usuario asignado
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={localDevice.userRecibe || ""}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        setLocalDevice((prev) => ({
+                                                            ...prev,
+                                                            userRecibe: value,
+                                                        }));
+                                                    }}
+                                                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+                                                    placeholder="Nombre completo de la persona que recibirá el equipo"
+                                                />
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    Este dato se guarda en el traslado y queda visible en el historial.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                                                Este destino queda como disponible y no requiere asignar un usuario.
+                                            </div>
+                                        )}
 
                                         {(!localDevice.ubication_destino_id || !localDevice.department_destino_id) && (
                                             <p className="mt-2 text-xs text-red-600">

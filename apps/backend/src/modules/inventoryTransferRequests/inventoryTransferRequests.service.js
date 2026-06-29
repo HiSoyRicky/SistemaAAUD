@@ -16,6 +16,16 @@ function normalizeStatus(status) {
   return value || null;
 }
 
+function shouldClearAssignedUser(snapshot) {
+  const departmentName = String(snapshot?.department_destino_name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+
+  return departmentName.includes('INFORMATICA');
+}
+
 function buildPreviewInventory(request, inventory) {
   const snapshot = request.snapshot || {};
 
@@ -169,6 +179,9 @@ export const approve = async (idParam, payload, currentUser) => {
   const inventory = request.inventory;
   const reviewedAt = new Date();
   const reviewNotes = typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
+  const clearAssignedUser = shouldClearAssignedUser(snapshot);
+  const assignedUser = typeof snapshot.userRecibe === 'string' ? snapshot.userRecibe.trim() : '';
+  const nextUser = clearAssignedUser ? null : (assignedUser || snapshot.userName || inventory.user);
 
   const { updatedInventory, updatedRequest } = await prisma.$transaction(async (tx) => {
     const nextInventory = await tx.bd_inventory.update({
@@ -176,7 +189,7 @@ export const approve = async (idParam, payload, currentUser) => {
       data: {
         id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
         id_department: snapshot.department_destino_id ?? inventory.id_department,
-        user: snapshot.userRecibe || snapshot.userName || inventory.user,
+        user: nextUser,
         transferdate: new Date(),
         observation: snapshot.observation ?? inventory.observation,
         updated_by: currentUser?.id ?? null
@@ -202,6 +215,18 @@ export const approve = async (idParam, payload, currentUser) => {
       include: {
         requester: { select: { id: true, nombre_completo: true, username: true } },
         approver: { select: { id: true, nombre_completo: true, username: true } }
+      }
+    });
+
+    await tx.activity_logs.create({
+      data: {
+        entity_type: 'BD_INVENTORY',
+        entity_id: request.inventory_id,
+        action: 'UPDATE',
+        old_values: inventory,
+        new_values: nextInventory,
+        user_id: currentUser?.id ?? null,
+        source: 'inventory_transfer_requests.approve'
       }
     });
 

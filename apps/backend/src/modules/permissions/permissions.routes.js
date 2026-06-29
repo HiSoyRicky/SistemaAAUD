@@ -10,6 +10,8 @@ import {
 
 const router = express.Router();
 
+router.get('/me', controller.getCurrentUserPermissions);
+
 router.get('/', requirePermission('permissions.read'), controller.getOverview);
 
 router.get(

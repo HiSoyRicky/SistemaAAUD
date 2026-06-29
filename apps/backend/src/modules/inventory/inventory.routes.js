@@ -1,5 +1,7 @@
 import express from 'express';
-import requirePermission from '../../common/middleware/requirePermission.js';
+import requirePermission, {
+  requireAnyPermission
+} from '../../common/middleware/requirePermission.js';
 import * as controller from './inventory.controller.js';
 import {
   validateCreateInventory,
@@ -29,7 +31,12 @@ router.post(
 
 router.put(
   '/:id',
-  requirePermission('inventory.update'),
+  requireAnyPermission(
+    'inventory.update',
+    'inventory.update_location',
+    'inventory.update_department',
+    'inventory.update_assignee'
+  ),
   validateUpdateInventory,
   controller.update
 

@@ -6,6 +6,11 @@ export const getOverview = catchAsync(async (_req, res) => {
   res.json(data);
 });
 
+export const getCurrentUserPermissions = catchAsync(async (req, res) => {
+  const data = await service.getCurrentUserPermissions(req.user);
+  res.json(data);
+});
+
 export const getRolePermissions = catchAsync(async (req, res) => {
   const data = await service.getRolePermissions(req.params.idRole);
   res.json(data);

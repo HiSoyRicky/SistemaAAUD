@@ -1,6 +1,7 @@
 // AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext(null);
 
@@ -77,6 +78,13 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
 
+  const storePermissions = (nextPermissions) => {
+    const normalized = normalizePermissionCodes(nextPermissions);
+    setPermissions(normalized);
+    sessionStorage.setItem('permissions', JSON.stringify(normalized));
+    return normalized;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -115,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       setLoggedUserId(storedUserId);
       setUsername(storedUsername);
       setMustChangePassword(storedMustChangePassword === 'true');
-      setPermissions(normalizePermissionCodes(fallbackPermissions));
+      storePermissions(fallbackPermissions);
     }
     else if (token) {
       try {
@@ -136,7 +144,7 @@ export const AuthProvider = ({ children }) => {
         setLoggedUserId(decoded.id);
         setUsername(decoded.username);
         setMustChangePassword(decodedMustChange);
-        setPermissions(decodedPermissions);
+        storePermissions(decodedPermissions);
 
         sessionStorage.setItem('userType', type);
         sessionStorage.setItem('loggedUserName', decoded.nombre_completo || decoded.username || '');
@@ -152,6 +160,38 @@ export const AuthProvider = ({ children }) => {
 
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !localStorage.getItem('token')) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const refreshPermissions = async () => {
+      try {
+        const response = await axios.get('/api/permissions/me', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!cancelled) {
+          storePermissions(response.data?.permissions || []);
+        }
+      } catch (_error) {
+        // Mantiene los permisos actuales si la sincronización temporal falla.
+      }
+    };
+
+    refreshPermissions();
+    window.addEventListener('focus', refreshPermissions);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refreshPermissions);
+    };
+  }, [isAuthenticated]);
 
   const login = async (loginIdentifier, password) => {
     try {
@@ -182,7 +222,7 @@ export const AuthProvider = ({ children }) => {
       setLoggedUserId(usuario.id);
       setUsername(resolvedUsername);
       setMustChangePassword(mustChange);
-      setPermissions(nextPermissions);
+      storePermissions(nextPermissions);
 
       sessionStorage.setItem('user', JSON.stringify(usuario));
       sessionStorage.setItem('userType', type);
@@ -218,7 +258,7 @@ export const AuthProvider = ({ children }) => {
     setLoggedUserName(data.loggedUserName);
     setLoggedUserId(data.user ? data.user.id : null);
     setMustChangePassword(nextMustChangePassword);
-    setPermissions(nextPermissions);
+    storePermissions(nextPermissions);
 
     sessionStorage.setItem('user', JSON.stringify(data.user));
     sessionStorage.setItem('userType', data.userType);
@@ -275,5 +315,4 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => useContext(AuthContext);
 export { AuthContext };
-
 
