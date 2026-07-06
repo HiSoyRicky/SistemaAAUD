@@ -23,9 +23,7 @@
     "prisma:status": "npm exec -w apps/backend prisma migrate status"
   },
   "devDependencies": {
-    "pm2": "^6.0.14"
-  },
-  "dependencies": {
-    "nodemailer": "9.0.1"
+    "concurrently": "^10.0.3",
+    "pm2": "^7.0.3"
   }
 }

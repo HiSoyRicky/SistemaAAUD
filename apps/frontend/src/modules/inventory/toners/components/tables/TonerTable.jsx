@@ -1,5 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  History,
+  PackageCheck,
+  RefreshCw,
+  Search,
+  Droplets,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../../../../shared/hooks/useAuth";
 import TonerMovementModal from "../modals/TonerMovementsModal";
@@ -77,80 +85,153 @@ function TonerTable({ toners = [], onRefresh }) {
   };
 
   const canCreateMovement = ["admin", "tecnico", "consultor"].includes(userType);
+  const metrics = useMemo(() => {
+    const totalModels = toners.length;
+    const totalStock = toners.reduce((sum, toner) => sum + Number(toner.stock || 0), 0);
+    const lowStock = toners.filter((toner) => Number(toner.stock || 0) <= Number(toner.min_stock || 0)).length;
+    const colors = new Set(toners.map((toner) => toner.color).filter(Boolean)).size;
+
+    return { totalModels, totalStock, lowStock, colors };
+  }, [toners]);
+
+  const tdClass =
+    "border-x border-slate-100 px-4 py-3 text-center align-middle text-sm text-slate-700";
+  const thClass =
+    "border-x border-slate-100 px-4 py-3 text-center align-middle text-xs font-bold uppercase tracking-wide text-slate-500";
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="w-full space-y-5">
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+              <Droplets size={22} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-950">
+                Inventario de tóners
+              </h1>
+              <p className="text-sm text-slate-500">
+                Consulta existencias, modelos y movimientos de tóners.
+              </p>
+            </div>
+          </div>
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Inventario de Tóners</h1>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/inventario/toners/history")}
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            >
+              <History size={16} />
+              Historial
+            </button>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate("/inventario/toners/history")}
-            className="px-3 py-1 text-white bg-gray-700 rounded"
-          >
-            Ver Historial
-          </button>
-
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className={`flex items-center gap-1 px-3 py-1 text-white rounded ${loading ? "bg-blue-300" : "bg-blue-500"
-              }`}
-          >
-            <RefreshCw
-              size={16}
-              className={loading ? "animate-spin" : ""}
-            />
-            {loading ? "Cargando..." : "Refrescar"}
-          </button>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-blue-300"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              {loading ? "Cargando..." : "Refrescar"}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* BUSCADOR + CONTADOR */}
-      <div className="flex items-center justify-between">
-        <input
-          type="text"
-          placeholder="Buscar por marca, modelo o color..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="px-3 py-2 border rounded w-72"
-        />
-
-        <span className="text-sm text-gray-500">
-          {filtered.length} resultados
-        </span>
-      </div>
+        <div className="grid grid-cols-1 gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-white px-5 py-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Boxes size={15} />
+              Modelos
+            </div>
+            <div className="mt-2 text-3xl font-bold text-slate-950">
+              {metrics.totalModels}
+            </div>
+          </div>
+          <div className="bg-white px-5 py-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-600">
+              <PackageCheck size={15} />
+              Stock total
+            </div>
+            <div className="mt-2 text-3xl font-bold text-emerald-600">
+              {metrics.totalStock}
+            </div>
+          </div>
+          <div className="bg-white px-5 py-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-rose-600">
+              <AlertTriangle size={15} />
+              Bajo stock
+            </div>
+            <div className="mt-2 text-3xl font-bold text-rose-600">
+              {metrics.lowStock}
+            </div>
+          </div>
+          <div className="bg-white px-5 py-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
+              <Droplets size={15} />
+              Colores
+            </div>
+            <div className="mt-2 text-3xl font-bold text-blue-600">
+              {metrics.colors}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ERROR */}
       {error && (
-        <div className="p-3 text-red-700 bg-red-100 rounded">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
-      {/* TABLA */}
-      <div className="overflow-hidden bg-white rounded shadow">
-        <table className="w-full text-sm border border-collapse border-gray-300">
-          <thead className="bg-gray-100">
+      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-950">
+              Listado de tóners
+            </h2>
+            <p className="text-sm text-slate-500">
+              Mostrando {filtered.length} de {toners.length} registros
+            </p>
+          </div>
+
+          <div className="relative w-full lg:max-w-xl">
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Buscar por marca, modelo o color"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-10 w-full rounded-md border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] border-collapse divide-y divide-slate-200">
+          <thead className="bg-slate-50">
             <tr>
-              <th className="px-3 py-2 border">Marca</th>
-              <th className="px-3 py-2 border">Modelo de impresora</th>
-              <th className="px-3 py-2 border">Modelo</th>
-              <th className="px-3 py-2 border">Color</th>
-              <th className="px-3 py-2 border">Stock</th>
-              <th className="px-3 py-2 border">Acciones</th>
+              <th className={thClass}>Marca</th>
+              <th className={thClass}>Modelo de impresora</th>
+              <th className={thClass}>Modelo</th>
+              <th className={thClass}>Color</th>
+              <th className={thClass}>Stock</th>
+              <th className={thClass}>Acciones</th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y divide-slate-100 bg-white">
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan="6" className="py-6 text-center text-gray-500">
+                <td colSpan="6" className="px-6 py-12 text-center text-sm text-slate-500">
                   No hay resultados
                 </td>
               </tr>
@@ -159,21 +240,21 @@ function TonerTable({ toners = [], onRefresh }) {
                 const lowStock = t.stock <= t.min_stock;
 
                 return (
-                  <tr key={t.id}>
-                    <td className="px-3 py-2 border">
+                  <tr key={t.id} className="transition hover:bg-slate-50">
+                    <td className={tdClass}>
                       {t.brand || "—"}
                     </td>
 
-                    <td className="px-3 py-2 border">
+                    <td className={tdClass}>
                       {t.printer_model || "—"}
                     </td>
 
-                    <td className="px-3 py-2 border">
+                    <td className={tdClass}>
                       {t.toner_model || "—"}
                     </td>
 
-                    <td className="px-3 py-2 border">
-                      <div className="flex items-center gap-2">
+                    <td className={tdClass}>
+                      <div className="flex items-center justify-center gap-2">
                         <span
                           className="w-3 h-3 rounded-full"
                           style={{
@@ -192,7 +273,7 @@ function TonerTable({ toners = [], onRefresh }) {
                     </td>
 
                     <td
-                      className={`px-3 py-2 border font-semibold text-center ${lowStock ? "text-red-600" : "text-green-600"
+                      className={`${tdClass} font-semibold ${lowStock ? "text-red-600" : "text-green-600"
                         }`}
                     >
                       {t.stock}
@@ -203,7 +284,7 @@ function TonerTable({ toners = [], onRefresh }) {
                       )}
                     </td>
 
-                    <td className="px-3 py-2 border">
+                    <td className={tdClass}>
                       <div className="flex justify-center">
                         {canCreateMovement && (
                           <ActionButton
@@ -221,14 +302,16 @@ function TonerTable({ toners = [], onRefresh }) {
             )}
           </tbody>
         </table>
-      </div>
+        </div>
 
-      {/* PAGINACIÓN */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </section>
 
       {/* MODAL */}
       {movementModalOpen && (

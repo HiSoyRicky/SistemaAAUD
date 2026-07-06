@@ -22,6 +22,10 @@ const Inventory = {
     api
       .get('/api/inventory-transfer-requests', { params })
       .then((res) => res.data),
+  fetchMyTransferRequests: (params = {}) =>
+    api
+      .get('/api/inventory-transfer-requests/mine', { params })
+      .then((res) => res.data),
   approveTransferRequest: (id, data = {}) =>
     api
       .post(`/api/inventory-transfer-requests/${id}/approve`, data)

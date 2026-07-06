@@ -5,21 +5,17 @@ import Pagination from '../../../../shared/components/ui/Pagination';
 import { Printer, X } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
+import { formatDateToDDMMYYYY } from '../../../../shared/utils/formatDate';
 
 const ACTION_OPTIONS = [
   { value: '', label: 'Todas las acciones' },
   { value: 'CREATE', label: 'Creación' },
   { value: 'UPDATE', label: 'Actualización' },
-  { value: 'DELETE', label: 'Eliminación' }
+  { value: 'DELETE', label: 'Eliminación' },
 ];
 
 function formatDateTime(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-
-  return date.toLocaleDateString('es-PA');
+  return formatDateToDDMMYYYY(value, '-');
 }
 
 function formatDurationFromMs(value) {
@@ -36,15 +32,22 @@ function formatDurationFromMs(value) {
 function valueOrDash(value) {
   if (value === null || value === undefined) return '-';
 
+  if (value && typeof value === 'object') {
+    return (
+      value.name ||
+      value.label ||
+      value.title ||
+      value.nombre_completo ||
+      value.username ||
+      '-'
+    );
+  }
+
   const trimmed = String(value).trim();
   return trimmed === '' ? '-' : trimmed;
 }
 
 function entityValue(value) {
-  if (value && typeof value === 'object') {
-    return value.name || value.label || value.title || '-';
-  }
-
   return valueOrDash(value);
 }
 
@@ -118,7 +121,9 @@ function changedFieldsCell(changedFields = []) {
 
         return (
           <div key={`${change.field}-${index}`} className="mb-1 leading-tight">
-            <div className="text-[11px] font-semibold text-slate-700">{change.field}</div>
+            <div className="text-[11px] font-semibold text-slate-700">
+              {change.field}
+            </div>
             <div className="flex items-center gap-1 text-[11px]">
               <span className="text-red-600 line-through">{from}</span>
               <span className="text-gray-400">→</span>
@@ -134,14 +139,93 @@ function changedFieldsCell(changedFields = []) {
 function changedFieldValue(changedFields = [], fieldName) {
   if (!Array.isArray(changedFields)) return null;
 
-  const change = changedFields.find((item) => item?.field === fieldName);
+  const normalizedTarget = normalizeText(fieldName);
+  const change = changedFields.find(
+    (item) => normalizeText(item?.field) === normalizedTarget
+  );
   if (!change) return null;
 
   return change.to ?? change.from ?? null;
 }
 
+function firstNonDash(...values) {
+  for (const value of values) {
+    const normalized = valueOrDash(value);
+    if (normalized !== '-') return normalized;
+  }
+
+  return '-';
+}
+
 function buildTransferPreviewDevice(item) {
-  const previousUser = valueOrDash(item.previous_user) !== '-' ? valueOrDash(item.previous_user) : valueOrDash(item.moved_by?.name);
+  const snapshot =
+    item?.transfer_snapshot && typeof item.transfer_snapshot === 'object'
+      ? item.transfer_snapshot
+      : null;
+
+  if (snapshot) {
+    const snapshotTransfiere = firstNonDash(
+      snapshot.userTransfiere,
+      snapshot.userName,
+      item.moved_by?.name,
+      item.previous_user
+    );
+
+    return {
+      ...snapshot,
+      role: snapshot.role || 'transfiere',
+      userName: snapshot.userName || snapshotTransfiere,
+      userTransfiere: snapshotTransfiere,
+      userRecibe: firstNonDash(snapshot.userRecibe, item.new_user),
+      ubication_name: firstNonDash(
+        snapshot.ubication_name,
+        item.previous_ubication
+      ),
+      department_name: firstNonDash(
+        snapshot.department_name,
+        item.previous_department
+      ),
+      ubication_destino_name: firstNonDash(
+        snapshot.ubication_destino_name,
+        item.new_ubication
+      ),
+      department_destino_name: firstNonDash(
+        snapshot.department_destino_name,
+        item.new_department
+      ),
+      device_name: firstNonDash(
+        snapshot.device_name,
+        item.device_name,
+        item.new_device,
+        item.previous_device,
+        item.current_active?.device
+      ),
+      brand_name: firstNonDash(
+        snapshot.brand_name,
+        item.brand_name,
+        item.new_brand,
+        item.previous_brand,
+        item.current_active?.brand
+      ),
+      model_name: firstNonDash(
+        snapshot.model_name,
+        item.model_name,
+        item.new_model,
+        item.previous_model,
+        item.current_active?.model
+      ),
+      serie: firstNonDash(snapshot.serie, item.serie),
+      tag: firstNonDash(snapshot.tag, item.tag),
+      status_name: firstNonDash(
+        snapshot.status_name,
+        item.new_status,
+        item.current_active?.status
+      ),
+      observation: firstNonDash(snapshot.observation, item.new_observation),
+    };
+  }
+
+  const previousUser = valueOrDash(item.previous_user);
   const newUser = valueOrDash(item.new_user);
 
   return {
@@ -153,13 +237,40 @@ function buildTransferPreviewDevice(item) {
     department_name: entityValue(item.previous_department),
     ubication_destino_name: entityValue(item.new_ubication),
     department_destino_name: entityValue(item.new_department),
-    device_name: changedFieldValue(item.changed_fields, 'Equipo') || '-',
-    brand_name: changedFieldValue(item.changed_fields, 'Marca') || '-',
-    model_name: changedFieldValue(item.changed_fields, 'Modelo') || '-',
-    serie: changedFieldValue(item.changed_fields, 'Serie') || valueOrDash(item.serie),
-    tag: changedFieldValue(item.changed_fields, 'Marbete') || valueOrDash(item.tag),
-    status_name: changedFieldValue(item.changed_fields, 'Estado') || entityValue(item.new_status),
-    observation: changedFieldValue(item.changed_fields, 'Observación') || valueOrDash(item.new_observation),
+    device_name: firstNonDash(
+      changedFieldValue(item.changed_fields, 'Equipo'),
+      changedFieldValue(item.changed_fields, 'Dispositivo'),
+      item.device_name,
+      item.new_device,
+      item.previous_device,
+      item.current_active?.device
+    ),
+    brand_name: firstNonDash(
+      changedFieldValue(item.changed_fields, 'Marca'),
+      item.brand_name,
+      item.new_brand,
+      item.previous_brand,
+      item.current_active?.brand
+    ),
+    model_name: firstNonDash(
+      changedFieldValue(item.changed_fields, 'Modelo'),
+      item.model_name,
+      item.new_model,
+      item.previous_model,
+      item.current_active?.model
+    ),
+    serie:
+      changedFieldValue(item.changed_fields, 'Serie') ||
+      valueOrDash(item.serie),
+    tag:
+      changedFieldValue(item.changed_fields, 'Marbete') ||
+      valueOrDash(item.tag),
+    status_name:
+      changedFieldValue(item.changed_fields, 'Estado') ||
+      entityValue(item.new_status),
+    observation:
+      changedFieldValue(item.changed_fields, 'Observación') ||
+      valueOrDash(item.new_observation),
   };
 }
 
@@ -202,7 +313,7 @@ export default function InventoryMovementsPage() {
         search,
         action,
         from,
-        to
+        to,
       });
 
       setRows(Array.isArray(response?.data) ? response.data : []);
@@ -250,14 +361,18 @@ export default function InventoryMovementsPage() {
     handlePrint();
   };
 
-  const thClass = 'px-3 py-2 text-xs font-semibold tracking-wide text-center uppercase border text-slate-600 bg-slate-50';
-  const tdClass = 'px-3 py-2 text-xs text-center border text-slate-700 align-middle';
+  const thClass =
+    'px-3 py-2 text-xs font-semibold tracking-wide text-center uppercase border text-slate-600 bg-slate-50';
+  const tdClass =
+    'px-3 py-2 text-xs text-center border text-slate-700 align-middle';
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Historial de equipos</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Historial de equipos
+          </h1>
           <p className="text-sm text-slate-500">{summary}</p>
         </div>
 
@@ -344,7 +459,10 @@ export default function InventoryMovementsPage() {
           <tbody>
             {loading && (
               <tr>
-                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={13}>
+                <td
+                  className="px-4 py-8 text-sm text-center text-slate-400"
+                  colSpan={13}
+                >
                   Cargando historial de movimientos...
                 </td>
               </tr>
@@ -352,7 +470,10 @@ export default function InventoryMovementsPage() {
 
             {!loading && rows.length === 0 && (
               <tr>
-                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={13}>
+                <td
+                  className="px-4 py-8 text-sm text-center text-slate-400"
+                  colSpan={13}
+                >
                   No se encontraron movimientos con esos filtros
                 </td>
               </tr>
@@ -362,9 +483,13 @@ export default function InventoryMovementsPage() {
               rows.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50">
                   <td className={tdClass}>{formatDateTime(item.moved_at)}</td>
-                  <td className={tdClass}>{formatDurationFromMs(item.time_in_previous_location_ms)}</td>
+                  <td className={tdClass}>
+                    {formatDurationFromMs(item.time_in_previous_location_ms)}
+                  </td>
                   <td className={tdClass}>{valueOrDash(item.action)}</td>
-                  <td className={`${tdClass} font-semibold`}>{valueOrDash(item.tag)}</td>
+                  <td className={`${tdClass} font-semibold`}>
+                    {valueOrDash(item.tag)}
+                  </td>
                   <td className={tdClass}>{valueOrDash(item.serie)}</td>
                   <td className={tdClass}>
                     {movementCell(item.previous_user, item.new_user)}
@@ -373,14 +498,23 @@ export default function InventoryMovementsPage() {
                     {movementCell(item.previous_ubication, item.new_ubication)}
                   </td>
                   <td className={tdClass}>
-                    {movementCell(item.previous_department, item.new_department)}
+                    {movementCell(
+                      item.previous_department,
+                      item.new_department
+                    )}
                   </td>
                   <td className={tdClass}>
                     {movementCell(item.previous_status, item.new_status)}
                   </td>
-                  <td className={tdClass}>{currentLocationCell(item.current_active)}</td>
-                  <td className={tdClass}>{changedFieldsCell(item.changed_fields)}</td>
-                  <td className={tdClass}>{valueOrDash(item.moved_by?.name)}</td>
+                  <td className={tdClass}>
+                    {currentLocationCell(item.current_active)}
+                  </td>
+                  <td className={tdClass}>
+                    {changedFieldsCell(item.changed_fields)}
+                  </td>
+                  <td className={tdClass}>
+                    {valueOrDash(item.moved_by?.name)}
+                  </td>
                   <td className={tdClass}>
                     {String(item.action || '').toUpperCase() === 'DELETE' ? (
                       <span className="text-xs text-slate-400">Sin hoja</span>
@@ -413,10 +547,12 @@ export default function InventoryMovementsPage() {
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
               <div>
                 <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                  Vista previa de traslado
+                  Vista previa del traslado
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {previewRow?.tag || 'Movimiento seleccionado'}
+                  {previewRow?.transfer_request_id
+                    ? `Solicitud #${previewRow.transfer_request_id}`
+                    : previewRow?.tag || 'Movimiento seleccionado'}
                 </p>
               </div>
 
@@ -456,7 +592,11 @@ export default function InventoryMovementsPage() {
                       <TransferPrint
                         movement={previewRow}
                         device={previewDevice}
-                        fecha={previewRow?.moved_at ? new Date(previewRow.moved_at).toLocaleDateString('es-PA') : new Date().toLocaleDateString('es-PA')}
+                        fecha={
+                          previewRow?.moved_at
+                            ? formatDateToDDMMYYYY(previewRow.moved_at, '-')
+                            : formatDateToDDMMYYYY(new Date(), '-')
+                        }
                         setDevice={() => {}}
                         departments={[]}
                       />
@@ -474,7 +614,11 @@ export default function InventoryMovementsPage() {
           <TransferPrint
             ref={printRef}
             device={previewDevice}
-            fecha={previewRow?.moved_at ? new Date(previewRow.moved_at).toLocaleDateString('es-PA') : new Date().toLocaleDateString('es-PA')}
+            fecha={
+              previewRow?.moved_at
+                ? formatDateToDDMMYYYY(previewRow.moved_at, '-')
+                : formatDateToDDMMYYYY(new Date(), '-')
+            }
             setDevice={() => {}}
             departments={[]}
           />

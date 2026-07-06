@@ -5,6 +5,7 @@ import * as controller from './inventoryTransferRequests.controller.js';
 const router = express.Router();
 
 router.get('/', requireRole('admin'), controller.getAll);
+router.get('/mine', requireRole('admin', 'tecnico', 'consultor'), controller.getMine);
 router.post('/', requireRole('admin', 'tecnico', 'consultor'), controller.create);
 router.post('/:id/approve', requireRole('admin'), controller.approve);
 router.post('/:id/reject', requireRole('admin'), controller.reject);

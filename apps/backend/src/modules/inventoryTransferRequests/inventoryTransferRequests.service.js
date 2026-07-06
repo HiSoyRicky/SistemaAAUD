@@ -87,6 +87,41 @@ export const getAll = async (query = {}) => {
   };
 };
 
+export const getMine = async (query = {}, currentUser) => {
+  const requesterId = parseId(currentUser?.id, 'ID de usuario');
+  const status = normalizeStatus(query.status);
+
+  const requests = await prisma.inventory_transfer_requests.findMany({
+    where: {
+      requester_id: requesterId,
+      ...(status ? { status } : {})
+    },
+    orderBy: { requested_at: 'desc' },
+    include: {
+      inventory: {
+        include: {
+          devices: { select: { id: true, name: true } },
+          brands: { select: { id: true, name: true } },
+          models: { select: { id: true, name: true } },
+          departments: { select: { id: true, name: true } },
+          ubications: { select: { id: true, name: true } },
+          status: { select: { id: true, name: true } }
+        }
+      },
+      requester: { select: { id: true, nombre_completo: true, username: true } },
+      approver: { select: { id: true, nombre_completo: true, username: true } }
+    }
+  });
+
+  return {
+    data: requests.map((request) => ({
+      ...request,
+      inventory_snapshot: request.inventory ? mapInventoryItem(request.inventory) : null,
+      preview_inventory: request.inventory ? buildPreviewInventory(request, request.inventory) : null
+    }))
+  };
+};
+
 export const create = async (payload, currentUser) => {
   const inventoryId = parseId(payload?.inventory_id, 'ID de inventario');
   const snapshot = payload?.snapshot && typeof payload.snapshot === 'object' ? payload.snapshot : null;
@@ -224,7 +259,16 @@ export const approve = async (idParam, payload, currentUser) => {
         entity_id: request.inventory_id,
         action: 'UPDATE',
         old_values: inventory,
-        new_values: nextInventory,
+        new_values: {
+          ...nextInventory,
+          transfer_snapshot: snapshot,
+          transfer_request_id: request.id,
+          transfer_requester_id: request.requester_id,
+          transfer_requester_name:
+            request.requester?.nombre_completo ||
+            request.requester?.username ||
+            null
+        },
         user_id: currentUser?.id ?? null,
         source: 'inventory_transfer_requests.approve'
       }

@@ -3,6 +3,7 @@ import LogoIzquierda from "@/assets/images/LogoIzquierda.png";
 import FranjaInferior from "@/assets/images/FranjaInferior.png";
 import LogoDerecha from "@/assets/images/LogoDerecha.png";
 import MarcaAgua from "@/assets/images/marca-agua.png";
+import { formatDateToDDMMYYYY } from '../../utils/formatDate';
 
 const colorMap = {
     BLACK: "NEGRO",
@@ -23,8 +24,8 @@ const TonerDeliveryPrint = forwardRef(function TonerDeliveryPrint(
     const printDate =
         fecha ||
         (movement?.created_at
-            ? new Date(movement.created_at).toLocaleDateString("es-PA")
-            : new Date().toLocaleDateString("es-PA"));
+            ? formatDateToDDMMYYYY(movement.created_at, "-")
+            : formatDateToDDMMYYYY(new Date(), "-"));
 
     return (
         <div

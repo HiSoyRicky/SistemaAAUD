@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Pagination from '../../../shared/components/ui/Pagination';
 import { Activity } from '../services/activity.api';
+import { formatDateTime } from '../../../shared/utils/formatDate';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -36,19 +37,7 @@ const DEFAULT_FILTERS = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return (
-    date.toLocaleDateString('es-PA') +
-    ' ' +
-    date.toLocaleTimeString('es-PA', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    })
-  );
+  return formatDateTime(value, '-');
 }
 
 function getActionBadge(action) {

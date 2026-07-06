@@ -151,7 +151,10 @@ export const findCurrentInventoryByIds = async (ids = []) => {
       id: true,
       ubications: { select: { name: true } },
       departments: { select: { name: true } },
-      status: { select: { name: true } }
+      status: { select: { name: true } },
+      devices: { select: { name: true } },
+      brands: { select: { name: true } },
+      models: { select: { name: true } }
     }
   });
 };

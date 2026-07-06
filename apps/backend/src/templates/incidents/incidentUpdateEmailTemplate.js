@@ -2,7 +2,21 @@ function formatPanamaDate(date) {
     if (!date) {
         return 'N/A';
     }
-    return new Date(date).toLocaleString('es-PA', { timeZone: 'America/Panama' });
+
+    const parsed = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+        return 'N/A';
+    }
+
+    return new Intl.DateTimeFormat('es-PA', {
+        timeZone: 'America/Panama',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    }).format(parsed);
 }
 
 function buildAssignmentIncidentEmail({ incident, formattedTicket, privateViewUrl, technicianName }) {
@@ -148,7 +162,7 @@ function buildResolvedIncidentEmail({ incident, formattedTicket, publicViewUrl, 
                     </tr>
                     <tr>
                         <td style="padding: 8px; font-weight: bold;">Fecha de creación:</td>
-                        <td style="padding: 8px;">${new Date(incident.creation_date).toLocaleString('es-PA')}</td>
+                        <td style="padding: 8px;">${formatPanamaDate(incident.creation_date)}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; font-weight: bold;">Solución:</td>

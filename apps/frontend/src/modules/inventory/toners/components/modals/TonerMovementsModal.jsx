@@ -7,6 +7,7 @@ import { useNotifications } from "../../../../../app/providers/NotificationConte
 import TonerDeliveryPrint from "../../../../../shared/components/Print/TonerDeliveryPrint";
 import { useReactToPrint } from "react-to-print";
 import { Package, ArrowRightLeft, X } from "lucide-react";
+import { formatDateToDDMMYYYY } from "../../../../../shared/utils/formatDate";
 
 function TonerMovementModal({ toner, onClose, onSuccess }) {
     const { addNotification } = useNotifications();
@@ -277,8 +278,8 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
                         movement={movementForPrint}
                         fecha={
                             movementForPrint.created_at
-                                ? new Date(movementForPrint.created_at).toLocaleDateString("es-PA")
-                                : new Date().toLocaleDateString("es-PA")
+                                ? formatDateToDDMMYYYY(movementForPrint.created_at, "-")
+                                : formatDateToDDMMYYYY(new Date(), "-")
                         }
                     />
                 </div>

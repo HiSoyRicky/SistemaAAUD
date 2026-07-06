@@ -1,7 +1,7 @@
 // LoginPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Navigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Navigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import useAuth from '../../../shared/hooks/useAuth';
 import LogoGobNal from '@/assets/images/LogoSistema.png';
 
@@ -28,7 +28,7 @@ function LoginPage() {
   useEffect(() => {
     if (retryAfter > 0) {
       const timer = setInterval(() => {
-        setRetryAfter(prev => (prev > 1 ? prev - 1 : 0));
+        setRetryAfter((prev) => (prev > 1 ? prev - 1 : 0));
       }, 1000);
       return () => clearInterval(timer);
     }
@@ -84,7 +84,7 @@ function LoginPage() {
   if (isAuthenticated) {
     return (
       <Navigate
-        to={mustChangePassword ? "/cambiar-contrasena" : "/dashboard"}
+        to={mustChangePassword ? '/cambiar-contrasena' : '/dashboard'}
         replace
       />
     );
@@ -92,9 +92,10 @@ function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 to-blue-600">
-
       <div className="w-full max-w-md p-8 bg-white shadow-2xl rounded-xl">
-        <h2 className="text-5xl font-bold text-center text-gray-900">Bienvenido</h2>
+        <h2 className="text-5xl font-bold text-center text-gray-900">
+          Bienvenido
+        </h2>
 
         {/* Logo debajo del título */}
         <img
@@ -108,7 +109,10 @@ function LoginPage() {
           {loginMode === 'login' && (
             <>
               <div>
-                <label htmlFor="username" className="block mb-1 text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="username"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
                   Usuario
                 </label>
                 <input
@@ -125,7 +129,7 @@ function LoginPage() {
 
               <div className="relative">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -137,14 +141,18 @@ function LoginPage() {
 
                 <button
                   type="button"
-                  className="absolute -translate-y-1/2 right-3 top-1/2"
-                  onMouseDown={() => setShowPassword(true)}
+                  className="absolute -translate-y-1/2 right-3 top-1/2 text-gray-500 hover:text-gray-700"
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // Evita que el botón robe el foco
+                    setShowPassword(true);
+                  }}
                   onMouseUp={() => setShowPassword(false)}
                   onMouseLeave={() => setShowPassword(false)}
                   onTouchStart={() => setShowPassword(true)}
                   onTouchEnd={() => setShowPassword(false)}
+                  onTouchCancel={() => setShowPassword(false)}
                 >
-                  <Eye size={20} />
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </>

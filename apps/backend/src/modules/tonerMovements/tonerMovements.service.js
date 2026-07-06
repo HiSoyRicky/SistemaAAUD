@@ -1,13 +1,15 @@
 import AppError from '../../common/utils/AppError.js';
 import * as repository from './tonerMovements.repository.js';
 import * as dto from './tonerMovements.dto.js';
-import { MOVEMENT_TYPES,
+import {
+  MOVEMENT_TYPES,
   DEFAULT_PAGE,
   DEFAULT_LIMIT,
   MAX_LIMIT,
   MIN_RECEIVER_NAME_LENGTH,
   MIN_ADJUSTMENT_REFERENCE_LENGTH,
-  DOCUMENT_STATUS_SIGNED } from './tonerMovements.constants.js';
+  DOCUMENT_STATUS_SIGNED,
+} from './tonerMovements.constants.js';
 
 function parsePositiveInt(value, fieldName) {
   const parsed = Number(value);
@@ -62,43 +64,43 @@ function buildMovementWhere(query) {
           is: {
             toner_model: {
               contains: searchTerm,
-              mode: 'insensitive'
-            }
-          }
-        }
+              mode: 'insensitive',
+            },
+          },
+        },
       },
       {
         reference: {
           contains: searchTerm,
-          mode: 'insensitive'
-        }
+          mode: 'insensitive',
+        },
       },
       {
         receiver_name: {
           contains: searchTerm,
-          mode: 'insensitive'
-        }
+          mode: 'insensitive',
+        },
       },
       {
         department: {
           is: {
             name: {
               contains: searchTerm,
-              mode: 'insensitive'
-            }
-          }
-        }
+              mode: 'insensitive',
+            },
+          },
+        },
       },
       {
         ubication: {
           is: {
             name: {
               contains: searchTerm,
-              mode: 'insensitive'
-            }
-          }
-        }
-      }
+              mode: 'insensitive',
+            },
+          },
+        },
+      },
     ];
   }
 
@@ -106,7 +108,9 @@ function buildMovementWhere(query) {
 }
 
 function parseMovementType(value) {
-  const movementType = String(value || '').toUpperCase().trim();
+  const movementType = String(value || '')
+    .toUpperCase()
+    .trim();
   if (!MOVEMENT_TYPES.includes(movementType)) {
     throw new AppError('Tipo de movimiento inválido', 400);
   }
@@ -130,7 +134,7 @@ export const getAll = async (query) => {
   const data = await repository.findMovements({
     where,
     skip: (page - 1) * limit,
-    take: limit
+    take: limit,
   });
 
   const total = await repository.countMovements(where);
@@ -139,7 +143,7 @@ export const getAll = async (query) => {
     data,
     total,
     page,
-    limit
+    limit,
   });
 };
 
@@ -198,7 +202,6 @@ export const create = async ({ payload, currentUser }) => {
     }
 
     if (movement_type === 'ADJUSTMENT') {
-
       if (reference.length < MIN_ADJUSTMENT_REFERENCE_LENGTH) {
         throw new AppError('Debe indicar el motivo detallado del ajuste', 400);
       }
@@ -211,7 +214,7 @@ export const create = async ({ payload, currentUser }) => {
     await repository.upsertTonerStock(
       {
         tonerId: id_toner,
-        quantity: newStock
+        quantity: newStock,
       },
       tx
     );
@@ -229,7 +232,7 @@ export const create = async ({ payload, currentUser }) => {
         id_incident,
         receiver_name: movement_type === 'OUT' ? receiverName : null,
         id_user: userId,
-        created_by: userId
+        created_by: userId,
       },
       tx
     );
@@ -257,8 +260,8 @@ export const uploadDocument = async ({ idParam, file, currentUser }) => {
       signed_document: file.filename,
       document_status: DOCUMENT_STATUS_SIGNED,
       document_uploaded_at: new Date(),
-      document_uploaded_by: uploadedBy
-    }
+      document_uploaded_by: uploadedBy,
+    },
   });
 
   return dto.mapUploadDocumentResponse(updated);

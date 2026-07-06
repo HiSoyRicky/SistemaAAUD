@@ -4,6 +4,10 @@ import { useReactToPrint } from 'react-to-print';
 import { useNotifications } from '../../../../app/providers/NotificationContext';
 import { Inventory } from '../../../inventory/devices/services/inventory.api';
 import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
+import {
+  formatDateTime,
+  formatDateToDDMMYYYY,
+} from '../../../../shared/utils/formatDate';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todas' },
@@ -29,9 +33,7 @@ function statusLabel(status) {
 }
 
 function formatDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('es-PA');
+  return formatDateTime(value, '-');
 }
 
 function buildPreviewDevice(request) {
@@ -314,10 +316,11 @@ export default function TransferRequestsManager() {
                         device={buildPreviewDevice(selectedRequest)}
                         fecha={
                           selectedRequest.requested_at
-                            ? new Date(
-                                selectedRequest.requested_at
-                              ).toLocaleDateString('es-PA')
-                            : new Date().toLocaleDateString('es-PA')
+                            ? formatDateToDDMMYYYY(
+                                selectedRequest.requested_at,
+                                '-'
+                              )
+                            : formatDateToDDMMYYYY(new Date(), '-')
                         }
                         setDevice={() => {}}
                         departments={[]}

@@ -1,20 +1,14 @@
 // header.jsx
-import {
-  LogOut,
-  Settings,
-  ChevronDown,
-  Menu,
-  X,
-} from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
-import useAuth from "../../hooks/useAuth";
-import LogoSistemaAAUD from "@/assets/images/LogoSistemaAAUD.png";
-import { getNavigation } from "../../config/Navegation";
+import { LogOut, Settings, ChevronDown, Menu, X } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import useAuth from '../../hooks/useAuth';
+import LogoSistemaAAUD from '@/assets/images/LogoSistemaAAUD.png';
+import { getNavigation } from '../../config/Navegation';
 
 function Header({ sidebarFixed }) {
-
-  const { isAuthenticated, userType, loggedUserName, logout, hasPermission } = useAuth();
+  const { isAuthenticated, userType, loggedUserName, logout, hasPermission } =
+    useAuth();
 
   const navigate = useNavigate();
 
@@ -26,24 +20,24 @@ function Header({ sidebarFixed }) {
   const mobileMenuRef = useRef(null);
 
   const initials = useMemo(() => {
-    if (!loggedUserName) return "?";
+    if (!loggedUserName) return '?';
     return loggedUserName
       .trim()
       .split(/\s+/)
       .slice(0, 2)
       .map((n) => n[0])
-      .join("")
+      .join('')
       .toUpperCase();
   }, [loggedUserName]);
 
   const roleLabel =
-    userType === "admin"
-      ? "Admin"
-      : userType === "tecnico"
-        ? "Técnico"
-        : userType === "consultor"
-          ? "Consultor"
-            : "Trabajador";
+    userType === 'admin'
+      ? 'Admin'
+      : userType === 'tecnico'
+        ? 'Técnico'
+        : userType === 'consultor'
+          ? 'Consultor'
+          : 'Trabajador';
 
   const goTo = (path) => {
     setMobileOpen(false);
@@ -64,8 +58,8 @@ function Header({ sidebarFixed }) {
       }
     };
 
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
   }, [mobileOpen]);
 
   // Cierra menú mobile si cambia el tamaño a desktop
@@ -73,27 +67,27 @@ function Header({ sidebarFixed }) {
     const onResize = () => {
       if (window.innerWidth >= 768) setMobileOpen(false);
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 border-b border-white/10 bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-900">
+    <header className="fixed top-0 left-0 right-0 z-40 border-b border-white/10 bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-900">
       <div className="px-3 md:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Brand */}
           <button
             type="button"
-            onClick={() => goTo("/dashboard")}
+            onClick={() => goTo('/dashboard')}
             className="flex items-center gap-3 group"
           >
             <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-md">
-                <img
-                  src={LogoSistemaAAUD}
-                  alt="Logo AAUD"
-                  className="object-contain"
-                />
-              </div>
+              <img
+                src={LogoSistemaAAUD}
+                alt="Logo AAUD"
+                className="object-contain"
+              />
+            </div>
 
             <div className="flex flex-col items-start leading-none">
               <span className="text-base font-extrabold tracking-wide text-white md:text-lg">
@@ -114,7 +108,11 @@ function Header({ sidebarFixed }) {
                 onClick={() => setMobileOpen((p) => !p)}
                 aria-label="Abrir menú"
               >
-                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
               </button>
             )}
 
@@ -140,8 +138,9 @@ function Header({ sidebarFixed }) {
                   </span>
 
                   <ChevronDown
-                    className={`hidden md:block w-4 h-4 text-white/90 transition-transform ${userMenuOpen ? "rotate-180" : "rotate-0"
-                      }`}
+                    className={`hidden md:block w-4 h-4 text-white/90 transition-transform ${
+                      userMenuOpen ? 'rotate-180' : 'rotate-0'
+                    }`}
                   />
                 </button>
 
@@ -156,9 +155,9 @@ function Header({ sidebarFixed }) {
 
                     <div className="p-2">
                       {/* SOLO si NO es trabajador */}
-                      {userType !== "trabajador" && (
+                      {userType !== 'trabajador' && (
                         <button
-                          onClick={() => goTo("/perfil")}
+                          onClick={() => goTo('/perfil')}
                           className="flex items-center w-full gap-2 px-3 py-2 text-sm transition rounded-xl text-slate-700 hover:bg-slate-100"
                         >
                           <Settings className="w-4 h-4" />
@@ -197,11 +196,11 @@ function Header({ sidebarFixed }) {
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) =>
                       [
-                        "flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition",
+                        'flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition',
                         isActive
-                          ? "bg-white text-slate-900"
-                          : "text-white/90 hover:bg-white/10 hover:text-white",
-                      ].join(" ")
+                          ? 'bg-white text-slate-900'
+                          : 'text-white/90 hover:bg-white/10 hover:text-white',
+                      ].join(' ')
                     }
                   >
                     {/* Renderizamos el componente de icono correctamente */}
@@ -213,7 +212,7 @@ function Header({ sidebarFixed }) {
                 <div className="h-px my-1 bg-white/10" />
 
                 <button
-                  onClick={() => goTo("/perfil")}
+                  onClick={() => goTo('/perfil')}
                   className="flex items-center gap-2 px-4 py-3 text-sm font-medium transition rounded-xl text-white/90 hover:bg-white/10 hover:text-white"
                 >
                   <Settings className="w-5 h-5" />

@@ -6,6 +6,11 @@ export const getAll = catchAsync(async (req, res) => {
   res.json(data);
 });
 
+export const getMine = catchAsync(async (req, res) => {
+  const data = await service.getMine(req.query, req.user);
+  res.json(data);
+});
+
 export const create = catchAsync(async (req, res) => {
   const data = await service.create(req.body, req.user);
   res.status(201).json(data);

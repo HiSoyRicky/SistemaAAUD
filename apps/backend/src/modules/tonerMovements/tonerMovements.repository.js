@@ -5,29 +5,29 @@ const movementInclude = {
     include: {
       models: {
         include: {
-          brands: true
-        }
-      }
-    }
+          brands: true,
+        },
+      },
+    },
   },
   user: {
     select: {
       id: true,
-      nombre_completo: true
-    }
+      nombre_completo: true,
+    },
   },
   department: {
     select: {
       id: true,
-      name: true
-    }
+      name: true,
+    },
   },
   ubication: {
     select: {
       id: true,
-      name: true
-    }
-  }
+      name: true,
+    },
+  },
 };
 
 export const withTransaction = async (callback) => {
@@ -40,7 +40,7 @@ export const findMovements = async ({ where, skip, take }) => {
     include: movementInclude,
     orderBy: { created_at: 'desc' },
     skip,
-    take
+    take,
   });
 };
 
@@ -51,13 +51,13 @@ export const countMovements = async (where) => {
 export const findTonerByIdWithStock = async (id, db = prisma) => {
   return db.toners.findUnique({
     where: { id: Number(id) },
-    include: { stock: true }
+    include: { stock: true },
   });
 };
 
 export const findDepartmentById = async (id, db = prisma) => {
   return db.departments.findUnique({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };
 
@@ -67,21 +67,21 @@ export const upsertTonerStock = async ({ tonerId, quantity }, db = prisma) => {
     update: { quantity: Number(quantity) },
     create: {
       id_toner: Number(tonerId),
-      quantity: Number(quantity)
-    }
+      quantity: Number(quantity),
+    },
   });
 };
 
 export const createMovement = async (data, db = prisma) => {
   return db.toner_movements.create({
     data,
-    include: movementInclude
+    include: movementInclude,
   });
 };
 
 export const findMovementById = async (id) => {
   return prisma.toner_movements.findUnique({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };
 
@@ -89,6 +89,6 @@ export const updateMovementDocument = async ({ movementId, data }) => {
   return prisma.toner_movements.update({
     where: { id: Number(movementId) },
     data,
-    include: movementInclude
+    include: movementInclude,
   });
 };

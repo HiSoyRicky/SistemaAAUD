@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { formatDateTime as formatDateTimeUi } from './formatDate';
 
 async function exportToExcel({ sheetName, columns, rows, fileName }) {
     const workbook = new ExcelJS.Workbook();
@@ -49,18 +50,7 @@ async function exportToExcel({ sheetName, columns, rows, fileName }) {
 }
 
 function formatDateTime(value) {
-    if (!value) return 'N/A';
-
-    const date = new Date(value);
-
-    return date.toLocaleString('es-PA', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-    });
+    return formatDateTimeUi(value, 'N/A');
 }
 
 export function mapTonerMovementToRow(movement) {

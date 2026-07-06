@@ -14,7 +14,23 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 200;
 const ALLOWED_HISTORY_ACTIONS = new Set(['CREATE', 'UPDATE', 'DELETE']);
-const IGNORED_DIFF_FIELDS = new Set(['id', 'updated_at', 'updated_by', 'created_at', 'created_by']);
+const IGNORED_DIFF_FIELDS = new Set([
+  'id',
+  'updated_at',
+  'updated_by',
+  'created_at',
+  'created_by',
+  'transfer_snapshot',
+  'transfer_request_id',
+  'transfer_requester_id',
+  'transfer_requester_name',
+  'ubications',
+  'departments',
+  'status',
+  'devices',
+  'brands',
+  'models'
+]);
 const HISTORY_FIELD_LABELS = {
   tag: 'Marbete',
   serie: 'Serie',
@@ -168,6 +184,17 @@ function sanitizeMovementValue(value) {
     return trimmed === '' ? null : trimmed;
   }
 
+  if (typeof value === 'object') {
+    return (
+      value.name ||
+      value.label ||
+      value.title ||
+      value.nombre_completo ||
+      value.username ||
+      null
+    );
+  }
+
   return value;
 }
 
@@ -213,7 +240,13 @@ function formatHistoryDate(value) {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return sanitizeMovementValue(value);
-  return date.toLocaleDateString('es-PA');
+
+  return new Intl.DateTimeFormat('es-PA', {
+    timeZone: 'America/Panama',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
 }
 
 function formatChangedValue(key, value, maps) {
@@ -301,6 +334,12 @@ function buildHistoryItem({
   const newDepartmentId = parseNullableId(newValues.id_department);
   const oldStatusId = parseNullableId(oldValues.id_status);
   const newStatusId = parseNullableId(newValues.id_status);
+  const oldDeviceId = parseNullableId(oldValues.id_device);
+  const newDeviceId = parseNullableId(newValues.id_device);
+  const oldBrandId = parseNullableId(oldValues.id_brand);
+  const newBrandId = parseNullableId(newValues.id_brand);
+  const oldModelId = parseNullableId(oldValues.id_model);
+  const newModelId = parseNullableId(newValues.id_model);
 
   const previousUser = sanitizeMovementValue(oldValues.user);
   const newUser = sanitizeMovementValue(newValues.user);
@@ -313,9 +352,22 @@ function buildHistoryItem({
 
   const previousStatus = oldStatusId ? statusMap.get(oldStatusId) || null : null;
   const newStatus = newStatusId ? statusMap.get(newStatusId) || null : null;
+  const previousDevice = oldDeviceId ? devicesMap.get(oldDeviceId) || null : null;
+  const newDevice = newDeviceId ? devicesMap.get(newDeviceId) || null : null;
+  const previousBrand = oldBrandId ? brandsMap.get(oldBrandId) || null : null;
+  const newBrand = newBrandId ? brandsMap.get(newBrandId) || null : null;
+  const previousModel = oldModelId ? modelsMap.get(oldModelId) || null : null;
+  const newModel = newModelId ? modelsMap.get(newModelId) || null : null;
 
   const tag = sanitizeMovementValue(newValues.tag) || sanitizeMovementValue(oldValues.tag) || null;
   const serie = sanitizeMovementValue(newValues.serie) || sanitizeMovementValue(oldValues.serie) || null;
+  const transferSnapshot = parseMovementObject(newValues.transfer_snapshot);
+  const transferRequesterName =
+    sanitizeMovementValue(newValues.transfer_requester_name) || null;
+  const transferRequesterId = parseNullableId(newValues.transfer_requester_id);
+  const shouldUseTransferRequester =
+    log.source === 'inventory_transfer_requests.approve' &&
+    Boolean(transferRequesterName);
   const changedDetails = buildChangedDetails(oldValues, newValues, {
     ubicationsMap,
     departmentsMap,
@@ -330,12 +382,17 @@ function buildHistoryItem({
     inventory_id: log.entity_id,
     action: log.action,
     moved_at: log.created_at,
-    moved_by: log.user
+    moved_by: shouldUseTransferRequester
       ? {
-          id: log.user.id,
-          name: log.user.nombre_completo
+          id: transferRequesterId,
+          name: transferRequesterName
         }
-      : null,
+      : log.user
+        ? {
+            id: log.user.id,
+            name: log.user.nombre_completo
+          }
+        : null,
     tag,
     serie,
     previous_user: previousUser,
@@ -346,11 +403,23 @@ function buildHistoryItem({
     new_department: newDepartment,
     previous_status: previousStatus,
     new_status: newStatus,
+    previous_device: previousDevice,
+    new_device: newDevice,
+    previous_brand: previousBrand,
+    new_brand: newBrand,
+    previous_model: previousModel,
+    new_model: newModel,
+    device_name: newDevice || previousDevice,
+    brand_name: newBrand || previousBrand,
+    model_name: newModel || previousModel,
     previous_ip: sanitizeMovementValue(oldValues.ip),
     new_ip: sanitizeMovementValue(newValues.ip),
     previous_observation: sanitizeMovementValue(oldValues.observation),
     new_observation: sanitizeMovementValue(newValues.observation),
     changed_fields: changedDetails,
+    transfer_request_id: parseNullableId(newValues.transfer_request_id),
+    transfer_snapshot:
+      Object.keys(transferSnapshot).length > 0 ? transferSnapshot : null,
     time_in_previous_location_ms: null,
     current_active: null
   };
@@ -512,7 +581,10 @@ export const getHistory = async (query) => {
       {
         ubication: row.ubications?.name || null,
         department: row.departments?.name || null,
-        status: row.status?.name || null
+        status: row.status?.name || null,
+        device: row.devices?.name || null,
+        brand: row.brands?.name || null,
+        model: row.models?.name || null
       }
     ])
   );
@@ -538,6 +610,15 @@ export const getHistory = async (query) => {
           item.new_department,
           item.previous_status,
           item.new_status,
+          item.previous_device,
+          item.new_device,
+          item.previous_brand,
+          item.new_brand,
+          item.previous_model,
+          item.new_model,
+          item.device_name,
+          item.brand_name,
+          item.model_name,
           item.previous_ip,
           item.new_ip,
           item.previous_observation,
@@ -546,6 +627,9 @@ export const getHistory = async (query) => {
           item.current_active?.ubication,
           item.current_active?.department,
           item.current_active?.status,
+          item.current_active?.device,
+          item.current_active?.brand,
+          item.current_active?.model,
           item.inventory_id,
           item.id
         ]);
