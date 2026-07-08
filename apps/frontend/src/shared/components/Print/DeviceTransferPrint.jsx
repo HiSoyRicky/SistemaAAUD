@@ -1,11 +1,11 @@
-import React, { forwardRef } from 'react';
-import LogoIzquierda from '@/assets/images/LogoIzquierda.png';
 import FranjaInferior from '@/assets/images/FranjaInferior.png';
 import LogoDerecha from '@/assets/images/LogoDerecha.png';
+import LogoIzquierda from '@/assets/images/LogoIzquierda.png';
 import MarcaAgua from '@/assets/images/marca-agua.png';
+import { forwardRef } from 'react';
 
 const TransferPrint = forwardRef(function TransferPrint(
-  { device = {}, fecha, setDevice, departments = [] },
+  { device = {}, fecha = [] },
   ref
 ) {
   const transfiere =

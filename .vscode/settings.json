@@ -3,6 +3,8 @@
   "typescript.updateImportsOnFileMove.enabled": "always",
 
   "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.tabCompletion": "on",
   "editor.rulers": [80, 120],
@@ -10,7 +12,8 @@
   "editor.inlineSuggest.enabled": true,
 
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "always"
+    "source.fixAll": "always",
+    "source.organizeImports": "always"
   },
 
   "[javascript]": {
