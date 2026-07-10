@@ -1,6 +1,9 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { formatDateTime as formatDateTimeUi } from './formatDate';
+import {
+    formatDateTime as formatDateTimeUi,
+    toDateOnlyInputValue,
+} from './formatDate';
 
 async function exportToExcel({ sheetName, columns, rows, fileName }) {
     const workbook = new ExcelJS.Workbook();
@@ -108,6 +111,8 @@ export function mapIncidentToRow(i) {
 
 // inventoryExcelMapper.js
 export function mapInventoryToRow(item) {
+    const transferDateInput = toDateOnlyInputValue(item.transferdate);
+
     return {
         id: item.id,
         tag: item.tag || 'N/A',
@@ -120,8 +125,8 @@ export function mapInventoryToRow(item) {
         serie: item.serie || 'S/S',
         ip: item.ip || 'N/A',
         estado: item.status_name || 'N/A',
-        fecha_traslado: item.transferdate
-            ? new Date(item.transferdate)
+        fecha_traslado: transferDateInput
+            ? new Date(`${transferDateInput}T00:00:00`)
             : null,
         observacion: item.observation || '',
     };

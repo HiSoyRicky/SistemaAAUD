@@ -1,8 +1,11 @@
 // InventoryFormModal.jsx
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
-import { formatDateToDDMMYYYY } from '../../../../../shared/utils/formatDate';
 import useAuth from '../../../../../shared/hooks/useAuth';
+import {
+  formatDateOnlyToDDMMYYYY,
+  toDateOnlyInputValue,
+} from '../../../../../shared/utils/formatDate';
 import { Inventory } from '../../services/inventory.api';
 
 export default function InventoryFormModal({
@@ -32,10 +35,10 @@ export default function InventoryFormModal({
     ip: initialData.ip || '',
     id_status: initialData.id_status || null,
     transferdate: initialData.transferdate
-      ? formatDateToDDMMYYYY(initialData.transferdate)
+      ? formatDateOnlyToDDMMYYYY(initialData.transferdate)
       : '',
     transferDateInput: initialData.transferdate
-      ? new Date(initialData.transferdate).toISOString().split('T')[0]
+      ? toDateOnlyInputValue(initialData.transferdate)
       : '',
     observation: initialData.observation || '',
   });
@@ -131,11 +134,10 @@ export default function InventoryFormModal({
     const { name, value } = e.target;
 
     if (name === 'transferDateInput') {
-      const date = value ? new Date(value + 'T00:00:00Z') : null;
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-        transferdate: date ? formatDateToDDMMYYYY(date) : '',
+        transferdate: value ? formatDateOnlyToDDMMYYYY(value) : '',
       }));
     } else {
       setFormData((prev) => ({
@@ -189,9 +191,7 @@ export default function InventoryFormModal({
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      const transferdate = formData.transferDateInput
-        ? new Date(formData.transferDateInput + 'T00:00:00Z').toISOString()
-        : null;
+      const transferdate = formData.transferDateInput || null;
 
       const completeSubmitData = {
         ...formData,

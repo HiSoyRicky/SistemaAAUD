@@ -2,6 +2,7 @@
 
 const DATE_TIMEZONE = 'America/Panama';
 const DATE_LOCALE = 'es-US';
+const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})/;
 
 function asDate(value) {
   if (!value) return null;
@@ -17,6 +18,56 @@ function formatWithOptions(value, options = {}, fallback = '-') {
     timeZone: DATE_TIMEZONE,
     ...options,
   }).format(date);
+}
+
+function dateOnlyParts(value) {
+  if (!value) return null;
+
+  if (typeof value === 'string') {
+    const match = value.match(DATE_ONLY_PATTERN);
+    if (match) {
+      return {
+        year: Number(match[1]),
+        month: Number(match[2]),
+        day: Number(match[3]),
+      };
+    }
+  }
+
+  const date = asDate(value);
+  if (!date) return null;
+
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
+}
+
+export function toDateOnlyInputValue(value) {
+  const parts = dateOnlyParts(value);
+  if (!parts) return '';
+
+  const year = String(parts.year).padStart(4, '0');
+  const month = String(parts.month).padStart(2, '0');
+  const day = String(parts.day).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function formatDateOnlyToDDMMYYYY(value, fallback = '-') {
+  const inputValue = toDateOnlyInputValue(value);
+  if (!inputValue) return fallback;
+
+  return formatWithOptions(
+    `${inputValue}T00:00:00Z`,
+    {
+      timeZone: 'UTC',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    },
+    fallback
+  );
 }
 
 // Mantiene el nombre por compatibilidad con llamadas existentes.

@@ -1,16 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Toners } from '../services/toners.api';
-import Pagination from '../../../../shared/components/ui/Pagination';
-import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../../../../app/providers/NotificationContext';
 import { Printer, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
+import { useNotifications } from '../../../../app/providers/NotificationContext';
 import TonerDeliveryPrint from '../../../../shared/components/Print/TonerDeliveryPrint';
+import Pagination from '../../../../shared/components/ui/Pagination';
 import { exportTonerMovementsToExcel } from '../../../../shared/utils/exportExcel';
 import {
   formatDateTime,
   formatDateToDDMMYYYY,
 } from '../../../../shared/utils/formatDate';
+import { Toners } from '../services/toners.api';
 
 function TonerMovementsPage() {
   const [movements, setMovements] = useState([]);
@@ -18,7 +18,6 @@ function TonerMovementsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [uploadingMovementId, setUploadingMovementId] = useState(null);
   const [previewMovement, setPreviewMovement] = useState(null);
   const [exporting, setExporting] = useState(false);
 
@@ -129,7 +128,7 @@ function TonerMovementsPage() {
       }
 
       await exportTonerMovementsToExcel(allMovements);
-      addNotification('Historial de tóners exportado ✅', 'success');
+      addNotification('Historial de tóneres exportado ✅', 'success');
     } catch (error) {
       console.error(error);
       addNotification('No se pudo exportar el historial ❌', 'error');
@@ -141,7 +140,7 @@ function TonerMovementsPage() {
   if (loading) return <p className="p-6">Cargando historial...</p>;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-0 space-y-2">
       <button
         onClick={() => navigate(-1)}
         className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"

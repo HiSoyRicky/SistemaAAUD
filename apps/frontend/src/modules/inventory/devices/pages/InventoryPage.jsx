@@ -27,6 +27,7 @@ import { exportInventoryToExcel } from '../../../../shared/utils/exportExcel';
 import {
   formatDateTime,
   formatDateToDDMMYYYY,
+  toDateOnlyInputValue,
 } from '../../../../shared/utils/formatDate';
 import PrintWizardModal from '../components/modals/PrintWizardModal';
 import InventoryFormModal from '../components/forms/InventoryForm';
@@ -320,7 +321,7 @@ function InventoryPage() {
       !filters.department || d.department_name === filters.department;
     const matchesTransferDate =
       !filters.transferdate ||
-      new Date(d.transferdate) >= new Date(filters.transferdate);
+      toDateOnlyInputValue(d.transferdate) >= filters.transferdate;
 
     return (
       matchesSearch &&

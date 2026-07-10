@@ -9,6 +9,7 @@ import {
   getResolvedUserPermissionCodes,
   hasPermissionCode
 } from '../../common/rbac/permissions.service.js';
+import { parseDateOnly } from '../../common/utils/dateParser.js';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -158,6 +159,18 @@ function parseOptionalDate(value, fieldName) {
   return parsed;
 }
 
+function parseTransferDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return parseDateOnly(value.trim());
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function parsePagination(query) {
   const page = Number(query?.page) || DEFAULT_PAGE;
   const requestedLimit = Number(query?.limit) || DEFAULT_LIMIT;
@@ -242,7 +255,7 @@ function formatHistoryDate(value) {
   if (Number.isNaN(date.getTime())) return sanitizeMovementValue(value);
 
   return new Intl.DateTimeFormat('es-PA', {
-    timeZone: 'America/Panama',
+    timeZone: 'UTC',
     day: '2-digit',
     month: 'short',
     year: 'numeric'
@@ -731,8 +744,8 @@ export const create = async (payload, currentUser) => {
 
   let transferDateObj = null;
   if (transferdate) {
-    const date = transferdate instanceof Date ? transferdate : new Date(transferdate);
-    if (Number.isNaN(date.getTime())) {
+    const date = parseTransferDate(transferdate);
+    if (!date) {
       throw new AppError('El campo transferdate debe ser una fecha válida', 400);
     }
     transferDateObj = date;
@@ -935,7 +948,11 @@ export const update = async (idParam, payload, currentUser) => {
   if (ip !== undefined) updateData.ip = ip;
   if (observation !== undefined) updateData.observation = observation;
   if (transferdate !== undefined) {
-    updateData.transferdate = transferdate ? new Date(transferdate) : null;
+    const parsedTransferDate = parseTransferDate(transferdate);
+    if (transferdate && !parsedTransferDate) {
+      throw new AppError('El campo transferdate debe ser una fecha válida', 400);
+    }
+    updateData.transferdate = parsedTransferDate;
   }
 
   if (Object.keys(updateData).length === 1) {

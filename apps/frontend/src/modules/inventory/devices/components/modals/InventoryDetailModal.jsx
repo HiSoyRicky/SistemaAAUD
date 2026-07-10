@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  formatDateOnlyToDDMMYYYY,
   formatDateToDDMMYYYY,
 } from '../../../../../shared/utils/formatDate';
 import { Inventory } from '../../services/inventory.api';
@@ -124,7 +125,7 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
             label="Fecha de traslado"
             value={
               item.transferdate
-                ? formatDateToDDMMYYYY(item.transferdate)
+                ? formatDateOnlyToDDMMYYYY(item.transferdate)
                 : 'N/A'
             }
           />

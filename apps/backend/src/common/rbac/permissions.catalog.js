@@ -16,7 +16,6 @@ const PERMISSIONS_CATALOG = [
   { module: 'toners', action: 'delete' },
   { module: 'toner_movements', action: 'read' },
   { module: 'toner_movements', action: 'create' },
-  { module: 'toner_movements', action: 'upload_document' },
   { module: 'users', action: 'read' },
   { module: 'users', action: 'create' },
   { module: 'users', action: 'update' },
@@ -48,16 +47,20 @@ const PERMISSIONS_CATALOG = [
   { module: 'status', action: 'update' },
   { module: 'status', action: 'delete' },
   { module: 'permissions', action: 'read' },
-  { module: 'permissions', action: 'assign' }
+  { module: 'permissions', action: 'assign' },
 ];
 
 export const buildPermissionCode = (moduleName, actionName) =>
-  `${String(moduleName || '').trim().toLowerCase()}.${String(actionName || '')
+  `${String(moduleName || '')
+    .trim()
+    .toLowerCase()}.${String(actionName || '')
     .trim()
     .toLowerCase()}`;
 
 export const normalizePermissionCode = (code) =>
-  String(code || '').trim().toLowerCase();
+  String(code || '')
+    .trim()
+    .toLowerCase();
 
 export const splitPermissionCode = (code) => {
   const normalized = normalizePermissionCode(code);
@@ -69,7 +72,7 @@ export const splitPermissionCode = (code) => {
 
   return {
     module: chunks[0],
-    action: chunks[1]
+    action: chunks[1],
   };
 };
 
@@ -94,7 +97,6 @@ const ROLE_DEFAULT_PERMISSION_CODES = {
     'toners.read',
     'toner_movements.read',
     'toner_movements.create',
-    'toner_movements.upload_document',
     'devices.read',
     'models.read',
     'brands.read',
@@ -102,7 +104,7 @@ const ROLE_DEFAULT_PERMISSION_CODES = {
     'ubications.read',
     'status.read',
     'users.read',
-    'roles.read'
+    'roles.read',
   ],
   consultor: [
     'incidents.read',
@@ -117,13 +119,9 @@ const ROLE_DEFAULT_PERMISSION_CODES = {
     'ubications.read',
     'status.read',
     'users.read',
-    'roles.read'
+    'roles.read',
   ],
-  trabajador: [
-    'incidents.create',
-    'departments.read',
-    'ubications.read'
-  ],
+  trabajador: ['incidents.create', 'departments.read', 'ubications.read'],
 };
 
 export const resolveRoleDefaultPermissionCodes = (roleName) => {

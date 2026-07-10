@@ -1,5 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MapPinned, RotateCcw, ShieldCheck, UserCog, Users } from 'lucide-react';
+import {
+  MapPinned,
+  RotateCcw,
+  ShieldCheck,
+  UserCog,
+  Users,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import useAuth from '../../../../shared/hooks/useAuth';
 import PermissionsApi from '../../services/permissions.api';
 
@@ -13,7 +19,9 @@ function getErrorMessage(error) {
 }
 
 function normalizeCode(code) {
-  return String(code || '').trim().toLowerCase();
+  return String(code || '')
+    .trim()
+    .toLowerCase();
 }
 
 function setFromList(list = []) {
@@ -39,26 +47,40 @@ const MODULE_LABELS = {
   departments: 'Departamentos',
   ubications: 'Ubicaciones',
   status: 'Estados',
-  permissions: 'Permisos'
+  permissions: 'Permisos',
 };
 
 const ACTION_DETAILS = {
   read: ['Ver', 'Permite consultar registros del módulo.'],
   create: ['Crear', 'Permite registrar nuevos elementos.'],
-  update: ['Editar completamente', 'Permite modificar todos los campos disponibles.'],
+  update: [
+    'Editar completamente',
+    'Permite modificar todos los campos disponibles.',
+  ],
   delete: ['Eliminar', 'Permite eliminar registros.'],
-  update_password: ['Cambiar contraseñas', 'Permite actualizar contraseñas de usuarios.'],
+  update_password: [
+    'Cambiar contraseñas',
+    'Permite actualizar contraseñas de usuarios.',
+  ],
   assign: ['Asignar permisos', 'Permite cambiar permisos de roles y usuarios.'],
-  upload_document: ['Subir documentos', 'Permite adjuntar documentos firmados.'],
-  update_location: ['Editar ubicación', 'Permite cambiar únicamente la ubicación del equipo.'],
-  update_department: ['Editar departamento', 'Permite cambiar únicamente el departamento del equipo.'],
-  update_assignee: ['Editar usuario asignado', 'Permite cambiar únicamente el usuario responsable del equipo.']
+  update_location: [
+    'Editar ubicación',
+    'Permite cambiar únicamente la ubicación del equipo.',
+  ],
+  update_department: [
+    'Editar departamento',
+    'Permite cambiar únicamente el departamento del equipo.',
+  ],
+  update_assignee: [
+    'Editar usuario asignado',
+    'Permite cambiar únicamente el usuario responsable del equipo.',
+  ],
 };
 
 const LIMITED_INVENTORY_PERMISSIONS = [
   'inventory.update_location',
   'inventory.update_department',
-  'inventory.update_assignee'
+  'inventory.update_assignee',
 ];
 
 function getModuleLabel(moduleName) {
@@ -66,10 +88,12 @@ function getModuleLabel(moduleName) {
 }
 
 function getActionDetail(actionName) {
-  return ACTION_DETAILS[actionName] || [
-    formatLabel(actionName),
-    'Controla esta acción dentro del módulo.'
-  ];
+  return (
+    ACTION_DETAILS[actionName] || [
+      formatLabel(actionName),
+      'Controla esta acción dentro del módulo.',
+    ]
+  );
 }
 
 function toSortedArray(setValue) {
@@ -120,7 +144,7 @@ export default function PermissionsManager() {
         module,
         permissions: [...permissions].sort((a, b) =>
           a.action.localeCompare(b.action)
-        )
+        ),
       }));
   }, [permissionsCatalog]);
 
@@ -136,7 +160,9 @@ export default function PermissionsManager() {
       const email = String(user.email || '').toLowerCase();
 
       return (
-        fullName.includes(term) || username.includes(term) || email.includes(term)
+        fullName.includes(term) ||
+        username.includes(term) ||
+        email.includes(term)
       );
     });
   }, [users, userSearch]);
@@ -174,7 +200,7 @@ export default function PermissionsManager() {
       try {
         const [overview, usersData] = await Promise.all([
           PermissionsApi.fetchOverview(),
-          PermissionsApi.fetchUsers()
+          PermissionsApi.fetchUsers(),
         ]);
 
         const nextPermissions = Array.isArray(overview?.permissions)
@@ -284,7 +310,10 @@ export default function PermissionsManager() {
 
     try {
       const payload = toSortedArray(rolePermissionSet);
-      const result = await PermissionsApi.updateRolePermissions(selectedRoleId, payload);
+      const result = await PermissionsApi.updateRolePermissions(
+        selectedRoleId,
+        payload
+      );
 
       const nextPermissions = setFromList(result?.permissions || []);
       setRolePermissionSet(nextPermissions);
@@ -342,10 +371,13 @@ export default function PermissionsManager() {
     setError('');
 
     try {
-      const result = await PermissionsApi.updateUserPermissions(selectedUserId, {
-        grants: toSortedArray(nextGrants),
-        denies: toSortedArray(nextDenies)
-      });
+      const result = await PermissionsApi.updateUserPermissions(
+        selectedUserId,
+        {
+          grants: toSortedArray(nextGrants),
+          denies: toSortedArray(nextDenies),
+        }
+      );
 
       setSelectedUserMeta(result?.user || selectedUserMeta);
       setUserGrantSet(setFromList(result?.userOverrides?.grants || []));
@@ -376,10 +408,13 @@ export default function PermissionsManager() {
     try {
       const payload = {
         grants: toSortedArray(userGrantSet),
-        denies: toSortedArray(userDenySet)
+        denies: toSortedArray(userDenySet),
       };
 
-      const result = await PermissionsApi.updateUserPermissions(selectedUserId, payload);
+      const result = await PermissionsApi.updateUserPermissions(
+        selectedUserId,
+        payload
+      );
 
       setSelectedUserMeta(result?.user || selectedUserMeta);
       setUserGrantSet(setFromList(result?.userOverrides?.grants || []));
@@ -456,7 +491,9 @@ export default function PermissionsManager() {
               </label>
               <select
                 value={selectedRoleId || ''}
-                onChange={(event) => setSelectedRoleId(Number(event.target.value))}
+                onChange={(event) =>
+                  setSelectedRoleId(Number(event.target.value))
+                }
                 className="w-full rounded-lg border px-3 py-2 text-sm"
               >
                 {roles.map((role) => (
@@ -485,7 +522,10 @@ export default function PermissionsManager() {
 
             <div className="grid gap-4 md:grid-cols-2">
               {groupedPermissions.map((group) => (
-                <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
+                <article
+                  key={group.module}
+                  className="rounded-lg border bg-gray-50 p-3"
+                >
                   <h3 className="mb-3 text-sm font-semibold text-gray-800">
                     {getModuleLabel(group.module)}
                   </h3>
@@ -504,7 +544,9 @@ export default function PermissionsManager() {
                           className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"
                         >
                           <span>
-                            <span className="block font-medium">{actionLabel}</span>
+                            <span className="block font-medium">
+                              {actionLabel}
+                            </span>
                             <span className="block text-xs text-gray-500">
                               {actionDescription}
                             </span>
@@ -556,7 +598,9 @@ export default function PermissionsManager() {
                       ? selectedUserId
                       : ''
                   }
-                  onChange={(event) => setSelectedUserId(Number(event.target.value))}
+                  onChange={(event) =>
+                    setSelectedUserId(Number(event.target.value))
+                  }
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                 >
                   {!filteredUsers.length && (
@@ -573,7 +617,12 @@ export default function PermissionsManager() {
 
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-600">
               <span>
-                Usuario: <strong>{selectedUserMeta?.nombre_completo || selectedUserMeta?.username || 'N/D'}</strong>
+                Usuario:{' '}
+                <strong>
+                  {selectedUserMeta?.nombre_completo ||
+                    selectedUserMeta?.username ||
+                    'N/D'}
+                </strong>
               </span>
               <span>
                 Rol: <strong>{selectedUserMeta?.role?.name || 'N/D'}</strong>
@@ -641,7 +690,10 @@ export default function PermissionsManager() {
 
             <div className="space-y-4">
               {groupedPermissions.map((group) => (
-                <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
+                <article
+                  key={group.module}
+                  className="rounded-lg border bg-gray-50 p-3"
+                >
                   <h3 className="mb-2 text-sm font-semibold text-gray-800">
                     {getModuleLabel(group.module)}
                   </h3>
@@ -650,7 +702,8 @@ export default function PermissionsManager() {
                     {group.permissions.map((permission) => {
                       const code = normalizeCode(permission.code);
                       const roleHasPermission = userRolePermissionSet.has(code);
-                      const effectiveHasPermission = liveUserEffectiveSet.has(code);
+                      const effectiveHasPermission =
+                        liveUserEffectiveSet.has(code);
                       const [actionLabel, actionDescription] = getActionDetail(
                         permission.action
                       );
