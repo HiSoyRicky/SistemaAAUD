@@ -1,24 +1,24 @@
-import React, { useState, useMemo, useEffect } from "react";
 import {
   AlertTriangle,
   Boxes,
+  Droplets,
   History,
   PackageCheck,
   RefreshCw,
   Search,
-  Droplets,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import useAuth from "../../../../../shared/hooks/useAuth";
-import TonerMovementModal from "../modals/TonerMovementsModal";
-import Pagination from "../../../../../shared/components/ui/Pagination";
-import ActionButton from "../../../../../shared/components/ui/ActionButton";
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ActionButton from '../../../../../shared/components/ui/ActionButton';
+import Pagination from '../../../../../shared/components/ui/Pagination';
+import useAuth from '../../../../../shared/hooks/useAuth';
+import TonerMovementModal from '../modals/TonerMovementsModal';
 
 const COLOR_MAP = {
-  BLACK: "NEGRO",
-  CYAN: "CIAN",
-  MAGENTA: "MAGENTA",
-  YELLOW: "AMARILLO",
+  BLACK: 'NEGRO',
+  CYAN: 'CIAN',
+  MAGENTA: 'MAGENTA',
+  YELLOW: 'AMARILLO',
 };
 
 const translateColor = (color) => COLOR_MAP[color] || color;
@@ -27,7 +27,7 @@ function TonerTable({ toners = [], onRefresh }) {
   const { userType } = useAuth();
   const navigate = useNavigate();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [movementModalOpen, setMovementModalOpen] = useState(false);
   const [selectedToner, setSelectedToner] = useState(null);
@@ -78,26 +78,34 @@ function TonerTable({ toners = [], onRefresh }) {
       await onRefresh?.();
     } catch (err) {
       console.error(err);
-      setError("Error al refrescar datos");
+      setError('Error al refrescar datos');
     } finally {
       setLoading(false);
     }
   };
 
-  const canCreateMovement = ["admin", "tecnico", "consultor"].includes(userType);
+  const canCreateMovement = ['admin', 'tecnico', 'consultor'].includes(
+    userType
+  );
   const metrics = useMemo(() => {
     const totalModels = toners.length;
-    const totalStock = toners.reduce((sum, toner) => sum + Number(toner.stock || 0), 0);
-    const lowStock = toners.filter((toner) => Number(toner.stock || 0) <= Number(toner.min_stock || 0)).length;
-    const colors = new Set(toners.map((toner) => toner.color).filter(Boolean)).size;
+    const totalStock = toners.reduce(
+      (sum, toner) => sum + Number(toner.stock || 0),
+      0
+    );
+    const lowStock = toners.filter(
+      (toner) => Number(toner.stock || 0) <= Number(toner.min_stock || 0)
+    ).length;
+    const colors = new Set(toners.map((toner) => toner.color).filter(Boolean))
+      .size;
 
     return { totalModels, totalStock, lowStock, colors };
   }, [toners]);
 
   const tdClass =
-    "border-x border-slate-100 px-4 py-3 text-center align-middle text-sm text-slate-700";
+    'border-x border-slate-100 px-4 py-3 text-center align-middle text-sm text-slate-700';
   const thClass =
-    "border-x border-slate-100 px-4 py-3 text-center align-middle text-xs font-bold uppercase tracking-wide text-slate-500";
+    'border-x border-slate-100 px-4 py-3 text-center align-middle text-xs font-bold uppercase tracking-wide text-slate-500';
 
   return (
     <div className="w-full space-y-5">
@@ -120,7 +128,7 @@ function TonerTable({ toners = [], onRefresh }) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => navigate("/inventario/toners/history")}
+              onClick={() => navigate('/inventario/toners/history')}
               className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
             >
               <History size={16} />
@@ -133,8 +141,8 @@ function TonerTable({ toners = [], onRefresh }) {
               disabled={loading}
               className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-blue-300"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-              {loading ? "Cargando..." : "Refrescar"}
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              {loading ? 'Cargando...' : 'Refrescar'}
             </button>
           </div>
         </div>
@@ -216,92 +224,90 @@ function TonerTable({ toners = [], onRefresh }) {
         </div>
 
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] border-collapse divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className={thClass}>Marca</th>
-              <th className={thClass}>Modelo de impresora</th>
-              <th className={thClass}>Modelo</th>
-              <th className={thClass}>Color</th>
-              <th className={thClass}>Stock</th>
-              <th className={thClass}>Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-slate-100 bg-white">
-            {paginated.length === 0 ? (
+          <table className="w-full min-w-[860px] border-collapse divide-y divide-slate-200">
+            <thead className="bg-slate-50">
               <tr>
-                <td colSpan="6" className="px-6 py-12 text-center text-sm text-slate-500">
-                  No hay resultados
-                </td>
+                <th className={thClass}>Marca</th>
+                <th className={thClass}>Modelo de impresora</th>
+                <th className={thClass}>Modelo</th>
+                <th className={thClass}>Color</th>
+                <th className={thClass}>Stock</th>
+                <th className={thClass}>Acciones</th>
               </tr>
-            ) : (
-              paginated.map((t) => {
-                const lowStock = t.stock <= t.min_stock;
+            </thead>
 
-                return (
-                  <tr key={t.id} className="transition hover:bg-slate-50">
-                    <td className={tdClass}>
-                      {t.brand || "—"}
-                    </td>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {paginated.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-sm text-slate-500"
+                  >
+                    No hay resultados
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((t) => {
+                  const lowStock = t.stock <= t.min_stock;
 
-                    <td className={tdClass}>
-                      {t.printer_model || "—"}
-                    </td>
+                  return (
+                    <tr key={t.id} className="transition hover:bg-slate-50">
+                      <td className={tdClass}>{t.brand || '—'}</td>
 
-                    <td className={tdClass}>
-                      {t.toner_model || "—"}
-                    </td>
+                      <td className={tdClass}>{t.printer_model || '—'}</td>
 
-                    <td className={tdClass}>
-                      <div className="flex items-center justify-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              t.color === "BLACK"
-                                ? "#000"
-                                : t.color === "CYAN"
-                                  ? "#00bcd4"
-                                  : t.color === "MAGENTA"
-                                    ? "#e91e63"
-                                    : "#fbc02d",
-                          }}
-                        />
-                        {translateColor(t.color)}
-                      </div>
-                    </td>
+                      <td className={tdClass}>{t.toner_model || '—'}</td>
 
-                    <td
-                      className={`${tdClass} font-semibold ${lowStock ? "text-red-600" : "text-green-600"
+                      <td className={tdClass}>
+                        <div className="flex items-center justify-center gap-2">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                t.color === 'BLACK'
+                                  ? '#000'
+                                  : t.color === 'CYAN'
+                                    ? '#00bcd4'
+                                    : t.color === 'MAGENTA'
+                                      ? '#e91e63'
+                                      : '#fbc02d',
+                            }}
+                          />
+                          {translateColor(t.color)}
+                        </div>
+                      </td>
+
+                      <td
+                        className={`${tdClass} font-semibold ${
+                          lowStock ? 'text-red-600' : 'text-green-600'
                         }`}
-                    >
-                      {t.stock}
-                      {lowStock && (
-                        <span className="ml-2 text-xs text-red-500">
-                          (bajo)
-                        </span>
-                      )}
-                    </td>
-
-                    <td className={tdClass}>
-                      <div className="flex justify-center">
-                        {canCreateMovement && (
-                          <ActionButton
-                            onClick={() => openMovementModal(t)}
-                            type="refresh"
-                          >
-                            Movimiento
-                          </ActionButton>
+                      >
+                        {t.stock}
+                        {lowStock && (
+                          <span className="ml-2 text-xs text-red-500">
+                            (bajo)
+                          </span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+
+                      <td className={tdClass}>
+                        <div className="flex justify-center">
+                          {canCreateMovement && (
+                            <ActionButton
+                              onClick={() => openMovementModal(t)}
+                              type="refresh"
+                            >
+                              Movimiento
+                            </ActionButton>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">

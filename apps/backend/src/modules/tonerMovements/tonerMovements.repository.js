@@ -48,6 +48,16 @@ export const countMovements = async (where) => {
   return prisma.toner_movements.count({ where });
 };
 
+export const countMovementsByType = async (where) => {
+  return prisma.toner_movements.groupBy({
+    by: ['movement_type'],
+    where,
+    _count: {
+      _all: true,
+    },
+  });
+};
+
 export const findTonerByIdWithStock = async (id, db = prisma) => {
   return db.toners.findUnique({
     where: { id: Number(id) },

@@ -66,6 +66,7 @@ export function mapTonerMovementToRow(movement) {
     return {
         fecha: formatDateTime(movement.created_at),
         toner: movement.toner?.toner_model || 'N/A',
+        color: movement.toner?.color || 'N/A',
         tipo: movementLabels[movement.movement_type] || movement.movement_type || 'N/A',
         cantidad: movement.quantity ?? 'N/A',
         ubicacion: movement.ubication?.name || 'N/A',

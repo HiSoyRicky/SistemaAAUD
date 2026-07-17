@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Printer } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Inventory } from '../services/inventory.api';
-import Pagination from '../../../../shared/components/ui/Pagination';
-import { Printer, X } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
+import Pagination from '../../../../shared/components/ui/Pagination';
 import { formatDateToDDMMYYYY } from '../../../../shared/utils/formatDate';
+import { Inventory } from '../services/inventory.api';
 
 const ACTION_OPTIONS = [
   { value: '', label: 'Todas las acciones' },
@@ -288,11 +288,16 @@ export default function InventoryMovementsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [previewRow, setPreviewRow] = useState(null);
+  const [pendingPrint, setPendingPrint] = useState(false);
   const printRef = useRef(null);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: 'Traslado de equipo',
+    onAfterPrint: () => {
+      setPreviewRow(null);
+      setPendingPrint(false);
+    },
   });
 
   const summary = useMemo(() => {
@@ -348,17 +353,16 @@ export default function InventoryMovementsPage() {
     setCurrentPage(1);
   }, [search, action, from, to]);
 
-  const openPreview = (row) => {
-    setPreviewRow(row);
-  };
+  useEffect(() => {
+    if (!pendingPrint || !previewRow || !previewDevice) return;
 
-  const closePreview = () => {
-    setPreviewRow(null);
-  };
-
-  const handlePreviewPrint = () => {
-    if (!previewRow) return;
+    setPendingPrint(false);
     handlePrint();
+  }, [handlePrint, pendingPrint, previewDevice, previewRow]);
+
+  const printRow = (row) => {
+    setPreviewRow(row);
+    setPendingPrint(true);
   };
 
   const thClass =
@@ -452,7 +456,7 @@ export default function InventoryMovementsPage() {
               <th className={thClass}>Ubicación actual</th>
               <th className={thClass}>Cambios</th>
               <th className={thClass}>Responsable</th>
-              <th className={thClass}>Vista previa</th>
+              <th className={thClass}>Imprimir</th>
             </tr>
           </thead>
 
@@ -521,11 +525,11 @@ export default function InventoryMovementsPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => openPreview(item)}
+                        onClick={() => printRow(item)}
                         className="inline-flex items-center gap-1 px-2 py-1 text-indigo-700 border border-indigo-300 rounded hover:bg-indigo-50"
                       >
                         <Printer size={14} />
-                        Ver
+                        Imprimir
                       </button>
                     )}
                   </td>
@@ -540,74 +544,6 @@ export default function InventoryMovementsPage() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
-
-      {previewRow && previewDevice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="flex w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
-              <div>
-                <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                  Vista previa del traslado
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {previewRow?.transfer_request_id
-                    ? `Solicitud #${previewRow.transfer_request_id}`
-                    : previewRow?.tag || 'Movimiento seleccionado'}
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handlePreviewPrint}
-                  className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-indigo-700"
-                >
-                  <Printer size={16} />
-                  Imprimir
-                </button>
-
-                <button
-                  type="button"
-                  onClick={closePreview}
-                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  <X size={16} />
-                  Cerrar
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-auto bg-slate-800 p-10">
-              <div className="flex justify-center">
-                <div className="relative">
-                  <div className="rounded-lg bg-white shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-                    <div
-                      style={{
-                        width: '210mm',
-                        minHeight: '290mm',
-                        transform: 'scale(0.75)',
-                        transformOrigin: 'top center',
-                      }}
-                    >
-                      <TransferPrint
-                        movement={previewRow}
-                        device={previewDevice}
-                        fecha={
-                          previewRow?.moved_at
-                            ? formatDateToDDMMYYYY(previewRow.moved_at, '-')
-                            : formatDateToDDMMYYYY(new Date(), '-')
-                        }
-                        setDevice={() => {}}
-                        departments={[]}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {previewRow && previewDevice && (
         <div className="fixed left-[-10000px] top-0" aria-hidden="true">

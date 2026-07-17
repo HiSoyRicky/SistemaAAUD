@@ -33,10 +33,17 @@ const Toners = {
 
   addMovement: (data) =>
     api.post('/api/toner-movements', data).then((res) => res.data),
-  fetchMovements: ({ page = 1, search = '' }) =>
+  fetchMovements: ({
+    page = 1,
+    limit,
+    search = '',
+    movement_type = '',
+    from = '',
+    to = '',
+  } = {}) =>
     api
       .get('/api/toner-movements', {
-        params: { page, search },
+        params: { page, limit, search, movement_type, from, to },
       })
       .then((res) => res.data),
 };

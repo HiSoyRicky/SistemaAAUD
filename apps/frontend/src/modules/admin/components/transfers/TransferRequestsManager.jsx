@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Printer, RefreshCw, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { useNotifications } from '../../../../app/providers/NotificationContext';
-import { Inventory } from '../../../inventory/devices/services/inventory.api';
 import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
 import {
   formatDateTime,
   formatDateToDDMMYYYY,
 } from '../../../../shared/utils/formatDate';
+import { Inventory } from '../../../inventory/devices/services/inventory.api';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todas' },
@@ -47,12 +47,18 @@ export default function TransferRequestsManager() {
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [printableRequest, setPrintableRequest] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
+  const [pendingPrint, setPendingPrint] = useState(false);
   const printRef = useRef(null);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: 'Traslado de equipo',
+    onAfterPrint: () => {
+      setPrintableRequest(null);
+      setPendingPrint(false);
+    },
   });
 
   const loadRequests = async () => {
@@ -77,14 +83,42 @@ export default function TransferRequestsManager() {
     [requests]
   );
 
-  const closePreview = () => {
+  useEffect(() => {
+    if (
+      !pendingPrint ||
+      !printableRequest ||
+      !buildPreviewDevice(printableRequest)
+    ) {
+      return;
+    }
+
+    setPendingPrint(false);
+    handlePrint();
+  }, [handlePrint, pendingPrint, printableRequest]);
+
+  const closeReview = () => {
     setSelectedRequest(null);
+    setPrintableRequest(null);
     setReviewNotes('');
+    setPendingPrint(false);
   };
 
-  const openPreview = (request) => {
+  const openReview = (request) => {
     setSelectedRequest(request);
     setReviewNotes(request?.review_notes || '');
+  };
+
+  const sendToPrint = (request) => {
+    if (!buildPreviewDevice(request)) {
+      addNotification(
+        'No hay datos suficientes para imprimir esta solicitud ❌',
+        'error'
+      );
+      return;
+    }
+
+    setPrintableRequest(request);
+    setPendingPrint(true);
   };
 
   const runAction = async (request, action, notesOverride = '') => {
@@ -108,7 +142,7 @@ export default function TransferRequestsManager() {
         addNotification('Se solicitó corrección ✅', 'success');
       }
 
-      closePreview();
+      closeReview();
       await loadRequests();
     } catch (error) {
       addNotification(
@@ -120,9 +154,9 @@ export default function TransferRequestsManager() {
     }
   };
 
-  const handlePrintPreview = () => {
+  const handlePrintSelectedRequest = () => {
     if (!selectedRequest) return;
-    handlePrint();
+    sendToPrint(selectedRequest);
   };
 
   return (
@@ -195,8 +229,6 @@ export default function TransferRequestsManager() {
 
             {!loading &&
               requests.map((request) => {
-                const previewDevice = buildPreviewDevice(request);
-
                 return (
                   <tr key={request.id} className="border-t">
                     <td className="px-3 py-3 align-top">
@@ -238,22 +270,32 @@ export default function TransferRequestsManager() {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => openPreview(request)}
+                          onClick={() => sendToPrint(request)}
                           className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-indigo-700 hover:bg-indigo-50"
                         >
                           <Printer size={14} />
-                          Ver hoja
+                          Imprimir
                         </button>
 
                         {request.status === 'PENDING' && (
                           <button
                             type="button"
-                            onClick={() => runAction(request, 'approve')}
+                            onClick={() => openReview(request)}
                             disabled={actionLoadingId === request.id}
                             className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 disabled:opacity-60"
                           >
                             <CheckCircle2 size={14} />
-                            Aprobar
+                            Revisar
+                          </button>
+                        )}
+
+                        {request.status !== 'PENDING' && (
+                          <button
+                            type="button"
+                            onClick={() => openReview(request)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
+                          >
+                            Ver revisión
                           </button>
                         )}
                       </div>
@@ -267,11 +309,11 @@ export default function TransferRequestsManager() {
 
       {selectedRequest && buildPreviewDevice(selectedRequest) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="flex w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
+          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
               <div>
                 <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                  Vista previa del traslado
+                  Revisión de traslado
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Solicitud #{selectedRequest.id}
@@ -281,7 +323,7 @@ export default function TransferRequestsManager() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={handlePrintPreview}
+                  onClick={handlePrintSelectedRequest}
                   className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-indigo-700"
                 >
                   <Printer size={16} />
@@ -290,7 +332,7 @@ export default function TransferRequestsManager() {
 
                 <button
                   type="button"
-                  onClick={closePreview}
+                  onClick={closeReview}
                   className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
                 >
                   <X size={16} />
@@ -299,38 +341,49 @@ export default function TransferRequestsManager() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto bg-slate-800 p-10">
-              <div className="flex justify-center">
-                <div className="relative">
-                  <div className="rounded-lg bg-white shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-                    <div
-                      style={{
-                        width: '210mm',
-                        minHeight: '290mm',
-                        transform: 'scale(0.75)',
-                        transformOrigin: 'top center',
-                      }}
-                    >
-                      <TransferPrint
-                        ref={printRef}
-                        device={buildPreviewDevice(selectedRequest)}
-                        fecha={
-                          selectedRequest.requested_at
-                            ? formatDateToDDMMYYYY(
-                                selectedRequest.requested_at,
-                                '-'
-                              )
-                            : formatDateToDDMMYYYY(new Date(), '-')
-                        }
-                        setDevice={() => {}}
-                        departments={[]}
-                      />
-                    </div>
+            <div className="flex-1 overflow-auto bg-slate-50 p-6">
+              <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 text-sm md:grid-cols-2">
+                <div>
+                  <div className="font-semibold text-slate-700">Equipo</div>
+                  <div className="text-slate-600">
+                    {buildPreviewDevice(selectedRequest)?.device_name ||
+                      'Equipo'}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Marbete {buildPreviewDevice(selectedRequest)?.tag || '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-700">Estado</div>
+                  <div className="text-slate-600">
+                    {statusLabel(selectedRequest.status)}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-700">Destino</div>
+                  <div className="text-slate-600">
+                    {buildPreviewDevice(selectedRequest)
+                      ?.ubication_destino_name || '-'}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {buildPreviewDevice(selectedRequest)
+                      ?.department_destino_name || '-'}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-700">Solicitó</div>
+                  <div className="text-slate-600">
+                    {selectedRequest.requester?.nombre_completo ||
+                      selectedRequest.requester?.username ||
+                      '-'}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {formatDate(selectedRequest.requested_at)}
                   </div>
                 </div>
               </div>
 
-              <div className="mx-auto mt-6 max-w-3xl rounded-xl bg-white p-4">
+              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Notas de revisión
                 </label>
@@ -380,6 +433,22 @@ export default function TransferRequestsManager() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {printableRequest && buildPreviewDevice(printableRequest) && (
+        <div className="fixed left-[-10000px] top-0" aria-hidden="true">
+          <TransferPrint
+            ref={printRef}
+            device={buildPreviewDevice(printableRequest)}
+            fecha={
+              printableRequest.requested_at
+                ? formatDateToDDMMYYYY(printableRequest.requested_at, '-')
+                : formatDateToDDMMYYYY(new Date(), '-')
+            }
+            setDevice={() => {}}
+            departments={[]}
+          />
         </div>
       )}
     </div>

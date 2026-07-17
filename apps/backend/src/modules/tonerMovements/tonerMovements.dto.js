@@ -1,9 +1,10 @@
-function mapMovementsPaginatedResponse({ data, total, page, limit }) {
+function mapMovementsPaginatedResponse({ data, total, page, limit, summary }) {
   return {
     data,
     total,
     page,
-    totalPages: Math.ceil(total / limit)
+    totalPages: Math.ceil(total / limit),
+    summary
   };
 }
 

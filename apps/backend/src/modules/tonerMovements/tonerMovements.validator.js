@@ -2,6 +2,8 @@ import {
   z,
   validateZod,
   zOptionalInt,
+  zOptionalDate,
+  zOptionalEnum,
   zOptionalNullableString,
   zOptionalString,
   zRequiredEnum,
@@ -17,7 +19,10 @@ const getMovementsQuerySchema = z.object({
   id_toner: zOptionalInt('Tóner inválido', { min: 1 }),
   page: zOptionalInt('Página inválida', { min: 1 }),
   limit: zOptionalInt('Límite inválido', { min: 1 }),
-  search: zOptionalString('Búsqueda inválida')
+  search: zOptionalString('Búsqueda inválida'),
+  movement_type: zOptionalEnum(MOVEMENT_TYPES, 'Tipo de movimiento inválido'),
+  from: zOptionalDate('Fecha desde inválida'),
+  to: zOptionalDate('Fecha hasta inválida')
 }).passthrough();
 
 const createMovementBodySchema = z.object({

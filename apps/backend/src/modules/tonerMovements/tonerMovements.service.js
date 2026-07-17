@@ -56,6 +56,35 @@ function buildMovementWhere(query) {
     where.id_toner = idToner;
   }
 
+  const movementType = String(query.movement_type || '')
+    .toUpperCase()
+    .trim();
+  if (movementType) {
+    where.movement_type = parseMovementType(movementType);
+  }
+
+  const from = String(query.from || '').trim();
+  const to = String(query.to || '').trim();
+  if (from || to) {
+    where.created_at = {};
+
+    if (from) {
+      const fromDate = new Date(`${from}T00:00:00.000Z`);
+      if (Number.isNaN(fromDate.getTime())) {
+        throw new AppError('Fecha desde inválida', 400);
+      }
+      where.created_at.gte = fromDate;
+    }
+
+    if (to) {
+      const toDate = new Date(`${to}T23:59:59.999Z`);
+      if (Number.isNaN(toDate.getTime())) {
+        throw new AppError('Fecha hasta inválida', 400);
+      }
+      where.created_at.lte = toDate;
+    }
+  }
+
   const searchTerm = String(query.search || '').trim();
   if (searchTerm) {
     where.OR = [
@@ -138,12 +167,23 @@ export const getAll = async (query) => {
   });
 
   const total = await repository.countMovements(where);
+  const groupedSummary = await repository.countMovementsByType(where);
+  const summary = groupedSummary.reduce(
+    (acc, item) => {
+      const count = Number(item?._count?._all) || 0;
+      acc.total += count;
+      acc[item.movement_type] = count;
+      return acc;
+    },
+    { total: 0, IN: 0, OUT: 0, ADJUSTMENT: 0 }
+  );
 
   return dto.mapMovementsPaginatedResponse({
     data,
     total,
     page,
     limit,
+    summary,
   });
 };
 
