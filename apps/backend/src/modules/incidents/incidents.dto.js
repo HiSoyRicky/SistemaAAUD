@@ -1,10 +1,11 @@
-import { STATUS_TEXT, DEFAULT_STATUS_TEXT } from './incidents.constants.js';
+import { DEFAULT_STATUS_TEXT, STATUS_TEXT } from './incidents.constants.js';
 
 const TONER_COLOR_ORDER = {
   BLACK: 1,
   CYAN: 2,
   MAGENTA: 3,
-  YELLOW: 4
+  YELLOW: 4,
+  TRI_COLOR: 5,
 };
 
 export const mapIncidentListItem = (incident) => ({
@@ -24,7 +25,7 @@ export const mapIncidentListItem = (incident) => ({
   solution: incident.solution,
   id_technician: incident.id_technician,
   technician_full_name:
-    incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null
+    incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
 });
 
 export const mapIncidentDetail = (incident) => ({
@@ -46,11 +47,11 @@ export const mapIncidentDetail = (incident) => ({
     incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
   technician_email:
     incident.users_bd_incidents_id_technicianTousers?.email || null,
-  status: STATUS_TEXT[incident.id_status] || DEFAULT_STATUS_TEXT
+  status: STATUS_TEXT[incident.id_status] || DEFAULT_STATUS_TEXT,
 });
 
 export const mapDeleteIncidentResponse = () => ({
-  message: 'Incidencia eliminada'
+  message: 'Incidencia eliminada',
 });
 
 export const mapTonerRequestOptions = (printerModels = []) => {
@@ -58,9 +59,13 @@ export const mapTonerRequestOptions = (printerModels = []) => {
     .map((printerModel) => {
       const seenColors = new Set();
 
-      const toners = (Array.isArray(printerModel?.toners) ? printerModel.toners : [])
+      const toners = (
+        Array.isArray(printerModel?.toners) ? printerModel.toners : []
+      )
         .filter((toner) => {
-          const color = String(toner?.color || '').trim().toUpperCase();
+          const color = String(toner?.color || '')
+            .trim()
+            .toUpperCase();
           if (!color || seenColors.has(color)) {
             return false;
           }
@@ -71,22 +76,26 @@ export const mapTonerRequestOptions = (printerModels = []) => {
         .map((toner) => ({
           id_toner: toner.id,
           color: toner.color,
-          toner_model: toner.toner_model || null
+          toner_model: toner.toner_model || null,
         }))
         .sort((a, b) => {
           const aOrder = TONER_COLOR_ORDER[a.color] || 99;
           const bOrder = TONER_COLOR_ORDER[b.color] || 99;
           if (aOrder !== bOrder) return aOrder - bOrder;
-          return String(a.toner_model || '').localeCompare(String(b.toner_model || ''), 'es', {
-            sensitivity: 'base'
-          });
+          return String(a.toner_model || '').localeCompare(
+            String(b.toner_model || ''),
+            'es',
+            {
+              sensitivity: 'base',
+            }
+          );
         });
 
       return {
         id_printer_model: printerModel.id,
         printer_model: printerModel.name,
         brand: printerModel.brands?.name || null,
-        toners
+        toners,
       };
     })
     .filter((printer) => printer.toners.length > 0)

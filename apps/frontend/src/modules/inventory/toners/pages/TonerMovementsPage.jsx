@@ -46,6 +46,7 @@ const COLOR_MAP = {
   CYAN: 'CIAN',
   MAGENTA: 'MAGENTA',
   YELLOW: 'AMARILLO',
+  TRI_COLOR: 'TRES COLORES',
 };
 
 const colorStyles = {
@@ -53,6 +54,7 @@ const colorStyles = {
   CYAN: 'border-cyan-200 bg-cyan-50 text-cyan-700',
   MAGENTA: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
   YELLOW: 'border-yellow-200 bg-yellow-50 text-yellow-700',
+  TRI_COLOR: 'border-violet-200 bg-violet-50 text-violet-700',
 };
 
 const emptyMetrics = { total: 0, IN: 0, OUT: 0, ADJUSTMENT: 0 };

@@ -19,6 +19,7 @@ const COLOR_MAP = {
   CYAN: 'CIAN',
   MAGENTA: 'MAGENTA',
   YELLOW: 'AMARILLO',
+  TRI_COLOR: 'TRES COLORES',
 };
 
 const translateColor = (color) => COLOR_MAP[color] || color;
@@ -270,7 +271,11 @@ function TonerTable({ toners = [], onRefresh }) {
                                     ? '#00bcd4'
                                     : t.color === 'MAGENTA'
                                       ? '#e91e63'
-                                      : '#fbc02d',
+                                      : t.color === 'YELLOW'
+                                        ? '#ffeb3b'
+                                        : t.color === 'TRI_COLOR'
+                                          ? '#9c27b0'
+                                          : '#ccc',
                             }}
                           />
                           {translateColor(t.color)}

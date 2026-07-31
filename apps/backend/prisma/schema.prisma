@@ -248,6 +248,7 @@ enum TonerColor {
   CYAN
   MAGENTA
   YELLOW
+  TRI_COLOR
 }
 
 enum TonerDocumentStatus {

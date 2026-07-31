@@ -10,6 +10,7 @@ const colorMap = {
   CYAN: 'CIAN',
   MAGENTA: 'MAGENTA',
   YELLOW: 'AMARILLO',
+  TRI_COLOR: 'TRES COLORES',
 };
 
 const TonerDeliveryPrint = forwardRef(function TonerDeliveryPrint(
