@@ -10,6 +10,7 @@ function InventoryTable({
   onEdit,
   onView,
   search,
+  visibleColumns = {},
   onSummaryChange,
   onFilteredDataChange,
 }) {
@@ -29,6 +30,7 @@ function InventoryTable({
     'border-x border-slate-100 px-4 py-3 text-center align-middle text-xs font-bold uppercase tracking-wide text-slate-500';
   const filterClass =
     'mt-2 h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-xs font-medium normal-case tracking-normal text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
+  const isColumnVisible = (key) => visibleColumns[key] !== false;
 
   React.useEffect(() => {
     setCurrentPage(1);
@@ -126,8 +128,20 @@ function InventoryTable({
       ...new Set(filteredInventory.map((i) => i.status_name).filter(Boolean)),
     ].sort(),
   };
-  const showIpColumn =
-    String(filters.device_name || '').toUpperCase() === 'IMPRESORA';
+  const showIpColumn = isColumnVisible('ip');
+  const visibleColumnCount =
+    [
+      'tag',
+      'ubication_name',
+      'department_name',
+      'user',
+      'device_name',
+      'brand_name',
+      'model_name',
+      'serie',
+    ].filter((key) => isColumnVisible(key)).length +
+    (showIpColumn ? 1 : 0) +
+    1;
 
   // ahora paginar sobre filteredInventory en vez de inventory
   const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
@@ -142,95 +156,111 @@ function InventoryTable({
           <thead className="bg-slate-50">
             <tr>
               {/* Encabezados de la tabla */}
-              <th className={thClass}>Marbete</th>
-              <th className={tdClass}>
-                <span>Ubicación</span>
-                <select
-                  value={filters.ubication_name}
-                  onChange={(e) =>
-                    handleFilterChange('ubication_name', e.target.value)
-                  }
-                  className={filterClass}
-                >
-                  <option value="">Todos</option>
-                  {options.ubication_name.map((val, idx) => (
-                    <option key={val} value={val}>
-                      {val}
-                    </option>
-                  ))}
-                </select>
-              </th>
+              {isColumnVisible('tag') && (
+                <th className={thClass}>Marbete</th>
+              )}
+              {isColumnVisible('ubication_name') && (
+                <th className={tdClass}>
+                  <span>Ubicación</span>
+                  <select
+                    value={filters.ubication_name}
+                    onChange={(e) =>
+                      handleFilterChange('ubication_name', e.target.value)
+                    }
+                    className={filterClass}
+                  >
+                    <option value="">Todos</option>
+                    {options.ubication_name.map((val) => (
+                      <option key={val} value={val}>
+                        {val}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+              )}
 
-              <th className={tdClass}>
-                <span>Departamento</span>
-                <select
-                  value={filters.department_name}
-                  onChange={(e) =>
-                    handleFilterChange('department_name', e.target.value)
-                  }
-                  className={filterClass}
-                >
-                  <option value="">Todos</option>
-                  {options.department_name.map((val, idx) => (
-                    <option key={val} value={val}>
-                      {val}
-                    </option>
-                  ))}
-                </select>
-              </th>
-              <th className={thClass}>Usuario</th>
-              <th className={tdClass}>
-                Equipo
-                <select
-                  value={filters.device_name}
-                  onChange={(e) =>
-                    handleFilterChange('device_name', e.target.value)
-                  }
-                  className={filterClass}
-                >
-                  <option value="">Todos</option>
-                  {options.device_name.map((val, idx) => (
-                    <option key={val} value={val}>
-                      {val}
-                    </option>
-                  ))}
-                </select>
-              </th>
-              <th className={tdClass}>
-                Marca
-                <select
-                  value={filters.brand_name}
-                  onChange={(e) =>
-                    handleFilterChange('brand_name', e.target.value)
-                  }
-                  className={filterClass}
-                >
-                  <option value="">Todos</option>
-                  {options.brand_name.map((val, idx) => (
-                    <option key={val} value={val}>
-                      {val}
-                    </option>
-                  ))}
-                </select>
-              </th>
-              <th className={tdClass}>
-                Modelo
-                <select
-                  value={filters.model_name}
-                  onChange={(e) =>
-                    handleFilterChange('model_name', e.target.value)
-                  }
-                  className={filterClass}
-                >
-                  <option value="">Todos</option>
-                  {options.model_name.map((val, idx) => (
-                    <option key={val} value={val}>
-                      {val}
-                    </option>
-                  ))}
-                </select>
-              </th>
-              <th className={thClass}>Serie</th>
+              {isColumnVisible('department_name') && (
+                <th className={tdClass}>
+                  <span>Departamento</span>
+                  <select
+                    value={filters.department_name}
+                    onChange={(e) =>
+                      handleFilterChange('department_name', e.target.value)
+                    }
+                    className={filterClass}
+                  >
+                    <option value="">Todos</option>
+                    {options.department_name.map((val) => (
+                      <option key={val} value={val}>
+                        {val}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+              )}
+              {isColumnVisible('user') && (
+                <th className={thClass}>Usuario</th>
+              )}
+              {isColumnVisible('device_name') && (
+                <th className={tdClass}>
+                  Equipo
+                  <select
+                    value={filters.device_name}
+                    onChange={(e) =>
+                      handleFilterChange('device_name', e.target.value)
+                    }
+                    className={filterClass}
+                  >
+                    <option value="">Todos</option>
+                    {options.device_name.map((val) => (
+                      <option key={val} value={val}>
+                        {val}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+              )}
+              {isColumnVisible('brand_name') && (
+                <th className={tdClass}>
+                  Marca
+                  <select
+                    value={filters.brand_name}
+                    onChange={(e) =>
+                      handleFilterChange('brand_name', e.target.value)
+                    }
+                    className={filterClass}
+                  >
+                    <option value="">Todos</option>
+                    {options.brand_name.map((val) => (
+                      <option key={val} value={val}>
+                        {val}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+              )}
+              {isColumnVisible('model_name') && (
+                <th className={tdClass}>
+                  Modelo
+                  <select
+                    value={filters.model_name}
+                    onChange={(e) =>
+                      handleFilterChange('model_name', e.target.value)
+                    }
+                    className={filterClass}
+                  >
+                    <option value="">Todos</option>
+                    {options.model_name.map((val) => (
+                      <option key={val} value={val}>
+                        {val}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+              )}
+              {isColumnVisible('serie') && (
+                <th className={thClass}>Serie</th>
+              )}
               {showIpColumn && <th className={thClass}>IP</th>}
 
               <th className={thClass}>Acciones</th>
@@ -242,7 +272,7 @@ function InventoryTable({
             {paginatedItems.length === 0 ? (
               <tr>
                 <td
-                  colSpan={showIpColumn ? 10 : 9}
+                  colSpan={visibleColumnCount}
                   className="px-6 py-12 text-center text-sm text-slate-500"
                 >
                   No hay dispositivos para mostrar.
@@ -271,29 +301,47 @@ function InventoryTable({
                               : 'transition hover:bg-slate-50'
                     }
                   >
-                    <th
-                      className={`${tdClass} font-bold ${
-                        isDiscarded
-                          ? 'text-red-600 font-bold'
-                          : isForDiscard
-                            ? 'text-yellow-600 font-bold'
-                            : isBadCondition
-                              ? 'text-orange-600 font-bold'
-                              : isNew
-                                ? 'text-green-600 font-bold'
-                                : ''
-                      }`}
-                    >
-                      {item.tag}
-                    </th>
+                    {isColumnVisible('tag') && (
+                      <th
+                        className={`${tdClass} font-bold ${
+                          isDiscarded
+                            ? 'text-red-600 font-bold'
+                            : isForDiscard
+                              ? 'text-yellow-600 font-bold'
+                              : isBadCondition
+                                ? 'text-orange-600 font-bold'
+                                : isNew
+                                  ? 'text-green-600 font-bold'
+                                  : ''
+                        }`}
+                      >
+                        {item.tag}
+                      </th>
+                    )}
 
-                    <td className={tdClass}>{item.ubication_name || '-'}</td>
-                    <td className={tdClass}>{item.department_name || '-'}</td>
-                    <td className={tdClass}>{item.user || '-'}</td>
-                    <td className={tdClass}>{item.device_name}</td>
-                    <td className={tdClass}>{item.brand_name}</td>
-                    <td className={tdClass}>{item.model_name}</td>
-                    <td className={tdClass}>{item.serie}</td>
+                    {isColumnVisible('ubication_name') && (
+                      <td className={tdClass}>{item.ubication_name || '-'}</td>
+                    )}
+                    {isColumnVisible('department_name') && (
+                      <td className={tdClass}>
+                        {item.department_name || '-'}
+                      </td>
+                    )}
+                    {isColumnVisible('user') && (
+                      <td className={tdClass}>{item.user || '-'}</td>
+                    )}
+                    {isColumnVisible('device_name') && (
+                      <td className={tdClass}>{item.device_name}</td>
+                    )}
+                    {isColumnVisible('brand_name') && (
+                      <td className={tdClass}>{item.brand_name}</td>
+                    )}
+                    {isColumnVisible('model_name') && (
+                      <td className={tdClass}>{item.model_name}</td>
+                    )}
+                    {isColumnVisible('serie') && (
+                      <td className={tdClass}>{item.serie}</td>
+                    )}
                     {showIpColumn && (
                       <td className={tdClass}>{item.ip || '-'}</td>
                     )}

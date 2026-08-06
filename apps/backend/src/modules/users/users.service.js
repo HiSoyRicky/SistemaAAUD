@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import AppError from '../../common/utils/AppError.js';
+import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import * as repository from './users.repository.js';
 import * as dto from './users.dto.js';
 
@@ -269,16 +270,42 @@ export const remove = async (idParam, { actor } = {}) => {
     history.tonerMovements > 0 ||
     history.transferRequests > 0 ||
     history.approvedTransfers > 0 ||
-    history.activityLogs > 0;
+    history.activityLogs > 0 ||
+    history.userPermissions > 0;
 
   if (hasHistory) {
     throw new AppError(
-      'Este usuario posee historial de actividad. Puede desactivarlo, pero no eliminarlo.',
-      400
+      `${buildDeleteDependencyMessage({
+        subject: 'el usuario',
+        dependencies: [
+          { count: history.reportedIncidents, label: 'incidencia(s) reportada(s)' },
+          { count: history.assignedIncidents, label: 'incidencia(s) asignada(s)' },
+          { count: history.tonerMovements, label: 'movimiento(s) de tóner' },
+          { count: history.transferRequests, label: 'solicitud(es) de traslado' },
+          { count: history.approvedTransfers, label: 'traslado(s) revisado(s)' },
+          { count: history.activityLogs, label: 'registro(s) de actividad' },
+          { count: history.userPermissions, label: 'permiso(s)' }
+        ]
+      })} Puede desactivarlo, pero no eliminarlo.`,
+      409
     );
   }
 
-  const deleted = await repository.deleteById(userId);
+  let deleted;
+  try {
+    deleted = await repository.deleteById(userId);
+  } catch (error) {
+    if (error.code === 'P2003') {
+      throw new AppError(
+        buildDeleteDependencyMessage({
+          subject: 'el usuario',
+          dependencies: []
+        }),
+        409
+      );
+    }
+    throw error;
+  }
 
   return dto.mapDeleteUserResponse(deleted);
 };

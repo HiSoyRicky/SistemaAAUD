@@ -14,10 +14,11 @@ const brandBodySchema = z.object({
 }).passthrough();
 
 const validateCreateBrand = validateZod({ body: brandBodySchema });
+const validateDeleteBrand = validateZod({ params: brandIdParamsSchema });
 
 const validateUpdateBrand = validateZod({
   params: brandIdParamsSchema,
   body: brandBodySchema
 });
 
-export { validateCreateBrand, validateUpdateBrand };
+export { validateCreateBrand, validateDeleteBrand, validateUpdateBrand };

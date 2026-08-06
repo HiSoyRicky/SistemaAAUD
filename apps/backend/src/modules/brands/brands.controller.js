@@ -15,3 +15,8 @@ export const update = catchAsync(async (req, res) => {
   const data = await service.update(req.params.id, req.body);
   res.json(data);
 });
+
+export const remove = catchAsync(async (req, res) => {
+  const data = await service.remove(req.params.id);
+  res.json(data);
+});

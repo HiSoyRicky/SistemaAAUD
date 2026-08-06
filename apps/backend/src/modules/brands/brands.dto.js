@@ -9,3 +9,8 @@ export const mapUpdateBrandResponse = (brand) => ({
   message: 'Marca actualizada exitosamente',
   brand
 });
+
+export const mapDeleteBrandResponse = () => ({
+  success: true,
+  message: 'Marca eliminada correctamente'
+});

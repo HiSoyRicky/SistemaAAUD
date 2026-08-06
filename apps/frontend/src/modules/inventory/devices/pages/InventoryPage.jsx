@@ -1,37 +1,55 @@
 // src/pages/inventory/InventoryPage.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Search,
-  Plus,
-  History,
+  AlertTriangle,
   ClipboardList,
-  RefreshCw,
-  X,
   Download,
+  History,
   Laptop,
   MapPin,
   PackageCheck,
-  AlertTriangle,
+  Plus,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../../../../shared/hooks/useAuth';
-import api from '../../../../shared/api/apiClient';
-import { Inventory } from '../services/inventory.api';
-import InventoryTable from '../components/tables/InventoryTable';
-import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
-import DeletePrint from '../../../../shared/components/Print/DeviceDeletePrint';
 import { useReactToPrint } from 'react-to-print';
+import { toast } from 'react-toastify';
 import { useNotifications } from '../../../../app/providers/NotificationContext';
+import api from '../../../../shared/api/apiClient';
+import DeletePrint from '../../../../shared/components/Print/DeviceDeletePrint';
+import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
+import useAuth from '../../../../shared/hooks/useAuth';
 import { exportInventoryToExcel } from '../../../../shared/utils/exportExcel';
 import {
   formatDateTime,
   formatDateToDDMMYYYY,
   toDateOnlyInputValue,
 } from '../../../../shared/utils/formatDate';
-import PrintWizardModal from '../components/modals/PrintWizardModal';
 import InventoryFormModal from '../components/forms/InventoryForm';
 import InventoryDetailModal from '../components/modals/InventoryDetailModal';
+import PrintWizardModal from '../components/modals/PrintWizardModal';
+import InventoryTable from '../components/tables/InventoryTable';
+import { Inventory } from '../services/inventory.api';
+
+const INVENTORY_COLUMNS = [
+  { key: 'tag', label: 'Marbete' },
+  { key: 'ubication_name', label: 'Ubicación' },
+  { key: 'department_name', label: 'Departamento' },
+  { key: 'user', label: 'Usuario' },
+  { key: 'device_name', label: 'Equipo' },
+  { key: 'brand_name', label: 'Marca' },
+  { key: 'model_name', label: 'Modelo' },
+  { key: 'serie', label: 'Serie' },
+  { key: 'ip', label: 'IP' },
+];
+
+const DEFAULT_VISIBLE_COLUMNS = INVENTORY_COLUMNS.reduce((columns, column) => {
+  columns[column.key] = true;
+  return columns;
+}, {});
 
 function formatTransferDate(value) {
   return formatDateTime(value, '-');
@@ -74,11 +92,14 @@ function InventoryPage() {
   const navigate = useNavigate();
   const { authData, userType, loggedUserName, loggedUserId } = useAuth();
   const [search, setSearch] = useState('');
+  const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
+  const columnMenuRef = useRef(null);
   const printRef = useRef();
   const { addNotification } = useNotifications();
   const [printType, setPrintType] = useState('transfer');
@@ -133,6 +154,7 @@ function InventoryPage() {
       ...device,
       role: device.role || 'recibe',
       userName: loggedUserName,
+      technicianName: loggedUserName,
       userTransfiere: device.userTransfiere || '',
       userRecibe: device.userRecibe || '',
       ubication_destino_id: device.ubication_destino_id || null,
@@ -158,8 +180,41 @@ function InventoryPage() {
   }, [search]);
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        columnMenuRef.current &&
+        !columnMenuRef.current.contains(event.target)
+      ) {
+        setShowColumnMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     loadPendingTransfers();
   }, [loadPendingTransfers]);
+
+  const handleToggleColumn = (columnKey) => {
+    setVisibleColumns((prev) => {
+      const visibleCount = Object.values(prev).filter(Boolean).length;
+
+      if (prev[columnKey] && visibleCount === 1) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [columnKey]: !prev[columnKey],
+      };
+    });
+  };
+
+  const showAllColumns = () => {
+    setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
+  };
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -202,6 +257,7 @@ function InventoryPage() {
       ...device,
       role: 'recibe',
       userName: loggedUserName,
+      technicianName: loggedUserName,
       userTransfiere: device.userTransfiere || '',
       userRecibe: device.userRecibe || '',
       ubication_destino_id: device.ubication_destino_id || null,
@@ -484,18 +540,67 @@ function InventoryPage() {
             </h2>
           </div>
 
-          <div className="relative w-full lg:max-w-xl">
-            <Search
-              size={18}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              placeholder="Buscar por serie, marbete, nombre, IP u observación"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+          <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-3xl lg:justify-end">
+            <div className="relative w-full lg:max-w-xl">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                placeholder="Buscar por marbete, serie, nombre, IP u observación"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-10 w-full rounded-md border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="relative" ref={columnMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowColumnMenu((prev) => !prev)}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
+                aria-expanded={showColumnMenu}
+                aria-haspopup="menu"
+              >
+                <SlidersHorizontal size={16} />
+                Columnas
+              </button>
+
+              {showColumnMenu && (
+                <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-xl">
+                  <div className="mb-2 flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
+                    <span className="text-sm font-bold text-slate-900">
+                      Mostrar columnas
+                    </span>
+                    <button
+                      type="button"
+                      onClick={showAllColumns}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      Todas
+                    </button>
+                  </div>
+
+                  <div className="max-h-72 space-y-1 overflow-y-auto">
+                    {INVENTORY_COLUMNS.map((column) => (
+                      <label
+                        key={column.key}
+                        className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={Boolean(visibleColumns[column.key])}
+                          onChange={() => handleToggleColumn(column.key)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{column.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -505,6 +610,7 @@ function InventoryPage() {
           onEdit={editDevice}
           authData={authData}
           search={search}
+          visibleColumns={visibleColumns}
           onSummaryChange={handleSummaryChange}
           onFilteredDataChange={handleFilteredDataChange}
           onView={(item) => {

@@ -4,13 +4,45 @@ import LogoIzquierda from '@/assets/images/LogoIzquierda.png';
 import MarcaAgua from '@/assets/images/marca-agua.png';
 import { forwardRef } from 'react';
 
+function normalizeName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+}
+
+function isAvailablePlaceholder(value) {
+  return normalizeName(value) === 'DISPONIBLE';
+}
+
+function firstPrintableName(...values) {
+  for (const value of values) {
+    const trimmed = String(value || '').trim();
+    if (trimmed && trimmed !== '-') return trimmed;
+  }
+
+  return '';
+}
+
 const TransferPrint = forwardRef(function TransferPrint(
   { device = {}, fecha = [] },
   ref
 ) {
-  const transfiere =
+  const technicianName = firstPrintableName(
+    device.technicianName,
+    device.movedByName,
+    device.responsable,
+    device.moved_by?.name
+  );
+  const rawTransfiere =
     device.role === 'transfiere' ? device.userName : device.userTransfiere;
-  const recibe = device.role === 'recibe' ? device.userName : device.userRecibe;
+  const rawRecibe =
+    device.role === 'recibe' ? device.userName : device.userRecibe;
+  const transfiere = isAvailablePlaceholder(rawTransfiere)
+    ? technicianName
+    : rawTransfiere;
+  const recibe = isAvailablePlaceholder(rawRecibe) ? technicianName : rawRecibe;
 
   return (
     <div

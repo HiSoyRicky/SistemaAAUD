@@ -1,5 +1,6 @@
 import * as repository from './departments.repository.js';
 import AppError from '../../common/utils/AppError.js';
+import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import {
   mapDepartment,
   mapCreateDepartmentResponse,
@@ -95,12 +96,47 @@ export const remove = async (idParam, { authorized }) => {
     throw new AppError('ID inválido', 400);
   }
 
+  const existing = await repository.findById(id);
+  if (!existing) {
+    throw new AppError('Departamento no encontrado', 404);
+  }
+
+  const dependencies = await repository.countDependenciesByDepartmentId(id);
+  if (
+    dependencies.incidents > 0 ||
+    dependencies.inventory > 0 ||
+    dependencies.tonerMovements > 0 ||
+    dependencies.users > 0
+  ) {
+    throw new AppError(
+      buildDeleteDependencyMessage({
+        subject: 'el departamento',
+        dependencies: [
+          { count: dependencies.incidents, label: 'incidencia(s)' },
+          { count: dependencies.inventory, label: 'registro(s) de inventario' },
+          { count: dependencies.tonerMovements, label: 'movimiento(s) de tóner' },
+          { count: dependencies.users, label: 'usuario(s)' }
+        ]
+      }),
+      409
+    );
+  }
+
   try {
     const deleted = await repository.deleteById(id);
     return mapDeleteDepartmentResponse(deleted);
   } catch (error) {
     if (error.code === 'P2025') {
       throw new AppError('Departamento no encontrado', 404);
+    }
+    if (error.code === 'P2003') {
+      throw new AppError(
+        buildDeleteDependencyMessage({
+          subject: 'el departamento',
+          dependencies: []
+        }),
+        409
+      );
     }
     throw error;
   }

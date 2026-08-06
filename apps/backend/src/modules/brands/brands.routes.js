@@ -5,6 +5,7 @@ import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './brands.controller.js';
 import {
   validateCreateBrand,
+  validateDeleteBrand,
   validateUpdateBrand
 } from './brands.validator.js';
 
@@ -24,6 +25,12 @@ router.put(
   requirePermission('brands.update'),
   validateUpdateBrand,
   controller.update
+);
+router.delete(
+  '/:id',
+  requirePermission('brands.delete'),
+  validateDeleteBrand,
+  controller.remove
 );
 
 export default router;

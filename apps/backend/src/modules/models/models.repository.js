@@ -54,6 +54,18 @@ export const updateById = async (id, data) => {
   });
 };
 
+export const countInventoryByModelId = async (id) => {
+  return prisma.bd_inventory.count({
+    where: { id_model: Number(id) }
+  });
+};
+
+export const countTonersByPrinterModelId = async (id) => {
+  return prisma.toners.count({
+    where: { id_printer_model: Number(id) }
+  });
+};
+
 export const deleteById = async (id) => {
   return prisma.models.delete({
     where: { id: Number(id) }

@@ -162,17 +162,19 @@ function buildTransferPreviewDevice(item) {
     item?.transfer_snapshot && typeof item.transfer_snapshot === 'object'
       ? item.transfer_snapshot
       : null;
+  const technicianName = firstNonDash(item.moved_by?.name);
 
   if (snapshot) {
     const snapshotTransfiere = firstNonDash(
       snapshot.userTransfiere,
       snapshot.userName,
-      item.moved_by?.name,
+      technicianName,
       item.previous_user
     );
 
     return {
       ...snapshot,
+      technicianName,
       role: snapshot.role || 'transfiere',
       userName: snapshot.userName || snapshotTransfiere,
       userTransfiere: snapshotTransfiere,
@@ -229,6 +231,7 @@ function buildTransferPreviewDevice(item) {
   const newUser = valueOrDash(item.new_user);
 
   return {
+    technicianName,
     role: 'transfiere',
     userName: previousUser,
     userRecibe: newUser,

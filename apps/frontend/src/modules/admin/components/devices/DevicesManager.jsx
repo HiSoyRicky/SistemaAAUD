@@ -81,10 +81,14 @@ export default function DevicesManager() {
             setEditingId(null);
             setEditingName("");
             fetchDevices();
-            setSuccessMessage("Ubicación actualizada correctamente");
+            setErrorMessage("");
+            setSuccessMessage("Dispositivo actualizado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error al guardar dispositivo:", err);
+            setSuccessMessage("");
+            setErrorMessage(err.response?.data?.message || "Error al guardar dispositivo");
+            setTimeout(() => setErrorMessage(""), 5000);
         }
     };
 
@@ -94,10 +98,14 @@ export default function DevicesManager() {
         try {
             await api.delete(`/api/devices/${id}`);
             fetchDevices();
+            setErrorMessage("");
             setSuccessMessage("Dispositivo eliminado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error al eliminar dispositivo:", err);
+            setSuccessMessage("");
+            setErrorMessage(err.response?.data?.message || "Error al eliminar dispositivo");
+            setTimeout(() => setErrorMessage(""), 5000);
         }
     };
 

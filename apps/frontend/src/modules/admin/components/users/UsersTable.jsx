@@ -14,6 +14,8 @@ export default function UsersTable({
     showForm,
     search,
     setSearch,
+    message,
+    messageType,
 
 }) {
     return (
@@ -43,6 +45,16 @@ export default function UsersTable({
                     className="w-full px-3 py-2 border rounded"
                 />
             </div >
+
+            {message && (
+                <div className={`px-4 py-2 border rounded ${
+                    messageType === "error"
+                        ? "text-red-700 bg-red-100 border-red-400"
+                        : "text-green-800 bg-green-100 border-green-300"
+                }`}>
+                    {message}
+                </div>
+            )}
 
             <table className="w-full text-sm border">
                 <thead>

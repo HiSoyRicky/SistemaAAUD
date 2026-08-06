@@ -45,6 +45,31 @@ export const updateById = async (id, data) => {
   });
 };
 
+export const countDependenciesByDepartmentId = async (id) => {
+  const departmentId = Number(id);
+  const [incidents, inventory, tonerMovements, users] = await Promise.all([
+    prisma.bd_incidents.count({
+      where: { id_department: departmentId }
+    }),
+    prisma.bd_inventory.count({
+      where: { id_department: departmentId }
+    }),
+    prisma.toner_movements.count({
+      where: { id_department: departmentId }
+    }),
+    prisma.users.count({
+      where: { id_department: departmentId }
+    })
+  ]);
+
+  return {
+    incidents,
+    inventory,
+    tonerMovements,
+    users
+  };
+};
+
 export const deleteById = async (id) => {
   return prisma.departments.delete({
     where: { id: Number(id) }

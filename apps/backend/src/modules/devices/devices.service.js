@@ -1,4 +1,5 @@
 import AppError from '../../common/utils/AppError.js';
+import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import * as repository from './devices.repository.js';
 import {
   mapCreateDeviceResponse,
@@ -67,6 +68,38 @@ export const remove = async (idParam) => {
     throw new AppError('Dispositivo no encontrado', 404);
   }
 
-  await repository.deleteById(id);
+  const [inventoryCount, modelsCount] = await Promise.all([
+    repository.countInventoryByDeviceId(id),
+    repository.countModelsByDeviceId(id)
+  ]);
+
+  if (inventoryCount > 0 || modelsCount > 0) {
+    throw new AppError(
+      buildDeleteDependencyMessage({
+        subject: 'el dispositivo',
+        dependencies: [
+          { count: inventoryCount, label: 'registro(s) de inventario' },
+          { count: modelsCount, label: 'modelo(s)' }
+        ]
+      }),
+      409
+    );
+  }
+
+  try {
+    await repository.deleteById(id);
+  } catch (error) {
+    if (error.code === 'P2003') {
+      throw new AppError(
+        buildDeleteDependencyMessage({
+          subject: 'el dispositivo',
+          dependencies: []
+        }),
+        409
+      );
+    }
+    throw error;
+  }
+
   return mapDeleteDeviceResponse();
 };

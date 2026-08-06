@@ -1,4 +1,5 @@
 import AppError from '../../common/utils/AppError.js';
+import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import * as repository from './models.repository.js';
 import {
   mapCreateModelResponse,
@@ -98,6 +99,38 @@ export const remove = async (idParam) => {
     throw new AppError('Modelo no encontrado', 404);
   }
 
-  await repository.deleteById(id);
+  const [inventoryCount, tonersCount] = await Promise.all([
+    repository.countInventoryByModelId(id),
+    repository.countTonersByPrinterModelId(id)
+  ]);
+
+  if (inventoryCount > 0 || tonersCount > 0) {
+    throw new AppError(
+      buildDeleteDependencyMessage({
+        subject: 'el modelo',
+        dependencies: [
+          { count: inventoryCount, label: 'registro(s) de inventario' },
+          { count: tonersCount, label: 'tóner(s)' }
+        ]
+      }),
+      409
+    );
+  }
+
+  try {
+    await repository.deleteById(id);
+  } catch (error) {
+    if (error.code === 'P2003') {
+      throw new AppError(
+        buildDeleteDependencyMessage({
+          subject: 'el modelo',
+          dependencies: []
+        }),
+        409
+      );
+    }
+    throw error;
+  }
+
   return mapDeleteModelResponse();
 };

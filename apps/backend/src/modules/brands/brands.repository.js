@@ -30,3 +30,21 @@ export const updateById = async (id, data) => {
     data
   });
 };
+
+export const countInventoryByBrandId = async (id) => {
+  return prisma.bd_inventory.count({
+    where: { id_brand: Number(id) }
+  });
+};
+
+export const countModelsByBrandId = async (id) => {
+  return prisma.models.count({
+    where: { id_brand: Number(id) }
+  });
+};
+
+export const deleteById = async (id) => {
+  return prisma.brands.delete({
+    where: { id: Number(id) }
+  });
+};

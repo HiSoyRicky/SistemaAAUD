@@ -115,8 +115,8 @@ export default function TonersManager() {
             await Toners.delete(id);
             fetchAll();
             showSuccess("Tóner eliminado");
-        } catch {
-            showError("Error al eliminar");
+        } catch (err) {
+            showError(err.response?.data?.message || "Error al eliminar tóner");
         }
     };
 
@@ -173,7 +173,7 @@ export default function TonersManager() {
             fetchAll();
             showSuccess("Tóner actualizado");
         } catch (err) {
-            showError("Error al actualizar");
+            showError(err.response?.data?.message || "Error al actualizar tóner");
         }
     };
 

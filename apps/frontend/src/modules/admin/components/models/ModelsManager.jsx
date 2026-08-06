@@ -19,6 +19,7 @@ export default function ModelsManager() {
     const [editingDevice, setEditingDevice] = useState("");
 
     const [successMessage, setSuccessMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -73,9 +74,15 @@ export default function ModelsManager() {
             setSelectedBrand("");
             setSelectedDevice("");
             fetchModels();
+            setErrorMessage("");
+            setSuccessMessage("Modelo agregado correctamente");
+            setTimeout(() => setSuccessMessage(""), 3000);
         }
         catch (err) {
             console.error("Error al agregar modelo:", err);
+            setSuccessMessage("");
+            setErrorMessage(err.response?.data?.message || "Error al agregar modelo");
+            setTimeout(() => setErrorMessage(""), 5000);
         }
     };
 
@@ -101,10 +108,14 @@ export default function ModelsManager() {
             setEditingBrand("");
             setEditingDevice("");
             fetchModels();
+            setErrorMessage("");
             setSuccessMessage("Modelo actualizado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error:", err.response?.data || err.message);
+            setSuccessMessage("");
+            setErrorMessage(err.response?.data?.message || "Error al guardar modelo");
+            setTimeout(() => setErrorMessage(""), 5000);
         }
     };
 
@@ -113,10 +124,14 @@ export default function ModelsManager() {
         try {
             await api.delete(`/api/models/${id}`);
             fetchModels();
+            setErrorMessage("");
             setSuccessMessage("Modelo eliminado correctamente");
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error al eliminar modelo:", err);
+            setSuccessMessage("");
+            setErrorMessage(err.response?.data?.message || "Error al eliminar modelo");
+            setTimeout(() => setErrorMessage(""), 5000);
         }
     }
 
@@ -156,6 +171,10 @@ export default function ModelsManager() {
 
             {successMessage && (
                 <div className="p-2 mb-2 text-green-800 bg-green-200 rounded">{successMessage}</div>
+            )}
+
+            {errorMessage && (
+                <div className="p-2 mb-2 text-red-700 bg-red-100 border border-red-400 rounded">{errorMessage}</div>
             )}
 
             {/* Barra de búsqueda */}

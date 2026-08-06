@@ -1,4 +1,5 @@
 import AppError from '../../common/utils/AppError.js';
+import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import * as repository from './toners.repository.js';
 import * as dto from './toners.dto.js';
 import { TONER_COLORS, DEFAULT_MIN_STOCK } from './toners.constants.js';
@@ -136,9 +137,31 @@ export const remove = async (idParam) => {
 
   const movementCount = await repository.countMovementsByTonerId(id);
   if (movementCount > 0) {
-    throw new AppError('No se puede eliminar un tóner con movimientos asociados', 409);
+    throw new AppError(
+      buildDeleteDependencyMessage({
+        subject: 'el tóner',
+        dependencies: [
+          { count: movementCount, label: 'movimiento(s)' }
+        ]
+      }),
+      409
+    );
   }
 
-  await repository.deleteByIdWithStock(id);
+  try {
+    await repository.deleteByIdWithStock(id);
+  } catch (error) {
+    if (error.code === 'P2003') {
+      throw new AppError(
+        buildDeleteDependencyMessage({
+          subject: 'el tóner',
+          dependencies: []
+        }),
+        409
+      );
+    }
+    throw error;
+  }
+
   return dto.mapDeletedTonerResponse();
 };
