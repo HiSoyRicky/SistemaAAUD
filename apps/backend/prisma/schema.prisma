@@ -7,22 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model bd_carnet {
-  id             Int       @id(map: "pk_bd_carnet") @default(autoincrement())
-  n_pos          Int
-  nombrecompleto String?   @db.VarChar(50)
-  cedula         String?   @db.VarChar(50)
-  departamento   String?   @db.VarChar(50)
-  cargo          String?   @db.VarChar(50)
-  tiposangre     String?   @db.VarChar(6)
-  sexo           String?   @db.VarChar(7)
-  alergico       String?   @db.VarChar(255)
-  afecciones     String?   @db.VarChar(255)
-  emergencia     String?   @db.VarChar(255)
-  estatus        String?   @db.VarChar(50)
-  fechaentrega   DateTime? @db.Date
-}
-
 model bd_incidents {
   id                                      Int               @id(map: "pk_incidents") @default(autoincrement())
   id_user                                 Int
