@@ -1,6 +1,7 @@
-import React from 'react';
-import useAuth from '../../../../shared/hooks/useAuth';
+// IncidentForm.jsx
+
 import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
+import useAuth from '../../../../shared/hooks/useAuth';
 import { useIncidentForm } from '../../hooks/useIncidentForm';
 
 function IncidentForm({ onSubmit }) {
@@ -30,7 +31,7 @@ function IncidentForm({ onSubmit }) {
   } = useIncidentForm({ loggedUserId, onSubmit });
 
   const descriptionPlaceholder = isTonerCategory
-    ? 'Se autocompleta al elegir color; puedes agregar más detalle si lo deseas.'
+    ? 'Se auto-completa al elegir color; puedes agregar más detalle si lo deseas.'
     : 'Describa el problema con el mayor detalle posible';
 
   return (
@@ -54,17 +55,12 @@ function IncidentForm({ onSubmit }) {
                   placeholder="Ingrese su nombre"
                 />
                 {errors.reporter_name?.message && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.reporter_name.message}
-                  </p>
+                  <p className="mt-1 text-xs text-red-500">{errors.reporter_name.message}</p>
                 )}
               </div>
 
               <div>
-                <label
-                  htmlFor="email"
-                  className="block mb-1 text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">
                   Correo electrónico (opcional):
                 </label>
                 <input
@@ -75,9 +71,7 @@ function IncidentForm({ onSubmit }) {
                   placeholder="ejemplo@aaud.gob.pa"
                 />
                 {errors.email?.message && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.email.message}
-                  </p>
+                  <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
                 )}
               </div>
             </div>
@@ -123,17 +117,11 @@ function IncidentForm({ onSubmit }) {
                   ))}
                 </select>
                 {isLoadingCategories && (
-                  <p className="mt-1 text-xs text-blue-600">
-                    Cargando categorías...
-                  </p>
+                  <p className="mt-1 text-xs text-blue-600">Cargando categorías...</p>
                 )}
-                {categoriesError && (
-                  <p className="mt-1 text-xs text-red-500">{categoriesError}</p>
-                )}
+                {categoriesError && <p className="mt-1 text-xs text-red-500">{categoriesError}</p>}
                 {errors.id_category?.message && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.id_category.message}
-                  </p>
+                  <p className="mt-1 text-xs text-red-500">{errors.id_category.message}</p>
                 )}
               </div>
 
@@ -164,24 +152,18 @@ function IncidentForm({ onSubmit }) {
             {isTonerCategory && (
               <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-blue-900">
-                    Solicitud de tóner
-                  </h3>
+                  <h3 className="text-sm font-semibold text-blue-900">Solicitud de tóner</h3>
                   <p className="mt-1 text-xs text-blue-800/80">
-                    Selecciona la impresora y luego el color. La descripción se
-                    completará automáticamente.
+                    Selecciona la impresora y luego el color. La descripción se completará
+                    automáticamente.
                   </p>
                 </div>
 
                 {isLoadingTonerOptions && (
-                  <p className="text-xs text-blue-700">
-                    Cargando impresoras disponibles...
-                  </p>
+                  <p className="text-xs text-blue-700">Cargando impresoras disponibles...</p>
                 )}
 
-                {tonerOptionsError && (
-                  <p className="text-xs text-red-600">{tonerOptionsError}</p>
-                )}
+                {tonerOptionsError && <p className="text-xs text-red-600">{tonerOptionsError}</p>}
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
@@ -194,27 +176,20 @@ function IncidentForm({ onSubmit }) {
                     <select
                       id="id_printer_model"
                       {...register('id_printer_model')}
-                      disabled={
-                        isLoadingTonerOptions || tonerPrinters.length === 0
-                      }
+                      disabled={isLoadingTonerOptions || tonerPrinters.length === 0}
                       className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm disabled:bg-gray-100 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
                     >
                       <option value="" disabled>
                         -- Seleccione una impresora --
                       </option>
                       {tonerPrinters.map((printer) => (
-                        <option
-                          key={printer.id_printer_model}
-                          value={printer.id_printer_model}
-                        >
+                        <option key={printer.id_printer_model} value={printer.id_printer_model}>
                           {`${printer.brand || 'Sin marca'} / ${printer.printer_model}`}
                         </option>
                       ))}
                     </select>
                     {errors.id_printer_model?.message && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {errors.id_printer_model.message}
-                      </p>
+                      <p className="mt-1 text-xs text-red-500">{errors.id_printer_model.message}</p>
                     )}
                   </div>
 
@@ -228,10 +203,7 @@ function IncidentForm({ onSubmit }) {
                     <select
                       id="toner_color"
                       {...register('toner_color')}
-                      disabled={
-                        !watch('id_printer_model') ||
-                        availableTonerColors.length === 0
-                      }
+                      disabled={!watch('id_printer_model') || availableTonerColors.length === 0}
                       className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm disabled:bg-gray-100 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
                     >
                       <option value="" disabled>
@@ -249,9 +221,7 @@ function IncidentForm({ onSubmit }) {
                       ))}
                     </select>
                     {errors.toner_color?.message && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {errors.toner_color.message}
-                      </p>
+                      <p className="mt-1 text-xs text-red-500">{errors.toner_color.message}</p>
                     )}
                   </div>
                 </div>
@@ -259,13 +229,8 @@ function IncidentForm({ onSubmit }) {
             )}
 
             <div>
-              <label
-                htmlFor="description"
-                className="block mb-1 text-sm font-medium text-gray-700"
-              >
-                {isTonerCategory
-                  ? 'Descripción de la solicitud:'
-                  : 'Descripción del problema:'}
+              <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">
+                {isTonerCategory ? 'Descripción de la solicitud:' : 'Descripción del problema:'}
               </label>
               <textarea
                 id="description"
@@ -275,27 +240,19 @@ function IncidentForm({ onSubmit }) {
                 rows={4}
               />
               {errors.description?.message && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.description.message}
-                </p>
+                <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
               )}
             </div>
 
-            {errors.root?.message && (
-              <p className="text-xs text-red-500">{errors.root.message}</p>
-            )}
+            {errors.root?.message && <p className="text-xs text-red-500">{errors.root.message}</p>}
 
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                disabled={
-                  isSubmitting || isLoadingCategories || categories.length === 0
-                }
+                disabled={isSubmitting || isLoadingCategories || categories.length === 0}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition
                   ${
-                    isSubmitting ||
-                    isLoadingCategories ||
-                    categories.length === 0
+                    isSubmitting || isLoadingCategories || categories.length === 0
                       ? 'cursor-not-allowed bg-slate-500'
                       : 'bg-blue-600 hover:bg-blue-700'
                   }`}
@@ -311,9 +268,7 @@ function IncidentForm({ onSubmit }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="border-b border-gray-200 px-6 py-4">
-              <h2 className="text-center text-lg font-bold text-gray-900">
-                Incidencia registrada
-              </h2>
+              <h2 className="text-center text-lg font-bold text-gray-900">Incidencia registrada</h2>
             </div>
 
             <div className="px-6 py-5 text-center">
@@ -325,9 +280,7 @@ function IncidentForm({ onSubmit }) {
               {incidentId && (
                 <p className="mb-2">
                   <strong>Número de incidencia:</strong>{' '}
-                  <span className="text-blue-600">
-                    #{incidentId.ticket_number}
-                  </span>
+                  <span className="text-blue-600">#{incidentId.ticket_number}</span>
                 </p>
               )}
 

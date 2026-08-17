@@ -1,3 +1,5 @@
+// tonerMovements.routes.js
+
 import express from 'express';
 import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './tonerMovements.controller.js';

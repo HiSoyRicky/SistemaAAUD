@@ -1,9 +1,8 @@
+// status.service.js
+
 import AppError from '../../common/utils/AppError.js';
+import { mapCreateStatusResponse, mapUpdateStatusResponse } from './status.dto.js';
 import * as repository from './status.repository.js';
-import {
-  mapCreateStatusResponse,
-  mapUpdateStatusResponse
-} from './status.dto.js';
 
 export const getAll = async () => {
   return repository.findAll();

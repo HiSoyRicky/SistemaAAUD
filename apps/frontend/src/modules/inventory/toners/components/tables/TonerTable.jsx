@@ -1,3 +1,5 @@
+// TonerTable.jsx
+
 import {
   AlertTriangle,
   Boxes,
@@ -22,7 +24,57 @@ const COLOR_MAP = {
   TRI_COLOR: 'TRES COLORES',
 };
 
+const COLOR_HEX_MAP = {
+  BLACK: '#000',
+  CYAN: '#00bcd4',
+  MAGENTA: '#e91e63',
+  YELLOW: '#ffeb3b',
+  TRI_COLOR: '#9c27b0',
+};
+
+const getColorHex = (color) => COLOR_HEX_MAP[color] || '#ccc';
+
 const translateColor = (color) => COLOR_MAP[color] || color;
+
+function TonerTableRow({ toner, tdClass, canCreateMovement, onMovement }) {
+  const lowStock = toner.stock <= toner.min_stock;
+
+  return (
+    <tr className="transition hover:bg-slate-50">
+      <td className={tdClass}>{toner.brand || '—'}</td>
+
+      <td className={tdClass}>{toner.printer_model || '—'}</td>
+
+      <td className={tdClass}>{toner.toner_model || '—'}</td>
+
+      <td className={tdClass}>
+        <div className="flex items-center justify-center gap-2">
+          <span
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: getColorHex(toner.color) }}
+          />
+          {translateColor(toner.color)}
+        </div>
+      </td>
+
+      <td className={`${tdClass} font-semibold ${lowStock ? 'text-red-600' : 'text-green-600'}`}>
+        {toner.stock}
+
+        {lowStock && <span className="ml-2 text-xs text-red-500">(bajo)</span>}
+      </td>
+
+      <td className={tdClass}>
+        <div className="flex justify-center">
+          {canCreateMovement && (
+            <ActionButton onClick={() => onMovement(toner)} type="refresh">
+              Movimiento
+            </ActionButton>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 function TonerTable({ toners = [], onRefresh }) {
   const { userType } = useAuth();
@@ -61,10 +113,7 @@ function TonerTable({ toners = [], onRefresh }) {
   }, [totalPages, currentPage]);
 
   const paginated = useMemo(() => {
-    return filtered.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
+    return filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }, [filtered, currentPage]);
 
   const openMovementModal = (toner) => {
@@ -85,20 +134,14 @@ function TonerTable({ toners = [], onRefresh }) {
     }
   };
 
-  const canCreateMovement = ['admin', 'tecnico', 'consultor'].includes(
-    userType
-  );
+  const canCreateMovement = ['admin', 'tecnico', 'consultor'].includes(userType);
   const metrics = useMemo(() => {
     const totalModels = toners.length;
-    const totalStock = toners.reduce(
-      (sum, toner) => sum + Number(toner.stock || 0),
-      0
-    );
+    const totalStock = toners.reduce((sum, toner) => sum + Number(toner.stock || 0), 0);
     const lowStock = toners.filter(
       (toner) => Number(toner.stock || 0) <= Number(toner.min_stock || 0)
     ).length;
-    const colors = new Set(toners.map((toner) => toner.color).filter(Boolean))
-      .size;
+    const colors = new Set(toners.map((toner) => toner.color).filter(Boolean)).size;
 
     return { totalModels, totalStock, lowStock, colors };
   }, [toners]);
@@ -117,11 +160,9 @@ function TonerTable({ toners = [], onRefresh }) {
               <Droplets size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-950">
-                Inventario de tóners
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-950">Inventario de tóneres</h1>
               <p className="text-sm text-slate-500">
-                Consulta existencias, modelos y movimientos de tóners.
+                Consulta existencias, modelos y movimientos de tóneres.
               </p>
             </div>
           </div>
@@ -154,36 +195,28 @@ function TonerTable({ toners = [], onRefresh }) {
               <Boxes size={15} />
               Modelos
             </div>
-            <div className="mt-2 text-3xl font-bold text-slate-950">
-              {metrics.totalModels}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-slate-950">{metrics.totalModels}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-600">
               <PackageCheck size={15} />
               Stock total
             </div>
-            <div className="mt-2 text-3xl font-bold text-emerald-600">
-              {metrics.totalStock}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-emerald-600">{metrics.totalStock}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-rose-600">
               <AlertTriangle size={15} />
               Bajo stock
             </div>
-            <div className="mt-2 text-3xl font-bold text-rose-600">
-              {metrics.lowStock}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-rose-600">{metrics.lowStock}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
               <Droplets size={15} />
               Colores
             </div>
-            <div className="mt-2 text-3xl font-bold text-blue-600">
-              {metrics.colors}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-blue-600">{metrics.colors}</div>
           </div>
         </div>
       </section>
@@ -198,9 +231,7 @@ function TonerTable({ toners = [], onRefresh }) {
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">
-              Listado de tóners
-            </h2>
+            <h2 className="text-lg font-bold text-slate-950">Listado de tóneres</h2>
             <p className="text-sm text-slate-500">
               Mostrando {filtered.length} de {toners.length} registros
             </p>
@@ -240,76 +271,20 @@ function TonerTable({ toners = [], onRefresh }) {
             <tbody className="divide-y divide-slate-100 bg-white">
               {paginated.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-12 text-center text-sm text-slate-500"
-                  >
+                  <td colSpan="6" className="px-6 py-12 text-center text-sm text-slate-500">
                     No hay resultados
                   </td>
                 </tr>
               ) : (
-                paginated.map((t) => {
-                  const lowStock = t.stock <= t.min_stock;
-
-                  return (
-                    <tr key={t.id} className="transition hover:bg-slate-50">
-                      <td className={tdClass}>{t.brand || '—'}</td>
-
-                      <td className={tdClass}>{t.printer_model || '—'}</td>
-
-                      <td className={tdClass}>{t.toner_model || '—'}</td>
-
-                      <td className={tdClass}>
-                        <div className="flex items-center justify-center gap-2">
-                          <span
-                            className="w-3 h-3 rounded-full"
-                            style={{
-                              backgroundColor:
-                                t.color === 'BLACK'
-                                  ? '#000'
-                                  : t.color === 'CYAN'
-                                    ? '#00bcd4'
-                                    : t.color === 'MAGENTA'
-                                      ? '#e91e63'
-                                      : t.color === 'YELLOW'
-                                        ? '#ffeb3b'
-                                        : t.color === 'TRI_COLOR'
-                                          ? '#9c27b0'
-                                          : '#ccc',
-                            }}
-                          />
-                          {translateColor(t.color)}
-                        </div>
-                      </td>
-
-                      <td
-                        className={`${tdClass} font-semibold ${
-                          lowStock ? 'text-red-600' : 'text-green-600'
-                        }`}
-                      >
-                        {t.stock}
-                        {lowStock && (
-                          <span className="ml-2 text-xs text-red-500">
-                            (bajo)
-                          </span>
-                        )}
-                      </td>
-
-                      <td className={tdClass}>
-                        <div className="flex justify-center">
-                          {canCreateMovement && (
-                            <ActionButton
-                              onClick={() => openMovementModal(t)}
-                              type="refresh"
-                            >
-                              Movimiento
-                            </ActionButton>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                paginated.map((toner) => (
+                  <TonerTableRow
+                    key={toner.id}
+                    toner={toner}
+                    tdClass={tdClass}
+                    canCreateMovement={canCreateMovement}
+                    onMovement={openMovementModal}
+                  />
+                ))
               )}
             </tbody>
           </table>

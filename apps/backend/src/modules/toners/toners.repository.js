@@ -1,3 +1,5 @@
+// toner.repository.js
+
 import { prisma } from '../../config/prisma.js';
 
 const tonerListSelect = {
@@ -7,37 +9,37 @@ const tonerListSelect = {
   min_stock: true,
   stock: {
     select: {
-      quantity: true
-    }
+      quantity: true,
+    },
   },
   models: {
     select: {
       name: true,
       brands: {
         select: {
-          name: true
-        }
-      }
-    }
-  }
+          name: true,
+        },
+      },
+    },
+  },
 };
 
 export const findAll = async () => {
   return prisma.toners.findMany({
     select: tonerListSelect,
-    orderBy: { id: 'asc' }
+    orderBy: { id: 'asc' },
   });
 };
 
 export const findById = async (id) => {
   return prisma.toners.findUnique({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };
 
 export const findPrinterModelById = async (id) => {
   return prisma.models.findUnique({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };
 
@@ -48,15 +50,15 @@ export const createWithStock = async ({ toner_model, color, id_printer_model, mi
         toner_model,
         color,
         id_printer_model,
-        min_stock
-      }
+        min_stock,
+      },
     });
 
     await tx.toner_stock.create({
       data: {
         id_toner: toner.id,
-        quantity: 0
-      }
+        quantity: 0,
+      },
     });
 
     return toner;
@@ -66,24 +68,24 @@ export const createWithStock = async ({ toner_model, color, id_printer_model, mi
 export const updateById = async (id, data) => {
   return prisma.toners.update({
     where: { id: Number(id) },
-    data
+    data,
   });
 };
 
 export const countMovementsByTonerId = async (id) => {
   return prisma.toner_movements.count({
-    where: { id_toner: Number(id) }
+    where: { id_toner: Number(id) },
   });
 };
 
 export const deleteByIdWithStock = async (id) => {
   return prisma.$transaction(async (tx) => {
     await tx.toner_stock.deleteMany({
-      where: { id_toner: Number(id) }
+      where: { id_toner: Number(id) },
     });
 
     return tx.toners.delete({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
     });
   });
 };

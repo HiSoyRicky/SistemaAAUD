@@ -1,12 +1,14 @@
-import * as repository from './departments.repository.js';
+// departments.service.js
+
 import AppError from '../../common/utils/AppError.js';
 import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import {
-  mapDepartment,
   mapCreateDepartmentResponse,
+  mapDeleteDepartmentResponse,
+  mapDepartment,
   mapUpdateDepartmentResponse,
-  mapDeleteDepartmentResponse
 } from './departments.dto.js';
+import * as repository from './departments.repository.js';
 
 export const getAll = async () => {
   const departments = await repository.findAll();
@@ -33,7 +35,7 @@ export const create = async (payload) => {
 
   const created = await repository.create({
     name: String(name).trim(),
-    id_ubication: ubicationId
+    id_ubication: ubicationId,
   });
 
   return mapCreateDepartmentResponse(created);
@@ -69,7 +71,7 @@ export const update = async (idParam, payload) => {
   try {
     const updated = await repository.updateById(id, {
       name: String(name).trim(),
-      id_ubication: ubicationId
+      id_ubication: ubicationId,
     });
 
     return mapUpdateDepartmentResponse(updated);
@@ -115,8 +117,8 @@ export const remove = async (idParam, { authorized }) => {
           { count: dependencies.incidents, label: 'incidencia(s)' },
           { count: dependencies.inventory, label: 'registro(s) de inventario' },
           { count: dependencies.tonerMovements, label: 'movimiento(s) de tóner' },
-          { count: dependencies.users, label: 'usuario(s)' }
-        ]
+          { count: dependencies.users, label: 'usuario(s)' },
+        ],
       }),
       409
     );
@@ -133,7 +135,7 @@ export const remove = async (idParam, { authorized }) => {
       throw new AppError(
         buildDeleteDependencyMessage({
           subject: 'el departamento',
-          dependencies: []
+          dependencies: [],
         }),
         409
       );

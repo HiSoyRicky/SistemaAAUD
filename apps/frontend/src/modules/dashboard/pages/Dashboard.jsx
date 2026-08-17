@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
-import { Inventory } from "../../inventory/devices/services/inventory.api.js";
-import { Incidents } from "../../incidents/services/incidents.api.js";
-import IncidentsSection from "../components/IncidentsSection.jsx";
-import InventorySection from "../components/InventorySection.jsx";
+// Dashboard.jsx
+
+import { useEffect, useState } from 'react';
+import { Incidents } from '../../incidents/services/incidents.api.js';
+import { Inventory } from '../../inventory/devices/services/inventory.api.js';
+import IncidentsSection from '../components/IncidentsSection.jsx';
+import InventorySection from '../components/InventorySection.jsx';
 
 export default function Dashboard() {
   const [incidences, setIncidences] = useState([]);
@@ -32,10 +34,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
-      await Promise.all([
-        loadIncidences(),
-        loadInventory()
-      ]);
+      await Promise.all([loadIncidences(), loadInventory()]);
     };
 
     load();
@@ -47,25 +46,16 @@ export default function Dashboard() {
         <div className="w-full px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                Dashboard
-              </h1>
-              <p className="text-sm text-slate-500">
-                Resumen general de incidencias e inventario
-              </p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
+              <p className="text-sm text-slate-500">Resumen general de incidencias e inventario</p>
             </div>
 
             <div className="text-xs text-slate-500">
-              {loadingIncidences || loadingInventory
-                ? "Cargando datos..."
-                : "Datos cargados ✅"}
+              {loadingIncidences || loadingInventory ? 'Cargando datos...' : 'Datos cargados ✅'}
             </div>
           </div>
 
-          <IncidentsSection
-            incidences={incidences}
-            loading={loadingIncidences}
-          />
+          <IncidentsSection incidences={incidences} loading={loadingIncidences} />
           <InventorySection inventory={inventory} loading={loadingInventory} />
         </div>
       </main>

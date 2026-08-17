@@ -1,27 +1,27 @@
+// tonerMovements.dto.js
+
 function mapMovementsPaginatedResponse({ data, total, page, limit, summary }) {
   return {
     data,
     total,
     page,
     totalPages: Math.ceil(total / limit),
-    summary
+    summary,
   };
 }
 
 function mapCreateMovementResponse(movement) {
   return {
     message: 'Movimiento registrado correctamente',
-    movement
+    movement,
   };
 }
 
 function mapUploadDocumentResponse(movement) {
   return {
     message: 'Documento subido correctamente',
-    movement
+    movement,
   };
 }
 
-export { mapMovementsPaginatedResponse,
-  mapCreateMovementResponse,
-  mapUploadDocumentResponse };
+export { mapCreateMovementResponse, mapMovementsPaginatedResponse, mapUploadDocumentResponse };

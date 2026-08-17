@@ -1,3 +1,5 @@
+// inventory.repository.js
+
 import { prisma } from '../../config/prisma.js';
 
 const includeRelations = {
@@ -6,7 +8,7 @@ const includeRelations = {
   models: { select: { id: true, name: true } },
   departments: { select: { id: true, name: true } },
   ubications: { select: { id: true, name: true } },
-  status: { select: { id: true, name: true } }
+  status: { select: { id: true, name: true } },
 };
 
 let inventoryLocationNullableCache = null;
@@ -25,17 +27,17 @@ export const findAll = async (search) => {
             { brands: { is: { name: { contains: search, mode: 'insensitive' } } } },
             { models: { is: { name: { contains: search, mode: 'insensitive' } } } },
             { departments: { is: { name: { contains: search, mode: 'insensitive' } } } },
-            { ubications: { is: { name: { contains: search, mode: 'insensitive' } } } }
-          ]
+            { ubications: { is: { name: { contains: search, mode: 'insensitive' } } } },
+          ],
         }
       : {},
-    include: includeRelations
+    include: includeRelations,
   });
 };
 
 export const findById = async (id) => {
   return prisma.bd_inventory.findUnique({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };
 
@@ -72,19 +74,19 @@ export const findInventoryMovementLogs = async ({ action, from, to, inventoryId 
       ...((from || to) && {
         created_at: {
           ...(from && { gte: from }),
-          ...(to && { lte: to })
-        }
-      })
+          ...(to && { lte: to }),
+        },
+      }),
     },
     orderBy: { created_at: 'desc' },
     include: {
       user: {
         select: {
           id: true,
-          nombre_completo: true
-        }
-      }
-    }
+          nombre_completo: true,
+        },
+      },
+    },
   });
 };
 
@@ -93,7 +95,7 @@ export const findUbicationsByIds = async (ids = []) => {
 
   return prisma.ubications.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 };
 
@@ -102,7 +104,7 @@ export const findDepartmentsByIds = async (ids = []) => {
 
   return prisma.departments.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 };
 
@@ -111,7 +113,7 @@ export const findStatusesByIds = async (ids = []) => {
 
   return prisma.status.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 };
 
@@ -120,7 +122,7 @@ export const findDevicesByIds = async (ids = []) => {
 
   return prisma.devices.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 };
 
@@ -129,7 +131,7 @@ export const findBrandsByIds = async (ids = []) => {
 
   return prisma.brands.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 };
 
@@ -138,7 +140,7 @@ export const findModelsByIds = async (ids = []) => {
 
   return prisma.models.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 };
 
@@ -154,8 +156,8 @@ export const findCurrentInventoryByIds = async (ids = []) => {
       status: { select: { name: true } },
       devices: { select: { name: true } },
       brands: { select: { name: true } },
-      models: { select: { name: true } }
-    }
+      models: { select: { name: true } },
+    },
   });
 };
 
@@ -181,7 +183,7 @@ export const areInventoryLocationFieldsNullable = async () => {
 export const create = async (data) => {
   return prisma.bd_inventory.create({
     data,
-    include: includeRelations
+    include: includeRelations,
   });
 };
 
@@ -189,6 +191,6 @@ export const updateById = async (id, data) => {
   return prisma.bd_inventory.update({
     where: { id: Number(id) },
     data,
-    include: includeRelations
+    include: includeRelations,
   });
 };

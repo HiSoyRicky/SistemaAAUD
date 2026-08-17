@@ -13,7 +13,7 @@ export default function DevicesTable({
   setSearch,
   paginatedDevices,
   newDevice,
-  setnewDevice,
+  setNewDevice,
   addDevice,
   successMessage,
   setCurrentPage,
@@ -44,11 +44,12 @@ export default function DevicesTable({
         <input
           type="text"
           value={newDevice}
-          onChange={(e) => setnewDevice(e.target.value)}
+          onChange={(e) => setNewDevice(e.target.value)}
           placeholder="Nuevo dispositivo"
           className="px-2 py-1 border rounded"
         />
         <button
+          type="button"
           onClick={addDevice}
           className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
         >

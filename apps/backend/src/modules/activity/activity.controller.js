@@ -1,3 +1,5 @@
+// activity.controller.js
+
 import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './activity.service.js';
 

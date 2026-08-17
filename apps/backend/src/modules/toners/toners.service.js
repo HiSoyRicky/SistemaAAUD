@@ -1,8 +1,10 @@
+// toners.service.js
+
 import AppError from '../../common/utils/AppError.js';
 import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
-import * as repository from './toners.repository.js';
+import { DEFAULT_MIN_STOCK, TONER_COLORS } from './toners.constants.js';
 import * as dto from './toners.dto.js';
-import { TONER_COLORS, DEFAULT_MIN_STOCK } from './toners.constants.js';
+import * as repository from './toners.repository.js';
 
 function parseId(idParam) {
   const id = Number(idParam);
@@ -34,7 +36,9 @@ function parseMinStock(value, fallback = DEFAULT_MIN_STOCK) {
 }
 
 function parseColor(color) {
-  const normalized = String(color || '').toUpperCase().trim();
+  const normalized = String(color || '')
+    .toUpperCase()
+    .trim();
   if (!TONER_COLORS.includes(normalized)) {
     throw new AppError('Color de tóner inválido', 400);
   }
@@ -85,7 +89,7 @@ export const create = async (payload) => {
     toner_model,
     color,
     id_printer_model,
-    min_stock
+    min_stock,
   });
 
   return dto.mapCreatedTonerResponse(created);
@@ -140,9 +144,7 @@ export const remove = async (idParam) => {
     throw new AppError(
       buildDeleteDependencyMessage({
         subject: 'el tóner',
-        dependencies: [
-          { count: movementCount, label: 'movimiento(s)' }
-        ]
+        dependencies: [{ count: movementCount, label: 'movimiento(s)' }],
       }),
       409
     );
@@ -155,7 +157,7 @@ export const remove = async (idParam) => {
       throw new AppError(
         buildDeleteDependencyMessage({
           subject: 'el tóner',
-          dependencies: []
+          dependencies: [],
         }),
         409
       );

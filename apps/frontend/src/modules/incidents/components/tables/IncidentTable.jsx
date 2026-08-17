@@ -1,12 +1,12 @@
 import React from 'react';
-import { formatDateTimeParts } from '../../../../shared/utils/formatDate.js';
-import Pagination from '../../../../shared/components/ui/Pagination';
 import ActionButton from '../../../../shared/components/ui/ActionButton.jsx';
+import Pagination from '../../../../shared/components/ui/Pagination';
+import { formatDateTimeParts } from '../../../../shared/utils/formatDate.js';
 import IncidentDetailModal from '../modals/IncidentDetailModal.jsx';
 
 // Función para obtener el nombre legible del estado
 const getStatusName = (id_status, technician_full_name) => {
-  const technician = technician_full_name || 'Sin asignar';
+  const technician = technician_full_name;
 
   switch (id_status) {
     case 1:
@@ -63,14 +63,7 @@ const getCategoryName = (id_category) => {
   }
 };
 
-function IncidentTable({
-  incidents,
-  userType,
-  onAssign,
-  onResolve,
-  onEdit,
-  visibleColumns,
-}) {
+function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visibleColumns }) {
   if (!Array.isArray(incidents)) incidents = [];
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -154,10 +147,7 @@ function IncidentTable({
           <tbody className="divide-y divide-slate-100 bg-white">
             {incidents.length === 0 ? (
               <tr>
-                <td
-                  colSpan="13"
-                  className="px-6 py-12 text-center text-sm text-slate-500"
-                >
+                <td colSpan="13" className="px-6 py-12 text-center text-sm text-slate-500">
                   No hay incidencias para mostrar.
                 </td>
               </tr>
@@ -173,29 +163,21 @@ function IncidentTable({
                   >
                     {show.user && (
                       <td className={tdClass}>
-                        <div className="font-semibold text-slate-900">
-                          {incident.reporter_name}
-                        </div>
+                        <div className="font-semibold text-slate-900">{incident.reporter_name}</div>
                         <div className="text-xs text-slate-400">
                           #{incident.ticket_number || incident.id_incident}
                         </div>
                       </td>
                     )}
-                    {show.email && (
-                      <td className={tdClass}>
-                        {incident.reporter_email || 'S/C'}
-                      </td>
-                    )}
+                    {show.email && <td className={tdClass}>{incident.reporter_email || 'S/C'}</td>}
                     {show.ubication && (
                       <td className={tdClass}>
-                        {incident.ubication_name ||
-                          `ID: ${incident.id_ubication}`}
+                        {incident.ubication_name || `ID: ${incident.id_ubication}`}
                       </td>
                     )}
                     {show.department && (
                       <td className={tdClass}>
-                        {incident.department_name ||
-                          `ID: ${incident.id_department}`}
+                        {incident.department_name || `ID: ${incident.id_department}`}
                       </td>
                     )}
                     {show.category && (
@@ -224,22 +206,15 @@ function IncidentTable({
                     {show.date && (
                       <td className={tdClass}>
                         <div className="flex flex-col items-center">
-                          <span className="font-medium text-slate-700">
-                            {created.date}
-                          </span>
+                          <span className="font-medium text-slate-700">{created.date}</span>
 
-                          <span className="text-xs text-slate-400">
-                            {created.time}
-                          </span>
+                          <span className="text-xs text-slate-400">{created.time}</span>
                         </div>
                       </td>
                     )}
                     {show.id_status && (
                       <td className={tdClass}>
-                        {getStatusName(
-                          incident.id_status,
-                          incident.technician_full_name
-                        )}
+                        {getStatusName(incident.id_status, incident.technician_full_name)}
                       </td>
                     )}
 
@@ -254,31 +229,26 @@ function IncidentTable({
                           ></ActionButton>
 
                           {/* Botón Asignar/Reasignar técnico */}
-                          {((userType === 'consultor' &&
-                            incident.id_status === 1) ||
+                          {((userType === 'consultor' && incident.id_status === 1) ||
                             (userType === 'admin' &&
-                              (incident.id_status === 1 ||
-                                incident.id_status === 2))) && (
+                              (incident.id_status === 1 || incident.id_status === 2))) && (
                             <ActionButton
                               type={'assign'}
                               title={
-                                incident.id_status === 1
-                                  ? 'Asignar técnico'
-                                  : 'Reasignar técnico'
+                                incident.id_status === 1 ? 'Asignar técnico' : 'Reasignar técnico'
                               }
                               onClick={() => onAssign(incident.id_incident)}
                             />
                           )}
 
                           {/* Botón Resolver */}
-                          {userType === 'tecnico' &&
-                            incident.id_status !== 3 && (
-                              <ActionButton
-                                type={'resolve'}
-                                title="Resolver"
-                                onClick={() => onResolve(incident.id_incident)}
-                              ></ActionButton>
-                            )}
+                          {userType === 'tecnico' && incident.id_status !== 3 && (
+                            <ActionButton
+                              type={'resolve'}
+                              title="Resolver"
+                              onClick={() => onResolve(incident.id_incident)}
+                            ></ActionButton>
+                          )}
 
                           {/* Botón Editar */}
                           {['admin', 'consultor'].includes(userType) &&

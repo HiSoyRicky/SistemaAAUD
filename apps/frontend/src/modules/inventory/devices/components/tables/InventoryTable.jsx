@@ -1,8 +1,9 @@
 // InventoryTable.jsx
+
 import React, { useMemo, useState } from 'react';
-import useAuth from '../../../../../shared/hooks/useAuth';
 import ActionButton from '../../../../../shared/components/ui/ActionButton';
 import Pagination from '../../../../../shared/components/ui/Pagination';
+import useAuth from '../../../../../shared/hooks/useAuth';
 
 function InventoryTable({
   inventory,
@@ -72,18 +73,14 @@ function InventoryTable({
     const total = filteredInventory.length;
     const active = filteredInventory.filter((item) => {
       const status = String(item.status_name || '').toUpperCase();
-      return (
-        status &&
-        !['DESCARTADO', 'PARA DESCARTE', 'MAL ESTADO'].includes(status)
-      );
+      return status && !['DESCARTADO', 'PARA DESCARTE', 'MAL ESTADO'].includes(status);
     }).length;
     const warning = filteredInventory.filter((item) => {
       const status = String(item.status_name || '').toUpperCase();
       return ['PARA DESCARTE', 'MAL ESTADO'].includes(status);
     }).length;
-    const locations = new Set(
-      filteredInventory.map((item) => item.ubication_name).filter(Boolean)
-    ).size;
+    const locations = new Set(filteredInventory.map((item) => item.ubication_name).filter(Boolean))
+      .size;
 
     return { total, active, warning, locations };
   }, [filteredInventory]);
@@ -103,31 +100,34 @@ function InventoryTable({
   // Crear opciones ordenadas alfabéticamente
   const options = {
     ubication_name: [
-      ...new Set(
-        filteredInventory.map((i) => i.ubication_name).filter(Boolean)
-      ),
-    ].sort(),
+      ...new Set(filteredInventory.map((i) => i.ubication_name).filter(Boolean)),
+    ].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })),
+
     department_name: [
-      ...new Set(
-        filteredInventory.map((i) => i.department_name).filter(Boolean)
-      ),
-    ].sort(),
-    user: [
-      ...new Set(filteredInventory.map((i) => i.user).filter(Boolean)),
-    ].sort(),
-    device_name: [
-      ...new Set(filteredInventory.map((i) => i.device_name).filter(Boolean)),
-    ].sort(),
-    brand_name: [
-      ...new Set(filteredInventory.map((i) => i.brand_name).filter(Boolean)),
-    ].sort(),
-    model_name: [
-      ...new Set(filteredInventory.map((i) => i.model_name).filter(Boolean)),
-    ].sort(),
-    status_name: [
-      ...new Set(filteredInventory.map((i) => i.status_name).filter(Boolean)),
-    ].sort(),
+      ...new Set(filteredInventory.map((i) => i.department_name).filter(Boolean)),
+    ].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })),
+
+    user: [...new Set(filteredInventory.map((i) => i.user).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b, 'es', { sensitivity: 'base' })
+    ),
+
+    device_name: [...new Set(filteredInventory.map((i) => i.device_name).filter(Boolean))].sort(
+      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    ),
+
+    brand_name: [...new Set(filteredInventory.map((i) => i.brand_name).filter(Boolean))].sort(
+      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    ),
+
+    model_name: [...new Set(filteredInventory.map((i) => i.model_name).filter(Boolean))].sort(
+      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    ),
+
+    status_name: [...new Set(filteredInventory.map((i) => i.status_name).filter(Boolean))].sort(
+      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    ),
   };
+
   const showIpColumn = isColumnVisible('ip');
   const visibleColumnCount =
     [
@@ -149,6 +149,43 @@ function InventoryTable({
   const endIndex = startIndex + itemsPerPage;
   const paginatedItems = sortedInventory.slice(startIndex, endIndex);
 
+  const getStatusClasses = (statusName) => {
+    const status = statusName?.toUpperCase() || '';
+
+    if (status === 'DESCARTADO') {
+      return {
+        row: 'bg-red-50 transition hover:bg-red-100/70',
+        text: 'text-red-600 font-bold',
+      };
+    }
+
+    if (status === 'PARA DESCARTE') {
+      return {
+        row: 'bg-yellow-50 transition hover:bg-yellow-100/70',
+        text: 'text-yellow-600 font-bold',
+      };
+    }
+
+    if (status === 'MAL ESTADO') {
+      return {
+        row: 'bg-orange-50 transition hover:bg-orange-100/70',
+        text: 'text-orange-600 font-bold',
+      };
+    }
+
+    if (status === 'NUEVO') {
+      return {
+        row: 'bg-green-50 transition hover:bg-green-100/70',
+        text: 'text-green-600 font-bold',
+      };
+    }
+
+    return {
+      row: 'transition hover:bg-slate-50',
+      text: '',
+    };
+  };
+
   return (
     <div className="relative w-full">
       <div className="overflow-x-auto">
@@ -156,17 +193,13 @@ function InventoryTable({
           <thead className="bg-slate-50">
             <tr>
               {/* Encabezados de la tabla */}
-              {isColumnVisible('tag') && (
-                <th className={thClass}>Marbete</th>
-              )}
+              {isColumnVisible('tag') && <th className={thClass}>Marbete</th>}
               {isColumnVisible('ubication_name') && (
                 <th className={tdClass}>
                   <span>Ubicación</span>
                   <select
                     value={filters.ubication_name}
-                    onChange={(e) =>
-                      handleFilterChange('ubication_name', e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange('ubication_name', e.target.value)}
                     className={filterClass}
                   >
                     <option value="">Todos</option>
@@ -184,9 +217,7 @@ function InventoryTable({
                   <span>Departamento</span>
                   <select
                     value={filters.department_name}
-                    onChange={(e) =>
-                      handleFilterChange('department_name', e.target.value)
-                    }
+                    onChange={(e) => handleFilterChange('department_name', e.target.value)}
                     className={filterClass}
                   >
                     <option value="">Todos</option>
@@ -198,69 +229,69 @@ function InventoryTable({
                   </select>
                 </th>
               )}
-              {isColumnVisible('user') && (
-                <th className={thClass}>Usuario</th>
-              )}
+              {isColumnVisible('user') && <th className={thClass}>Usuario</th>}
               {isColumnVisible('device_name') && (
                 <th className={tdClass}>
-                  Equipo
-                  <select
-                    value={filters.device_name}
-                    onChange={(e) =>
-                      handleFilterChange('device_name', e.target.value)
-                    }
-                    className={filterClass}
-                  >
-                    <option value="">Todos</option>
-                    {options.device_name.map((val) => (
-                      <option key={val} value={val}>
-                        {val}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col gap-1">
+                    <span>Equipo</span>
+
+                    <select
+                      value={filters.device_name}
+                      onChange={(e) => handleFilterChange('device_name', e.target.value)}
+                      className={filterClass}
+                    >
+                      <option value="">Todos</option>
+
+                      {options.device_name.map((val) => (
+                        <option key={val} value={val}>
+                          {val}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </th>
               )}
               {isColumnVisible('brand_name') && (
                 <th className={tdClass}>
-                  Marca
-                  <select
-                    value={filters.brand_name}
-                    onChange={(e) =>
-                      handleFilterChange('brand_name', e.target.value)
-                    }
-                    className={filterClass}
-                  >
-                    <option value="">Todos</option>
-                    {options.brand_name.map((val) => (
-                      <option key={val} value={val}>
-                        {val}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col gap-1">
+                    <span>Marca</span>
+
+                    <select
+                      value={filters.brand_name}
+                      onChange={(e) => handleFilterChange('brand_name', e.target.value)}
+                      className={filterClass}
+                    >
+                      <option value="">Todos</option>
+
+                      {options.brand_name.map((val) => (
+                        <option key={val} value={val}>
+                          {val}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </th>
               )}
               {isColumnVisible('model_name') && (
                 <th className={tdClass}>
-                  Modelo
-                  <select
-                    value={filters.model_name}
-                    onChange={(e) =>
-                      handleFilterChange('model_name', e.target.value)
-                    }
-                    className={filterClass}
-                  >
-                    <option value="">Todos</option>
-                    {options.model_name.map((val) => (
-                      <option key={val} value={val}>
-                        {val}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col gap-1">
+                    <span>Modelo</span>
+                    <select
+                      value={filters.model_name}
+                      onChange={(e) => handleFilterChange('model_name', e.target.value)}
+                      className={filterClass}
+                    >
+                      <option value="">Todos</option>
+                      {options.model_name.map((val) => (
+                        <option key={val} value={val}>
+                          {val}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </th>
               )}
-              {isColumnVisible('serie') && (
-                <th className={thClass}>Serie</th>
-              )}
+              {isColumnVisible('serie') && <th className={thClass}>Serie</th>}
               {showIpColumn && <th className={thClass}>IP</th>}
 
               <th className={thClass}>Acciones</th>
@@ -280,71 +311,39 @@ function InventoryTable({
               </tr>
             ) : (
               paginatedItems.map((item) => {
-                const status = item.status_name?.toUpperCase() || '';
-                const isDiscarded = status === 'DESCARTADO';
-                const isForDiscard = status === 'PARA DESCARTE';
-                const isBadCondition = status === 'MAL ESTADO';
-                const isNew = status === 'NUEVO';
+                const statusClasses = getStatusClasses(item.status_name);
 
                 return (
-                  <tr
-                    key={item.id}
-                    className={
-                      isDiscarded
-                        ? 'bg-red-50 transition hover:bg-red-100/70'
-                        : isForDiscard
-                          ? 'bg-yellow-50 transition hover:bg-yellow-100/70'
-                          : isBadCondition
-                            ? 'bg-orange-50 transition hover:bg-orange-100/70'
-                            : isNew
-                              ? 'bg-green-50 transition hover:bg-green-100/70'
-                              : 'transition hover:bg-slate-50'
-                    }
-                  >
+                  <tr key={item.id} className={statusClasses.row}>
                     {isColumnVisible('tag') && (
-                      <th
-                        className={`${tdClass} font-bold ${
-                          isDiscarded
-                            ? 'text-red-600 font-bold'
-                            : isForDiscard
-                              ? 'text-yellow-600 font-bold'
-                              : isBadCondition
-                                ? 'text-orange-600 font-bold'
-                                : isNew
-                                  ? 'text-green-600 font-bold'
-                                  : ''
-                        }`}
-                      >
-                        {item.tag}
-                      </th>
+                      <td className={`${tdClass} ${statusClasses.text}`}>{item.tag}</td>
                     )}
 
                     {isColumnVisible('ubication_name') && (
                       <td className={tdClass}>{item.ubication_name || '-'}</td>
                     )}
+
                     {isColumnVisible('department_name') && (
-                      <td className={tdClass}>
-                        {item.department_name || '-'}
-                      </td>
+                      <td className={tdClass}>{item.department_name || '-'}</td>
                     )}
-                    {isColumnVisible('user') && (
-                      <td className={tdClass}>{item.user || '-'}</td>
-                    )}
+
+                    {isColumnVisible('user') && <td className={tdClass}>{item.user || '-'}</td>}
+
                     {isColumnVisible('device_name') && (
                       <td className={tdClass}>{item.device_name}</td>
                     )}
+
                     {isColumnVisible('brand_name') && (
                       <td className={tdClass}>{item.brand_name}</td>
                     )}
+
                     {isColumnVisible('model_name') && (
                       <td className={tdClass}>{item.model_name}</td>
                     )}
-                    {isColumnVisible('serie') && (
-                      <td className={tdClass}>{item.serie}</td>
-                    )}
-                    {showIpColumn && (
-                      <td className={tdClass}>{item.ip || '-'}</td>
-                    )}
+
+                    {isColumnVisible('serie') && <td className={tdClass}>{item.serie}</td>}
+
+                    {showIpColumn && <td className={tdClass}>{item.ip || '-'}</td>}
 
                     {/* Acciones */}
                     <td className={tdClass}>
@@ -357,14 +356,14 @@ function InventoryTable({
 
                         {canEditInventory && (
                           <ActionButton
-                            type={'edit'}
+                            type="edit"
                             title="Editar equipo"
                             onClick={() => item && onEdit(item)}
                           />
                         )}
 
                         <ActionButton
-                          type={'print'}
+                          type="print"
                           title="Imprimir equipo"
                           onClick={() => item && onPrint(item)}
                         />

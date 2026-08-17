@@ -1,3 +1,5 @@
+// users.controller.js
+
 import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './users.service.js';
 
@@ -32,14 +34,10 @@ export const update = catchAsync(async (req, res) => {
 });
 
 export const updatePassword = catchAsync(async (req, res) => {
-  const data = await service.updatePassword(
-    req.params.id,
-    req.body.newPassword,
-    {
-      actor: req.user,
-      requirePasswordChange: req.body.requirePasswordChange,
-    }
-  );
+  const data = await service.updatePassword(req.params.id, req.body.newPassword, {
+    actor: req.user,
+    requirePasswordChange: req.body.requirePasswordChange,
+  });
   res.json(data);
 });
 

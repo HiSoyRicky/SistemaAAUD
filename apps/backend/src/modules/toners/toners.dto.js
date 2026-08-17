@@ -1,3 +1,5 @@
+// toner.dto.js
+
 function mapTonerListItem(toner) {
   const stock = toner.stock?.quantity ?? 0;
 
@@ -9,31 +11,33 @@ function mapTonerListItem(toner) {
     printer_model: toner.models?.name ?? null,
     stock,
     min_stock: toner.min_stock,
-    low_stock: stock <= toner.min_stock
+    low_stock: stock <= toner.min_stock,
   };
 }
 
 function mapCreatedTonerResponse(toner) {
   return {
     id: toner.id,
-    message: 'Tóner creado correctamente'
+    message: 'Tóner creado correctamente',
   };
 }
 
 function mapUpdatedTonerResponse(toner) {
   return {
     message: 'Tóner actualizado',
-    toner
+    toner,
   };
 }
 
 function mapDeletedTonerResponse() {
   return {
-    message: 'Tóner eliminado correctamente'
+    message: 'Tóner eliminado correctamente',
   };
 }
 
-export { mapTonerListItem,
+export {
   mapCreatedTonerResponse,
+  mapDeletedTonerResponse,
+  mapTonerListItem,
   mapUpdatedTonerResponse,
-  mapDeletedTonerResponse };
+};

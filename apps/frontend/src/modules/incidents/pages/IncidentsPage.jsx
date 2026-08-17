@@ -1,4 +1,3 @@
-import React, { useMemo } from 'react';
 import {
   BarChart3,
   CheckCircle2,
@@ -10,14 +9,15 @@ import {
   UserCheck,
   X,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import useAuth from '../../../shared/hooks/useAuth';
 
-import IncidentForm from '../components/forms/IncidentForm';
-import IncidentTable from '../components/tables/IncidentTable';
-import ResolveIncidentModal from '../components/modals/ResolveIncidentModal';
 import SuccessMessage from '../../../shared/common/SuccessMessage';
 import IncidentEditForm from '../components/forms/IncidentEditForm';
+import IncidentForm from '../components/forms/IncidentForm';
 import AssignTechnicianModal from '../components/modals/AssignTechnicianModal';
+import ResolveIncidentModal from '../components/modals/ResolveIncidentModal';
+import IncidentTable from '../components/tables/IncidentTable';
 
 import useIncidentsPage from '../hooks/useIncidentsPage';
 
@@ -36,22 +36,15 @@ const roleCopy = {
   },
   trabajador: {
     title: 'Reportar incidencia',
-    subtitle:
-      'Envía una solicitud al equipo de soporte con los datos necesarios.',
+    subtitle: 'Envía una solicitud al equipo de soporte con los datos necesarios.',
   },
 };
 
 function getStatusMetrics(incidents = []) {
   const total = incidents.length;
-  const pending = incidents.filter(
-    (item) => Number(item.id_status) === 1
-  ).length;
-  const assigned = incidents.filter(
-    (item) => Number(item.id_status) === 2
-  ).length;
-  const resolved = incidents.filter(
-    (item) => Number(item.id_status) === 3
-  ).length;
+  const pending = incidents.filter((item) => Number(item.id_status) === 1).length;
+  const assigned = incidents.filter((item) => Number(item.id_status) === 2).length;
+  const resolved = incidents.filter((item) => Number(item.id_status) === 3).length;
 
   return { total, pending, assigned, resolved };
 }
@@ -158,9 +151,7 @@ function IncidentsPage() {
                 <Ticket size={22} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-950">
-                  {pageCopy.title}
-                </h1>
+                <h1 className="text-2xl font-bold text-slate-950">{pageCopy.title}</h1>
                 <p className="text-sm text-slate-500">{pageCopy.subtitle}</p>
               </div>
             </div>
@@ -194,9 +185,7 @@ function IncidentsPage() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      window.open('/incidencias/monitor', '_blank')
-                    }
+                    onClick={() => window.open('/incidencias/monitor', '_blank')}
                     className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                   >
                     <MonitorUp size={16} />
@@ -225,9 +214,7 @@ function IncidentsPage() {
                     <Icon size={15} />
                     {card.label}
                   </div>
-                  <div className={`mt-2 text-3xl font-bold ${card.color}`}>
-                    {card.value}
-                  </div>
+                  <div className={`mt-2 text-3xl font-bold ${card.color}`}>{card.value}</div>
                 </div>
               );
             })}
@@ -237,18 +224,12 @@ function IncidentsPage() {
 
       {userType === 'trabajador' ? (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <IncidentForm
-            onSubmit={handleAddIncident}
-            loggedUserName={loggedUserName}
-          />
+          <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
         </section>
       ) : (
         showIncidentForm && (
           <section className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
-            <IncidentForm
-              onSubmit={handleAddIncident}
-              loggedUserName={loggedUserName}
-            />
+            <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
           </section>
         )
       )}
@@ -257,9 +238,7 @@ function IncidentsPage() {
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-950">
-                Listado de incidencias
-              </h2>
+              <h2 className="text-lg font-bold text-slate-950">Listado de incidencias</h2>
             </div>
 
             <div className="relative w-full lg:max-w-xl">
@@ -280,11 +259,7 @@ function IncidentsPage() {
           <IncidentTable
             incidents={filteredIncidentsForTable}
             userType={userType}
-            onAssign={
-              ['admin', 'consultor'].includes(userType)
-                ? handleOpenAssignModal
-                : null
-            }
+            onAssign={['admin', 'consultor'].includes(userType) ? handleOpenAssignModal : null}
             onResolve={userType === 'tecnico' ? handleOpenResolveModal : null}
             onEdit={setIncidentToEdit}
           />

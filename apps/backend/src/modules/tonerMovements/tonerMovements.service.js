@@ -1,15 +1,17 @@
+// tonerMovements.service.js
+
 import AppError from '../../common/utils/AppError.js';
-import * as repository from './tonerMovements.repository.js';
-import * as dto from './tonerMovements.dto.js';
 import {
-  MOVEMENT_TYPES,
-  DEFAULT_PAGE,
   DEFAULT_LIMIT,
-  MAX_LIMIT,
-  MIN_RECEIVER_NAME_LENGTH,
-  MIN_ADJUSTMENT_REFERENCE_LENGTH,
+  DEFAULT_PAGE,
   DOCUMENT_STATUS_SIGNED,
+  MAX_LIMIT,
+  MIN_ADJUSTMENT_REFERENCE_LENGTH,
+  MIN_RECEIVER_NAME_LENGTH,
+  MOVEMENT_TYPES,
 } from './tonerMovements.constants.js';
+import * as dto from './tonerMovements.dto.js';
+import * as repository from './tonerMovements.repository.js';
 
 function parsePositiveInt(value, fieldName) {
   const parsed = Number(value);
@@ -156,6 +158,47 @@ function parseUserContext(currentUser) {
   return { userId };
 }
 
+async function validateOutMovement({
+  repository,
+  tx,
+  id_department,
+  id_ubication,
+  receiverName,
+  quantity,
+  currentStock,
+}) {
+  if (!id_department || !id_ubication) {
+    throw new AppError('Salida requiere ubicación y departamento', 400);
+  }
+
+  if (receiverName.length < MIN_RECEIVER_NAME_LENGTH) {
+    throw new AppError('Debe indicar el nombre de quien retira', 400);
+  }
+
+  const department = await repository.findDepartmentById(id_department, tx);
+
+  if (department?.id_ubication !== id_ubication) {
+    throw new AppError('Departamento no pertenece a la ubicación seleccionada', 400);
+  }
+
+  if (quantity > currentStock) {
+    throw new AppError('Stock insuficiente', 400);
+  }
+}
+
+function calculateAdjustment({ quantity, currentStock, reference }) {
+  if (reference.length < MIN_ADJUSTMENT_REFERENCE_LENGTH) {
+    throw new AppError('Debe indicar el motivo detallado del ajuste', 400);
+  }
+
+  const difference = quantity - currentStock;
+
+  return {
+    newStock: quantity,
+    finalReference: `AJUSTE (${difference >= 0 ? '+' : ''}${difference}) - ${reference}`,
+  };
+}
+
 export const getAll = async (query) => {
   const { page, limit } = parsePagination(query);
   const where = buildMovementWhere(query);
@@ -189,6 +232,7 @@ export const getAll = async (query) => {
 
 export const create = async ({ payload, currentUser }) => {
   const { userId } = parseUserContext(currentUser);
+
   const id_toner = parsePositiveInt(payload.id_toner, 'Tóner');
   const quantity = parsePositiveInt(payload.quantity, 'Cantidad');
   const movement_type = parseMovementType(payload.movement_type);
@@ -197,9 +241,8 @@ export const create = async ({ payload, currentUser }) => {
   const id_ubication = parseOptionalPositiveInt(payload.id_ubication);
   const id_incident = parseOptionalPositiveInt(payload.id_incident);
 
-  const receiverName = payload.receiver_name
-    ? String(payload.receiver_name).trim()
-    : '';
+  const receiverName = payload.receiver_name ? String(payload.receiver_name).trim() : '';
+
   const reference = payload.reference ? String(payload.reference).trim() : '';
 
   const movement = await repository.withTransaction(async (tx) => {
@@ -210,6 +253,7 @@ export const create = async ({ payload, currentUser }) => {
     }
 
     const currentStock = toner.stock?.quantity ?? 0;
+
     let newStock = currentStock;
     let finalReference = reference || null;
 
@@ -218,37 +262,28 @@ export const create = async ({ payload, currentUser }) => {
     }
 
     if (movement_type === 'OUT') {
-      if (!id_department || !id_ubication) {
-        throw new AppError('Salida requiere ubicación y departamento', 400);
-      }
-
-      if (receiverName.length < MIN_RECEIVER_NAME_LENGTH) {
-        throw new AppError('Debe indicar el nombre de quien retira', 400);
-      }
-
-      const department = await repository.findDepartmentById(id_department, tx);
-      if (!department || department.id_ubication !== id_ubication) {
-        throw new AppError(
-          'Departamento no pertenece a la ubicación seleccionada',
-          400
-        );
-      }
-
-      if (quantity > currentStock) {
-        throw new AppError('Stock insuficiente', 400);
-      }
+      await validateOutMovement({
+        repository,
+        tx,
+        id_department,
+        id_ubication,
+        receiverName,
+        quantity,
+        currentStock,
+      });
 
       newStock = currentStock - quantity;
     }
 
     if (movement_type === 'ADJUSTMENT') {
-      if (reference.length < MIN_ADJUSTMENT_REFERENCE_LENGTH) {
-        throw new AppError('Debe indicar el motivo detallado del ajuste', 400);
-      }
+      const adjustment = calculateAdjustment({
+        quantity,
+        currentStock,
+        reference,
+      });
 
-      newStock = quantity;
-      const difference = newStock - currentStock;
-      finalReference = `AJUSTE (${difference >= 0 ? '+' : ''}${difference}) - ${reference}`;
+      newStock = adjustment.newStock;
+      finalReference = adjustment.finalReference;
     }
 
     await repository.upsertTonerStock(

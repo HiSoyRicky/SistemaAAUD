@@ -24,7 +24,7 @@ function dateOnlyParts(value) {
   if (!value) return null;
 
   if (typeof value === 'string') {
-    const match = value.match(DATE_ONLY_PATTERN);
+    const match = DATE_ONLY_PATTERN.exec(value);
     if (match) {
       return {
         year: Number(match[1]),
@@ -92,6 +92,7 @@ export function formatDateTime(dateString, fallback = '-') {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hour12: true,
     },
     fallback
@@ -151,16 +152,22 @@ export function formatDateTimeParts(dateString, fallback = '-') {
     date.getMonth() === yesterday.getMonth() &&
     date.getDate() === yesterday.getDate();
 
+  let dateLabel;
+
+  if (isToday) {
+    dateLabel = 'Hoy';
+  } else if (isYesterday) {
+    dateLabel = 'Ayer';
+  } else {
+    dateLabel = formatWithOptions(date, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
   return {
-    date: isToday
-      ? 'Hoy'
-      : isYesterday
-        ? 'Ayer'
-        : formatWithOptions(date, {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          }),
+    date: dateLabel,
 
     time: formatWithOptions(date, {
       hour: '2-digit',

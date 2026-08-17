@@ -1,13 +1,12 @@
+// DeviceDeletePrint.jsx
+
 import FranjaInferior from '@/assets/images/FranjaInferior.png';
 import LogoDerecha from '@/assets/images/LogoDerecha.png';
 import LogoIzquierda from '@/assets/images/LogoIzquierda.png';
 import MarcaAgua from '@/assets/images/marca-agua.png';
 import { forwardRef } from 'react';
 
-const DeletePrint = forwardRef(function DeletePrint(
-  { device = {}, fecha = [] },
-  ref
-) {
+const DeletePrint = forwardRef(function DeletePrint({ device = {}, fecha = [] }, ref) {
   return (
     <div
       ref={ref}
@@ -85,17 +84,13 @@ const DeletePrint = forwardRef(function DeletePrint(
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <td colSpan="6" className="text-center">
-                <h2 className="mt-2 text-lg font-bold">
-                  AUTORIDAD DE ASEO URBANO Y DOMICILIARIO
-                </h2>
-                <h3 className="mt-1 text-sm font-semibold leading-tight">
-                  UNIDAD DE INFORMÁTICA
-                </h3>
+              <th colSpan="6" className="text-center">
+                <h2 className="mt-2 text-lg font-bold">AUTORIDAD DE ASEO URBANO Y DOMICILIARIO</h2>
+                <h3 className="mt-1 text-sm font-semibold leading-tight">UNIDAD DE INFORMÁTICA</h3>
                 <h3 className="mt-1 text-sm font-semibold leading-tight">
                   INFORME TÉCNICO PARA DESCARTE DE EQUIPO INFORMÁTICO
                 </h3>
-              </td>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -109,45 +104,35 @@ const DeletePrint = forwardRef(function DeletePrint(
 
             {/* Datos del traslado */}
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Dispositivo:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Dispositivo:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.device_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Marca:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Marca:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.brand_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Modelo:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Modelo:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.model_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Serie:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Serie:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.serie || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Marbete:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Marbete:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.tag || 'N/A'}
               </td>

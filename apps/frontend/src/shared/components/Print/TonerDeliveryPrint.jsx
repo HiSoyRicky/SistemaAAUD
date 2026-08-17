@@ -1,3 +1,5 @@
+// TonerDeliveryPrint.jsx
+
 import FranjaInferior from '@/assets/images/FranjaInferior.png';
 import LogoDerecha from '@/assets/images/LogoDerecha.png';
 import LogoIzquierda from '@/assets/images/LogoIzquierda.png';
@@ -13,16 +15,12 @@ const colorMap = {
   TRI_COLOR: 'TRES COLORES',
 };
 
-const TonerDeliveryPrint = forwardRef(function TonerDeliveryPrint(
-  { movement = {}, fecha },
-  ref
-) {
+const TonerDeliveryPrint = forwardRef(function TonerDeliveryPrint({ movement = {}, fecha }, ref) {
   const printerBrand = movement?.toner?.models?.brands?.name || 'N/A';
   const printerModel = movement?.toner?.models?.name || 'N/A';
   const receiverName = movement?.receiver_name || 'N/A';
   const technicianName = movement?.user?.nombre_completo || 'N/A';
-  const tonerColor =
-    colorMap[movement?.toner?.color] || movement?.toner?.color || 'N/A';
+  const tonerColor = colorMap[movement?.toner?.color] || movement?.toner?.color || 'N/A';
   const printDate =
     fecha ||
     (movement?.created_at
@@ -106,17 +104,11 @@ const TonerDeliveryPrint = forwardRef(function TonerDeliveryPrint(
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <td colSpan="6" className="text-center">
-                <h2 className="mt-2 text-lg font-bold">
-                  AUTORIDAD DE ASEO URBANO Y DOMICILIARIO
-                </h2>
-                <h3 className="mt-1 text-sm font-semibold leading-tight">
-                  UNIDAD DE INFORMÁTICA
-                </h3>
-                <h3 className="mt-1 text-sm font-semibold leading-tight">
-                  ENTREGA DE TÓNER
-                </h3>
-              </td>
+              <th colSpan="6" className="text-center">
+                <h2 className="mt-2 text-lg font-bold">AUTORIDAD DE ASEO URBANO Y DOMICILIARIO</h2>
+                <h3 className="mt-1 text-sm font-semibold leading-tight">UNIDAD DE INFORMÁTICA</h3>
+                <h3 className="mt-1 text-sm font-semibold leading-tight">ENTREGA DE TÓNER</h3>
+              </th>
             </tr>
           </thead>
 
@@ -127,63 +119,49 @@ const TonerDeliveryPrint = forwardRef(function TonerDeliveryPrint(
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Ubicación:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Ubicación:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {movement?.ubication?.name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Departamento:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Departamento:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {movement?.department?.name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Impresora:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Impresora:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {`${printerBrand} / ${printerModel}`}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Modelo del tóner:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Modelo del tóner:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {movement?.toner?.toner_model || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Color:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Color:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {tonerColor}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Cantidad:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Cantidad:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {movement?.quantity ?? 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Observación:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Observación:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {movement?.reference || 'N/A'}
               </td>

@@ -1,6 +1,7 @@
-import React from "react";
-import ChangePasswordForm from "../forms/ChangePasswordForm";
-import useAuth from "../../../shared/hooks/useAuth";
+// ForcedPasswordChangePage.jsx
+
+import useAuth from '../../../shared/hooks/useAuth';
+import ChangePasswordForm from '../forms/ChangePasswordForm';
 
 function ForcedPasswordChangePage() {
   const { loggedUserId, username, logout } = useAuth();
@@ -15,11 +16,7 @@ function ForcedPasswordChangePage() {
           </p>
         </div>
 
-        <ChangePasswordForm
-          userId={loggedUserId}
-          userEmail={username}
-          onLogout={logout}
-        />
+        <ChangePasswordForm userId={loggedUserId} userEmail={username} onLogout={logout} />
       </div>
     </div>
   );

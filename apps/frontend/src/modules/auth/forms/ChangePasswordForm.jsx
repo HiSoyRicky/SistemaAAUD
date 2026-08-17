@@ -1,57 +1,50 @@
-// src/components/ChangePasswordForm.jsx
-import React, { useState } from "react";
-import { Users } from "../../inventory/devices/services/inventory.api";
-import {
-  Lock,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+// ChangePasswordForm.jsx
+
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { Users } from '../../inventory/devices/services/inventory.api';
 
 function ChangePasswordForm({ userId, userEmail, onLogout }) {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
     if (!newPassword || !confirmPassword) {
-      setError("Por favor, completa ambos campos.");
+      setError('Por favor, completa ambos campos.');
       return;
     }
 
     if (newPassword.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
+      setError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
+      setError('Las contraseñas no coinciden.');
       return;
     }
 
     try {
       setLoading(true);
       await Users.updatePassword(userId, newPassword);
-      setSuccess("Contraseña actualizada correctamente.");
-      setNewPassword("");
-      setConfirmPassword("");
+      setSuccess('Contraseña actualizada correctamente.');
+      setNewPassword('');
+      setConfirmPassword('');
 
       if (onLogout) {
         setTimeout(() => onLogout(), 2000);
       }
     } catch (err) {
-      setError(
-        err?.response?.data?.error || "Error al actualizar la contraseña."
-      );
+      setError(err?.response?.data?.error || 'Error al actualizar la contraseña.');
     } finally {
       setLoading(false);
     }
@@ -61,9 +54,7 @@ function ChangePasswordForm({ userId, userEmail, onLogout }) {
     <div className="w-full max-w-md p-6 mx-auto bg-white border shadow-md rounded-xl">
       <div className="flex items-center gap-2 mb-4">
         <Lock className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-800">
-          Cambiar contraseña
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-800">Cambiar contraseña</h3>
       </div>
 
       {error && (
@@ -81,24 +72,24 @@ function ChangePasswordForm({ userId, userEmail, onLogout }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Campo oculto para autocompletado */}
+        {/* Campo oculto para auto-completado */}
         <input
           type="email"
           name="username"
           autoComplete="username"
-          value={userEmail || ""}
+          value={userEmail || ''}
           hidden
           readOnly
         />
 
         {/* Nueva contraseña */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
+          <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
             Nueva contraseña
           </label>
           <div className="relative">
             <input
-              type={showNew ? "text" : "password"}
+              type={showNew ? 'text' : 'password'}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -111,11 +102,7 @@ function ChangePasswordForm({ userId, userEmail, onLogout }) {
               onClick={() => setShowNew((prev) => !prev)}
               className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
             >
-              {showNew ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
+              {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
           <p className="text-xs text-gray-500">
@@ -125,12 +112,12 @@ function ChangePasswordForm({ userId, userEmail, onLogout }) {
 
         {/* Confirmar contraseña */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
             Confirmar nueva contraseña
           </label>
           <div className="relative">
             <input
-              type={showConfirm ? "text" : "password"}
+              type={showConfirm ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -143,11 +130,7 @@ function ChangePasswordForm({ userId, userEmail, onLogout }) {
               onClick={() => setShowConfirm((prev) => !prev)}
               className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
             >
-              {showConfirm ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
+              {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -155,11 +138,11 @@ function ChangePasswordForm({ userId, userEmail, onLogout }) {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 text-sm font-semibold text-white rounded-lg 
-            ${loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"} 
+          className={`w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 text-sm font-semibold text-white rounded-lg
+            ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1`}
         >
-          {loading ? "Actualizando..." : "Actualizar contraseña"}
+          {loading ? 'Actualizando...' : 'Actualizar contraseña'}
         </button>
       </form>
     </div>

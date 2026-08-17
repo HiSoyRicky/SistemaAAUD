@@ -1,11 +1,13 @@
+// brands.service.js
+
 import AppError from '../../common/utils/AppError.js';
 import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
-import * as repository from './brands.repository.js';
 import {
   mapCreateBrandResponse,
   mapDeleteBrandResponse,
-  mapUpdateBrandResponse
+  mapUpdateBrandResponse,
 } from './brands.dto.js';
+import * as repository from './brands.repository.js';
 
 export const getAll = async () => {
   return repository.findAll();
@@ -75,7 +77,7 @@ export const remove = async (idParam) => {
 
   const [inventoryCount, modelsCount] = await Promise.all([
     repository.countInventoryByBrandId(id),
-    repository.countModelsByBrandId(id)
+    repository.countModelsByBrandId(id),
   ]);
 
   if (inventoryCount > 0 || modelsCount > 0) {
@@ -85,8 +87,8 @@ export const remove = async (idParam) => {
         associatedWord: 'asociada',
         dependencies: [
           { count: inventoryCount, label: 'registro(s) de inventario' },
-          { count: modelsCount, label: 'modelo(s)' }
-        ]
+          { count: modelsCount, label: 'modelo(s)' },
+        ],
       }),
       409
     );
@@ -100,7 +102,7 @@ export const remove = async (idParam) => {
         buildDeleteDependencyMessage({
           subject: 'la marca',
           associatedWord: 'asociada',
-          dependencies: []
+          dependencies: [],
         }),
         409
       );

@@ -1,9 +1,11 @@
+// devices.repository.js
+
 import { prisma } from '../../config/prisma.js';
 
 export const findAll = async () => {
   return prisma.devices.findMany({
     select: { id: true, name: true },
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
   });
 };
 
@@ -22,24 +24,24 @@ export const create = async (data) => {
 export const updateById = async (id, data) => {
   return prisma.devices.update({
     where: { id: Number(id) },
-    data
+    data,
   });
 };
 
 export const countInventoryByDeviceId = async (id) => {
   return prisma.bd_inventory.count({
-    where: { id_device: Number(id) }
+    where: { id_device: Number(id) },
   });
 };
 
 export const countModelsByDeviceId = async (id) => {
   return prisma.models.count({
-    where: { id_device: Number(id) }
+    where: { id_device: Number(id) },
   });
 };
 
 export const deleteById = async (id) => {
   return prisma.devices.delete({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };

@@ -1,80 +1,86 @@
-import { useEffect, useMemo, useState } from "react";
+// InventorySection.jsx
+
+import { BadgeCheck, Boxes, Cpu } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  BarChart,
   Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  Tooltip,
+  BarChart,
   CartesianGrid,
   LabelList,
-} from "recharts";
-import { Boxes, Cpu, BadgeCheck } from "lucide-react";
+  Rectangle,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
-import ChartCard from "./ChartCard.jsx";
-import FancyTooltip from "./FancyTooltip.jsx";
-import SectionHeader from "./SectionHeader.jsx";
-import StatCard from "./StatCard.jsx";
 import {
   getBrandName,
   getDeviceName,
   getStatusName,
   groupCount,
-} from "../utils/dashboard.helpers.js";
+} from '../utils/dashboard.helpers.js';
+import ChartCard from './ChartCard.jsx';
+import FancyTooltip from './FancyTooltip.jsx';
+import SectionHeader from './SectionHeader.jsx';
+import StatCard from './StatCard.jsx';
 
-const STATUS_ORDER = [
-  "Buen estado",
-  "Nuevo",
-  "Mal estado",
-  "Para descarte",
-  "Descartado",
-];
+const STATUS_ORDER = ['Buen estado', 'Nuevo', 'Mal estado', 'Para descarte', 'Descartado'];
+
+function DeviceBarShape(props) {
+  const { index, top8Devices, selectedDevice, ...rectangleProps } = props;
+
+  const entry = top8Devices[index];
+  const isSelected = entry?.name === selectedDevice;
+  const isFiltering = selectedDevice !== 'ALL';
+
+  return (
+    <Rectangle
+      {...rectangleProps}
+      fill={isSelected ? '#6d28d9' : '#8b5cf6'}
+      opacity={isFiltering && !isSelected ? 0.4 : 1}
+    />
+  );
+}
 
 export default function InventorySection({ inventory, loading }) {
-  const [selectedDevice, setSelectedDevice] = useState("ALL");
-  const [selectedBrand, setSelectedBrand] = useState("ALL");
+  const [selectedDevice, setSelectedDevice] = useState('ALL');
+  const [selectedBrand, setSelectedBrand] = useState('ALL');
 
   const deviceOptions = useMemo(() => {
-    return Array.from(new Set(inventory.map(getDeviceName).filter(Boolean))).sort(
-      (a, b) => a.localeCompare(b, "es", { sensitivity: "base" })
+    return Array.from(new Set(inventory.map(getDeviceName).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'es', { sensitivity: 'base' })
     );
   }, [inventory]);
 
   const handleDeviceBarClick = (deviceName) => {
     if (!deviceName) return;
-    setSelectedDevice((prev) => (prev === deviceName ? "ALL" : deviceName));
-    setSelectedBrand("ALL");
+    setSelectedDevice((prev) => (prev === deviceName ? 'ALL' : deviceName));
+    setSelectedBrand('ALL');
   };
 
   const handleBrandBarClick = (brandName) => {
     if (!brandName) return;
-    setSelectedBrand((prev) => (prev === brandName ? "ALL" : brandName));
+    setSelectedBrand((prev) => (prev === brandName ? 'ALL' : brandName));
   };
 
   const filteredByDevice = useMemo(() => {
-    if (selectedDevice === "ALL") return inventory;
-    return inventory.filter((item) => (getDeviceName(item) || "Sin dato") === selectedDevice);
+    if (selectedDevice === 'ALL') return inventory;
+    return inventory.filter((item) => (getDeviceName(item) || 'Sin dato') === selectedDevice);
   }, [inventory, selectedDevice]);
 
   const filteredInventory = useMemo(() => {
-    if (selectedBrand === "ALL") return filteredByDevice;
-    return filteredByDevice.filter((item) => (getBrandName(item) || "Sin dato") === selectedBrand);
+    if (selectedBrand === 'ALL') return filteredByDevice;
+    return filteredByDevice.filter((item) => (getBrandName(item) || 'Sin dato') === selectedBrand);
   }, [filteredByDevice, selectedBrand]);
 
   const totalInventory = filteredInventory.length;
 
-  const byDevice = useMemo(
-    () => groupCount(filteredInventory, getDeviceName),
-    [filteredInventory]
-  );
+  const byDevice = useMemo(() => groupCount(filteredInventory, getDeviceName), [filteredInventory]);
 
   const byDeviceAll = useMemo(() => groupCount(inventory, getDeviceName), [inventory]);
   const top8Devices = byDeviceAll.slice(0, 8);
 
-  const byBrand = useMemo(
-    () => groupCount(filteredInventory, getBrandName),
-    [filteredInventory]
-  );
+  const byBrand = useMemo(() => groupCount(filteredInventory, getBrandName), [filteredInventory]);
 
   const byBrandInDevice = useMemo(
     () => groupCount(filteredByDevice, getBrandName),
@@ -96,9 +102,9 @@ export default function InventorySection({ inventory, loading }) {
   }, [filteredInventory]);
 
   useEffect(() => {
-    if (selectedDevice === "ALL") return;
+    if (selectedDevice === 'ALL') return;
     const stillExists = inventory.some((item) => getDeviceName(item) === selectedDevice);
-    if (!stillExists) setSelectedDevice("ALL");
+    if (!stillExists) setSelectedDevice('ALL');
   }, [inventory, selectedDevice]);
 
   return (
@@ -113,16 +119,16 @@ export default function InventorySection({ inventory, loading }) {
 
       <div className="flex flex-wrap items-center gap-3 p-4 mb-4 border bg-slate-50 rounded-2xl">
         <div className="text-sm text-slate-600">
-          Filtro actual:{" "}
+          Filtro actual:{' '}
           <span className="font-semibold text-slate-900">
-            {selectedDevice === "ALL" ? "Todos los equipos" : selectedDevice}
+            {selectedDevice === 'ALL' ? 'Todos los equipos' : selectedDevice}
           </span>
-          {selectedDevice !== "ALL" && (
+          {selectedDevice !== 'ALL' && (
             <>
-              {" "}
-              • Marca:{" "}
+              {' '}
+              • Marca:{' '}
               <span className="font-semibold text-slate-900">
-                {selectedBrand === "ALL" ? "Todas" : selectedBrand}
+                {selectedBrand === 'ALL' ? 'Todas' : selectedBrand}
               </span>
             </>
           )}
@@ -142,12 +148,12 @@ export default function InventorySection({ inventory, loading }) {
             ))}
           </select>
 
-          {selectedDevice !== "ALL" && (
+          {selectedDevice !== 'ALL' && (
             <button
               type="button"
               onClick={() => {
-                setSelectedDevice("ALL");
-                setSelectedBrand("ALL");
+                setSelectedDevice('ALL');
+                setSelectedBrand('ALL');
               }}
               className="px-3 py-2 text-sm font-semibold bg-white border rounded-lg shadow-sm border-slate-200 text-slate-700 hover:bg-slate-50"
             >
@@ -160,20 +166,20 @@ export default function InventorySection({ inventory, loading }) {
       <div className="flex flex-wrap justify-center gap-3 mb-4">
         <StatCard
           title="Total"
-          value={loading ? "..." : totalInventory}
+          value={loading ? '...' : totalInventory}
           icon={Boxes}
           gradient="from-slate-700 to-slate-900"
         />
         <StatCard
           title="Tipos únicos"
-          value={loading ? "..." : byDevice.length}
+          value={loading ? '...' : byDevice.length}
           subtitle="(Equipos)"
           icon={Cpu}
           gradient="from-violet-500 to-violet-800"
         />
         <StatCard
           title="Marcas únicas"
-          value={loading ? "..." : byBrand.length}
+          value={loading ? '...' : byBrand.length}
           icon={BadgeCheck}
           gradient="from-teal-400 to-teal-700"
         />
@@ -208,20 +214,9 @@ export default function InventorySection({ inventory, loading }) {
                   const name = data?.name;
                   handleDeviceBarClick(name);
                 }}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: 'pointer' }}
+                shape={<DeviceBarShape top8Devices={top8Devices} selectedDevice={selectedDevice} />}
               >
-                {top8Devices.map((entry, idx) => {
-                  const isSelected = entry.name === selectedDevice;
-                  const isFiltering = selectedDevice !== "ALL";
-
-                  return (
-                    <Cell
-                      key={`cell-device-${idx}`}
-                      fill={isSelected ? "#6d28d9" : "#8b5cf6"}
-                      opacity={isFiltering && !isSelected ? 0.4 : 1}
-                    />
-                  );
-                })}
                 <LabelList
                   dataKey="Cantidad"
                   position="top"
@@ -261,21 +256,10 @@ export default function InventorySection({ inventory, loading }) {
                   handleBrandBarClick(name);
                 }}
                 style={{
-                  cursor: selectedDevice === "ALL" ? "not-allowed" : "pointer",
+                  cursor: selectedDevice === 'ALL' ? 'not-allowed' : 'pointer',
                 }}
+                shape={<DeviceBarShape top8Devices={top8Brands} selectedDevice={selectedBrand} />}
               >
-                {top8Brands.map((entry, idx) => {
-                  const isSelected = entry.name === selectedBrand;
-                  const isFiltering = selectedBrand !== "ALL";
-
-                  return (
-                    <Cell
-                      key={`cell-brand-${idx}`}
-                      fill={isSelected ? "#065f46" : "#14b8a6"}
-                      opacity={isFiltering && !isSelected ? 0.4 : 1}
-                    />
-                  );
-                })}
                 <LabelList
                   dataKey="Cantidad"
                   position="top"

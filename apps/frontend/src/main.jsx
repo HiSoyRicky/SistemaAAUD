@@ -1,12 +1,13 @@
-// src/main.jsx
+// main.jsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './app/App.jsx';
 
-import './index.css';
 import { AuthProvider } from './app/providers/AuthContext.jsx';
 import { NotificationProvider } from './app/providers/NotificationContext.jsx';
+import './index.css';
 
 import ErrorBoundary from './shared/components/ui/ErrorBoundary.jsx';
 

@@ -1,9 +1,11 @@
+// StatCard.jsx
+
 export default function StatCard({
   title,
   value,
   subtitle,
   icon: Icon,
-  gradient = "from-slate-600 to-slate-800",
+  gradient = 'from-slate-600 to-slate-800',
 }) {
   return (
     <div className="bg-white border shadow-sm border-slate-200/70 rounded-xl">
@@ -28,15 +30,9 @@ export default function StatCard({
           </p>
 
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-extrabold text-slate-900">
-              {value}
-            </span>
+            <span className="text-xl font-extrabold text-slate-900">{value}</span>
 
-            {subtitle && (
-              <span className="text-[11px] text-slate-500 truncate">
-                {subtitle}
-              </span>
-            )}
+            {subtitle && <span className="text-[11px] text-slate-500 truncate">{subtitle}</span>}
           </div>
         </div>
       </div>

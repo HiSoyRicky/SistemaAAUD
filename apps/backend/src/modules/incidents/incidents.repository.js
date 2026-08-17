@@ -1,3 +1,5 @@
+// incidents.repository.js
+
 import { prisma } from '../../config/prisma.js';
 
 const listSelect = {
@@ -15,17 +17,17 @@ const listSelect = {
   solution: true,
   id_technician: true,
   categories: {
-    select: { name: true }
+    select: { name: true },
   },
   ubications: {
-    select: { name: true }
+    select: { name: true },
   },
   departments: {
-    select: { name: true }
+    select: { name: true },
   },
   users_bd_incidents_id_technicianTousers: {
-    select: { nombre_completo: true }
-  }
+    select: { nombre_completo: true },
+  },
 };
 
 const detailSelect = {
@@ -46,28 +48,28 @@ const detailSelect = {
   users_bd_incidents_id_technicianTousers: {
     select: {
       nombre_completo: true,
-      email: true
-    }
-  }
+      email: true,
+    },
+  },
 };
 
 export const findAll = async () => {
   return prisma.bd_incidents.findMany({
-    select: listSelect
+    select: listSelect,
   });
 };
 
 export const findById = async (id) => {
   return prisma.bd_incidents.findUnique({
     where: { id: Number(id) },
-    select: detailSelect
+    select: detailSelect,
   });
 };
 
 export const findUserPasswordById = async (id) => {
   return prisma.users.findUnique({
     where: { id: Number(id) },
-    select: { password: true }
+    select: { password: true },
   });
 };
 
@@ -76,50 +78,50 @@ export const findDepartmentById = async (id) => {
     where: { id: Number(id) },
     select: {
       id: true,
-      id_ubication: true
-    }
+      id_ubication: true,
+    },
   });
 };
 
 export const findPrinterModelsWithTonersByLocationDepartment = async ({
   id_ubication,
-  id_department
+  id_department,
 }) => {
   return prisma.models.findMany({
     where: {
       devices: {
-        name: 'Impresora'
+        name: 'Impresora',
       },
       bd_inventory: {
         some: {
           id_ubication: Number(id_ubication),
-          id_department: Number(id_department)
-        }
-      }
+          id_department: Number(id_department),
+        },
+      },
     },
     select: {
       id: true,
       name: true,
       brands: {
         select: {
-          name: true
-        }
+          name: true,
+        },
       },
       toners: {
         select: {
           id: true,
           color: true,
-          toner_model: true
+          toner_model: true,
         },
-        orderBy: [{ color: 'asc' }, { id: 'asc' }]
-      }
+        orderBy: [{ color: 'asc' }, { id: 'asc' }],
+      },
     },
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
   });
 };
 
 export const deleteById = async (id) => {
   return prisma.bd_incidents.deleteMany({
-    where: { id: Number(id) }
+    where: { id: Number(id) },
   });
 };

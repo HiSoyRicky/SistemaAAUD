@@ -1,15 +1,8 @@
-// src/components/admin/UserForm.jsx
-import React from 'react';
+// UserForm.jsx
+
 import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
 
-export default function UserForm({
-  form,
-  setForm,
-  roles,
-  handleSubmit,
-  onDelete,
-  onCancel,
-}) {
+export default function UserForm({ form, setForm, roles, handleSubmit, onDelete, onCancel }) {
   return (
     <form
       onSubmit={handleSubmit}
@@ -17,15 +10,13 @@ export default function UserForm({
     >
       {/* Nombre */}
       <div>
-        <label className="block mb-2 text-sm font-semibold text-gray-700">
+        <label htmlFor="nombre_completo" className="block mb-2 text-sm font-semibold text-gray-700">
           Nombre completo
         </label>
         <input
           type="text"
           value={form.nombre_completo}
-          onChange={(e) =>
-            setForm({ ...form, nombre_completo: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })}
           className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           required
         />
@@ -33,7 +24,7 @@ export default function UserForm({
 
       {/* Usuario */}
       <div>
-        <label className="block mb-2 text-sm font-semibold text-gray-700">
+        <label htmlFor="username" className="block mb-2 text-sm font-semibold text-gray-700">
           Usuario
         </label>
         <input
@@ -47,7 +38,7 @@ export default function UserForm({
 
       {!form.id && (
         <div>
-          <label className="block mb-2 text-sm font-semibold text-gray-700">
+          <label htmlFor="password" className="block mb-2 text-sm font-semibold text-gray-700">
             Contraseña inicial
           </label>
           <input
@@ -79,7 +70,7 @@ export default function UserForm({
 
       {/* Correo */}
       <div>
-        <label className="block mb-2 text-sm font-semibold text-gray-700">
+        <label htmlFor="email" className="block mb-2 text-sm font-semibold text-gray-700">
           Correo electrónico
         </label>
         <input
@@ -92,14 +83,12 @@ export default function UserForm({
 
       {/* Rol */}
       <div>
-        <label className="block mb-2 text-sm font-semibold text-gray-700">
+        <label htmlFor="id_rol" className="block mb-2 text-sm font-semibold text-gray-700">
           Rol
         </label>
         <select
           value={form.id_rol}
-          onChange={(e) =>
-            setForm({ ...form, id_rol: parseInt(e.target.value) })
-          }
+          onChange={(e) => setForm({ ...form, id_rol: Number.parseInt(e.target.value) })}
           className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {roles.map((r) => (
@@ -111,11 +100,14 @@ export default function UserForm({
       </div>
 
       {/* Activo con Toggle Switch */}
+      <label htmlFor="active" className="block mb-2 text-sm font-semibold text-gray-700">
+        Activo
+      </label>
       <div className="flex items-center col-span-2 gap-3 mt-6 md:mt-0">
         <span className="font-medium">Activo</span>
         <button
           type="button"
-          onClick={() => setForm({ ...form, active: !Boolean(form.active) })}
+          onClick={() => setForm({ ...form, active: !form.active })}
           className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors
                 ${form.active ? 'bg-green-500' : 'bg-gray-300'}`}
         >

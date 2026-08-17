@@ -1,26 +1,33 @@
+// incidentUpdateEmailTemplate.js
+
 function formatPanamaDate(date) {
-    if (!date) {
-        return 'N/A';
-    }
+  if (!date) {
+    return 'N/A';
+  }
 
-    const parsed = date instanceof Date ? date : new Date(date);
-    if (Number.isNaN(parsed.getTime())) {
-        return 'N/A';
-    }
+  const parsed = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'N/A';
+  }
 
-    return new Intl.DateTimeFormat('es-PA', {
-        timeZone: 'America/Panama',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-    }).format(parsed);
+  return new Intl.DateTimeFormat('es-PA', {
+    timeZone: 'America/Panama',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(parsed);
 }
 
-function buildAssignmentIncidentEmail({ incident, formattedTicket, privateViewUrl, technicianName }) {
-    return `
+function buildAssignmentIncidentEmail({
+  incident,
+  formattedTicket,
+  privateViewUrl,
+  technicianName,
+}) {
+  return `
         <div style="
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f9f9f9;
@@ -106,7 +113,7 @@ function buildAssignmentIncidentEmail({ incident, formattedTicket, privateViewUr
 }
 
 function buildResolvedIncidentEmail({ incident, formattedTicket, publicViewUrl, reporterName }) {
-    return `
+  return `
         <div style="
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f9f9f9;
@@ -190,7 +197,7 @@ function buildResolvedIncidentEmail({ incident, formattedTicket, publicViewUrl, 
                 </div>
 
                 <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                    Por favor, no responda a este correo. Este buzón no está monitoreado.<br />
+                    Por favor, no responda a este correo. Este buzón no está siendo supervisado.<br/>
                     Para cualquier consulta, utilice el sistema de incidencias.<br />
                     Gracias.
                 </p>
@@ -199,5 +206,4 @@ function buildResolvedIncidentEmail({ incident, formattedTicket, publicViewUrl, 
     `;
 }
 
-export { buildAssignmentIncidentEmail,
-    buildResolvedIncidentEmail };
+export { buildAssignmentIncidentEmail, buildResolvedIncidentEmail };

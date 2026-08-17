@@ -1,24 +1,26 @@
+// routes.js
+
 import express from 'express';
+import attachUserContext from '../common/middleware/attachUserContext.js';
 import authMiddleware from '../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../common/middleware/requirePasswordChange.js';
-import attachUserContext from '../common/middleware/attachUserContext.js';
 import {
+  activityRouter,
   authRouter,
+  brandsRouter,
+  categoriesRouter,
+  departmentsRouter,
+  devicesRouter,
   incidentsRouter,
   inventoryRouter,
-  brandsRouter,
-  devicesRouter,
-  modelsRouter,
-  departmentsRouter,
-  ubicationsRouter,
-  statusRouter,
-  tonersRouter,
-  tonerMovementsRouter,
-  usersRouter,
-  permissionsRouter,
-  activityRouter,
-  categoriesRouter,
   inventoryTransferRequestsRouter,
+  modelsRouter,
+  permissionsRouter,
+  statusRouter,
+  tonerMovementsRouter,
+  tonersRouter,
+  ubicationsRouter,
+  usersRouter,
 } from './index.js';
 
 const router = express.Router();

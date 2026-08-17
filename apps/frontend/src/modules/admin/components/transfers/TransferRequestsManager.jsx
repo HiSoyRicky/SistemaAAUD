@@ -1,13 +1,12 @@
+// TransferRequestsManager.jsx
+
+import { useNotifications } from '@/app/providers/NotificationContext';
+import { Inventory } from '@/modules/inventory/devices/services/inventory.api';
+import TransferPrint from '@/shared/components/Print/DeviceTransferPrint';
+import { formatDateTime, formatDateToDDMMYYYY } from '@/shared/utils/formatDate';
 import { CheckCircle2, Printer, RefreshCw, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { useNotifications } from '../../../../app/providers/NotificationContext';
-import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
-import {
-  formatDateTime,
-  formatDateToDDMMYYYY,
-} from '../../../../shared/utils/formatDate';
-import { Inventory } from '../../../inventory/devices/services/inventory.api';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todas' },
@@ -29,6 +28,21 @@ function statusLabel(status) {
       return 'Corrección solicitada';
     default:
       return status || 'N/A';
+  }
+}
+
+function statusClass(status) {
+  switch (String(status || '').toUpperCase()) {
+    case 'PENDING':
+      return 'bg-amber-100 text-amber-800';
+    case 'APPROVED':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'REJECTED':
+      return 'bg-rose-100 text-rose-800';
+    case 'CORRECTION_REQUESTED':
+      return 'bg-violet-100 text-violet-800';
+    default:
+      return 'bg-blue-100 text-blue-800';
   }
 }
 
@@ -84,11 +98,7 @@ export default function TransferRequestsManager() {
   );
 
   useEffect(() => {
-    if (
-      !pendingPrint ||
-      !printableRequest ||
-      !buildPreviewDevice(printableRequest)
-    ) {
+    if (!pendingPrint || !printableRequest || !buildPreviewDevice(printableRequest)) {
       return;
     }
 
@@ -110,10 +120,7 @@ export default function TransferRequestsManager() {
 
   const sendToPrint = (request) => {
     if (!buildPreviewDevice(request)) {
-      addNotification(
-        'No hay datos suficientes para imprimir esta solicitud ❌',
-        'error'
-      );
+      addNotification('No hay datos suficientes para imprimir esta solicitud ❌', 'error');
       return;
     }
 
@@ -163,9 +170,7 @@ export default function TransferRequestsManager() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">
-            Aprobación de traslados
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900">Aprobación de traslados</h2>
           <p className="text-sm text-slate-500">Pendientes: {pendingCount}</p>
         </div>
 
@@ -207,10 +212,7 @@ export default function TransferRequestsManager() {
           <tbody>
             {loading && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-8 text-center text-slate-400"
-                >
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   Cargando solicitudes...
                 </td>
               </tr>
@@ -218,10 +220,7 @@ export default function TransferRequestsManager() {
 
             {!loading && requests.length === 0 && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-8 text-center text-slate-400"
-                >
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   No hay solicitudes para mostrar.
                 </td>
               </tr>
@@ -231,14 +230,10 @@ export default function TransferRequestsManager() {
               requests.map((request) => {
                 return (
                   <tr key={request.id} className="border-t">
-                    <td className="px-3 py-3 align-top">
-                      {formatDate(request.requested_at)}
-                    </td>
+                    <td className="px-3 py-3 align-top">{formatDate(request.requested_at)}</td>
                     <td className="px-3 py-3 align-top">
                       <div className="font-medium text-slate-900">
-                        {request.inventory_snapshot?.tag ||
-                          request.preview_inventory?.tag ||
-                          '-'}
+                        {request.inventory_snapshot?.tag || request.preview_inventory?.tag || '-'}
                       </div>
                       <div className="text-xs text-slate-500">
                         {request.inventory_snapshot?.device_name ||
@@ -247,21 +242,17 @@ export default function TransferRequestsManager() {
                       </div>
                     </td>
                     <td className="px-3 py-3 align-top">
-                      {request.requester?.nombre_completo ||
-                        request.requester?.username ||
-                        '-'}
+                      {request.requester?.nombre_completo || request.requester?.username || '-'}
                     </td>
                     <td className="px-3 py-3 align-top">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${request.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : request.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : request.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'}`}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass(request.status)}`}
                       >
                         {statusLabel(request.status)}
                       </span>
                     </td>
                     <td className="px-3 py-3 align-top">
-                      <div>
-                        {request.snapshot?.ubication_destino_name || '-'}
-                      </div>
+                      <div>{request.snapshot?.ubication_destino_name || '-'}</div>
                       <div className="text-xs text-slate-500">
                         {request.snapshot?.department_destino_name || '-'}
                       </div>
@@ -312,12 +303,8 @@ export default function TransferRequestsManager() {
           <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
               <div>
-                <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                  Revisión de traslado
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Solicitud #{selectedRequest.id}
-                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-900">Revisión de traslado</h2>
+                <p className="mt-1 text-sm text-slate-500">Solicitud #{selectedRequest.id}</p>
               </div>
 
               <div className="flex gap-3">
@@ -346,8 +333,7 @@ export default function TransferRequestsManager() {
                 <div>
                   <div className="font-semibold text-slate-700">Equipo</div>
                   <div className="text-slate-600">
-                    {buildPreviewDevice(selectedRequest)?.device_name ||
-                      'Equipo'}
+                    {buildPreviewDevice(selectedRequest)?.device_name || 'Equipo'}
                   </div>
                   <div className="text-xs text-slate-500">
                     Marbete {buildPreviewDevice(selectedRequest)?.tag || '-'}
@@ -355,19 +341,15 @@ export default function TransferRequestsManager() {
                 </div>
                 <div>
                   <div className="font-semibold text-slate-700">Estado</div>
-                  <div className="text-slate-600">
-                    {statusLabel(selectedRequest.status)}
-                  </div>
+                  <div className="text-slate-600">{statusLabel(selectedRequest.status)}</div>
                 </div>
                 <div>
                   <div className="font-semibold text-slate-700">Destino</div>
                   <div className="text-slate-600">
-                    {buildPreviewDevice(selectedRequest)
-                      ?.ubication_destino_name || '-'}
+                    {buildPreviewDevice(selectedRequest)?.ubication_destino_name || '-'}
                   </div>
                   <div className="text-xs text-slate-500">
-                    {buildPreviewDevice(selectedRequest)
-                      ?.department_destino_name || '-'}
+                    {buildPreviewDevice(selectedRequest)?.department_destino_name || '-'}
                   </div>
                 </div>
                 <div>
@@ -384,10 +366,14 @@ export default function TransferRequestsManager() {
               </div>
 
               <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="review-Notes"
+                  className="mb-2 block text-sm font-medium text-slate-700"
+                >
                   Notas de revisión
                 </label>
                 <textarea
+                  id="review-Notes"
                   rows={3}
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
@@ -399,27 +385,21 @@ export default function TransferRequestsManager() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() =>
-                        runAction(selectedRequest, 'approve', reviewNotes)
-                      }
+                      onClick={() => runAction(selectedRequest, 'approve', reviewNotes)}
                       className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                     >
                       Aprobar
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        runAction(selectedRequest, 'correction', reviewNotes)
-                      }
+                      onClick={() => runAction(selectedRequest, 'correction', reviewNotes)}
                       className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                     >
                       Solicitar corrección
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        runAction(selectedRequest, 'reject', reviewNotes)
-                      }
+                      onClick={() => runAction(selectedRequest, 'reject', reviewNotes)}
                       className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
                     >
                       Rechazar

@@ -1,18 +1,20 @@
+// tonerMovements.validator.js
+
 import {
-  z,
   validateZod,
-  zOptionalInt,
+  z,
   zOptionalDate,
   zOptionalEnum,
+  zOptionalInt,
   zOptionalNullableString,
   zOptionalString,
   zRequiredEnum,
-  zRequiredInt
+  zRequiredInt,
 } from '../../common/utils/zodValidation.js';
 import { MOVEMENT_TYPES } from './tonerMovements.constants.js';
 
 const movementIdParamsSchema = z.object({
-  id: zRequiredInt('ID inválido', { min: 1 })
+  id: zRequiredInt('ID inválido', { min: 1 }),
 });
 
 const getMovementsQuerySchema = z.object({
@@ -22,8 +24,8 @@ const getMovementsQuerySchema = z.object({
   search: zOptionalString('Búsqueda inválida'),
   movement_type: zOptionalEnum(MOVEMENT_TYPES, 'Tipo de movimiento inválido'),
   from: zOptionalDate('Fecha desde inválida'),
-  to: zOptionalDate('Fecha hasta inválida')
-}).passthrough();
+  to: zOptionalDate('Fecha hasta inválida'),
+});
 
 const createMovementBodySchema = z.object({
   id_toner: zRequiredInt('El tóner es requerido', { min: 1 }).refine(
@@ -40,15 +42,11 @@ const createMovementBodySchema = z.object({
   id_ubication: zOptionalInt('Ubicación inválida', { min: 1, nullable: true }),
   id_incident: zOptionalInt('Incidencia inválida', { min: 1, nullable: true }),
   reference: zOptionalNullableString('Referencia inválida'),
-  receiver_name: zOptionalNullableString('Nombre de receptor inválido')
-}).passthrough();
+  receiver_name: zOptionalNullableString('Nombre de receptor inválido'),
+});
 
 const validateGetMovements = validateZod({ query: getMovementsQuerySchema });
 const validateCreateMovement = validateZod({ body: createMovementBodySchema });
 const validateUploadDocument = validateZod({ params: movementIdParamsSchema });
 
-export {
-  validateGetMovements,
-  validateCreateMovement,
-  validateUploadDocument
-};
+export { validateCreateMovement, validateGetMovements, validateUploadDocument };

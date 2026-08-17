@@ -1,14 +1,10 @@
-// src/pages/incidents/IncidentDetails.jsx
+// IncidentDetails.jsx
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import api from '../../../shared/api/apiClient';
-import { socket } from '../../../services/socket/socketClient';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { onIncidentUpdated } from '../../../services/socket/incidentsSocket';
-import {
-  connectSocket,
-  disconnectSocket,
-} from '../../../services/socket/socketClient';
+import { connectSocket, disconnectSocket, socket } from '../../../services/socket/socketClient';
+import api from '../../../shared/api/apiClient';
 import { formatDateToDDMMYYYY } from '../../../shared/utils/formatDate';
 
 function IncidentDetails() {
@@ -63,7 +59,7 @@ function IncidentDetails() {
 
     onIncidentUpdated((updatedIncident) => {
       if (
-        (id && updatedIncident.id === parseInt(id)) ||
+        (id && updatedIncident.id === Number.parseInt(id)) ||
         (token && updatedIncident.token === token)
       ) {
         setIncident(updatedIncident);
@@ -90,6 +86,7 @@ function IncidentDetails() {
           <h1 className="mb-4 text-3xl font-bold">Error</h1>
           <p>{error}</p>
           <button
+            type="button"
             onClick={() => navigate('/')}
             className="px-6 py-2 mt-6 transition transform bg-blue-600 rounded-md hover:bg-blue-700 hover:scale-105"
           >
@@ -104,29 +101,24 @@ function IncidentDetails() {
     <div className="flex items-center justify-center min-h-screen p-6 text-white bg-gradient-to-br from-gray-900 to-gray-700">
       <div className="bg-gray-800 p-8 md:p-12 rounded-lg shadow-2xl border border-gray-700 max-w-xl w-full transform transition-all duration-300 ease-in-out hover:scale-[1.01]">
         <h2 className="mb-6 text-3xl font-bold text-center text-blue-400 md:text-4xl">
-          Detalle de la Incidencia #
-          {String(incident.ticket_number).padStart(6, '0')}
+          Detalle de la Incidencia #{String(incident.ticket_number).padStart(6, '0')}
         </h2>
 
         <div className="space-y-4 text-gray-200">
           <p>
-            <span className={thClass}>Reportado por:</span>{' '}
-            {incident.reporter_name}
+            <span className={thClass}>Reportado por:</span> {incident.reporter_name}
           </p>
 
           <p>
-            <span className={thClass}>Correo:</span>{' '}
-            {incident.reporter_email || 'No proporcionado'}
+            <span className={thClass}>Correo:</span> {incident.reporter_email || 'No proporcionado'}
           </p>
 
           <p>
-            <span className={thClass}>Ubicación:</span>{' '}
-            {incident.ubication_name}
+            <span className={thClass}>Ubicación:</span> {incident.ubication_name}
           </p>
 
           <p>
-            <span className={thClass}>Departamento:</span>{' '}
-            {incident.department_name}
+            <span className={thClass}>Departamento:</span> {incident.department_name}
           </p>
 
           <p>
@@ -135,8 +127,7 @@ function IncidentDetails() {
 
           {incident.other_category_detail && (
             <p>
-              <span className={thClass}>Otra categoría:</span>{' '}
-              {incident.other_category_detail}
+              <span className={thClass}>Otra categoría:</span> {incident.other_category_detail}
             </p>
           )}
           <p>
@@ -150,16 +141,12 @@ function IncidentDetails() {
             </p>
           </p>
 
-          <p
-            className={statusInfo[incident.id_status]?.color || 'text-gray-400'}
-          >
+          <p className={statusInfo[incident.id_status]?.color || 'text-gray-400'}>
             <span className={thClass}>Estado:</span>{' '}
             {statusInfo[incident.id_status]?.text || 'Desconocido'}
           </p>
 
-          <p
-            className={statusInfo[incident.id_status]?.color || 'text-gray-200'}
-          >
+          <p className={statusInfo[incident.id_status]?.color || 'text-gray-200'}>
             <span className={thClass}>Técnico asignado:</span>{' '}
             {incident.technician_full_name || 'No asignado'}
           </p>
@@ -180,6 +167,7 @@ function IncidentDetails() {
 
         <div className="flex justify-center mt-8">
           <button
+            type="button"
             onClick={() => navigate('/dashboard')}
             className="px-6 py-3 font-semibold text-white transition-all duration-300 ease-in-out transform bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
           >

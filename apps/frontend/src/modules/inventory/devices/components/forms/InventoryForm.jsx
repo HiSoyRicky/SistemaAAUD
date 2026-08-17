@@ -1,4 +1,5 @@
 // InventoryFormModal.jsx
+
 import { useEffect, useState } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
 import useAuth from '../../../../../shared/hooks/useAuth';
@@ -8,20 +9,57 @@ import {
 } from '../../../../../shared/utils/formatDate';
 import { Inventory } from '../../services/inventory.api';
 
-export default function InventoryFormModal({
-  initialData = {},
-  onCancel,
-  onSubmit,
-}) {
+const validateInventoryForm = (formData, isDiscardedStatus) => {
+  const errors = {};
+
+  if (!formData.tag.trim()) {
+    errors.tag = 'El marbete es obligatorio';
+  }
+
+  if (!isDiscardedStatus && !formData.id_ubication) {
+    errors.id_ubication = 'Seleccione una ubicación';
+  }
+
+  if (!isDiscardedStatus && !formData.id_department) {
+    errors.id_department = 'Seleccione un departamento';
+  }
+
+  if (!formData.id_device) {
+    errors.id_device = 'Seleccione un equipo';
+  }
+
+  if (!formData.id_brand) {
+    errors.id_brand = 'Seleccione una marca';
+  }
+
+  if (!formData.id_model) {
+    errors.id_model = 'Seleccione un modelo';
+  }
+
+  if (!formData.id_status) {
+    errors.id_status = 'Seleccione un estado';
+  }
+
+  if (!formData.serie.trim()) {
+    errors.serie = 'La serie es obligatoria';
+  }
+
+  const ip = formData.ip?.trim();
+
+  if (ip && !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+    errors.ip = 'La IP no es válida';
+  }
+
+  return errors;
+};
+
+export default function InventoryFormModal({ initialData = {}, onCancel, onSubmit }) {
   const isEdit = !!initialData.id;
   const { hasPermission } = useAuth();
   const canFullEdit = !isEdit || hasPermission('inventory.update');
-  const canEditLocation =
-    !isEdit || canFullEdit || hasPermission('inventory.update_location');
-  const canEditDepartment =
-    !isEdit || canFullEdit || hasPermission('inventory.update_department');
-  const canEditAssignee =
-    !isEdit || canFullEdit || hasPermission('inventory.update_assignee');
+  const canEditLocation = !isEdit || canFullEdit || hasPermission('inventory.update_location');
+  const canEditDepartment = !isEdit || canFullEdit || hasPermission('inventory.update_department');
+  const canEditAssignee = !isEdit || canFullEdit || hasPermission('inventory.update_assignee');
 
   const [formData, setFormData] = useState({
     tag: initialData.tag || '',
@@ -53,13 +91,13 @@ export default function InventoryFormModal({
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  const ALLOWED_STATUS = [
+  const ALLOWED_STATUS = new Set([
     'Buen estado',
     'Mal estado',
     'Para descarte',
     'Nuevo',
     'Descartado',
-  ];
+  ]);
 
   const normalizeText = (value) =>
     String(value || '')
@@ -82,9 +120,7 @@ export default function InventoryFormModal({
         setOptions({ devices, brands, models, statuses });
       } catch (error) {
         console.error('Error fetching options:', error);
-        setFetchError(
-          'Error al cargar opciones. Verifica la conexión o el backend.'
-        );
+        setFetchError('Error al cargar opciones. Verifica la conexión o el backend.');
       } finally {
         setLoadingOptions(false);
       }
@@ -93,14 +129,14 @@ export default function InventoryFormModal({
   }, []);
 
   // Filtra IDs de marcas por el equipo seleccionado
-  const filteredBrandIds = options.models
-    .filter((m) => String(m.id_device) === String(formData.id_device))
-    .map((m) => m.id_brand);
+  const filteredBrandIds = new Set(
+    options.models
+      .filter((m) => String(m.id_device) === String(formData.id_device))
+      .map((m) => m.id_brand)
+  );
 
   // Filtra marcas por el equipo seleccionado
-  const filteredBrands = options.brands.filter((b) =>
-    filteredBrandIds.includes(b.id)
-  );
+  const filteredBrands = options.brands.filter((b) => filteredBrandIds.has(b.id));
 
   // Filtra modelos por marca Y por el equipo seleccionado
   const filteredModels = options.models.filter(
@@ -112,14 +148,12 @@ export default function InventoryFormModal({
   const selectedStatus = options.statuses.find(
     (status) => String(status.id) === String(formData.id_status)
   );
-  const isDiscardedStatus =
-    normalizeText(selectedStatus?.name) === 'DESCARTADO';
+  const isDiscardedStatus = normalizeText(selectedStatus?.name) === 'DESCARTADO';
 
   useEffect(() => {
     if (!isDiscardedStatus) return;
 
-    if (formData.id_ubication === null && formData.id_department === null)
-      return;
+    if (formData.id_ubication === null && formData.id_department === null) return;
 
     setFormData((prev) => ({
       ...prev,
@@ -150,77 +184,61 @@ export default function InventoryFormModal({
 
   // Manejo de cambios en ubicación y departamento desde UbiDepSelector
   const handleUbiDepChange = ({ id_ubication, id_department }) => {
-    setFormData((prev) => ({
-      ...prev,
-      id_ubication: canEditLocation
-        ? id_ubication
-          ? parseInt(id_ubication)
-          : null
-        : prev.id_ubication,
-      id_department: canEditDepartment
-        ? id_department
-          ? parseInt(id_department)
-          : null
-        : prev.id_department,
-    }));
+    setFormData((prev) => {
+      const nextData = { ...prev };
+
+      if (canEditLocation) {
+        nextData.id_ubication = id_ubication ? Number.parseInt(id_ubication) : null;
+      }
+      if (canEditDepartment) {
+        nextData.id_department = id_department ? Number.parseInt(id_department) : null;
+      }
+
+      return nextData;
+    });
     setErrors((prev) => ({ ...prev, id_ubication: '', id_department: '' }));
   };
 
   // Validación y envío del formulario
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newErrors = {};
 
-    if (!formData.tag.trim()) newErrors.tag = 'El marbete es obligatorio';
-    if (!isDiscardedStatus && !formData.id_ubication)
-      newErrors.id_ubication = 'Seleccione una ubicación';
-    if (!isDiscardedStatus && !formData.id_department)
-      newErrors.id_department = 'Seleccione un departamento';
-    if (!formData.id_device) newErrors.id_device = 'Seleccione un equipo';
-    if (!formData.id_brand) newErrors.id_brand = 'Seleccione una marca';
-    if (!formData.id_model) newErrors.id_model = 'Seleccione un modelo';
-    if (!formData.id_status) newErrors.id_status = 'Seleccione un estado';
-    if (!formData.serie.trim()) newErrors.serie = 'La serie es obligatoria';
-    if (
-      formData.ip &&
-      formData.ip.trim() !== '' &&
-      !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(formData.ip)
-    )
-      newErrors.ip = 'La IP no es válida';
+    const newErrors = validateInventoryForm(formData, isDiscardedStatus);
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length === 0) {
-      const transferdate = formData.transferDateInput || null;
-
-      const completeSubmitData = {
-        ...formData,
-        transferdate,
-        id_ubication: isDiscardedStatus ? null : formData.id_ubication,
-        id_department: isDiscardedStatus ? null : formData.id_department,
-        user: formData.user.trim() === '' ? null : formData.user,
-        ip: formData.ip.trim() === '' ? null : formData.ip,
-        observation:
-          formData.observation.trim() === '' ? null : formData.observation,
-      };
-
-      const submitData =
-        isEdit && !canFullEdit
-          ? {
-              ...(canEditLocation && {
-                id_ubication: completeSubmitData.id_ubication,
-              }),
-              ...(canEditDepartment && {
-                id_department: completeSubmitData.id_department,
-              }),
-              ...(canEditAssignee && {
-                user: completeSubmitData.user,
-              }),
-            }
-          : completeSubmitData;
-
-      onSubmit(submitData);
+    if (Object.keys(newErrors).length > 0) {
+      return;
     }
+
+    const transferdate = formData.transferDateInput || null;
+
+    const completeSubmitData = {
+      ...formData,
+      transferdate,
+      id_ubication: isDiscardedStatus ? null : formData.id_ubication,
+      id_department: isDiscardedStatus ? null : formData.id_department,
+      user: formData.user.trim() === '' ? null : formData.user,
+      ip: formData.ip.trim() === '' ? null : formData.ip,
+      observation: formData.observation.trim() === '' ? null : formData.observation,
+    };
+
+    const submitData =
+      isEdit && !canFullEdit
+        ? {
+            ...(canEditLocation && {
+              id_ubication: completeSubmitData.id_ubication,
+            }),
+            ...(canEditDepartment && {
+              id_department: completeSubmitData.id_department,
+            }),
+            ...(canEditAssignee && {
+              user: completeSubmitData.user,
+            }),
+          }
+        : completeSubmitData;
+
+    onSubmit(submitData);
   };
 
   // Manejo de error en fetch de opciones
@@ -229,10 +247,7 @@ export default function InventoryFormModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
         <div className="w-full max-w-lg p-6 bg-white shadow-xl rounded-xl">
           <p className="text-red-500">{fetchError}</p>
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 mt-4 bg-gray-300 rounded"
-          >
+          <button type="button" onClick={onCancel} className="px-4 py-2 mt-4 bg-gray-300 rounded">
             Cerrar
           </button>
         </div>
@@ -250,26 +265,20 @@ export default function InventoryFormModal({
     'id_department',
   ]);
 
-  const EDITABLE_ALWAYS = new Set([
-    'user',
-    'ip',
-    'id_status',
-    'transferDateInput',
-    'observation',
-  ]);
+  const EDITABLE_ALWAYS = new Set(['user', 'ip', 'id_status', 'transferDateInput', 'observation']);
 
-  const [safeMode, setSafeMode] = useState(isEdit ? true : false); // en editar arranca seguro
-  const [unlocked, setUnlocked] = useState(() => ({})); // { tag:true, ip:true ... }
+  const [safeMode, setSafeMode] = useState(!!isEdit);
+  const [unlocked, setUnlocked] = useState(() => ({}));
 
   const isFieldLocked = (name) => {
-    if (!isEdit) return false; // en crear todo normal
+    if (!isEdit) return false;
     if (!canFullEdit) {
       if (name === 'user') return !canEditAssignee;
       return true;
     }
-    if (EDITABLE_ALWAYS.has(name)) return false; // estos siempre editables si quieres
-    if (!LOCKED_ON_EDIT.has(name)) return false; // si no está en lista, no bloquees
-    return safeMode && !unlocked[name]; // bloqueado si modo seguro y no lo has desbloqueado
+    if (EDITABLE_ALWAYS.has(name)) return false;
+    if (!LOCKED_ON_EDIT.has(name)) return false;
+    return safeMode && !unlocked[name];
   };
 
   const toggleField = (name) => {
@@ -283,9 +292,7 @@ export default function InventoryFormModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold md:text-2xl">
-            {isEdit
-              ? `Editar Equipo #${formData.tag}`
-              : 'Agregar Equipo al Inventario'}
+            {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo al Inventario'}
           </h3>
           <button
             type="button"
@@ -303,15 +310,9 @@ export default function InventoryFormModal({
               type="button"
               onClick={() => setSafeMode((v) => !v)}
               className={`px-3 py-1 text-xs rounded-full border ${
-                safeMode
-                  ? 'bg-gray-100 text-gray-700'
-                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                safeMode ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700 border-blue-200'
               }`}
-              title={
-                safeMode
-                  ? 'Modo seguro (bloqueado)'
-                  : 'Modo libre (todo editable)'
-              }
+              title={safeMode ? 'Modo seguro (bloqueado)' : 'Modo libre (todo editable)'}
             >
               {safeMode ? 'Activado' : 'Desactivado'}
             </button>
@@ -347,7 +348,7 @@ export default function InventoryFormModal({
                 value={formData.id_status}
                 onChange={handleChange}
                 options={options.statuses
-                  .filter((s) => ALLOWED_STATUS.includes(s.name))
+                  .filter((s) => ALLOWED_STATUS.has(s.name))
                   .map((s) => ({ id: s.id, name: s.name }))}
                 error={errors.id_status}
                 locked={!canFullEdit}
@@ -356,9 +357,7 @@ export default function InventoryFormModal({
 
             {/* Fila 2: Ubicación / Departamento */}
             <div className="p-3 border rounded-xl bg-gray-50">
-              <p className="mb-2 text-sm font-semibold text-gray-700">
-                Ubicación y Departamento *
-              </p>
+              <p className="mb-2 text-sm font-semibold text-gray-700">Ubicación y Departamento *</p>
               <UbiDepSelector
                 id_ubication={formData.id_ubication}
                 id_department={formData.id_department}
@@ -374,8 +373,7 @@ export default function InventoryFormModal({
               />
               {isDiscardedStatus && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Para estado descartado, ubicación y departamento se limpian
-                  automáticamente.
+                  Para estado descartado, ubicación y departamento se limpian automáticamente.
                 </p>
               )}
             </div>
@@ -448,10 +446,11 @@ export default function InventoryFormModal({
                 locked={!canFullEdit}
               />
               <div>
-                <label className="block mb-1 text-sm font-medium">
+                <label htmlFor="transferDateInput" className="block mb-1 text-sm font-medium">
                   Fecha de Traslado
                 </label>
                 <input
+                  id="transferDateInput"
                   type="date"
                   name="transferDateInput"
                   value={formData.transferDateInput}
@@ -469,6 +468,7 @@ export default function InventoryFormModal({
               value={formData.observation}
               onChange={handleChange}
               disabled={!canFullEdit}
+              maxLength={255}
             />
 
             {/* Botones */}
@@ -535,20 +535,34 @@ function InputField({ label, name, value, onChange, error, locked, onToggle }) {
   );
 }
 
-function TextAreaField({ label, name, value, onChange, disabled = false }) {
+function TextAreaField({ label, name, value, onChange, disabled = false, maxLength }) {
+  const currentLength = value?.length ?? 0;
+
   return (
     <div>
-      <label className="block mb-1 text-sm font-medium">{label}</label>
+      <div className="flex items-center justify-between mb-1">
+        <label htmlFor={name} className="text-sm font-medium">
+          {label}
+        </label>
+
+        {maxLength && (
+          <span className="text-xs text-gray-500">
+            {currentLength} / {maxLength}
+          </span>
+        )}
+      </div>
+
       <textarea
         id={name}
         name={name}
         value={value}
         onChange={onChange}
         disabled={disabled}
+        maxLength={maxLength}
+        rows={3}
         className={`w-full px-3 py-2 text-sm border border-gray-300 rounded ${
           disabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''
         }`}
-        rows={3}
       />
     </div>
   );

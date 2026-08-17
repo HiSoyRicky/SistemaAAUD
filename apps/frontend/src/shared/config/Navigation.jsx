@@ -1,9 +1,11 @@
-// src/shared/config/navigation.js
+// Navigation.jsx
+
 import {
-  LayoutDashboard,
   AlertTriangle,
-  Package,
+  FileText,
+  LayoutDashboard,
   Monitor,
+  Package,
   Printer,
   Users,
   UserSquare,
@@ -53,13 +55,13 @@ export const getNavigation = (userType, hasPermission = () => true) => {
       roles: ['admin', 'tecnico', 'consultor'],
       permission: 'inventory.read',
       children: [
-        // {
-        // label: "Actividad",
-        // path: "/actividad",
-        // icon: FileText,
-        // roles: ["admin"],
-        // permission: "users.read",
-        // },
+        {
+          label: 'Actividad',
+          path: '/actividad',
+          icon: FileText,
+          roles: ['admin'],
+          permission: 'users.read',
+        },
         {
           label: 'Panel principal',
           path: '/admin',
@@ -80,8 +82,7 @@ export const getNavigation = (userType, hasPermission = () => true) => {
 
       const filteredChildren = item.children.filter(
         (child) =>
-          child.roles.includes(userType) &&
-          (!child.permission || hasPermission(child.permission))
+          child.roles.includes(userType) && (!child.permission || hasPermission(child.permission))
       );
 
       if (filteredChildren.length === 0) {

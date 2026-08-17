@@ -1,4 +1,5 @@
 // TonersForm.jsx
+
 import { useState } from 'react';
 
 export default function TonerForm({
@@ -19,13 +20,15 @@ export default function TonerForm({
 
   return (
     <div className="bg-white rounded shadow">
-      <div
-        className="flex justify-between p-3 bg-gray-100 cursor-pointer"
+      <button
+        type="button"
+        className="flex w-full justify-between p-3 bg-gray-100 cursor-pointer text-left"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
       >
         <h3 className="font-semibold">Crear Tóner</h3>
         <span>{open ? '▲' : '▼'}</span>
-      </div>
+      </button>
 
       {open && (
         <div className="p-4 space-y-2">
@@ -80,6 +83,7 @@ export default function TonerForm({
           />
 
           <button
+            type="button"
             onClick={addToner}
             className="px-3 py-1 text-white bg-green-500 rounded"
           >

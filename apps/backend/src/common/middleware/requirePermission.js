@@ -1,16 +1,10 @@
-import {
-  normalizePermissionCode,
-  splitPermissionCode
-} from '../rbac/permissions.catalog.js';
-import {
-  getResolvedUserPermissionCodes,
-  hasPermissionCode
-} from '../rbac/permissions.service.js';
+// requirePermission.js
+
+import { normalizePermissionCode, splitPermissionCode } from '../rbac/permissions.catalog.js';
+import { getResolvedUserPermissionCodes, hasPermissionCode } from '../rbac/permissions.service.js';
 
 function sanitizeRequiredPermissions(permissionCodes) {
-  const normalized = permissionCodes
-    .map((code) => normalizePermissionCode(code))
-    .filter(Boolean);
+  const normalized = permissionCodes.map((code) => normalizePermissionCode(code)).filter(Boolean);
 
   if (!normalized.length) {
     throw new Error('requirePermission necesita al menos un permiso');
@@ -24,7 +18,7 @@ function sanitizeRequiredPermissions(permissionCodes) {
 function unauthorized(res) {
   return res.status(401).json({
     success: false,
-    message: 'No autenticado'
+    message: 'No autenticado',
   });
 }
 
@@ -33,7 +27,7 @@ function forbidden(res, requiredPermissions) {
     success: false,
     message: 'No autorizado para esta acción',
     code: 'MISSING_PERMISSION',
-    requiredPermissions
+    requiredPermissions,
   });
 }
 
@@ -51,7 +45,7 @@ export const requireAnyPermission = (...permissionCodes) => {
       const hasAnyPermission = requiredPermissions.some((requiredCode) =>
         hasPermissionCode({
           grantedCodes,
-          requiredCode
+          requiredCode,
         })
       );
 
@@ -81,7 +75,7 @@ export const requireAllPermissions = (...permissionCodes) => {
         (requiredCode) =>
           !hasPermissionCode({
             grantedCodes,
-            requiredCode
+            requiredCode,
           })
       );
 
@@ -96,7 +90,6 @@ export const requireAllPermissions = (...permissionCodes) => {
   };
 };
 
-const requirePermission = (...permissionCodes) =>
-  requireAnyPermission(...permissionCodes);
+const requirePermission = (...permissionCodes) => requireAnyPermission(...permissionCodes);
 
 export default requirePermission;

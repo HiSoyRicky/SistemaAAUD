@@ -1,7 +1,9 @@
-import AppError from '../../common/utils/AppError.js';
-import * as repository from './ubications.repository.js';
-import { mapUpdateUbicationResponse } from './ubications.dto.js';
+// ubications.service.js
+
 import { logger } from '../../common/logger.js';
+import AppError from '../../common/utils/AppError.js';
+import { mapUpdateUbicationResponse } from './ubications.dto.js';
+import * as repository from './ubications.repository.js';
 
 export const getAll = async () => {
   return repository.findAll();
@@ -29,28 +31,21 @@ export const update = async (idParam, payload) => {
 };
 
 export const create = async (payload) => {
-
-  const name = String(payload.name || '')
+  const name = String(payload.name || '');
 
   if (!name) {
     throw new AppError('El nombre de la ubicación es requerido', 400);
   }
 
   try {
-
     const created = await repository.create({ name });
     return created;
-
   } catch (error) {
-
-    if (error.code === "P2002") {
-      throw new AppError("La ubicación ya existe", 409);
+    if (error.code === 'P2002') {
+      throw new AppError('La ubicación ya existe', 409);
     }
 
-    logger.error(
-      { error },
-      "Error inesperado creando ubicación"
-    );
+    logger.error({ error }, 'Error inesperado creando ubicación');
 
     throw error;
   }

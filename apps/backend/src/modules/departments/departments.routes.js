@@ -1,4 +1,4 @@
-
+// departments.routes.js
 
 import express from 'express';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
@@ -7,16 +7,13 @@ import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './departments.controller.js';
 import {
   validateCreateDepartment,
+  validateDeleteDepartment,
   validateUpdateDepartment,
-  validateDeleteDepartment
 } from './departments.validator.js';
 
 const router = express.Router();
 
-router.get(
-  '/',
-  controller.getAll
-);
+router.get('/', controller.getAll);
 
 router.post(
   '/',

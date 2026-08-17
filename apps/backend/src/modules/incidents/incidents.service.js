@@ -1,15 +1,17 @@
+// incidents.service.js
+
 import bcrypt from 'bcrypt';
 import AppError from '../../common/utils/AppError.js';
 import { getIncidentByToken } from '../../common/utils/token.js';
 import { createIncident } from './incidentService.js';
 import { updateIncident } from './incidentUpdateService.js';
-import * as repository from './incidents.repository.js';
 import {
-  mapIncidentListItem,
-  mapIncidentDetail,
   mapDeleteIncidentResponse,
-  mapTonerRequestOptions
+  mapIncidentDetail,
+  mapIncidentListItem,
+  mapTonerRequestOptions,
 } from './incidents.dto.js';
+import * as repository from './incidents.repository.js';
 
 function parseIncidentId(idParam) {
   const id = Number(idParam);
@@ -63,7 +65,7 @@ export const getTonerOptions = async (query) => {
 
   const printerModels = await repository.findPrinterModelsWithTonersByLocationDepartment({
     id_ubication,
-    id_department
+    id_department,
   });
 
   return mapTonerRequestOptions(printerModels);
@@ -95,7 +97,7 @@ export const remove = async ({ idParam, password, currentUser, io }) => {
   }
 
   const user = await repository.findUserPasswordById(userId);
-  if (!user || !user.password) {
+  if (!user?.password) {
     throw new AppError('Usuario no encontrado', 404);
   }
 

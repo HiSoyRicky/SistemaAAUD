@@ -1,13 +1,14 @@
-// src/services/auth.js
+// auth.js
+
 const axios = require('axios');
 
 async function login(username, password) {
-    const response = await axios.post(`/api/auth/login`, { username, password });
-    return response.data;
-};
+  const response = await axios.post(`/api/auth/login`, { username, password });
+  return response.data;
+}
 
 function logout() {
-    sessionStorage.clear();
-};
+  sessionStorage.clear();
+}
 
 module.exports = { login, logout };

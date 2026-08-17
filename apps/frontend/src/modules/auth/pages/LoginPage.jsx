@@ -1,9 +1,10 @@
 // LoginPage.jsx
-import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import useAuth from '../../../shared/hooks/useAuth';
+
 import LogoGobNal from '@/assets/images/LogoSistema.png';
+import { Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import useAuth from '../../../shared/hooks/useAuth';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -82,37 +83,39 @@ function LoginPage() {
   };
 
   if (isAuthenticated) {
-    return (
-      <Navigate
-        to={mustChangePassword ? '/cambiar-contrasena' : '/dashboard'}
-        replace
-      />
-    );
+    return <Navigate to={mustChangePassword ? '/cambiar-contraseña' : '/dashboard'} replace />;
   }
+
+  const getSubmitButtonText = () => {
+    if (loading) {
+      return 'Cargando...';
+    }
+
+    if (retryAfter > 0) {
+      return `Espera ${retryAfter}s`;
+    }
+
+    if (loginMode === 'login') {
+      return 'Iniciar Sesión';
+    }
+
+    return 'Acceder y Reportar';
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 to-blue-600">
       <div className="w-full max-w-md p-8 bg-white shadow-2xl rounded-xl">
-        <h2 className="text-5xl font-bold text-center text-gray-900">
-          Bienvenido
-        </h2>
+        <h2 className="text-5xl font-bold text-center text-gray-900">Bienvenido</h2>
 
         {/* Logo debajo del título */}
-        <img
-          src={LogoGobNal}
-          alt="Logo"
-          className="object-contain max-w-xs mx-auto"
-        />
+        <img src={LogoGobNal} alt="Logo" className="object-contain max-w-xs mx-auto" />
 
         <form onSubmit={handleSubmit} className="w-full space-y-6">
           {/* Si estamos en login mode, mostrar el formulario */}
           {loginMode === 'login' && (
             <>
               <div>
-                <label
-                  htmlFor="username"
-                  className="block mb-1 text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="username" className="block mb-1 text-sm font-medium text-gray-700">
                   Usuario
                 </label>
                 <input
@@ -178,13 +181,7 @@ function LoginPage() {
             disabled={loading || retryAfter > 0}
             className="w-full px-4 py-3 font-semibold text-white bg-indigo-600 rounded hover:bg-indigo-700"
           >
-            {loading
-              ? 'Cargando...'
-              : retryAfter > 0
-                ? 'Espera...'
-                : loginMode === 'login'
-                  ? 'Iniciar Sesión'
-                  : 'Acceder y Reportar'}
+            {getSubmitButtonText()}
           </button>
         </form>
 
@@ -192,6 +189,7 @@ function LoginPage() {
         <div className="mt-6 text-center">
           {loginMode === 'guest' ? (
             <button
+              type="button"
               className="font-medium text-blue-600 hover:underline"
               onClick={() => {
                 setLoginMode('login');
@@ -204,6 +202,7 @@ function LoginPage() {
             </button>
           ) : (
             <button
+              type="button"
               className="font-medium text-blue-600 hover:underline"
               onClick={() => {
                 setLoginMode('guest');

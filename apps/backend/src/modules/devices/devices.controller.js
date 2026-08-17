@@ -1,3 +1,5 @@
+// devices.controller.js
+
 import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './devices.service.js';
 

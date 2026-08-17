@@ -1,17 +1,19 @@
+// auth.service.js
+
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import * as repository from './auth.repository.js';
-import * as validator from './auth.validator.js';
-import * as dto from './auth.dto.js';
-import AppError from '../../common/utils/AppError.js';
 import {
   getEffectivePermissionCodesForUser,
-  normalizePermissionCodes
+  normalizePermissionCodes,
 } from '../../common/rbac/permissions.service.js';
+import AppError from '../../common/utils/AppError.js';
+import * as dto from './auth.dto.js';
+import * as repository from './auth.repository.js';
+import * as validator from './auth.validator.js';
 
 function getJwtSecret() {
   if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET no está definido");
+    throw new Error('JWT_SECRET no está definido');
   }
   return process.env.JWT_SECRET;
 }
@@ -25,7 +27,9 @@ export class AuthServiceError extends Error {
 }
 
 function normalizeUsername(username) {
-  return String(username || '').trim().toLowerCase();
+  return String(username || '')
+    .trim()
+    .toLowerCase();
 }
 
 export const register = async (payload) => {
@@ -52,7 +56,7 @@ export const register = async (payload) => {
       nombre_completo: validated.nombre_completo.trim(),
       id_rol: roleId,
       active: true,
-      must_change_password: true
+      must_change_password: true,
     });
 
     return dto.mapRegisterResponse(createdUser);
@@ -78,9 +82,7 @@ export const login = async (payload) => {
     const validated = await validator.validateLoginPayload(payload);
     const usernameNormalized = normalizeUsername(validated.username);
 
-    const user = await repository.findActiveUserWithRoleByUsername(
-      usernameNormalized
-    );
+    const user = await repository.findActiveUserWithRoleByUsername(usernameNormalized);
 
     if (!user) {
       throw new AuthServiceError('Credenciales inválidas', 401);
@@ -94,7 +96,7 @@ export const login = async (payload) => {
     const permissions = normalizePermissionCodes(
       await getEffectivePermissionCodesForUser({
         userId: user.id,
-        roleId: user.id_rol
+        roleId: user.id_rol,
       })
     );
 
@@ -104,7 +106,7 @@ export const login = async (payload) => {
         role: user.roles.name,
         roleId: user.id_rol,
         mustChangePassword: Boolean(user.must_change_password),
-        permissions
+        permissions,
       },
       getJwtSecret(),
       { expiresIn: '60m' }

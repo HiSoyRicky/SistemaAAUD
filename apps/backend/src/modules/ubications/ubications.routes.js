@@ -1,3 +1,5 @@
+// ubications.routes.js
+
 import express from 'express';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';

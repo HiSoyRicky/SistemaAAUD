@@ -1,11 +1,10 @@
+// IncidentsMonitorPage.jsx
+
 import { useEffect, useState } from 'react';
-import { Incidents } from '../services/incidents.api';
-import IncidentTable from '../components/tables/IncidentTable';
+import { formatDateWithWeekday, formatTime } from '../../../shared/utils/formatDate';
 import IncidentsSection from '../../dashboard/components/IncidentsSection.jsx';
-import {
-  formatDateWithWeekday,
-  formatTime,
-} from '../../../shared/utils/formatDate';
+import IncidentTable from '../components/tables/IncidentTable';
+import { Incidents } from '../services/incidents.api';
 
 export default function IncidentsMonitorPage() {
   const [incidents, setIncidents] = useState([]);
@@ -48,30 +47,20 @@ export default function IncidentsMonitorPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-5xl font-extrabold text-slate-800">
-            Monitor de Incidencias
-          </h1>
+          <h1 className="text-5xl font-extrabold text-slate-800">Monitor de Incidencias</h1>
 
-          <p className="mt-2 text-lg text-slate-500">
-            Sistema de Gestión de Incidencias
-          </p>
+          <p className="mt-2 text-lg text-slate-500">Sistema de Gestión de Incidencias</p>
         </div>
 
         <div className="text-right">
-          <div className="text-5xl font-bold text-slate-800">
-            {formatTime(time, '-')}
-          </div>
+          <div className="text-5xl font-bold text-slate-800">{formatTime(time, '-')}</div>
 
-          <div className="text-lg text-slate-500">
-            {formatDateWithWeekday(time, '-')}
-          </div>
+          <div className="text-lg text-slate-500">{formatDateWithWeekday(time, '-')}</div>
 
           <div className="flex items-center justify-end gap-2 mt-3">
             <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
 
-            <span className="font-medium text-green-600">
-              Actualización en tiempo real
-            </span>
+            <span className="font-medium text-green-600">Actualización en tiempo real</span>
           </div>
         </div>
       </div>
@@ -84,9 +73,7 @@ export default function IncidentsMonitorPage() {
       {/* TABLA */}
       <div className="bg-white rounded-3xl shadow-lg border border-slate-200">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-2xl font-bold text-slate-700">
-            Listado de Incidencias
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-700">Listado de Incidencias</h2>
 
           <span className="text-slate-500">{incidents.length} registros</span>
         </div>

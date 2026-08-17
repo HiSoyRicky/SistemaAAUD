@@ -1,11 +1,13 @@
+// devices.service.js
+
 import AppError from '../../common/utils/AppError.js';
 import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
-import * as repository from './devices.repository.js';
 import {
   mapCreateDeviceResponse,
+  mapDeleteDeviceResponse,
   mapUpdateDeviceResponse,
-  mapDeleteDeviceResponse
 } from './devices.dto.js';
+import * as repository from './devices.repository.js';
 
 export const getAll = async () => {
   return repository.findAll();
@@ -70,7 +72,7 @@ export const remove = async (idParam) => {
 
   const [inventoryCount, modelsCount] = await Promise.all([
     repository.countInventoryByDeviceId(id),
-    repository.countModelsByDeviceId(id)
+    repository.countModelsByDeviceId(id),
   ]);
 
   if (inventoryCount > 0 || modelsCount > 0) {
@@ -79,8 +81,8 @@ export const remove = async (idParam) => {
         subject: 'el dispositivo',
         dependencies: [
           { count: inventoryCount, label: 'registro(s) de inventario' },
-          { count: modelsCount, label: 'modelo(s)' }
-        ]
+          { count: modelsCount, label: 'modelo(s)' },
+        ],
       }),
       409
     );
@@ -93,7 +95,7 @@ export const remove = async (idParam) => {
       throw new AppError(
         buildDeleteDependencyMessage({
           subject: 'el dispositivo',
-          dependencies: []
+          dependencies: [],
         }),
         409
       );

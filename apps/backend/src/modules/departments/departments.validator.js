@@ -1,43 +1,41 @@
+// departments.validator.js
+
 import {
-  z,
   validateZod,
+  z,
   zRequiredField,
   zRequiredInt,
-  zRequiredString
+  zRequiredString,
 } from '../../common/utils/zodValidation.js';
 
 const departmentIdParamsSchema = z.object({
-  id: zRequiredInt('ID inválido', { min: 1 })
+  id: zRequiredInt('ID inválido', { min: 1 }),
 });
 
 const createDepartmentBodySchema = z.object({
   name: zRequiredString('El nombre es requerido'),
-  id_ubication: zRequiredField('La ubicación es requerida')
-}).passthrough();
+  id_ubication: zRequiredField('La ubicación es requerida'),
+});
 
 const updateDepartmentBodySchema = z.object({
   name: zRequiredString('El nombre es requerido'),
   id_ubication: zRequiredField('La ubicación es requerida').refine(
     (value) => Number.isInteger(Number(value)) && Number(value) >= 1,
     { message: 'ID de ubicación inválido' }
-  )
-}).passthrough();
+  ),
+});
 
 const validateCreateDepartment = validateZod({
-  body: createDepartmentBodySchema
+  body: createDepartmentBodySchema,
 });
 
 const validateUpdateDepartment = validateZod({
   params: departmentIdParamsSchema,
-  body: updateDepartmentBodySchema
+  body: updateDepartmentBodySchema,
 });
 
 const validateDeleteDepartment = validateZod({
-  params: departmentIdParamsSchema
+  params: departmentIdParamsSchema,
 });
 
-export {
-  validateCreateDepartment,
-  validateUpdateDepartment,
-  validateDeleteDepartment
-};
+export { validateCreateDepartment, validateDeleteDepartment, validateUpdateDepartment };

@@ -1,22 +1,33 @@
+// inventory.controller.js
+
 import catchAsync from '../../common/utils/catchAsync.js';
-import * as service from './inventory.service.js';
+
+import { create as createInventory, getAll as getAllInventory } from './inventory.service.js';
+
+import { update as updateInventory } from './services/inventory-update.service.js';
+
+import { getHistory as getInventoryHistory } from './services/inventory-history.service.js';
 
 export const getAll = catchAsync(async (req, res) => {
-  const data = await service.getAll(req.query);
+  const data = await getAllInventory(req.query);
+
   res.json(data);
 });
 
 export const getHistory = catchAsync(async (req, res) => {
-  const data = await service.getHistory(req.query);
+  const data = await getInventoryHistory(req.query);
+
   res.json(data);
 });
 
 export const create = catchAsync(async (req, res) => {
-  const data = await service.create(req.body, req.user);
+  const data = await createInventory(req.body, req.user);
+
   res.status(201).json(data);
 });
 
 export const update = catchAsync(async (req, res) => {
-  const data = await service.update(req.params.id, req.body, req.user);
+  const data = await updateInventory(req.params.id, req.body, req.user);
+
   res.json(data);
 });

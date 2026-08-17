@@ -1,3 +1,5 @@
+// TonersTable.jsx
+
 import { useMemo, useState } from 'react';
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 
@@ -13,18 +15,16 @@ export default function TonersTable({
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
     return toners.filter(
-      (t) =>
-        t.toner_model?.toLowerCase().includes(search.toLowerCase()) ||
-        t.color?.toLowerCase().includes(search.toLowerCase())
+      (toner) =>
+        toner.toner_model?.toLowerCase().includes(normalizedSearch) ||
+        toner.color?.toLowerCase().includes(normalizedSearch)
     );
   }, [toners, search]);
 
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const paginated = filtered.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-4 space-y-3 bg-white rounded shadow">
@@ -61,17 +61,9 @@ export default function TonersTable({
 
               <td className="px-3 py-1 border flex justify-center gap-2">
                 {editingToner === t.id ? (
-                  <ActionButton
-                    type="save"
-                    title="Guardar tóner"
-                    onClick={updateToner}
-                  />
+                  <ActionButton type="save" title="Guardar tóner" onClick={updateToner} />
                 ) : (
-                  <ActionButton
-                    type="edit"
-                    title="Editar tóner"
-                    onClick={() => startEdit(t)}
-                  />
+                  <ActionButton type="edit" title="Editar tóner" onClick={() => startEdit(t)} />
                 )}
 
                 <ActionButton

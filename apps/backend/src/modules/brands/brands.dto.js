@@ -1,16 +1,18 @@
+// brands.dto.js
+
 export const mapCreateBrandResponse = (brand) => ({
   success: true,
   message: 'Marca creada exitosamente',
-  brand
+  brand,
 });
 
 export const mapUpdateBrandResponse = (brand) => ({
   success: true,
   message: 'Marca actualizada exitosamente',
-  brand
+  brand,
 });
 
 export const mapDeleteBrandResponse = () => ({
   success: true,
-  message: 'Marca eliminada correctamente'
+  message: 'Marca eliminada correctamente',
 });

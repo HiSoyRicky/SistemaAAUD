@@ -1,3 +1,6 @@
+// tonerMovements.repository.js
+
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 
 const movementInclude = {
@@ -59,8 +62,19 @@ export const countMovementsByType = async (where) => {
 };
 
 export const findTonerByIdWithStock = async (id, db = prisma) => {
+  const tonerId = Number(id);
+
+  await db.$queryRaw(
+    Prisma.sql`
+      SELECT id
+      FROM toners
+      WHERE id = ${tonerId}
+      FOR UPDATE
+    `
+  );
+
   return db.toners.findUnique({
-    where: { id: Number(id) },
+    where: { id: tonerId },
     include: { stock: true },
   });
 };

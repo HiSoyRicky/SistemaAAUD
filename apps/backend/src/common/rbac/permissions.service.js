@@ -1,16 +1,16 @@
+// permissions.service.js
+
 import AppError from '../utils/AppError.js';
-import * as repository from './permissions.repository.js';
 import {
   buildPermissionCode,
   normalizePermissionCode,
   resolveRoleDefaultPermissionCodes,
-  splitPermissionCode
+  splitPermissionCode,
 } from './permissions.catalog.js';
+import * as repository from './permissions.repository.js';
 
 function uniquePermissionCodes(codes = []) {
-  const normalized = codes
-    .map((code) => normalizePermissionCode(code))
-    .filter(Boolean);
+  const normalized = codes.map((code) => normalizePermissionCode(code)).filter(Boolean);
 
   return [...new Set(normalized)];
 }
@@ -38,7 +38,7 @@ function mapUserOverrideRows(rows = []) {
 
   return {
     grants: uniquePermissionCodes(grants),
-    denies: uniquePermissionCodes(denies)
+    denies: uniquePermissionCodes(denies),
   };
 }
 
@@ -60,17 +60,15 @@ function isMissingPermissionTableError(error, tableNames = []) {
   const metaTable = String(error?.meta?.table || '').toLowerCase();
 
   return tableNames.some((tableName) => {
-    const normalized = String(tableName || '').trim().toLowerCase();
+    const normalized = String(tableName || '')
+      .trim()
+      .toLowerCase();
     return normalized && (message.includes(normalized) || metaTable.includes(normalized));
   });
 }
 
 function buildMigrationRequiredError(message) {
-  return new AppError(
-    message,
-    503,
-    'MIGRATION_REQUIRED'
-  );
+  return new AppError(message, 503, 'MIGRATION_REQUIRED');
 }
 
 export const getRolePermissionCodes = async (roleId) => {
@@ -86,7 +84,7 @@ export const getRolePermissionCodes = async (roleId) => {
   } catch (error) {
     const missingPermissionInfra = isMissingPermissionTableError(error, [
       'role_permissions',
-      'permissions'
+      'permissions',
     ]);
 
     if (!missingPermissionInfra) {
@@ -133,7 +131,7 @@ export const getEffectivePermissionCodesForUser = async ({ userId }) => {
 
   const [rolePermissions, userOverrides] = await Promise.all([
     getRolePermissionCodes(resolvedRoleId),
-    getUserPermissionOverrideCodes(parsedUserId)
+    getUserPermissionOverrideCodes(parsedUserId),
   ]);
 
   return applyUserOverrides(rolePermissions, userOverrides);
@@ -169,11 +167,7 @@ export const ensurePermissionsByCodes = async (codes = []) => {
     const foundCodes = mapPairsToCodes(found);
     const missing = uniqueCodes.filter((code) => !foundCodes.includes(code));
 
-    throw new AppError(
-      `Permisos inválidos: ${missing.join(', ')}`,
-      400,
-      'INVALID_PERMISSIONS'
-    );
+    throw new AppError(`Permisos inválidos: ${missing.join(', ')}`, 400, 'INVALID_PERMISSIONS');
   }
 
   return found;
@@ -196,7 +190,7 @@ export const setRolePermissionsByCodes = async ({ roleId, codes }) => {
   try {
     rows = await repository.replaceRolePermissions({
       roleId: parsedRoleId,
-      permissionIds: permissions.map((permission) => permission.id)
+      permissionIds: permissions.map((permission) => permission.id),
     });
   } catch (error) {
     if (isMissingPermissionTableError(error, ['role_permissions', 'permissions'])) {
@@ -213,17 +207,13 @@ export const setRolePermissionsByCodes = async ({ roleId, codes }) => {
     permissions: mapPairsToCodes(
       rows.map((row) => ({
         module: row.permission.module,
-        action: row.permission.action
+        action: row.permission.action,
       }))
-    )
+    ),
   };
 };
 
-export const setUserPermissionOverridesByCodes = async ({
-  userId,
-  grants = [],
-  denies = []
-}) => {
+export const setUserPermissionOverridesByCodes = async ({ userId, grants = [], denies = [] }) => {
   const parsedUserId = Number(userId);
 
   if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
@@ -238,9 +228,7 @@ export const setUserPermissionOverridesByCodes = async ({
   const normalizedGrants = uniquePermissionCodes(grants);
   const normalizedDenies = uniquePermissionCodes(denies);
 
-  const overlap = normalizedGrants.filter((code) =>
-    normalizedDenies.includes(code)
-  );
+  const overlap = normalizedGrants.filter((code) => normalizedDenies.includes(code));
 
   if (overlap.length) {
     throw new AppError(
@@ -250,35 +238,32 @@ export const setUserPermissionOverridesByCodes = async ({
     );
   }
 
-  const allRequested = uniquePermissionCodes([
-    ...normalizedGrants,
-    ...normalizedDenies
-  ]);
+  const allRequested = uniquePermissionCodes([...normalizedGrants, ...normalizedDenies]);
 
   const resolvedPermissions = await ensurePermissionsByCodes(allRequested);
   const permissionIdByCode = new Map(
     resolvedPermissions.map((permission) => [
       buildPermissionCode(permission.module, permission.action),
-      permission.id
+      permission.id,
     ])
   );
 
   const entries = [
     ...normalizedGrants.map((code) => ({
       permissionId: permissionIdByCode.get(code),
-      allow: true
+      allow: true,
     })),
     ...normalizedDenies.map((code) => ({
       permissionId: permissionIdByCode.get(code),
-      allow: false
-    }))
+      allow: false,
+    })),
   ].filter((entry) => Number.isInteger(entry.permissionId));
 
   let rows = [];
   try {
     rows = await repository.replaceUserPermissionOverrides({
       userId: parsedUserId,
-      entries
+      entries,
     });
   } catch (error) {
     if (isMissingPermissionTableError(error, ['user_permissions'])) {
@@ -294,19 +279,19 @@ export const setUserPermissionOverridesByCodes = async ({
     rows.map((row) => ({
       module: row.permission.module,
       action: row.permission.action,
-      allow: row.allow
+      allow: row.allow,
     }))
   );
 
   const effectivePermissions = await getEffectivePermissionCodesForUser({
     userId: parsedUserId,
-    roleId: user.id_rol
+    roleId: user.id_rol,
   });
 
   return {
     user,
     overrides,
-    effectivePermissions
+    effectivePermissions,
   };
 };
 
@@ -347,7 +332,7 @@ export const getResolvedUserPermissionCodes = async (user) => {
 
   const permissionCodes = await getEffectivePermissionCodesForUser({
     userId,
-    roleId: user.roleId
+    roleId: user.roleId,
   });
   user.permissions = permissionCodes;
   user.permissionsLoaded = true;

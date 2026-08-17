@@ -1,3 +1,5 @@
+// toner.constants.js
+
 const TONER_COLORS = ['BLACK', 'CYAN', 'MAGENTA', 'YELLOW', 'TRI_COLOR'];
 const DEFAULT_MIN_STOCK = 0;
 

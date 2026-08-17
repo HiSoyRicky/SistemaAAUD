@@ -1,7 +1,8 @@
 // AuthContext.jsx
-import React, { createContext, useState, useEffect, useContext } from 'react';
+
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -37,14 +38,16 @@ function resolveUserType({ roleId, roleName }) {
 }
 
 function normalizePermissionCode(code) {
-  return String(code || '').trim().toLowerCase();
+  return String(code || '')
+    .trim()
+    .toLowerCase();
 }
 
 function normalizePermissionCodes(codes = []) {
   return [...new Set(codes.map((code) => normalizePermissionCode(code)).filter(Boolean))];
 }
 
-function hasPermissionCode(grantedPermissions = [], requiredPermission) {
+function hasPermissionCode(requiredPermission, grantedPermissions = []) {
   const required = normalizePermissionCode(requiredPermission);
 
   if (!required) {
@@ -61,11 +64,7 @@ function hasPermissionCode(grantedPermissions = [], requiredPermission) {
     return false;
   }
 
-  return (
-    granted.has(required) ||
-    granted.has(`${module}.*`) ||
-    granted.has(`*.${action}`)
-  );
+  return granted.has(required) || granted.has(`${module}.*`) || granted.has(`*.${action}`);
 }
 
 export const AuthProvider = ({ children }) => {
@@ -85,8 +84,20 @@ export const AuthProvider = ({ children }) => {
     return normalized;
   };
 
+  const parsePermissions = (storedPermissions) => {
+    if (!storedPermissions) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(storedPermissions);
+    } catch {
+      return [];
+    }
+  };
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
 
     const storedUserType = sessionStorage.getItem('userType');
     const storedUserName = sessionStorage.getItem('loggedUserName');
@@ -94,24 +105,14 @@ export const AuthProvider = ({ children }) => {
     const storedUsername = sessionStorage.getItem('username');
     const storedMustChangePassword = sessionStorage.getItem('mustChangePassword');
     const storedPermissions = sessionStorage.getItem('permissions');
-    let parsedStoredPermissions = [];
-
-    if (storedPermissions) {
-      try {
-        parsedStoredPermissions = JSON.parse(storedPermissions);
-      } catch (_error) {
-        parsedStoredPermissions = [];
-      }
-    }
+    const parsedStoredPermissions = parsePermissions(storedPermissions);
 
     if (token && storedUserType && storedUserName && storedUserId) {
       let fallbackPermissions = parsedStoredPermissions;
 
       if (!fallbackPermissions.length) {
         try {
-          fallbackPermissions = Array.isArray(decoded.permissions)
-            ? decoded.permissions
-            : [];
+          fallbackPermissions = Array.isArray(decoded.permissions) ? decoded.permissions : [];
         } catch (_error) {
           fallbackPermissions = [];
         }
@@ -124,14 +125,13 @@ export const AuthProvider = ({ children }) => {
       setUsername(storedUsername);
       setMustChangePassword(storedMustChangePassword === 'true');
       storePermissions(fallbackPermissions);
-    }
-    else if (token) {
+    } else if (token) {
       try {
         const decoded = jwtDecode(token);
 
         const type = resolveUserType({
           roleId: decoded.roleId ?? decoded.id_rol ?? decoded.role,
-          roleName: decoded.role
+          roleName: decoded.role,
         });
         const decodedMustChange = Boolean(decoded.mustChangePassword);
         const decodedPermissions = normalizePermissionCodes(
@@ -152,8 +152,8 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.setItem('username', decoded.username || '');
         sessionStorage.setItem('mustChangePassword', String(decodedMustChange));
         sessionStorage.setItem('permissions', JSON.stringify(decodedPermissions));
-
       } catch (error) {
+        console.error('Error al almacenar los datos del usuario en sessionStorage: ', error);
         logout();
       }
     }
@@ -172,15 +172,15 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await axios.get('/api/permissions/me', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
         });
 
         if (!cancelled) {
           storePermissions(response.data?.permissions || []);
         }
-      } catch (_error) {
-        // Mantiene los permisos actuales si la sincronización temporal falla.
+      } catch (error) {
+        console.warn('No se pudieron actualizar los permisos: ', error);
       }
     };
 
@@ -202,19 +202,15 @@ export const AuthProvider = ({ children }) => {
         Array.isArray(usuario?.permissions) ? usuario.permissions : []
       );
 
-      localStorage.setItem("token", token);
+      localStorage.setItem('token', token);
       const type = resolveUserType({
         roleId: usuario.id_rol,
-        roleName: usuario.role_name
+        roleName: usuario.role_name,
       });
 
       // Resolver username de forma segura
       const resolvedUsername =
-        usuario.username ||
-        usuario.usuario ||
-        usuario.correo ||
-        loginIdentifier ||
-        '';
+        usuario.username || usuario.usuario || usuario.correo || loginIdentifier || '';
 
       setIsAuthenticated(true);
       setUserType(type);
@@ -234,14 +230,15 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, userType: type, mustChangePassword: mustChange };
     } catch (error) {
-      console.error('Login failed:', error?.response?.data || error.message);
+      console.error('Error al almacenar los datos del usuario en sessionStorage: ', error);
       logout();
 
       if (error.response?.status === 429) {
-        throw {
-          message: error.response.data?.error || 'Demasiados intentos fallidos.',
-          retryAfter: error.response.data?.retryAfter || 0,
-        };
+        throw new Error('Demasiados intentos fallidos. Por favor, inténtalo de nuevo más tarde.');
+      }
+
+      if (error.response?.status === 401) {
+        throw new Error('Credenciales inválidas. Por favor, verifica tus datos.');
       }
 
       throw new Error(error.response?.data?.error || 'Error desconocido al iniciar sesión');
@@ -283,36 +280,42 @@ export const AuthProvider = ({ children }) => {
     setPermissions([]);
 
     sessionStorage.clear();
-    localStorage.removeItem("token");
+    localStorage.removeItem('token');
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        userType,
-        loggedUserName,
-        loggedUserId,
-        username,
-        mustChangePassword,
-        permissions,
-        hasPermission: (permissionCode) =>
-          hasPermissionCode(permissions, permissionCode),
-        hasAnyPermission: (permissionCodes = []) =>
-          permissionCodes.some((permissionCode) =>
-            hasPermissionCode(permissions, permissionCode)
-          ),
-        loading,
-        login,
-        logout,
-        setAuthData,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      isAuthenticated,
+      userType,
+      loggedUserName,
+      loggedUserId,
+      username,
+      mustChangePassword,
+      permissions,
+      hasPermission: (permissionCode) => hasPermissionCode(permissionCode, permissions),
+      hasAnyPermission: (permissionCodes = []) =>
+        permissionCodes.some((permissionCode) => hasPermissionCode(permissionCode, permissions)),
+      loading,
+      login,
+      logout,
+      setAuthData,
+    }),
+    [
+      isAuthenticated,
+      userType,
+      loggedUserName,
+      loggedUserId,
+      username,
+      mustChangePassword,
+      permissions,
+      loading,
+      login,
+      logout,
+      setAuthData,
+    ]
   );
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);
 export { AuthContext };
-

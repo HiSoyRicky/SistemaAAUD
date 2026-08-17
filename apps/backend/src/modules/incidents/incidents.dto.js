@@ -1,4 +1,12 @@
-import { DEFAULT_STATUS_TEXT, STATUS_TEXT } from './incidents.constants.js';
+// incidents.dto.js
+
+const STATUS_TEXT = {
+  1: 'Pendiente',
+  2: 'Asignado a un técnico',
+  3: 'Resuelto',
+};
+
+const DEFAULT_STATUS_TEXT = 'Desconocido';
 
 const TONER_COLOR_ORDER = {
   BLACK: 1,
@@ -24,8 +32,7 @@ export const mapIncidentListItem = (incident) => ({
   solution_date: incident.solution_date,
   solution: incident.solution,
   id_technician: incident.id_technician,
-  technician_full_name:
-    incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
+  technician_full_name: incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
 });
 
 export const mapIncidentDetail = (incident) => ({
@@ -43,10 +50,8 @@ export const mapIncidentDetail = (incident) => ({
   solution_date: incident.solution_date,
   id_status: incident.id_status,
   id_technician: incident.id_technician,
-  technician_full_name:
-    incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
-  technician_email:
-    incident.users_bd_incidents_id_technicianTousers?.email || null,
+  technician_full_name: incident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
+  technician_email: incident.users_bd_incidents_id_technicianTousers?.email || null,
   status: STATUS_TEXT[incident.id_status] || DEFAULT_STATUS_TEXT,
 });
 
@@ -59,9 +64,7 @@ export const mapTonerRequestOptions = (printerModels = []) => {
     .map((printerModel) => {
       const seenColors = new Set();
 
-      const toners = (
-        Array.isArray(printerModel?.toners) ? printerModel.toners : []
-      )
+      const toners = (Array.isArray(printerModel?.toners) ? printerModel.toners : [])
         .filter((toner) => {
           const color = String(toner?.color || '')
             .trim()
@@ -82,13 +85,9 @@ export const mapTonerRequestOptions = (printerModels = []) => {
           const aOrder = TONER_COLOR_ORDER[a.color] || 99;
           const bOrder = TONER_COLOR_ORDER[b.color] || 99;
           if (aOrder !== bOrder) return aOrder - bOrder;
-          return String(a.toner_model || '').localeCompare(
-            String(b.toner_model || ''),
-            'es',
-            {
-              sensitivity: 'base',
-            }
-          );
+          return String(a.toner_model || '').localeCompare(String(b.toner_model || ''), 'es', {
+            sensitivity: 'base',
+          });
         });
 
       return {

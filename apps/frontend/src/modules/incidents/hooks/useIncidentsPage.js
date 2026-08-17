@@ -1,28 +1,18 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import {
-  onIncidentCreated,
-  onIncidentUpdated,
-} from '../../../services/socket/incidentsSocket';
-import {
-  socket,
-  connectSocket,
-  disconnectSocket,
-} from '../../../services/socket/socketClient';
+// useIncidentsPage.js
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { onIncidentCreated, onIncidentUpdated } from '../../../services/socket/incidentsSocket';
+import { connectSocket, disconnectSocket, socket } from '../../../services/socket/socketClient';
 import { exportIncidentsToExcel } from '../../../shared/utils/exportExcel';
 import { Incidents, Users } from '../services/incidents.api';
 
-export default function useIncidentsPage({
-  userType,
-  loggedUserName,
-  loggedUserId,
-}) {
+export default function useIncidentsPage({ userType, loggedUserName, loggedUserId }) {
   const [incidents, setIncidents] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedIncidentId, setSelectedIncidentId] = useState(null);
-  const [currentIncidentToResolve, setCurrentIncidentToResolve] =
-    useState(null);
+  const [currentIncidentToResolve, setCurrentIncidentToResolve] = useState(null);
   const [showIncidentForm, setShowIncidentForm] = useState(false);
   const [incidentToEdit, setIncidentToEdit] = useState(null);
   const [notification, setNotification] = useState({ message: '', type: '' });
@@ -53,9 +43,7 @@ export default function useIncidentsPage({
   }, []);
 
   const leaveAllRooms = useCallback(() => {
-    joinedRoomsRef.current.forEach((id) =>
-      socket.emit('leaveIncidentRoom', id)
-    );
+    joinedRoomsRef.current.forEach((id) => socket.emit('leaveIncidentRoom', id));
     joinedRoomsRef.current.clear();
   }, []);
 
@@ -64,8 +52,8 @@ export default function useIncidentsPage({
       let fetched = await Incidents.fetchAll();
       fetched = Array.isArray(fetched) ? fetched : [];
 
-      const techId = parseInt(loggedUserId);
-      if (userType === 'tecnico' && loggedUserId && !isNaN(techId)) {
+      const techId = Number.parseInt(loggedUserId);
+      if (userType === 'tecnico' && loggedUserId && !Number.isNaN(techId)) {
         fetched = fetched.filter((inc) => inc.id_technician === techId);
       }
 
@@ -73,10 +61,7 @@ export default function useIncidentsPage({
       fetched.forEach((inc) => joinRoom(inc.id_incident));
     } catch (error) {
       console.error('Error al cargar incidencias:', error);
-      showNotification(
-        'Error al cargar incidencias: ' + error.message,
-        'error'
-      );
+      showNotification('Error al cargar incidencias: ' + error.message, 'error');
       setIncidents([]);
     }
   }, [userType, loggedUserId, showNotification, joinRoom]);
@@ -105,9 +90,7 @@ export default function useIncidentsPage({
     const handleSocketConnect = () => {
       console.log('Socket conectado:', socket.id);
 
-      joinedRoomsRef.current.forEach((id) =>
-        socket.emit('joinIncidentRoom', id)
-      );
+      joinedRoomsRef.current.forEach((id) => socket.emit('joinIncidentRoom', id));
 
       if (canReadIncidents) {
         fetchIncidents();
@@ -130,7 +113,7 @@ export default function useIncidentsPage({
     socket.on('reconnect', handleReconnect);
 
     const offCreated = onIncidentCreated((newIncident) => {
-      const techId = parseInt(loggedUserId);
+      const techId = Number.parseInt(loggedUserId);
 
       if (userType === 'tecnico' && newIncident.id_technician !== techId) {
         return;
@@ -138,9 +121,7 @@ export default function useIncidentsPage({
 
       setIncidents((prev) => {
         // Evitar duplicados
-        const exists = prev.some(
-          (i) => i.id_incident === newIncident.id_incident
-        );
+        const exists = prev.some((i) => i.id_incident === newIncident.id_incident);
         if (exists) return prev;
 
         return [...prev, newIncident].sort(
@@ -153,7 +134,7 @@ export default function useIncidentsPage({
 
     const offUpdated = onIncidentUpdated((updated) => {
       setIncidents((prev) => {
-        const techId = parseInt(loggedUserId);
+        const techId = Number.parseInt(loggedUserId);
         const exists = prev.some((i) => i.id_incident === updated.id_incident);
 
         // Técnico: solo incidencias propias
@@ -176,14 +157,8 @@ export default function useIncidentsPage({
         }
 
         return prev
-          .map((inc) =>
-            inc.id_incident === updated.id_incident
-              ? { ...inc, ...updated }
-              : inc
-          )
-          .sort(
-            (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
-          );
+          .map((inc) => (inc.id_incident === updated.id_incident ? { ...inc, ...updated } : inc))
+          .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
       });
     });
 
@@ -203,14 +178,7 @@ export default function useIncidentsPage({
         disconnectSocket();
       }
     };
-  }, [
-    userType,
-    fetchIncidents,
-    fetchTechnicians,
-    showNotification,
-    joinRoom,
-    leaveAllRooms,
-  ]);
+  }, [userType, fetchIncidents, fetchTechnicians, showNotification, joinRoom, leaveAllRooms]);
 
   const handleAddIncident = useCallback(
     async (newIncidentData) => {
@@ -222,25 +190,20 @@ export default function useIncidentsPage({
           username: loggedUserName,
           status: newIncidentData.status || 'Pendiente',
           id_category: categoryId,
-          id_device: newIncidentData.id_device
-            ? parseInt(newIncidentData.id_device)
-            : null,
+          id_device: newIncidentData.id_device ? Number.parseInt(newIncidentData.id_device) : null,
           id_ubication: newIncidentData.id_ubication
-            ? parseInt(newIncidentData.id_ubication)
+            ? Number.parseInt(newIncidentData.id_ubication)
             : null,
           id_department: newIncidentData.id_department
-            ? parseInt(newIncidentData.id_department)
+            ? Number.parseInt(newIncidentData.id_department)
             : null,
           id_printer_model: newIncidentData.id_printer_model
-            ? parseInt(newIncidentData.id_printer_model)
+            ? Number.parseInt(newIncidentData.id_printer_model)
             : null,
-          id_toner: newIncidentData.id_toner
-            ? parseInt(newIncidentData.id_toner)
-            : null,
+          id_toner: newIncidentData.id_toner ? Number.parseInt(newIncidentData.id_toner) : null,
           toner_color: newIncidentData.toner_color || null,
           email: newIncidentData.email?.trim() || null,
-          other_category_detail:
-            newIncidentData.other_category_detail?.trim() || null,
+          other_category_detail: newIncidentData.other_category_detail?.trim() || null,
         };
 
         const created = await Incidents.create(incidentToCreate);
@@ -249,8 +212,7 @@ export default function useIncidentsPage({
       } catch (error) {
         console.error('Error al reportar incidencia:', error);
         showNotification(
-          'Error al reportar incidencia: ' +
-            (error.response?.data?.error || error.message),
+          'Error al reportar incidencia: ' + (error.response?.data?.error || error.message),
           'error'
         );
         throw error;
@@ -272,26 +234,60 @@ export default function useIncidentsPage({
   const confirmAssign = useCallback(
     async (technicianId) => {
       if (!selectedIncidentId || !technicianId) {
-        return showNotification(
-          'Selecciona una incidencia y un técnico válidos',
-          'error'
-        );
+        showNotification('Selecciona una incidencia y un técnico válidos', 'error');
+        return;
       }
 
+      const technician = technicians.find((tech) => Number(tech.id) === Number(technicianId));
+
+      // Guardar estado anterior para poder revertir si falla el backend
+      const previousIncidents = incidents;
+
+      // ⚡ ACTUALIZACIÓN OPTIMISTA
+      setIncidents((prev) =>
+        prev.map((inc) =>
+          inc.id_incident === selectedIncidentId
+            ? {
+                ...inc,
+                id_status: 2,
+                id_technician: Number(technicianId),
+                technician_full_name: technician?.nombre_completo || null,
+              }
+            : inc
+        )
+      );
+
+      // Cerramos inmediatamente el modal
+      setShowAssignModal(false);
+      setSelectedIncidentId(null);
+
       try {
-        await Incidents.assignTechnician(selectedIncidentId, technicianId);
+        // Persistir en backend
+        const updated = await Incidents.assignTechnician(selectedIncidentId, technicianId);
+
+        // Sincronizar con la respuesta real del backend
+        if (updated) {
+          setIncidents((prev) =>
+            prev.map((inc) =>
+              inc.id_incident === updated.id_incident
+                ? {
+                    ...inc,
+                    ...updated,
+                  }
+                : inc
+            )
+          );
+        }
       } catch (error) {
         console.error('Error al asignar técnico:', error);
-        showNotification(
-          'Error al asignar técnico: ' + getApiErrorMessage(error),
-          'error'
-        );
-      } finally {
-        setShowAssignModal(false);
-        setSelectedIncidentId(null);
+
+        // ❌ El backend rechazó la asignación → revertimos
+        setIncidents(previousIncidents);
+
+        showNotification('Error al asignar técnico: ' + getApiErrorMessage(error), 'error');
       }
     },
-    [selectedIncidentId, showNotification, getApiErrorMessage]
+    [selectedIncidentId, technicians, incidents, showNotification, getApiErrorMessage]
   );
 
   const submitSolution = useCallback(
@@ -301,15 +297,10 @@ export default function useIncidentsPage({
       const idToResolve = currentIncidentToResolve;
 
       try {
-        const updated = await Incidents.resolve(
-          currentIncidentToResolve,
-          solutionText
-        );
+        const updated = await Incidents.resolve(currentIncidentToResolve, solutionText);
         if (updated) {
           setIncidents((prev) =>
-            prev.map((inc) =>
-              inc.id_incident === idToResolve ? { ...inc, ...updated } : inc
-            )
+            prev.map((inc) => (inc.id_incident === idToResolve ? { ...inc, ...updated } : inc))
           );
         }
         setShowResolveModal(false);
@@ -318,8 +309,7 @@ export default function useIncidentsPage({
         console.error('Error al resolver incidencia:', error);
         await fetchIncidents();
         showNotification(
-          'Error al resolver incidencia: ' +
-            (error.response?.data?.error || error.message),
+          'Error al resolver incidencia: ' + (error.response?.data?.error || error.message),
           'error'
         );
       }
@@ -334,16 +324,14 @@ export default function useIncidentsPage({
 
   const sortedIncidentsForTable = useMemo(() => {
     const arr = Array.isArray(incidents) ? incidents : [];
-    const techId = parseInt(loggedUserId);
+    const techId = Number.parseInt(loggedUserId);
 
     const filtered =
-      userType === 'tecnico' && loggedUserId && !isNaN(techId)
+      userType === 'tecnico' && loggedUserId && !Number.isNaN(techId)
         ? arr.filter((inc) => inc.id_technician && inc.id_technician === techId)
         : arr;
 
-    return filtered
-      .slice()
-      .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
+    return filtered.slice().sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
   }, [incidents, userType, loggedUserId]);
 
   const getCategoryText = (id) => {
@@ -379,8 +367,7 @@ export default function useIncidentsPage({
 
     const text = search.toLowerCase();
 
-    const safe = (val) =>
-      val === null || val === undefined ? '' : String(val).toLowerCase();
+    const safe = (val) => (val === null || val === undefined ? '' : String(val).toLowerCase());
 
     return sortedIncidentsForTable.filter(
       (inc) =>

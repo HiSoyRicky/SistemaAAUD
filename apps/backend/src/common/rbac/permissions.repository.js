@@ -1,10 +1,12 @@
+// permissions.repository.js
+
 import { prisma } from '../../config/prisma.js';
 import { PERMISSIONS_CATALOG } from './permissions.catalog.js';
 
 export const findRoleById = async (roleId) =>
   prisma.roles.findUnique({
     where: { id: Number(roleId) },
-    select: { id: true, name: true }
+    select: { id: true, name: true },
   });
 
 export const findUserByIdWithRole = async (userId) =>
@@ -18,10 +20,10 @@ export const findUserByIdWithRole = async (userId) =>
       roles: {
         select: {
           id: true,
-          name: true
-        }
-      }
-    }
+          name: true,
+        },
+      },
+    },
   });
 
 export const findRoles = async () =>
@@ -29,8 +31,8 @@ export const findRoles = async () =>
     orderBy: { id: 'asc' },
     select: {
       id: true,
-      name: true
-    }
+      name: true,
+    },
   });
 
 export const findAllPermissions = async () => {
@@ -40,8 +42,8 @@ export const findAllPermissions = async () => {
       select: {
         id: true,
         module: true,
-        action: true
-      }
+        action: true,
+      },
     });
   } catch (error) {
     const message = String(error?.message || '').toLowerCase();
@@ -58,7 +60,7 @@ export const findAllPermissions = async () => {
     return PERMISSIONS_CATALOG.map((permission, index) => ({
       id: -(index + 1),
       module: permission.module,
-      action: permission.action
+      action: permission.action,
     }));
   }
 };
@@ -70,15 +72,15 @@ export const findPermissionCodesByRoleId = async (roleId) => {
       permission: {
         select: {
           module: true,
-          action: true
-        }
-      }
-    }
+          action: true,
+        },
+      },
+    },
   });
 
   return rows.map((row) => ({
     module: row.permission.module,
-    action: row.permission.action
+    action: row.permission.action,
   }));
 };
 
@@ -93,10 +95,10 @@ export const findUserPermissionOverridesByUserId = async (userId) => {
         permission: {
           select: {
             module: true,
-            action: true
-          }
-        }
-      }
+            action: true,
+          },
+        },
+      },
     });
   } catch (error) {
     const message = String(error?.message || '').toLowerCase();
@@ -115,7 +117,7 @@ export const findUserPermissionOverridesByUserId = async (userId) => {
   return rows.map((row) => ({
     module: row.permission.module,
     action: row.permission.action,
-    allow: Boolean(row.allow)
+    allow: Boolean(row.allow),
   }));
 };
 
@@ -131,8 +133,8 @@ export const findPermissionsByPairs = async (pairs) => {
     select: {
       id: true,
       module: true,
-      action: true
-    }
+      action: true,
+    },
   });
 };
 
@@ -141,14 +143,14 @@ export const upsertPermission = async ({ module, action }) =>
     where: {
       module_action: {
         module,
-        action
-      }
+        action,
+      },
     },
     create: {
       module,
-      action
+      action,
     },
-    update: {}
+    update: {},
   });
 
 export const replaceRolePermissions = async ({ roleId, permissionIds }) => {
@@ -156,16 +158,16 @@ export const replaceRolePermissions = async ({ roleId, permissionIds }) => {
 
   return prisma.$transaction(async (tx) => {
     await tx.role_permissions.deleteMany({
-      where: { id_role: normalizedRoleId }
+      where: { id_role: normalizedRoleId },
     });
 
     if (permissionIds.length) {
       await tx.role_permissions.createMany({
         data: permissionIds.map((permissionId) => ({
           id_role: normalizedRoleId,
-          id_permission: permissionId
+          id_permission: permissionId,
         })),
-        skipDuplicates: true
+        skipDuplicates: true,
       });
     }
 
@@ -175,10 +177,10 @@ export const replaceRolePermissions = async ({ roleId, permissionIds }) => {
         permission: {
           select: {
             module: true,
-            action: true
-          }
-        }
-      }
+            action: true,
+          },
+        },
+      },
     });
   });
 };
@@ -188,7 +190,7 @@ export const replaceUserPermissionOverrides = async ({ userId, entries }) => {
 
   return prisma.$transaction(async (tx) => {
     await tx.user_permissions.deleteMany({
-      where: { id_user: normalizedUserId }
+      where: { id_user: normalizedUserId },
     });
 
     if (entries.length) {
@@ -196,9 +198,9 @@ export const replaceUserPermissionOverrides = async ({ userId, entries }) => {
         data: entries.map((entry) => ({
           id_user: normalizedUserId,
           id_permission: entry.permissionId,
-          allow: Boolean(entry.allow)
+          allow: Boolean(entry.allow),
         })),
-        skipDuplicates: true
+        skipDuplicates: true,
       });
     }
 
@@ -209,10 +211,10 @@ export const replaceUserPermissionOverrides = async ({ userId, entries }) => {
         permission: {
           select: {
             module: true,
-            action: true
-          }
-        }
-      }
+            action: true,
+          },
+        },
+      },
     });
   });
 };

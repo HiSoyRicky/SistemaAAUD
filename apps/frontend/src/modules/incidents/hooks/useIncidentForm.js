@@ -22,6 +22,18 @@ const normalizeCategoryName = (value) =>
     .toLowerCase()
     .trim();
 
+const normalizeTonerColor = (color) => {
+  if (typeof color === 'string') {
+    return color.trim().toUpperCase();
+  }
+
+  if (color?.name) {
+    return color.name.trim().toUpperCase();
+  }
+
+  return 'DESCONOCIDO';
+};
+
 export function useIncidentForm({ loggedUserId, onSubmit }) {
   const [showModal, setShowModal] = useState(false);
   const [incidentId, setIncidentId] = useState(null);
@@ -69,13 +81,9 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
   const selectedCategoryDef = useMemo(() => {
     const categoryId = Number(selectedCategory);
     if (!categoryId) return null;
-    return (
-      categories.find((category) => Number(category.id) === categoryId) || null
-    );
+    return categories.find((category) => Number(category.id) === categoryId) || null;
   }, [categories, selectedCategory]);
-  const selectedCategoryNameNormalized = normalizeCategoryName(
-    selectedCategoryDef?.name
-  );
+  const selectedCategoryNameNormalized = normalizeCategoryName(selectedCategoryDef?.name);
   const isTonerCategory = selectedCategoryNameNormalized.includes('toner');
   const isOtherCategory = selectedCategoryNameNormalized.includes('otro');
 
@@ -91,17 +99,11 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
     const printerId = Number(selectedPrinterModelId);
     if (!printerId) return null;
 
-    return (
-      tonerPrinters.find(
-        (printer) => Number(printer.id_printer_model) === printerId
-      ) || null
-    );
+    return tonerPrinters.find((printer) => Number(printer.id_printer_model) === printerId) || null;
   }, [selectedPrinterModelId, tonerPrinters]);
 
   const availableTonerColors = useMemo(() => {
-    const toners = Array.isArray(selectedPrinter?.toners)
-      ? selectedPrinter.toners
-      : [];
+    const toners = Array.isArray(selectedPrinter?.toners) ? selectedPrinter.toners : [];
 
     return toners.map((toner) => ({
       color: toner.color,
@@ -221,9 +223,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
 
         if (ignore) return;
 
-        const printers = Array.isArray(response?.printers)
-          ? response.printers
-          : [];
+        const printers = Array.isArray(response?.printers) ? response.printers : [];
 
         setTonerPrinters(printers);
 
@@ -239,8 +239,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
         );
 
         if (!printerStillAvailable) {
-          const nextPrinterId =
-            printers.length === 1 ? String(printers[0].id_printer_model) : '';
+          const nextPrinterId = printers.length === 1 ? String(printers[0].id_printer_model) : '';
 
           setFieldValueIfChanged('id_printer_model', nextPrinterId, {
             shouldValidate: true,
@@ -286,9 +285,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
   useEffect(() => {
     if (!isTonerCategory) return;
 
-    const toners = Array.isArray(selectedPrinter?.toners)
-      ? selectedPrinter.toners
-      : [];
+    const toners = Array.isArray(selectedPrinter?.toners) ? selectedPrinter.toners : [];
 
     if (!selectedPrinter || toners.length === 0) {
       setFieldValueIfChanged('toner_color', '', {
@@ -306,9 +303,8 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
       return;
     }
 
-    const currentColor = String(selectedTonerColor || '')
-      .trim()
-      .toUpperCase();
+    const currentColor = normalizeTonerColor(selectedTonerColor);
+
     const colorExists = toners.some((toner) => toner.color === currentColor);
 
     if (colorExists) return;
@@ -339,9 +335,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
   useEffect(() => {
     if (!isTonerCategory) return;
 
-    const color = String(selectedTonerColor || '')
-      .trim()
-      .toUpperCase();
+    const color = normalizeTonerColor(selectedTonerColor);
     const toner = selectedPrinter?.toners?.find((item) => item.color === color);
 
     if (!selectedPrinter || !toner) {
@@ -370,12 +364,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
     clearErrors(['description', 'toner_color']);
   }, [clearErrors, isTonerCategory, selectedPrinter, selectedTonerColor]);
 
-  const handleUbiDepChange = ({
-    id_ubication,
-    id_department,
-    ubication_name,
-    department_name,
-  }) => {
+  const handleUbiDepChange = ({ id_ubication, id_department, ubication_name, department_name }) => {
     setValue('id_ubication', id_ubication ?? '', {
       shouldValidate: true,
       shouldDirty: true,
@@ -387,12 +376,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
 
     setSelectedUbication(ubication_name || '');
     setSelectedDepartment(department_name || '');
-    clearErrors([
-      'id_ubication',
-      'id_department',
-      'id_printer_model',
-      'toner_color',
-    ]);
+    clearErrors(['id_ubication', 'id_department', 'id_printer_model', 'toner_color']);
 
     if (isTonerCategory) {
       setFieldValueIfChanged('id_printer_model', '', {
@@ -416,16 +400,10 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
 
   const submit = handleSubmit(async (data) => {
     clearErrors('root');
-    clearErrors([
-      'id_category',
-      'other_category_detail',
-      'id_printer_model',
-      'toner_color',
-    ]);
+    clearErrors(['id_category', 'other_category_detail', 'id_printer_model', 'toner_color']);
 
     const categoryId = Number(data.id_category);
-    const categoryDef =
-      categories.find((category) => Number(category.id) === categoryId) || null;
+    const categoryDef = categories.find((category) => Number(category.id) === categoryId) || null;
 
     if (!categoryDef) {
       setError('id_category', {
@@ -487,9 +465,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
       toast.success('Incidencia enviada');
     } catch (err) {
       const message =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        'Error al enviar incidencia';
+        err?.response?.data?.error || err?.response?.data?.message || 'Error al enviar incidencia';
 
       setError('root', { type: 'manual', message });
       toast.error(message);

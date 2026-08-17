@@ -1,3 +1,5 @@
+// auth.controller.js
+
 import * as service from './auth.service.js';
 
 function handleAuthError(res, error, fallbackMessage) {

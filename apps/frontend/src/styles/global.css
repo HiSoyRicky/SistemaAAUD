@@ -1,4 +1,4 @@
-/* src/styles/global.css */
+/* global.css */
 
 /* Importa la fuente antes de usarla */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -28,6 +28,7 @@ body {
         opacity: 0;
         transform: translateX(20px);
     }
+
     100% {
         opacity: 1;
         transform: translateX(0);

@@ -1,3 +1,5 @@
+// BrandsTable.jsx
+
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 
 export default function BrandsTable({
@@ -7,7 +9,7 @@ export default function BrandsTable({
   deleteBrand,
   addBrand,
   newBrand,
-  setnewBrand,
+  setNewBrand,
   editingId,
   editingName,
   setEditingName,
@@ -21,11 +23,12 @@ export default function BrandsTable({
         <input
           type="text"
           value={newBrand}
-          onChange={(e) => setnewBrand(e.target.value)}
+          onChange={(e) => setNewBrand(e.target.value)}
           placeholder="Nueva Marca"
           className="px-2 py-1 border rounded"
         />
         <button
+          type="button"
           onClick={addBrand}
           className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
         >
@@ -76,13 +79,11 @@ export default function BrandsTable({
                     />
                   </>
                 ) : (
-                  <>
-                    <ActionButton
-                      type={'edit'}
-                      title="Editar marca"
-                      onClick={() => editBrand(b.id, b.name)}
-                    />
-                  </>
+                  <ActionButton
+                    type={'edit'}
+                    title="Editar marca"
+                    onClick={() => editBrand(b.id, b.name)}
+                  />
                 )}
               </td>
             </tr>

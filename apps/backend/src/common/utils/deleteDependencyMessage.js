@@ -1,3 +1,5 @@
+// deleteDependencyMessage.js
+
 const joinSpanishList = (items) => {
   if (items.length <= 1) return items[0] || '';
   if (items.length === 2) return `${items[0]} y ${items[1]}`;
@@ -7,7 +9,7 @@ const joinSpanishList = (items) => {
 export const buildDeleteDependencyMessage = ({
   subject,
   associatedWord = 'asociado',
-  dependencies
+  dependencies,
 }) => {
   const details = dependencies
     .filter(({ count }) => Number(count) > 0)

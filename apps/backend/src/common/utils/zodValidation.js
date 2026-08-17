@@ -1,3 +1,5 @@
+// zodValidation.js
+
 import { isIP } from 'node:net';
 import { z } from 'zod';
 import AppError from './AppError.js';
@@ -36,91 +38,99 @@ function getFirstIssueMessage(error) {
   return error?.issues?.[0]?.message || 'Datos inválidos';
 }
 
-export const zRequiredField = (message) =>
-  z.any().refine((value) => hasValue(value), { message });
+export const zRequiredField = (message) => z.any().refine((value) => hasValue(value), { message });
 
 export const zRequiredString = (message) =>
-  z.any().refine(
-    (value) => typeof value === 'string' && value.trim().length > 0,
-    { message }
-  );
+  z.any().refine((value) => typeof value === 'string' && value.trim().length > 0, { message });
 
 export const zOptionalString = (message) =>
-  z.any().optional().refine(
-    (value) => value === undefined || typeof value === 'string',
-    { message }
-  );
+  z
+    .any()
+    .optional()
+    .refine((value) => value === undefined || typeof value === 'string', { message });
 
 export const zOptionalNullableString = (message) =>
-  z.any().optional().refine(
-    (value) => value === undefined || value === null || typeof value === 'string',
-    { message }
-  );
+  z
+    .any()
+    .optional()
+    .refine((value) => value === undefined || value === null || typeof value === 'string', {
+      message,
+    });
 
 export const zOptionalNonEmptyField = (message) =>
-  z.any().optional().refine(
-    (value) => value === undefined || hasValue(value),
-    { message }
-  );
+  z
+    .any()
+    .optional()
+    .refine((value) => value === undefined || hasValue(value), { message });
 
 export const zRequiredInt = (message, { min, max } = {}) =>
-  z.any().refine((value) => {
-    if (!hasValue(value) || !isIntegerLike(value)) {
-      return false;
-    }
+  z.any().refine(
+    (value) => {
+      if (!hasValue(value) || !isIntegerLike(value)) {
+        return false;
+      }
 
-    const parsed = toNumber(value);
+      const parsed = toNumber(value);
 
-    if (min !== undefined && parsed < min) {
-      return false;
-    }
+      if (min !== undefined && parsed < min) {
+        return false;
+      }
 
-    if (max !== undefined && parsed > max) {
-      return false;
-    }
+      if (max !== undefined && parsed > max) {
+        return false;
+      }
 
-    return true;
-  }, { message });
+      return true;
+    },
+    { message }
+  );
 
 export const zOptionalInt = (
   message,
   { min, max, nullable = false, allowEmptyString = true } = {}
 ) =>
-  z.any().optional().refine((value) => {
-    if (value === undefined) {
-      return true;
-    }
+  z
+    .any()
+    .optional()
+    .refine(
+      (value) => {
+        if (value === undefined) {
+          return true;
+        }
 
-    if (nullable && value === null) {
-      return true;
-    }
+        if (nullable && value === null) {
+          return true;
+        }
 
-    if (allowEmptyString && value === '') {
-      return true;
-    }
+        if (allowEmptyString && value === '') {
+          return true;
+        }
 
-    if (!isIntegerLike(value)) {
-      return false;
-    }
+        if (!isIntegerLike(value)) {
+          return false;
+        }
 
-    const parsed = toNumber(value);
+        const parsed = toNumber(value);
 
-    if (min !== undefined && parsed < min) {
-      return false;
-    }
+        if (min !== undefined && parsed < min) {
+          return false;
+        }
 
-    if (max !== undefined && parsed > max) {
-      return false;
-    }
+        if (max !== undefined && parsed > max) {
+          return false;
+        }
 
-    return true;
-  }, { message });
+        return true;
+      },
+      { message }
+    );
 
 export const zRequiredEnum = (values, requiredMessage, invalidMessage) =>
-  z.any()
+  z
+    .any()
     .refine((value) => hasValue(value), { message: requiredMessage })
     .refine((value) => values.includes(value), {
-      message: invalidMessage || requiredMessage
+      message: invalidMessage || requiredMessage,
     });
 
 export const zOptionalEnum = (
@@ -128,80 +138,91 @@ export const zOptionalEnum = (
   invalidMessage,
   { nullable = false, allowEmptyString = true } = {}
 ) =>
-  z.any().optional().refine((value) => {
-    if (value === undefined) {
-      return true;
-    }
+  z
+    .any()
+    .optional()
+    .refine(
+      (value) => {
+        if (value === undefined) {
+          return true;
+        }
 
-    if (nullable && value === null) {
-      return true;
-    }
+        if (nullable && value === null) {
+          return true;
+        }
 
-    if (allowEmptyString && value === '') {
-      return true;
-    }
+        if (allowEmptyString && value === '') {
+          return true;
+        }
 
-    return values.includes(value);
-  }, { message: invalidMessage });
+        return values.includes(value);
+      },
+      { message: invalidMessage }
+    );
 
 export const zEmail = (message) =>
-  z.any().refine(
-    (value) => typeof value === 'string' && EMAIL_REGEX.test(value.trim()),
-    { message }
-  );
+  z
+    .any()
+    .refine((value) => typeof value === 'string' && EMAIL_REGEX.test(value.trim()), { message });
 
-export const zOptionalIP = (
-  message,
-  { nullable = false, allowEmptyString = true } = {}
-) =>
-  z.any().optional().refine((value) => {
-    if (value === undefined) {
-      return true;
-    }
+export const zOptionalIP = (message, { nullable = false, allowEmptyString = true } = {}) =>
+  z
+    .any()
+    .optional()
+    .refine(
+      (value) => {
+        if (value === undefined) {
+          return true;
+        }
 
-    if (nullable && value === null) {
-      return true;
-    }
+        if (nullable && value === null) {
+          return true;
+        }
 
-    if (allowEmptyString && value === '') {
-      return true;
-    }
+        if (allowEmptyString && value === '') {
+          return true;
+        }
 
-    if (typeof value !== 'string') {
-      return false;
-    }
+        if (typeof value !== 'string') {
+          return false;
+        }
 
-    return isIP(value.trim()) !== 0;
-  }, { message });
+        return isIP(value.trim()) !== 0;
+      },
+      { message }
+    );
 
-export const zOptionalDate = (
-  message,
-  { nullable = false, allowEmptyString = true } = {}
-) =>
-  z.any().optional().refine((value) => {
-    if (value === undefined) {
-      return true;
-    }
+export const zOptionalDate = (message, { nullable = false, allowEmptyString = true } = {}) =>
+  z
+    .any()
+    .optional()
+    .refine(
+      (value) => {
+        if (value === undefined) {
+          return true;
+        }
 
-    if (nullable && value === null) {
-      return true;
-    }
+        if (nullable && value === null) {
+          return true;
+        }
 
-    if (allowEmptyString && value === '') {
-      return true;
-    }
+        if (allowEmptyString && value === '') {
+          return true;
+        }
 
-    if (value instanceof Date) {
-      return !Number.isNaN(value.getTime());
-    }
+        if (value instanceof Date) {
+          return !Number.isNaN(value.getTime());
+        }
 
-    if (typeof value !== 'string') {
-      return false;
-    }
+        if (typeof value !== 'string') {
+          return false;
+        }
 
-    const parsed = new Date(value);
-    return !Number.isNaN(parsed.getTime());
-  }, { message });
+        const parsed = new Date(value);
+        return !Number.isNaN(parsed.getTime());
+      },
+      { message }
+    );
 
 export const parseWithZod = (schema, value) => {
   const result = schema.safeParse(value);
@@ -218,7 +239,8 @@ export const parseWithZod = (schema, value) => {
   return result.data;
 };
 
-export const validateZod = ({ params, query, body, assignParsed = false } = {}) =>
+export const validateZod =
+  ({ params, query, body, assignParsed = false } = {}) =>
   (req, _res, next) => {
     try {
       const parsed = {};

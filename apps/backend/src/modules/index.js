@@ -1,16 +1,18 @@
+// index.js
+
+export { default as activityRouter } from './activity/activity.routes.js';
+export { default as authRouter } from './auth/auth.routes.js';
+export { default as brandsRouter } from './brands/brands.routes.js';
+export { default as categoriesRouter } from './categories/categories.routes.js';
+export { default as departmentsRouter } from './departments/departments.routes.js';
+export { default as devicesRouter } from './devices/devices.routes.js';
 export { default as incidentsRouter } from './incidents/incidents.routes.js';
 export { default as inventoryRouter } from './inventory/inventory.routes.js';
-export { default as brandsRouter } from './brands/brands.routes.js';
-export { default as devicesRouter } from './devices/devices.routes.js';
-export { default as modelsRouter } from './models/models.routes.js';
-export { default as departmentsRouter } from './departments/departments.routes.js';
-export { default as ubicationsRouter } from './ubications/ubications.routes.js';
-export { default as statusRouter } from './status/status.routes.js';
-export { default as tonersRouter } from './toners/toners.routes.js';
-export { default as tonerMovementsRouter } from './tonerMovements/tonerMovements.routes.js';
-export { default as usersRouter } from './users/users.routes.js';
-export { default as authRouter } from './auth/auth.routes.js';
-export { default as permissionsRouter } from './permissions/permissions.routes.js';
-export { default as activityRouter } from './activity/activity.routes.js';
-export { default as categoriesRouter } from './categories/categories.routes.js';
 export { default as inventoryTransferRequestsRouter } from './inventoryTransferRequests/inventoryTransferRequests.routes.js';
+export { default as modelsRouter } from './models/models.routes.js';
+export { default as permissionsRouter } from './permissions/permissions.routes.js';
+export { default as statusRouter } from './status/status.routes.js';
+export { default as tonerMovementsRouter } from './tonerMovements/tonerMovements.routes.js';
+export { default as tonersRouter } from './toners/toners.routes.js';
+export { default as ubicationsRouter } from './ubications/ubications.routes.js';
+export { default as usersRouter } from './users/users.routes.js';

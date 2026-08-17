@@ -1,3 +1,5 @@
+// auth.routes.js
+
 import express from 'express';
 import * as controller from './auth.controller.js';
 

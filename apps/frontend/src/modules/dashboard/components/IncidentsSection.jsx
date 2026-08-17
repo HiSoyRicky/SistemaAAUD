@@ -1,18 +1,14 @@
-import { ClipboardList, Clock3, Wrench, CheckCircle2 } from 'lucide-react';
-import StatCard from './StatCard.jsx';
+// IncidentsSection.jsx
+
+import { CheckCircle2, ClipboardList, Clock3, Wrench } from 'lucide-react';
 import SectionHeader from './SectionHeader.jsx';
+import StatCard from './StatCard.jsx';
 
 export default function IncidentsSection({ incidences, loading }) {
   const totalIncidences = incidences.length;
-  const pendientes = incidences.filter(
-    (incident) => Number(incident.id_status) === 1
-  ).length;
-  const enProceso = incidences.filter(
-    (incident) => Number(incident.id_status) === 2
-  ).length;
-  const resueltas = incidences.filter(
-    (incident) => Number(incident.id_status) === 3
-  ).length;
+  const pendientes = incidences.filter((incident) => Number(incident.id_status) === 1).length;
+  const enProceso = incidences.filter((incident) => Number(incident.id_status) === 2).length;
+  const resueltas = incidences.filter((incident) => Number(incident.id_status) === 3).length;
 
   return (
     <section className="p-8 mb-10 bg-white border shadow-sm border-slate-200 rounded-3xl">

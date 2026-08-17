@@ -1,10 +1,6 @@
-import {
-  MapPinned,
-  RotateCcw,
-  ShieldCheck,
-  UserCog,
-  Users,
-} from 'lucide-react';
+// PermissionsManager.jsx
+
+import { MapPinned, RotateCcw, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import useAuth from '../../../../shared/hooks/useAuth';
 import PermissionsApi from '../../services/permissions.api';
@@ -30,7 +26,7 @@ function setFromList(list = []) {
 
 function formatLabel(value) {
   return String(value || '')
-    .replace(/_/g, ' ')
+    .replaceAll('_', ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
@@ -53,20 +49,11 @@ const MODULE_LABELS = {
 const ACTION_DETAILS = {
   read: ['Ver', 'Permite consultar registros del módulo.'],
   create: ['Crear', 'Permite registrar nuevos elementos.'],
-  update: [
-    'Editar completamente',
-    'Permite modificar todos los campos disponibles.',
-  ],
+  update: ['Editar completamente', 'Permite modificar todos los campos disponibles.'],
   delete: ['Eliminar', 'Permite eliminar registros.'],
-  update_password: [
-    'Cambiar contraseñas',
-    'Permite actualizar contraseñas de usuarios.',
-  ],
+  update_password: ['Cambiar contraseñas', 'Permite actualizar contraseñas de usuarios.'],
   assign: ['Asignar permisos', 'Permite cambiar permisos de roles y usuarios.'],
-  update_location: [
-    'Editar ubicación',
-    'Permite cambiar únicamente la ubicación del equipo.',
-  ],
+  update_location: ['Editar ubicación', 'Permite cambiar únicamente la ubicación del equipo.'],
   update_department: [
     'Editar departamento',
     'Permite cambiar únicamente el departamento del equipo.',
@@ -142,9 +129,7 @@ export default function PermissionsManager() {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([module, permissions]) => ({
         module,
-        permissions: [...permissions].sort((a, b) =>
-          a.action.localeCompare(b.action)
-        ),
+        permissions: [...permissions].sort((a, b) => a.action.localeCompare(b.action)),
       }));
   }, [permissionsCatalog]);
 
@@ -159,11 +144,7 @@ export default function PermissionsManager() {
       const username = String(user.username || '').toLowerCase();
       const email = String(user.email || '').toLowerCase();
 
-      return (
-        fullName.includes(term) ||
-        username.includes(term) ||
-        email.includes(term)
-      );
+      return fullName.includes(term) || username.includes(term) || email.includes(term);
     });
   }, [users, userSearch]);
 
@@ -203,9 +184,7 @@ export default function PermissionsManager() {
           PermissionsApi.fetchUsers(),
         ]);
 
-        const nextPermissions = Array.isArray(overview?.permissions)
-          ? overview.permissions
-          : [];
+        const nextPermissions = Array.isArray(overview?.permissions) ? overview.permissions : [];
         const nextRoles = Array.isArray(overview?.roles) ? overview.roles : [];
         const nextUsers = Array.isArray(usersData) ? usersData : [];
 
@@ -310,10 +289,7 @@ export default function PermissionsManager() {
 
     try {
       const payload = toSortedArray(rolePermissionSet);
-      const result = await PermissionsApi.updateRolePermissions(
-        selectedRoleId,
-        payload
-      );
+      const result = await PermissionsApi.updateRolePermissions(selectedRoleId, payload);
 
       const nextPermissions = setFromList(result?.permissions || []);
       setRolePermissionSet(nextPermissions);
@@ -371,20 +347,15 @@ export default function PermissionsManager() {
     setError('');
 
     try {
-      const result = await PermissionsApi.updateUserPermissions(
-        selectedUserId,
-        {
-          grants: toSortedArray(nextGrants),
-          denies: toSortedArray(nextDenies),
-        }
-      );
+      const result = await PermissionsApi.updateUserPermissions(selectedUserId, {
+        grants: toSortedArray(nextGrants),
+        denies: toSortedArray(nextDenies),
+      });
 
       setSelectedUserMeta(result?.user || selectedUserMeta);
       setUserGrantSet(setFromList(result?.userOverrides?.grants || []));
       setUserDenySet(setFromList(result?.userOverrides?.denies || []));
-      setSuccess(
-        'Permisos guardados. El técnico puede editar Ubicación, Departamento y Usuario.'
-      );
+      setSuccess('Permisos guardados. El técnico puede editar Ubicación, Departamento y Usuario.');
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -411,10 +382,7 @@ export default function PermissionsManager() {
         denies: toSortedArray(userDenySet),
       };
 
-      const result = await PermissionsApi.updateUserPermissions(
-        selectedUserId,
-        payload
-      );
+      const result = await PermissionsApi.updateUserPermissions(selectedUserId, payload);
 
       setSelectedUserMeta(result?.user || selectedUserMeta);
       setUserGrantSet(setFromList(result?.userOverrides?.grants || []));
@@ -437,8 +405,8 @@ export default function PermissionsManager() {
       <div>
         <h2 className="text-xl font-semibold">Gestión de Permisos</h2>
         <p className="text-sm text-gray-600">
-          Define la base por rol y crea excepciones para usuarios específicos.
-          Los permisos denegados tienen prioridad sobre los heredados.
+          Define la base por rol y crea excepciones para usuarios específicos. Los permisos
+          denegados tienen prioridad sobre los heredados.
         </p>
       </div>
 
@@ -486,14 +454,14 @@ export default function PermissionsManager() {
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
             <div className="min-w-[260px] flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="roleSelect" className="mb-1 block text-sm font-medium text-gray-700">
                 Rol
               </label>
+
               <select
+                id="roleSelect"
                 value={selectedRoleId || ''}
-                onChange={(event) =>
-                  setSelectedRoleId(Number(event.target.value))
-                }
+                onChange={(event) => setSelectedRoleId(Number(event.target.value))}
                 className="w-full rounded-lg border px-3 py-2 text-sm"
               >
                 {roles.map((role) => (
@@ -522,10 +490,7 @@ export default function PermissionsManager() {
 
             <div className="grid gap-4 md:grid-cols-2">
               {groupedPermissions.map((group) => (
-                <article
-                  key={group.module}
-                  className="rounded-lg border bg-gray-50 p-3"
-                >
+                <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
                   <h3 className="mb-3 text-sm font-semibold text-gray-800">
                     {getModuleLabel(group.module)}
                   </h3>
@@ -533,32 +498,28 @@ export default function PermissionsManager() {
                   <div className="space-y-2">
                     {group.permissions.map((permission) => {
                       const code = normalizeCode(permission.code);
+                      const checkboxId = `permission-${code}`;
                       const checked = rolePermissionSet.has(code);
-                      const [actionLabel, actionDescription] = getActionDetail(
-                        permission.action
-                      );
+                      const [actionLabel, actionDescription] = getActionDetail(permission.action);
 
                       return (
-                        <label
+                        <div
                           key={code}
                           className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"
                         >
-                          <span>
-                            <span className="block font-medium">
-                              {actionLabel}
-                            </span>
-                            <span className="block text-xs text-gray-500">
-                              {actionDescription}
-                            </span>
-                          </span>
+                          <label htmlFor={checkboxId} className="flex-1 cursor-pointer">
+                            <span className="block font-medium">{actionLabel}</span>
+                            <span className="block text-xs text-gray-500">{actionDescription}</span>
+                          </label>
 
                           <input
+                            id={checkboxId}
                             type="checkbox"
                             checked={checked}
                             onChange={() => handleRoleToggle(code)}
                             className="h-4 w-4"
                           />
-                        </label>
+                        </div>
                       );
                     })}
                   </div>
@@ -574,11 +535,15 @@ export default function PermissionsManager() {
           <div className="rounded-lg border p-4">
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="user-search"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
                   Buscar usuario
                 </label>
                 <input
                   type="text"
+                  id="user-search"
                   value={userSearch}
                   onChange={(event) => setUserSearch(event.target.value)}
                   placeholder="Nombre, usuario o correo"
@@ -587,25 +552,23 @@ export default function PermissionsManager() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="user-select"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
                   Usuario
                 </label>
                 <select
+                  id="user-select"
                   value={
-                    filteredUsers.some(
-                      (user) => Number(user.id) === Number(selectedUserId)
-                    )
+                    filteredUsers.some((user) => Number(user.id) === Number(selectedUserId))
                       ? selectedUserId
                       : ''
                   }
-                  onChange={(event) =>
-                    setSelectedUserId(Number(event.target.value))
-                  }
+                  onChange={(event) => setSelectedUserId(Number(event.target.value))}
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                 >
-                  {!filteredUsers.length && (
-                    <option value="">No se encontraron usuarios</option>
-                  )}
+                  {!filteredUsers.length && <option value="">No se encontraron usuarios</option>}
                   {filteredUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.nombre_completo || user.username} ({user.username})
@@ -619,9 +582,7 @@ export default function PermissionsManager() {
               <span>
                 Usuario:{' '}
                 <strong>
-                  {selectedUserMeta?.nombre_completo ||
-                    selectedUserMeta?.username ||
-                    'N/D'}
+                  {selectedUserMeta?.nombre_completo || selectedUserMeta?.username || 'N/D'}
                 </strong>
               </span>
               <span>
@@ -643,7 +604,7 @@ export default function PermissionsManager() {
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <MapPinned className="h-4 w-4" />
-                  Permitir solo reasignación de inventario
+                  Permitir solo reasignar el inventario
                 </button>
 
                 <button
@@ -666,8 +627,7 @@ export default function PermissionsManager() {
                 </button>
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Este botón guarda inmediatamente la configuración y deniega la
-                edición completa.
+                Este botón guarda inmediatamente la configuración y deniega la edición completa.
               </p>
             </div>
           </div>
@@ -690,10 +650,7 @@ export default function PermissionsManager() {
 
             <div className="space-y-4">
               {groupedPermissions.map((group) => (
-                <article
-                  key={group.module}
-                  className="rounded-lg border bg-gray-50 p-3"
-                >
+                <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
                   <h3 className="mb-2 text-sm font-semibold text-gray-800">
                     {getModuleLabel(group.module)}
                   </h3>
@@ -702,17 +659,15 @@ export default function PermissionsManager() {
                     {group.permissions.map((permission) => {
                       const code = normalizeCode(permission.code);
                       const roleHasPermission = userRolePermissionSet.has(code);
-                      const effectiveHasPermission =
-                        liveUserEffectiveSet.has(code);
-                      const [actionLabel, actionDescription] = getActionDetail(
-                        permission.action
-                      );
+                      const effectiveHasPermission = liveUserEffectiveSet.has(code);
+                      const [actionLabel, actionDescription] = getActionDetail(permission.action);
 
-                      const overrideValue = userGrantSet.has(code)
-                        ? 'allow'
-                        : userDenySet.has(code)
-                          ? 'deny'
-                          : 'inherit';
+                      let overrideValue = 'inherit';
+                      if (userGrantSet.has(code)) {
+                        overrideValue = 'allow';
+                      } else if (userDenySet.has(code)) {
+                        overrideValue = 'deny';
+                      }
 
                       return (
                         <div
@@ -721,9 +676,7 @@ export default function PermissionsManager() {
                         >
                           <div>
                             <div className="font-medium">{actionLabel}</div>
-                            <div className="text-xs text-gray-500">
-                              {actionDescription}
-                            </div>
+                            <div className="text-xs text-gray-500">{actionDescription}</div>
                           </div>
 
                           <div>
@@ -741,9 +694,7 @@ export default function PermissionsManager() {
                           <div>
                             <select
                               value={overrideValue}
-                              onChange={(event) =>
-                                updateUserOverride(code, event.target.value)
-                              }
+                              onChange={(event) => updateUserOverride(code, event.target.value)}
                               className="w-full rounded-md border px-2 py-1 text-xs"
                             >
                               <option value="inherit">Heredar</option>

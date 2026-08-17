@@ -1,3 +1,5 @@
+// incidents.controller.js
+
 import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './incidents.service.js';
 
@@ -22,7 +24,7 @@ export const getPublicByToken = catchAsync(async (req, res, next) => {
         success: false,
         code: 'INVALID_TOKEN',
         message: 'Token inválido o expirado. Solicita un nuevo enlace.',
-        data: null
+        data: null,
       });
     }
 
@@ -33,7 +35,7 @@ export const getPublicByToken = catchAsync(async (req, res, next) => {
         success: false,
         code: 'INVALID_TOKEN',
         message: 'El enlace de la incidencia no es válido o ha caducado.',
-        data: null
+        data: null,
       });
     }
 
@@ -50,7 +52,7 @@ export const create = catchAsync(async (req, res) => {
   const data = await service.create({
     payload: req.body,
     req,
-    io: req.app.get('io')
+    io: req.app.get('io'),
   });
 
   res.json(data);
@@ -61,7 +63,7 @@ export const update = catchAsync(async (req, res) => {
     idParam: req.params.id,
     payload: req.body,
     currentUser: req.user,
-    io: req.app.get('io')
+    io: req.app.get('io'),
   });
 
   res.json(data);
@@ -72,7 +74,7 @@ export const remove = catchAsync(async (req, res) => {
     idParam: req.params.id,
     password: req.body.password,
     currentUser: req.user,
-    io: req.app.get('io')
+    io: req.app.get('io'),
   });
 
   res.json(data);

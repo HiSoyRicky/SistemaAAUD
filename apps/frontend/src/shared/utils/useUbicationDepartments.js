@@ -1,77 +1,97 @@
-// src/hooks/useUbicactionDepartments.js
-import { useEffect, useState } from 'react';
-import api from "../api/apiClient";
+// useUbicationDepartments.js
 
+import { useEffect, useState } from 'react';
+import api from '../api/apiClient';
 
 export const useUbicationDepartments = () => {
-    const [ubications, setUbications] = useState([]);
-    const [departments, setDepartments] = useState([]);
-    const [allDepartments, setAllDepartments] = useState([]);
-    const [selectedUbication, setSelectedUbication] = useState(null);
-    const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [ubications, setUbications] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [allDepartments, setAllDepartments] = useState([]);
+  const [selectedUbication, setSelectedUbication] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
 
-    // Cargar ubicaciones
-    useEffect(() => {
-        api.get(`/api/ubications`)
-            .then(res => setUbications(res.data))
-            .catch(err => console.error('Error cargando ubicaciones:', err));
-    }, []);
+  // Cargar ubicaciones
+  useEffect(() => {
+    api
+      .get('/api/ubications')
+      .then((res) => {
+        const data = res.data;
 
-    // Cargar todos los departamentos
-    useEffect(() => {
-        api.get(`/api/departments`)
-            .then(res => {
-                const data = res.data;
+        if (Array.isArray(data)) {
+          setUbications(data);
+        } else if (Array.isArray(data?.ubications)) {
+          setUbications(data.ubications);
+        } else if (Array.isArray(data?.data)) {
+          setUbications(data.data);
+        } else {
+          setUbications([]);
+        }
+      })
+      .catch((err) => {
+        console.error('Error cargando ubicaciones:', err);
+        setUbications([]);
+      });
+  }, []);
 
-                // Ajusta esto según cómo responda tu backend
-                const list = Array.isArray(data)
-                    ? data
-                    : Array.isArray(data.departments)
-                        ? data.departments
-                        : Array.isArray(data.data)
-                            ? data.data
-                            : [];
+  // Cargar todos los departamentos
+  useEffect(() => {
+    api
+      .get('/api/departments')
+      .then((res) => {
+        const data = res.data;
 
-                setAllDepartments(list);
-            })
-            .catch(err => {
-                console.error('Error cargando departamentos:', err);
-                setAllDepartments([]); // evitar que quede undefined o algo raro
-            });
-    }, []);
+        let list = [];
 
-
-    // Filtrar departamentos según la ubicación seleccionada
-    useEffect(() => {
-        if (!selectedUbication) {
-            setDepartments([]);
-            setSelectedDepartment(null);
-            return;
+        if (Array.isArray(data)) {
+          list = data;
+        } else if (Array.isArray(data?.departments)) {
+          list = data.departments;
+        } else if (Array.isArray(data?.data)) {
+          list = data.data;
         }
 
-        if (!Array.isArray(allDepartments)) {
-            console.error('allDepartments no es un array:', allDepartments);
-            setDepartments([]);
-            setSelectedDepartment(null);
-            return;
-        }
+        setAllDepartments(list);
+      })
+      .catch((err) => {
+        console.error('Error cargando departamentos:', err);
+        setAllDepartments([]);
+      });
+  }, []);
 
-        const idUbi = parseInt(selectedUbication);
+  // Filtrar departamentos según la ubicación seleccionada
+  useEffect(() => {
+    if (!selectedUbication) {
+      setDepartments([]);
+      setSelectedDepartment(null);
+      return;
+    }
 
-        const filtered = allDepartments
-            .filter(dep => dep && dep.id_ubication === idUbi);
+    if (!Array.isArray(allDepartments)) {
+      console.error('allDepartments no es un array:', allDepartments);
+      setDepartments([]);
+      setSelectedDepartment(null);
+      return;
+    }
 
-        setDepartments(filtered);
-        setSelectedDepartment(null);
-    }, [selectedUbication, allDepartments]);
+    const idUbi = Number(selectedUbication);
 
+    const filtered = allDepartments.filter((dep) => {
+      const departmentUbicationId =
+        dep?.dep?.id_ubication ?? dep?.id_ubication ?? dep?.ubication?.id;
 
-    return {
-        ubications,
-        departments,
-        selectedUbication,
-        selectedDepartment,
-        setSelectedUbication,
-        setSelectedDepartment
-    };
+      return Number(departmentUbicationId) === idUbi;
+    });
+
+    setDepartments(filtered);
+    setSelectedDepartment(null);
+  }, [selectedUbication, allDepartments]);
+
+  return {
+    ubications,
+    departments,
+    selectedUbication,
+    selectedDepartment,
+    setSelectedUbication,
+    setSelectedDepartment,
+  };
 };

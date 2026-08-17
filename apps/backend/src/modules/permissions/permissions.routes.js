@@ -1,3 +1,5 @@
+// permissions.routes.js
+
 import express from 'express';
 import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './permissions.controller.js';
@@ -5,7 +7,7 @@ import {
   validateRoleParams,
   validateUpdateRolePermissions,
   validateUpdateUserPermissions,
-  validateUserParams
+  validateUserParams,
 } from './permissions.validator.js';
 
 const router = express.Router();

@@ -1,17 +1,13 @@
 // incidentsSocket.js
-import { subscribe, emitEvent } from "./socketClient";
 
-export const onIncidentCreated = (cb) =>
-    subscribe("incidentCreated", cb);
+import { emitEvent, subscribe } from './socketClient';
 
-export const onIncidentUpdated = (cb) =>
-    subscribe("incidentUpdated", cb);
+export const onIncidentCreated = (cb) => subscribe('incidentCreated', cb);
 
-export const onIncidentDeleted = (cb) =>
-    subscribe("incidentDeleted", cb);
+export const onIncidentUpdated = (cb) => subscribe('incidentUpdated', cb);
 
-export const joinIncidentRoom = (incidentId) =>
-    emitEvent("joinIncidentRoom", incidentId);
+export const onIncidentDeleted = (cb) => subscribe('incidentDeleted', cb);
 
-export const leaveIncidentRoom = (incidentId) =>
-    emitEvent("leaveIncidentRoom", incidentId);
+export const joinIncidentRoom = (incidentId) => emitEvent('joinIncidentRoom', incidentId);
+
+export const leaveIncidentRoom = (incidentId) => emitEvent('leaveIncidentRoom', incidentId);

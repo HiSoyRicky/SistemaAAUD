@@ -18,7 +18,7 @@ export const incidentSchema = z.object({
     .min(4, 'El nombre debe tener al menos 4 caracteres')
     .max(30, 'El nombre no puede superar los 30 caracteres'),
 
-  email: z.string().email('Correo inválido').optional().or(z.literal('')),
+  email: z.email('Correo inválido').optional().or(z.literal('')),
 
   id_ubication: z.coerce.number().min(1, 'Seleccione una ubicación'),
   id_department: z.coerce.number().min(1, 'Seleccione un departamento'),
@@ -29,12 +29,13 @@ export const incidentSchema = z.object({
     if (value === '' || value === null || value === undefined) {
       return undefined;
     }
-    return String(value).trim().toUpperCase();
+    if (typeof value !== 'string') {
+      return value;
+    }
+    return value.trim().toUpperCase();
   }, z.enum(TONER_COLORS).optional()),
 
-  description: z
-    .string()
-    .min(10, 'La descripción debe tener al menos 10 caracteres'),
+  description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
 
   id_category: z.coerce.number().min(1, 'Seleccione una categoría'),
   other_category_detail: z.string().optional(),

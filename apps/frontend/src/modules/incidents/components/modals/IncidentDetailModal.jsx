@@ -1,4 +1,5 @@
-import React from 'react';
+// IncidentDetailModal.jsx
+
 import { formatDateTime } from '../../../../../../frontend/src/shared/utils/formatDate';
 
 export const formatDateTimeLocal = (date) => {
@@ -25,9 +26,7 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
-            <h2 className="text-lg font-bold">
-              Incidencia #{incident.ticket_number}
-            </h2>
+            <h2 className="text-lg font-bold">Incidencia #{incident.ticket_number}</h2>
             <span
               className={`inline-block mt-1 px-3 py-1 text-xs font-medium rounded-full ${status.color}`}
             >
@@ -36,6 +35,7 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="text-2xl text-gray-400 hover:text-gray-600"
           >
@@ -52,20 +52,12 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
             <Info label="Ubicación" value={incident.ubication_name} />
             <Info label="Departamento" value={incident.department_name} />
             <Info label="Categoría" value={incident.category_name || 'S/C'} />
-            <Info
-              label="Técnico"
-              value={incident.technician_full_name || 'Sin asignar'}
-            />
-            <Info
-              label="Fecha de creación"
-              value={formatDateTimeLocal(incident.creation_date)}
-            />
+            <Info label="Técnico" value={incident.technician_full_name || 'Sin asignar'} />
+            <Info label="Fecha de creación" value={formatDateTimeLocal(incident.creation_date)} />
             <Info
               label="Fecha de solución"
               value={
-                incident.solution_date
-                  ? formatDateTimeLocal(incident.solution_date)
-                  : 'No resuelto'
+                incident.solution_date ? formatDateTimeLocal(incident.solution_date) : 'No resuelto'
               }
               muted={!incident.solution_date}
             />
@@ -76,15 +68,14 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
 
           {/* Solución */}
           <Section title="Solución">
-            {incident.solution || (
-              <span className="italic text-gray-400">Sin resolver</span>
-            )}
+            {incident.solution || <span className="italic text-gray-400">Sin resolver</span>}
           </Section>
         </div>
 
         {/* Footer */}
         <div className="flex justify-end px-6 py-4 border-t bg-gray-50">
           <button
+            type="button"
             onClick={onClose}
             className="px-5 py-2 text-sm font-medium bg-gray-200 rounded-lg hover:bg-gray-300"
           >
@@ -100,17 +91,13 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
 const Info = ({ label, value, muted }) => (
   <div>
     <div className="text-xs font-medium text-gray-500">{label}</div>
-    <div className={`mt-1 ${muted ? 'italic text-gray-400' : 'text-gray-800'}`}>
-      {value}
-    </div>
+    <div className={`mt-1 ${muted ? 'italic text-gray-400' : 'text-gray-800'}`}>{value}</div>
   </div>
 );
 
 const Section = ({ title, children }) => (
   <div>
     <div className="mb-1 text-sm font-semibold">{title}</div>
-    <div className="p-3 text-sm whitespace-pre-wrap border rounded-lg bg-gray-50">
-      {children}
-    </div>
+    <div className="p-3 text-sm whitespace-pre-wrap border rounded-lg bg-gray-50">{children}</div>
   </div>
 );

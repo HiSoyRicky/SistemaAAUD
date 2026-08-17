@@ -1,3 +1,5 @@
+// categories.routes.js
+
 import { Router } from 'express';
 import { list } from './categories.controller.js';
 

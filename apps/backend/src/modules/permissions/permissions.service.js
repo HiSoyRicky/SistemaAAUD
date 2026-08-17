@@ -1,14 +1,16 @@
-import AppError from '../../common/utils/AppError.js';
-import * as permissionsRepository from '../../common/rbac/permissions.repository.js';
+// permissions.service.js
+
 import { buildPermissionCode } from '../../common/rbac/permissions.catalog.js';
+import * as permissionsRepository from '../../common/rbac/permissions.repository.js';
 import {
   getEffectivePermissionCodesForUser,
   getRolePermissionCodes,
   getUserPermissionOverrideCodes,
+  normalizePermissionCodes,
   setRolePermissionsByCodes,
   setUserPermissionOverridesByCodes,
-  normalizePermissionCodes
 } from '../../common/rbac/permissions.service.js';
+import AppError from '../../common/utils/AppError.js';
 
 function parseRoleId(idParam) {
   const roleId = Number(idParam);
@@ -25,7 +27,7 @@ function mapPermissions(permissions = []) {
     id: permission.id,
     module: permission.module,
     action: permission.action,
-    code: buildPermissionCode(permission.module, permission.action)
+    code: buildPermissionCode(permission.module, permission.action),
   }));
 }
 
@@ -33,7 +35,7 @@ function mapRolePermissionSummary(role, permissionCodes) {
   return {
     id: role.id,
     name: role.name,
-    permissions: normalizePermissionCodes(permissionCodes)
+    permissions: normalizePermissionCodes(permissionCodes),
   };
 }
 
@@ -44,15 +46,15 @@ function mapUserSummary(user) {
     nombre_completo: user.nombre_completo,
     role: {
       id: user.roles?.id ?? user.id_rol,
-      name: user.roles?.name || null
-    }
+      name: user.roles?.name || null,
+    },
   };
 }
 
 export const getOverview = async () => {
   const [roles, permissions] = await Promise.all([
     permissionsRepository.findRoles(),
-    permissionsRepository.findAllPermissions()
+    permissionsRepository.findAllPermissions(),
   ]);
 
   const rolesWithPermissions = await Promise.all(
@@ -64,7 +66,7 @@ export const getOverview = async () => {
 
   return {
     permissions: mapPermissions(permissions),
-    roles: rolesWithPermissions
+    roles: rolesWithPermissions,
   };
 };
 
@@ -76,7 +78,7 @@ export const getCurrentUserPermissions = async (currentUser) => {
   }
 
   return {
-    permissions: await getEffectivePermissionCodesForUser({ userId })
+    permissions: await getEffectivePermissionCodesForUser({ userId }),
   };
 };
 
@@ -96,24 +98,22 @@ export const getRolePermissions = async (idRoleParam) => {
 export const updateRolePermissions = async (idRoleParam, payload) => {
   const roleId = parseRoleId(idRoleParam);
 
-  const requestedPermissions = Array.isArray(payload?.permissions)
-    ? payload.permissions
-    : [];
+  const requestedPermissions = Array.isArray(payload?.permissions) ? payload.permissions : [];
 
   const normalized = normalizePermissionCodes(requestedPermissions);
 
   const result = await setRolePermissionsByCodes({
     roleId,
-    codes: normalized
+    codes: normalized,
   });
 
   return {
     message: 'Permisos de rol actualizados correctamente',
     role: {
       id: result.role.id,
-      name: result.role.name
+      name: result.role.name,
     },
-    permissions: result.permissions
+    permissions: result.permissions,
   };
 };
 
@@ -134,15 +134,15 @@ export const getUserPermissions = async (idUserParam) => {
     getUserPermissionOverrideCodes(userId),
     getEffectivePermissionCodesForUser({
       userId,
-      roleId: user.id_rol
-    })
+      roleId: user.id_rol,
+    }),
   ]);
 
   return {
     user: mapUserSummary(user),
     rolePermissions,
     userOverrides: overrides,
-    effectivePermissions
+    effectivePermissions,
   };
 };
 
@@ -159,13 +159,13 @@ export const updateUserPermissions = async (idUserParam, payload) => {
   const result = await setUserPermissionOverridesByCodes({
     userId,
     grants,
-    denies
+    denies,
   });
 
   return {
     message: 'Permisos por usuario actualizados correctamente',
     user: mapUserSummary(result.user),
     userOverrides: result.overrides,
-    effectivePermissions: result.effectivePermissions
+    effectivePermissions: result.effectivePermissions,
   };
 };

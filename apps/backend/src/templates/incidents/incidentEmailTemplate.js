@@ -1,26 +1,28 @@
+// incidentEmailTemplate.js
+
 function formatPanamaDate(date) {
-    if (!date) {
-        return 'N/A';
-    }
+  if (!date) {
+    return 'N/A';
+  }
 
-    const parsed = date instanceof Date ? date : new Date(date);
-    if (Number.isNaN(parsed.getTime())) {
-        return 'N/A';
-    }
+  const parsed = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'N/A';
+  }
 
-    return new Intl.DateTimeFormat('es-PA', {
-        timeZone: 'America/Panama',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-    }).format(parsed);
+  return new Intl.DateTimeFormat('es-PA', {
+    timeZone: 'America/Panama',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(parsed);
 }
 
 function buildEmailLayout({ title, intro, incident, formattedTicket, publicViewUrl }) {
-    return `
+  return `
         <div style="
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f9f9f9;
@@ -96,7 +98,7 @@ function buildEmailLayout({ title, intro, incident, formattedTicket, publicViewU
                 </div>
 
                 <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                    Por favor, no responda a este correo. Este buzón no está monitoreado.<br/>
+                    Por favor, no responda a este correo. Este buzón no está siendo supervisado.<br/>
                     Para cualquier consulta, utilice el sistema de incidencias.<br/>
                     Gracias.
                 </p>
@@ -106,53 +108,53 @@ function buildEmailLayout({ title, intro, incident, formattedTicket, publicViewU
 }
 
 function buildInternalIncidentEmail(params) {
-    return buildEmailLayout({
-        ...params,
-        title: 'Nueva incidencia registrada',
-        intro: 'Se ha registrado una nueva incidencia en el sistema.'
-    });
+  return buildEmailLayout({
+    ...params,
+    title: 'Nueva incidencia registrada',
+    intro: 'Se ha registrado una nueva incidencia en el sistema.',
+  });
 }
 
 function buildReporterIncidentEmail(params) {
-    return buildEmailLayout({
-        ...params,
-        title: 'Tu incidencia ha sido recibida',
-        intro: 'Pronto se te asignará un técnico para resolver tu incidencia.'
-    });
+  return buildEmailLayout({
+    ...params,
+    title: 'Tu incidencia ha sido recibida',
+    intro: 'Pronto se te asignará un técnico para resolver tu incidencia.',
+  });
 }
 
 function formatRequestedToner(tonerRequestContext) {
-    const model = String(tonerRequestContext?.tonerModel || '').trim();
-    const color = String(tonerRequestContext?.tonerColor || '').trim();
+  const model = String(tonerRequestContext?.tonerModel || '').trim();
+  const color = String(tonerRequestContext?.tonerColor || '').trim();
 
-    if (model && color) {
-        return `${model} (${color})`;
-    }
+  if (model && color) {
+    return `${model} (${color})`;
+  }
 
-    if (model) {
-        return model;
-    }
+  if (model) {
+    return model;
+  }
 
-    if (color) {
-        return color;
-    }
+  if (color) {
+    return color;
+  }
 
-    return '';
+  return '';
 }
 
 function buildReporterOutOfStockTonerEmail(params) {
-    const requestedToner = formatRequestedToner(params.tonerRequestContext);
-    const tonerText = requestedToner
-        ? ` para el tóner solicitado (${requestedToner})`
-        : '';
+  const requestedToner = formatRequestedToner(params.tonerRequestContext);
+  const tonerText = requestedToner ? ` para el tóner solicitado (${requestedToner})` : '';
 
-    return buildEmailLayout({
-        ...params,
-        title: 'Actualización de solicitud de tóner',
-        intro: `Recibimos tu solicitud de tóner y actualmente no hay existencias en inventario${tonerText}. Ya estamos gestionando la compra para atender tu requerimiento lo antes posible.`
-    });
+  return buildEmailLayout({
+    ...params,
+    title: 'Actualización de solicitud de tóner',
+    intro: `Recibimos tu solicitud de tóner y actualmente no hay existencias en inventario${tonerText}. Ya estamos gestionando la compra para atender tu requerimiento lo antes posible.`,
+  });
 }
 
-export { buildInternalIncidentEmail,
-    buildReporterIncidentEmail,
-    buildReporterOutOfStockTonerEmail };
+export {
+  buildInternalIncidentEmail,
+  buildReporterIncidentEmail,
+  buildReporterOutOfStockTonerEmail,
+};

@@ -1,8 +1,10 @@
+// dashboard.helpers.js
+
 export const groupCount = (arr, keyGetter) => {
   const map = new Map();
 
   for (const item of arr) {
-    const key = keyGetter(item) ?? "Sin dato";
+    const key = keyGetter(item) ?? 'Sin dato';
     map.set(key, (map.get(key) || 0) + 1);
   }
 

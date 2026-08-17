@@ -1,3 +1,5 @@
+// permissions.catalog.js
+
 const PERMISSIONS_CATALOG = [
   { module: 'incidents', action: 'read' },
   { module: 'incidents', action: 'create' },

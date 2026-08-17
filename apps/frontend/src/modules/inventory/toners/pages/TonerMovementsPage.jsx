@@ -1,3 +1,5 @@
+// TonerMovementsPage.jsx
+
 import {
   ArrowLeft,
   Download,
@@ -16,10 +18,7 @@ import { useNotifications } from '../../../../app/providers/NotificationContext'
 import TonerDeliveryPrint from '../../../../shared/components/Print/TonerDeliveryPrint';
 import Pagination from '../../../../shared/components/ui/Pagination';
 import { exportTonerMovementsToExcel } from '../../../../shared/utils/exportExcel';
-import {
-  formatDateTime,
-  formatDateToDDMMYYYY,
-} from '../../../../shared/utils/formatDate';
+import { formatDateTime, formatDateToDDMMYYYY } from '../../../../shared/utils/formatDate';
 import { Toners } from '../services/toners.api';
 
 const MOVEMENT_OPTIONS = [
@@ -79,9 +78,7 @@ function formatTimePart(date) {
 }
 
 function formatPrintDate(date) {
-  return date
-    ? formatDateToDDMMYYYY(date, '-')
-    : formatDateToDDMMYYYY(new Date(), '-');
+  return date ? formatDateToDDMMYYYY(date, '-') : formatDateToDDMMYYYY(new Date(), '-');
 }
 
 function movementBadge(type) {
@@ -166,9 +163,7 @@ function TonerMovementsPage() {
 
   const hasFilters = Boolean(search || movementType || from || to);
   const summary = useMemo(() => {
-    return `${total} movimiento${total === 1 ? '' : 's'} encontrado${
-      total === 1 ? '' : 's'
-    }`;
+    return `${total} movimiento${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}`;
   }, [total]);
 
   const loadMovements = async () => {
@@ -189,7 +184,7 @@ function TonerMovementsPage() {
       setTotal(Number(res?.total) || 0);
       setMetrics({
         ...emptyMetrics,
-        ...(res?.summary || {}),
+        ...(res?.summary || { EMPTY: true }),
         total: Number(res?.summary?.total ?? res?.total) || 0,
       });
     } catch (error) {
@@ -215,9 +210,7 @@ function TonerMovementsPage() {
     });
 
     const total = Number(firstPage?.totalPages || 1);
-    const allMovements = Array.isArray(firstPage?.data)
-      ? [...firstPage.data]
-      : [];
+    const allMovements = Array.isArray(firstPage?.data) ? [...firstPage.data] : [];
 
     for (let page = 2; page <= total; page += 1) {
       const response = await Toners.fetchMovements({
@@ -311,9 +304,7 @@ function TonerMovementsPage() {
               <FileText size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-950">
-                Historial global de tóner
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-950">Historial global de tóner</h1>
               <p className="text-sm text-slate-500">{summary}</p>
             </div>
           </div>
@@ -350,36 +341,28 @@ function TonerMovementsPage() {
               <SlidersHorizontal size={15} />
               Total
             </div>
-            <div className="mt-2 text-3xl font-bold text-slate-950">
-              {metrics.total}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-slate-950">{metrics.total}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase text-emerald-600">
               <PackagePlus size={15} />
               Entradas
             </div>
-            <div className="mt-2 text-3xl font-bold text-emerald-600">
-              {metrics.IN}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-emerald-600">{metrics.IN}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase text-rose-600">
               <PackageMinus size={15} />
               Salidas
             </div>
-            <div className="mt-2 text-3xl font-bold text-rose-600">
-              {metrics.OUT}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-rose-600">{metrics.OUT}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase text-amber-600">
               <SlidersHorizontal size={15} />
               Ajustes
             </div>
-            <div className="mt-2 text-3xl font-bold text-amber-600">
-              {metrics.ADJUSTMENT}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-amber-600">{metrics.ADJUSTMENT}</div>
           </div>
         </div>
       </section>
@@ -471,10 +454,7 @@ function TonerMovementsPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td
-                    className="px-4 py-10 text-center text-sm text-slate-400"
-                    colSpan={13}
-                  >
+                  <td className="px-4 py-10 text-center text-sm text-slate-400" colSpan={13}>
                     Cargando historial de movimientos...
                   </td>
                 </tr>
@@ -482,10 +462,7 @@ function TonerMovementsPage() {
 
               {!loading && movements.length === 0 && (
                 <tr>
-                  <td
-                    className="px-4 py-10 text-center text-sm text-slate-400"
-                    colSpan={13}
-                  >
+                  <td className="px-4 py-10 text-center text-sm text-slate-400" colSpan={13}>
                     No se encontraron movimientos con esos filtros
                   </td>
                 </tr>
@@ -507,25 +484,13 @@ function TonerMovementsPage() {
                     <td className={`${tdClass} font-semibold text-slate-900`}>
                       {valueOrDash(movement.toner?.toner_model)}
                     </td>
-                    <td className={tdClass}>
-                      {colorBadge(movement.toner?.color)}
-                    </td>
-                    <td className={tdClass}>
-                      {movementBadge(movement.movement_type)}
-                    </td>
-                    <td className={`${tdClass} font-semibold`}>
-                      {valueOrDash(movement.quantity)}
-                    </td>
-                    <td className={tdClass}>
-                      {valueOrDash(movement.ubication?.name)}
-                    </td>
-                    <td className={tdClass}>
-                      {valueOrDash(movement.department?.name)}
-                    </td>
+                    <td className={tdClass}>{colorBadge(movement.toner?.color)}</td>
+                    <td className={tdClass}>{movementBadge(movement.movement_type)}</td>
+                    <td className={`${tdClass} font-semibold`}>{valueOrDash(movement.quantity)}</td>
+                    <td className={tdClass}>{valueOrDash(movement.ubication?.name)}</td>
+                    <td className={tdClass}>{valueOrDash(movement.department?.name)}</td>
                     <td className={`${tdClass} max-w-[220px] text-left`}>
-                      <span className="line-clamp-2">
-                        {valueOrDash(movement.reference)}
-                      </span>
+                      <span className="line-clamp-2">{valueOrDash(movement.reference)}</span>
                     </td>
                     <td className={tdClass}>
                       <div className="flex flex-col leading-tight">
@@ -545,12 +510,8 @@ function TonerMovementsPage() {
                     >
                       {stockDelta(movement.previous_stock, movement.new_stock)}
                     </td>
-                    <td className={tdClass}>
-                      {valueOrDash(movement.user?.nombre_completo)}
-                    </td>
-                    <td className={tdClass}>
-                      {valueOrDash(movement.receiver_name)}
-                    </td>
+                    <td className={tdClass}>{valueOrDash(movement.user?.nombre_completo)}</td>
+                    <td className={tdClass}>{valueOrDash(movement.receiver_name)}</td>
                     <td className={tdClass}>
                       {movement.movement_type === 'OUT' ? (
                         <button

@@ -1,3 +1,5 @@
+// inventoryTransferRequests.service.js
+
 import AppError from '../../common/utils/AppError.js';
 import { prisma } from '../../config/prisma.js';
 import { mapInventoryItem } from '../inventory/inventory.dto.js';
@@ -12,7 +14,9 @@ function parseId(value, fieldName) {
 }
 
 function normalizeStatus(status) {
-  const value = String(status || '').trim().toUpperCase();
+  const value = String(status || '')
+    .trim()
+    .toUpperCase();
   return value || null;
 }
 
@@ -48,7 +52,7 @@ function buildPreviewInventory(request, inventory) {
     id_device: inventory.id_device,
     id_brand: inventory.id_brand,
     id_model: inventory.id_model,
-    id_status: inventory.id_status
+    id_status: inventory.id_status,
   });
 }
 
@@ -56,7 +60,7 @@ export const getAll = async (query = {}) => {
   const status = normalizeStatus(query.status);
 
   const where = {
-    ...(status ? { status } : {})
+    ...(status ? { status } : {}),
   };
 
   const requests = await prisma.inventory_transfer_requests.findMany({
@@ -70,31 +74,33 @@ export const getAll = async (query = {}) => {
           models: { select: { id: true, name: true } },
           departments: { select: { id: true, name: true } },
           ubications: { select: { id: true, name: true } },
-          status: { select: { id: true, name: true } }
-        }
+          status: { select: { id: true, name: true } },
+        },
       },
       requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } }
-    }
+      approver: { select: { id: true, nombre_completo: true, username: true } },
+    },
   });
 
   return {
     data: requests.map((request) => ({
       ...request,
       inventory_snapshot: request.inventory ? mapInventoryItem(request.inventory) : null,
-      preview_inventory: request.inventory ? buildPreviewInventory(request, request.inventory) : null
-    }))
+      preview_inventory: request.inventory
+        ? buildPreviewInventory(request, request.inventory)
+        : null,
+    })),
   };
 };
 
-export const getMine = async (query = {}, currentUser) => {
+export const getMine = async (currentUser, query = {}) => {
   const requesterId = parseId(currentUser?.id, 'ID de usuario');
   const status = normalizeStatus(query.status);
 
   const requests = await prisma.inventory_transfer_requests.findMany({
     where: {
       requester_id: requesterId,
-      ...(status ? { status } : {})
+      ...(status ? { status } : {}),
     },
     orderBy: { requested_at: 'desc' },
     include: {
@@ -105,26 +111,29 @@ export const getMine = async (query = {}, currentUser) => {
           models: { select: { id: true, name: true } },
           departments: { select: { id: true, name: true } },
           ubications: { select: { id: true, name: true } },
-          status: { select: { id: true, name: true } }
-        }
+          status: { select: { id: true, name: true } },
+        },
       },
       requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } }
-    }
+      approver: { select: { id: true, nombre_completo: true, username: true } },
+    },
   });
 
   return {
     data: requests.map((request) => ({
       ...request,
       inventory_snapshot: request.inventory ? mapInventoryItem(request.inventory) : null,
-      preview_inventory: request.inventory ? buildPreviewInventory(request, request.inventory) : null
-    }))
+      preview_inventory: request.inventory
+        ? buildPreviewInventory(request, request.inventory)
+        : null,
+    })),
   };
 };
 
 export const create = async (payload, currentUser) => {
   const inventoryId = parseId(payload?.inventory_id, 'ID de inventario');
-  const snapshot = payload?.snapshot && typeof payload.snapshot === 'object' ? payload.snapshot : null;
+  const snapshot =
+    payload?.snapshot && typeof payload.snapshot === 'object' ? payload.snapshot : null;
 
   if (!snapshot) {
     throw new AppError('La información del traslado es obligatoria', 400);
@@ -138,8 +147,8 @@ export const create = async (payload, currentUser) => {
       models: { select: { id: true, name: true } },
       departments: { select: { id: true, name: true } },
       ubications: { select: { id: true, name: true } },
-      status: { select: { id: true, name: true } }
-    }
+      status: { select: { id: true, name: true } },
+    },
   });
 
   if (!inventory) {
@@ -149,8 +158,8 @@ export const create = async (payload, currentUser) => {
   const pendingRequest = await prisma.inventory_transfer_requests.findFirst({
     where: {
       inventory_id: inventoryId,
-      status: 'PENDING'
-    }
+      status: 'PENDING',
+    },
   });
 
   if (pendingRequest) {
@@ -161,17 +170,17 @@ export const create = async (payload, currentUser) => {
     data: {
       inventory_id: inventoryId,
       requester_id: Number(currentUser?.id),
-      snapshot
+      snapshot,
     },
     include: {
-      requester: { select: { id: true, nombre_completo: true, username: true } }
-    }
+      requester: { select: { id: true, nombre_completo: true, username: true } },
+    },
   });
 
   return {
     success: true,
     message: 'Solicitud de traslado creada',
-    request: created
+    request: created,
   };
 };
 
@@ -188,12 +197,12 @@ async function resolveRequestOrFail(idParam) {
           models: { select: { id: true, name: true } },
           departments: { select: { id: true, name: true } },
           ubications: { select: { id: true, name: true } },
-          status: { select: { id: true, name: true } }
-        }
+          status: { select: { id: true, name: true } },
+        },
       },
       requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } }
-    }
+      approver: { select: { id: true, nombre_completo: true, username: true } },
+    },
   });
 
   if (!request) {
@@ -213,10 +222,11 @@ export const approve = async (idParam, payload, currentUser) => {
   const snapshot = request.snapshot || {};
   const inventory = request.inventory;
   const reviewedAt = new Date();
-  const reviewNotes = typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
+  const reviewNotes =
+    typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
   const clearAssignedUser = shouldClearAssignedUser(snapshot);
   const assignedUser = typeof snapshot.userRecibe === 'string' ? snapshot.userRecibe.trim() : '';
-  const nextUser = clearAssignedUser ? null : (assignedUser || snapshot.userName || inventory.user);
+  const nextUser = clearAssignedUser ? null : assignedUser || snapshot.userName || inventory.user;
 
   const { updatedInventory, updatedRequest } = await prisma.$transaction(async (tx) => {
     const nextInventory = await tx.bd_inventory.update({
@@ -227,7 +237,7 @@ export const approve = async (idParam, payload, currentUser) => {
         user: nextUser,
         transferdate: new Date(),
         observation: snapshot.observation ?? inventory.observation,
-        updated_by: currentUser?.id ?? null
+        updated_by: currentUser?.id ?? null,
       },
       include: {
         devices: { select: { id: true, name: true } },
@@ -235,8 +245,8 @@ export const approve = async (idParam, payload, currentUser) => {
         models: { select: { id: true, name: true } },
         departments: { select: { id: true, name: true } },
         ubications: { select: { id: true, name: true } },
-        status: { select: { id: true, name: true } }
-      }
+        status: { select: { id: true, name: true } },
+      },
     });
 
     const nextRequest = await tx.inventory_transfer_requests.update({
@@ -245,12 +255,12 @@ export const approve = async (idParam, payload, currentUser) => {
         status: 'APPROVED',
         approver_id: currentUser?.id ?? null,
         review_notes: reviewNotes,
-        reviewed_at: reviewedAt
+        reviewed_at: reviewedAt,
       },
       include: {
         requester: { select: { id: true, nombre_completo: true, username: true } },
-        approver: { select: { id: true, nombre_completo: true, username: true } }
-      }
+        approver: { select: { id: true, nombre_completo: true, username: true } },
+      },
     });
 
     await tx.activity_logs.create({
@@ -265,13 +275,11 @@ export const approve = async (idParam, payload, currentUser) => {
           transfer_request_id: request.id,
           transfer_requester_id: request.requester_id,
           transfer_requester_name:
-            request.requester?.nombre_completo ||
-            request.requester?.username ||
-            null
+            request.requester?.nombre_completo || request.requester?.username || null,
         },
         user_id: currentUser?.id ?? null,
-        source: 'inventory_transfer_requests.approve'
-      }
+        source: 'inventory_transfer_requests.approve',
+      },
     });
 
     return { updatedInventory: nextInventory, updatedRequest: nextRequest };
@@ -282,8 +290,8 @@ export const approve = async (idParam, payload, currentUser) => {
     message: 'Traslado aprobado',
     request: {
       ...updatedRequest,
-      preview_inventory: mapInventoryItem(updatedInventory)
-    }
+      preview_inventory: mapInventoryItem(updatedInventory),
+    },
   };
 };
 
@@ -294,7 +302,8 @@ export const reject = async (idParam, payload, currentUser, nextStatus = 'REJECT
     throw new AppError('La solicitud ya fue procesada', 409);
   }
 
-  const reviewNotes = typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
+  const reviewNotes =
+    typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
 
   const updatedRequest = await prisma.inventory_transfer_requests.update({
     where: { id: request.id },
@@ -302,19 +311,20 @@ export const reject = async (idParam, payload, currentUser, nextStatus = 'REJECT
       status: nextStatus,
       approver_id: currentUser?.id ?? null,
       review_notes: reviewNotes,
-      reviewed_at: new Date()
+      reviewed_at: new Date(),
     },
     include: {
       requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } }
-    }
+      approver: { select: { id: true, nombre_completo: true, username: true } },
+    },
   });
 
   return {
     success: true,
-    message: nextStatus === 'CORRECTION_REQUESTED'
-      ? 'Se solicitó corrección del traslado'
-      : 'Traslado rechazado',
-    request: updatedRequest
+    message:
+      nextStatus === 'CORRECTION_REQUESTED'
+        ? 'Se solicitó corrección del traslado'
+        : 'Traslado rechazado',
+    request: updatedRequest,
   };
 };

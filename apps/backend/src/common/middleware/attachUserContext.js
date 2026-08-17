@@ -1,41 +1,42 @@
-// middleware/attachUserContext.js
-import { prisma, activityContext } from '../../config/prisma.js';
+// attachUserContext.js
+
+import { activityContext, prisma } from '../../config/prisma.js';
 
 const attachUserContext = async (req, res, next) => {
-    try {
-        const userId = req.user?.id;
-        if (!userId) return res.status(401).json({ message: "No autenticado" });
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'No autenticado' });
 
-        const user = await prisma.users.findUnique({
-            where: { id: Number(userId) },
-            select: {
-                id: true,
-                id_department: true,
-                id_ubication: true,
-                roles: { select: { name: true } },
-            },
-        });
+    const user = await prisma.users.findUnique({
+      where: { id: Number(userId) },
+      select: {
+        id: true,
+        id_department: true,
+        id_ubication: true,
+        roles: { select: { name: true } },
+      },
+    });
 
-        const store = {
-            userId: req.user?.id ?? null,
-            ipAddress: req.ip ?? req.headers['x-forwarded-for'] ?? null,
-            userAgent: req.headers['user-agent'] ?? null,
-        };
+    const store = {
+      userId: req.user?.id ?? null,
+      ipAddress: req.ip ?? req.headers['x-forwarded-for'] ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    };
 
-        if (!user) return res.status(401).json({ message: "Usuario no válido" });
+    if (!user) return res.status(401).json({ message: 'Usuario no válido' });
 
-        req.ctx = {
-            userId: user.id,
-            deptId: user.id_department ?? null,
-            ubicationId: user.id_ubication ?? null,
-            roleName: user.roles?.name ?? req.user?.role_name ?? null,
-        };
+    req.ctx = {
+      userId: user.id,
+      deptId: user.id_department ?? null,
+      ubicationId: user.id_ubication ?? null,
+      roleName: user.roles?.name ?? req.user?.role_name ?? null,
+    };
 
-        activityContext.run(store, () => next());
-    } catch (e) {
-        console.error("attachUserContext error:", e);
-        return res.status(500).json({ message: "Error cargando contexto de usuario" });
-    }
+    activityContext.run(store, () => next());
+  } catch (e) {
+    console.error('attachUserContext error:', e);
+    return res.status(500).json({ message: 'Error cargando contexto de usuario' });
+  }
 };
 
 export default attachUserContext;

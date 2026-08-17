@@ -1,13 +1,15 @@
+// status.dto.js
+
 export const mapCreateStatusResponse = (created) => {
   return {
     message: 'Estatus creado',
-    created
+    created,
   };
 };
 
 export const mapUpdateStatusResponse = (updated) => {
   return {
     message: 'Estado actualizado',
-    updated
+    updated,
   };
 };

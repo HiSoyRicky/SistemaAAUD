@@ -1,3 +1,5 @@
+// permissions.controller.js
+
 import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './permissions.service.js';
 

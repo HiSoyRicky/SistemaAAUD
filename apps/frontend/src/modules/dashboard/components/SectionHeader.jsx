@@ -1,3 +1,5 @@
+// SectionHeader.jsx
+
 export default function SectionHeader({ title, desc, icon: Icon }) {
   return (
     <div className="flex items-start gap-4 mb-6">
@@ -6,15 +8,9 @@ export default function SectionHeader({ title, desc, icon: Icon }) {
       </div>
 
       <div className="flex-1">
-        <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
-          {title}
-        </h2>
+        <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{title}</h2>
 
-        {desc && (
-          <p className="max-w-2xl mt-1 text-sm leading-relaxed text-slate-500">
-            {desc}
-          </p>
-        )}
+        {desc && <p className="max-w-2xl mt-1 text-sm leading-relaxed text-slate-500">{desc}</p>}
 
         <div className="mt-2 h-[2px] w-12 rounded-full bg-slate-900/70" />
       </div>

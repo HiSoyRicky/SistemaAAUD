@@ -1,3 +1,5 @@
+// FancyTooltip.jsx
+
 export default function FancyTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
 

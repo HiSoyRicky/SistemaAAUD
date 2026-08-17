@@ -104,7 +104,7 @@ model models {
 
 model roles {
   id              Int                @id(map: "pk_roles") @default(autoincrement())
-  name            String             @unique(map: "name_rol_unico") @db.VarChar(50)
+  name            String             @unique(map: "name_roles_unique") @db.VarChar(50)
   users           users[]
   rolePermissions role_permissions[]
 }

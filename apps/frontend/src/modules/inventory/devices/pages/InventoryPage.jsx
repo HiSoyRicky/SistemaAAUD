@@ -1,4 +1,5 @@
-// src/pages/inventory/InventoryPage.jsx
+// InventoryPage.jsx
+
 import {
   AlertTriangle,
   ClipboardList,
@@ -57,8 +58,7 @@ function formatTransferDate(value) {
 
 function getTransferSummary(request) {
   const snapshot = request?.snapshot || {};
-  const inventory =
-    request?.inventory_snapshot || request?.preview_inventory || {};
+  const inventory = request?.inventory_snapshot || request?.preview_inventory || {};
   const tag = snapshot.tag || inventory.tag || '-';
   const deviceName = inventory.device_name || snapshot.device_name || 'Equipo';
   const origin = [
@@ -67,24 +67,18 @@ function getTransferSummary(request) {
   ]
     .filter(Boolean)
     .join(' / ');
-  const destination = [
-    snapshot.ubication_destino_name,
-    snapshot.department_destino_name,
-  ]
+  const destination = [snapshot.ubication_destino_name, snapshot.department_destino_name]
     .filter(Boolean)
     .join(' / ');
 
   return {
     tag,
     deviceName,
-    brandModel: [inventory.brand_name, inventory.model_name]
-      .filter(Boolean)
-      .join(' '),
+    brandModel: [inventory.brand_name, inventory.model_name].filter(Boolean).join(' '),
     origin: origin || '-',
     destination: destination || '-',
     requestedAt: formatTransferDate(request?.requested_at),
-    userRecibe:
-      snapshot.userRecibe || snapshot.userName || inventory.user || '-',
+    userRecibe: snapshot.userRecibe || snapshot.userName || inventory.user || '-',
   };
 }
 
@@ -138,10 +132,7 @@ function InventoryPage() {
       setPendingTransfers(Array.isArray(response?.data) ? response.data : []);
     } catch (error) {
       console.error('Error cargando traslados pendientes:', error);
-      addNotification(
-        'No se pudieron cargar los traslados pendientes ❌',
-        'error'
-      );
+      addNotification('No se pudieron cargar los traslados pendientes ❌', 'error');
     } finally {
       setPendingTransfersLoading(false);
     }
@@ -181,10 +172,7 @@ function InventoryPage() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        columnMenuRef.current &&
-        !columnMenuRef.current.contains(event.target)
-      ) {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target)) {
         setShowColumnMenu(false);
       }
     };
@@ -218,10 +206,7 @@ function InventoryPage() {
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle:
-      printType === 'transfer'
-        ? 'Traslado de dispositivo'
-        : 'Descarte de dispositivo',
+    documentTitle: printType === 'transfer' ? 'Traslado de dispositivo' : 'Descarte de dispositivo',
     onAfterPrint: () => {
       setSelectedDevice(null);
       setPrintType('transfer');
@@ -248,25 +233,6 @@ function InventoryPage() {
     fetchDepartments();
   }, []);
 
-  const handlePreparePrint = (device) => {
-    if (!device) {
-      addNotification('Error: No se seleccionó ningún dispositivo ❌', 'error');
-      return;
-    }
-    setSelectedDevice({
-      ...device,
-      role: 'recibe',
-      userName: loggedUserName,
-      technicianName: loggedUserName,
-      userTransfiere: device.userTransfiere || '',
-      userRecibe: device.userRecibe || '',
-      ubication_destino_id: device.ubication_destino_id || null,
-      department_destino_id: device.department_destino_id || null,
-      ubication_destino_name: device.ubication_destino_name || '',
-      department_destino_name: device.department_destino_name || '',
-    });
-  };
-
   const editDevice = (device) => {
     setEditingDevice(device);
   };
@@ -287,9 +253,7 @@ function InventoryPage() {
   };
 
   const handleAddDevice = async (formData) => {
-    if (
-      window.confirm('¿Estás seguro de que deseas agregar este dispositivo?')
-    ) {
+    if (window.confirm('¿Estás seguro de que deseas agregar este dispositivo?')) {
       setShowInventoryForm(false);
       try {
         const result = await Inventory.addDevice(formData);
@@ -327,9 +291,7 @@ function InventoryPage() {
 
     setExportDevices((prevRows) => {
       if (prevRows.length === nextRows.length) {
-        const sameOrderAndIds = prevRows.every(
-          (row, index) => row?.id === nextRows[index]?.id
-        );
+        const sameOrderAndIds = prevRows.every((row, index) => row?.id === nextRows[index]?.id);
 
         if (sameOrderAndIds) {
           return prevRows;
@@ -340,7 +302,7 @@ function InventoryPage() {
     });
   }, []);
 
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     ubication: '',
     department: '',
     status: '',
@@ -371,20 +333,12 @@ function InventoryPage() {
         toStrLower(d.serie).includes(word)
     );
 
-    const matchesUbication =
-      !filters.ubication || d.ubication_name === filters.ubication;
-    const matchesDepartment =
-      !filters.department || d.department_name === filters.department;
+    const matchesUbication = !filters.ubication || d.ubication_name === filters.ubication;
+    const matchesDepartment = !filters.department || d.department_name === filters.department;
     const matchesTransferDate =
-      !filters.transferdate ||
-      toDateOnlyInputValue(d.transferdate) >= filters.transferdate;
+      !filters.transferdate || toDateOnlyInputValue(d.transferdate) >= filters.transferdate;
 
-    return (
-      matchesSearch &&
-      matchesUbication &&
-      matchesDepartment &&
-      matchesTransferDate
-    );
+    return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate;
   });
 
   return (
@@ -396,9 +350,7 @@ function InventoryPage() {
               <Laptop size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-950">
-                Inventario de equipos
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-950">Inventario de equipos</h1>
               <p className="text-sm text-slate-500">
                 Consulta, filtra y gestiona los equipos registrados.
               </p>
@@ -461,9 +413,7 @@ function InventoryPage() {
               <Laptop size={15} />
               Total
             </div>
-            <div className="mt-2 text-3xl font-bold text-slate-950">
-              {inventoryMetrics.total}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-slate-950">{inventoryMetrics.total}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-600">
@@ -479,9 +429,7 @@ function InventoryPage() {
               <AlertTriangle size={15} />
               Revisar
             </div>
-            <div className="mt-2 text-3xl font-bold text-amber-600">
-              {inventoryMetrics.warning}
-            </div>
+            <div className="mt-2 text-3xl font-bold text-amber-600">{inventoryMetrics.warning}</div>
           </div>
           <div className="bg-white px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
@@ -512,10 +460,7 @@ function InventoryPage() {
                 requester_id: loggedUserId,
               });
               await loadPendingTransfers();
-              addNotification(
-                'Solicitud de traslado enviada a aprobación ✅',
-                'success'
-              );
+              addNotification('Solicitud de traslado enviada a aprobación ✅', 'success');
             }
 
             setSelectedDevice(payload);
@@ -523,8 +468,7 @@ function InventoryPage() {
             setPendingPrint(true);
           } catch (error) {
             addNotification(
-              error.response?.data?.message ||
-                'No se pudo registrar la solicitud de traslado ❌',
+              error.response?.data?.message || 'No se pudo registrar la solicitud de traslado ❌',
               'error'
             );
             throw error;
@@ -535,9 +479,7 @@ function InventoryPage() {
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">
-              Listado de equipos
-            </h2>
+            <h2 className="text-lg font-bold text-slate-950">Listado de equipos</h2>
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-3xl lg:justify-end">
@@ -570,9 +512,7 @@ function InventoryPage() {
               {showColumnMenu && (
                 <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-xl">
                   <div className="mb-2 flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                    <span className="text-sm font-bold text-slate-900">
-                      Mostrar columnas
-                    </span>
+                    <span className="text-sm font-bold text-slate-900">Mostrar columnas</span>
                     <button
                       type="button"
                       onClick={showAllColumns}
@@ -635,7 +575,7 @@ function InventoryPage() {
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
-                  Traslados pendientes
+                  Traslados pendientes {''}
                   <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-sm font-bold text-amber-800">
                     {pendingTransfers.length}
                   </span>
@@ -701,9 +641,7 @@ function InventoryPage() {
                             </div>
                             <p className="mt-1 text-sm text-slate-600">
                               {summary.deviceName}
-                              {summary.brandModel
-                                ? ` - ${summary.brandModel}`
-                                : ''}
+                              {summary.brandModel ? ` - ${summary.brandModel}` : ''}
                             </p>
                           </div>
                           <div className="text-right text-xs text-slate-500">
@@ -714,28 +652,16 @@ function InventoryPage() {
 
                         <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
                           <div>
-                            <div className="font-semibold text-slate-700">
-                              Origen
-                            </div>
-                            <div className="text-slate-600">
-                              {summary.origin}
-                            </div>
+                            <div className="font-semibold text-slate-700">Origen</div>
+                            <div className="text-slate-600">{summary.origin}</div>
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-700">
-                              Destino
-                            </div>
-                            <div className="text-slate-600">
-                              {summary.destination}
-                            </div>
+                            <div className="font-semibold text-slate-700">Destino</div>
+                            <div className="text-slate-600">{summary.destination}</div>
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-700">
-                              Quién recibe
-                            </div>
-                            <div className="text-slate-600">
-                              {summary.userRecibe}
-                            </div>
+                            <div className="font-semibold text-slate-700">Quién recibe</div>
+                            <div className="text-slate-600">{summary.userRecibe}</div>
                           </div>
                         </div>
                       </div>
@@ -748,7 +674,7 @@ function InventoryPage() {
         </div>
       )}
 
-      {/* Modal para editrar equipo */}
+      {/* Modal para editar equipo */}
       {editingDevice && (
         <InventoryFormModal
           initialData={editingDevice}
@@ -775,10 +701,8 @@ function InventoryPage() {
               ref={printRef}
               device={{
                 ...selectedDevice,
-                ubication_destino_name:
-                  selectedDevice.ubication_destino_name || '',
-                department_destino_name:
-                  selectedDevice.department_destino_name || '',
+                ubication_destino_name: selectedDevice.ubication_destino_name || '',
+                department_destino_name: selectedDevice.department_destino_name || '',
               }}
               setDevice={setSelectedDevice}
               departments={departments || []}

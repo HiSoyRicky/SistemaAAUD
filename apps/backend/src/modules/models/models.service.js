@@ -1,11 +1,13 @@
+// models.service.js
+
 import AppError from '../../common/utils/AppError.js';
 import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
-import * as repository from './models.repository.js';
 import {
   mapCreateModelResponse,
+  mapDeleteModelResponse,
   mapUpdateModelResponse,
-  mapDeleteModelResponse
 } from './models.dto.js';
+import * as repository from './models.repository.js';
 
 export const getAll = async () => {
   return repository.findAll();
@@ -28,29 +30,23 @@ export const create = async (payload) => {
     const existingModel = await repository.findByNameBrandDevice({
       name,
       id_brand,
-      id_device
+      id_device,
     });
 
     if (existingModel) {
-      throw new AppError(
-        'El modelo ya existe para esta marca y tipo de dispositivo',
-        409
-      );
+      throw new AppError('El modelo ya existe para esta marca y tipo de dispositivo', 409);
     }
 
     const created = await repository.create({
       name,
       id_brand,
-      id_device
+      id_device,
     });
 
     return mapCreateModelResponse(created);
   } catch (error) {
     if (error.code === 'P2002') {
-      throw new AppError(
-        'El modelo ya existe para esta marca y tipo de dispositivo',
-        409
-      );
+      throw new AppError('El modelo ya existe para esta marca y tipo de dispositivo', 409);
     }
     if (error instanceof AppError) {
       throw error;
@@ -81,7 +77,7 @@ export const update = async (idParam, payload) => {
   const updated = await repository.updateById(id, {
     name,
     id_brand,
-    id_device
+    id_device,
   });
 
   return mapUpdateModelResponse(updated);
@@ -101,7 +97,7 @@ export const remove = async (idParam) => {
 
   const [inventoryCount, tonersCount] = await Promise.all([
     repository.countInventoryByModelId(id),
-    repository.countTonersByPrinterModelId(id)
+    repository.countTonersByPrinterModelId(id),
   ]);
 
   if (inventoryCount > 0 || tonersCount > 0) {
@@ -110,8 +106,8 @@ export const remove = async (idParam) => {
         subject: 'el modelo',
         dependencies: [
           { count: inventoryCount, label: 'registro(s) de inventario' },
-          { count: tonersCount, label: 'tóner(s)' }
-        ]
+          { count: tonersCount, label: 'tóner(s)' },
+        ],
       }),
       409
     );
@@ -124,7 +120,7 @@ export const remove = async (idParam) => {
       throw new AppError(
         buildDeleteDependencyMessage({
           subject: 'el modelo',
-          dependencies: []
+          dependencies: [],
         }),
         409
       );

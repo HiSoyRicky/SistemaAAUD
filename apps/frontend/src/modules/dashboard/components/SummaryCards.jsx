@@ -1,22 +1,21 @@
 // SummaryCards.jsx
-import React, { useMemo } from "react";
+
+import { useMemo } from 'react';
 
 function StatCard({ title, value, color }) {
   const colors = {
-    blue: "text-blue-600",
-    orange: "text-orange-600",
-    yellow: "text-yellow-600",
-    green: "text-green-600",
-    red: "text-red-600",
-    gray: "text-gray-600",
+    blue: 'text-blue-600',
+    orange: 'text-orange-600',
+    yellow: 'text-yellow-600',
+    green: 'text-green-600',
+    red: 'text-red-600',
+    gray: 'text-gray-600',
   };
 
   return (
     <div className="p-6 text-center bg-white rounded-lg shadow-md">
       <h3 className="text-xl font-semibold text-gray-700">{title}</h3>
-      <p className={`text-4xl font-bold ${colors[color] ?? colors.gray}`}>
-        {value}
-      </p>
+      <p className={`text-4xl font-bold ${colors[color] ?? colors.gray}`}>{value}</p>
     </div>
   );
 }
@@ -45,44 +44,41 @@ export default function SummaryCards({ incidents = [], userType, loggedUserId })
 
   // Cards por rol
   const cards = useMemo(() => {
-    if (userType === "admin") {
+    if (userType === 'admin') {
       return [
-        { title: "Total de Incidencias", value: total, color: "blue" },
-        { title: "Pendientes sin asignar", value: pendingUnassigned, color: "orange" },
-        { title: "Por resolver (asignadas)", value: assignedAll, color: "yellow" },
-        { title: "Resueltas", value: resolvedAll, color: "green" },
+        { title: 'Total de Incidencias', value: total, color: 'blue' },
+        { title: 'Pendientes sin asignar', value: pendingUnassigned, color: 'orange' },
+        { title: 'Por resolver (asignadas)', value: assignedAll, color: 'yellow' },
+        { title: 'Resueltas', value: resolvedAll, color: 'green' },
       ];
     }
 
-    if (userType === "tecnico") {
+    if (userType === 'tecnico') {
       return [
-        { title: "Mis incidencias asignadas", value: assignedMine, color: "yellow" },
-        { title: "Mis incidencias resueltas", value: resolvedMine, color: "green" },
+        { title: 'Mis incidencias asignadas', value: assignedMine, color: 'yellow' },
+        { title: 'Mis incidencias resueltas', value: resolvedMine, color: 'green' },
       ];
     }
 
     // Otros roles
     return [
-      { title: "Total de Incidencias", value: total, color: "blue" },
-      { title: "Resueltas", value: resolvedAll, color: "green" },
+      { title: 'Total de Incidencias', value: total, color: 'blue' },
+      { title: 'Resueltas', value: resolvedAll, color: 'green' },
     ];
-  }, [
-    userType,
-    total,
-    pendingUnassigned,
-    assignedAll,
-    assignedMine,
-    resolvedAll,
-    resolvedMine,
-  ]);
+  }, [userType, total, pendingUnassigned, assignedAll, assignedMine, resolvedAll, resolvedMine]);
 
   // Grid responsive según cantidad de cards
-  const gridCols =
-    cards.length === 2
-      ? "md:grid-cols-2"
-      : cards.length === 3
-      ? "md:grid-cols-3"
-      : "md:grid-cols-4";
+  const getGridCols = () => {
+    if (cards.length === 2) {
+      return 'md:grid-cols-2';
+    }
+    if (cards.length === 3) {
+      return 'md:grid-cols-3';
+    }
+    return 'md:grid-cols-4';
+  };
+
+  const gridCols = getGridCols();
 
   return (
     <div className={`grid grid-cols-1 gap-4 mb-8 ${gridCols}`}>

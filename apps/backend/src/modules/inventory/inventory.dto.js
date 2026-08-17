@@ -1,3 +1,5 @@
+// inventory.dto.js
+
 function normalizeText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -29,7 +31,7 @@ export const mapInventoryItem = (item) => {
     id_model: item.id_model,
     model_name: item.models?.name || null,
     id_status: item.id_status,
-    status_name: statusName
+    status_name: statusName,
   };
 };
 
@@ -38,11 +40,11 @@ export const mapInventoryResponse = (inventory) => inventory.map(mapInventoryIte
 export const mapCreateInventoryResponse = (inventory) => ({
   success: true,
   message: 'Dispositivo creado exitosamente',
-  inventory: mapInventoryItem(inventory)
+  inventory: mapInventoryItem(inventory),
 });
 
 export const mapUpdateInventoryResponse = (inventory) => ({
   success: true,
   message: 'Equipo actualizado correctamente',
-  inventory: mapInventoryItem(inventory)
+  inventory: mapInventoryItem(inventory),
 });

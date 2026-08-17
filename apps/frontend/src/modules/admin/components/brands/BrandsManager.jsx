@@ -1,11 +1,13 @@
+// BrandsManager.jsx
+
 import { useEffect, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
 import Pagination from '../../../../shared/components/ui/Pagination';
 import BrandsTable from './BrandsTable';
 
 export default function BrandsManager() {
-  const [brands, setbrands] = useState([]);
-  const [newBrand, setnewBrand] = useState('');
+  const [brands, setBrands] = useState([]);
+  const [newBrand, setNewBrand] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -16,10 +18,10 @@ export default function BrandsManager() {
   const [search, setSearch] = useState('');
 
   //  Cargar marcas desde backend
-  const fetchbrands = async () => {
+  const fetchBrands = async () => {
     try {
       const res = await api.get(API_URL);
-      setbrands(res.data);
+      setBrands(res.data);
     } catch (err) {
       console.error('Error al cargar marcas:', err);
     }
@@ -38,7 +40,7 @@ export default function BrandsManager() {
   };
 
   useEffect(() => {
-    fetchbrands();
+    fetchBrands();
   }, []);
 
   //  Agregar nueva marca
@@ -48,8 +50,8 @@ export default function BrandsManager() {
       await api.post(`${API_URL}`, {
         name: newBrand,
       });
-      setnewBrand('');
-      fetchbrands();
+      setNewBrand('');
+      fetchBrands();
       showSuccess('Marca agregada correctamente');
     } catch (err) {
       console.error('Error al agregar marca:', err);
@@ -70,7 +72,7 @@ export default function BrandsManager() {
       await api.put(`${API_URL}/${id}`, { name: editingName });
       setEditingId(null);
       setEditingName('');
-      fetchbrands();
+      fetchBrands();
       showSuccess('Marca actualizada correctamente');
     } catch (err) {
       console.error('Error al guardar marca:', err);
@@ -79,12 +81,7 @@ export default function BrandsManager() {
   };
 
   const deleteBrand = async (brand) => {
-    if (
-      !window.confirm(
-        `¿Está seguro de que desea eliminar la marca "${brand.name}"?`
-      )
-    )
-      return;
+    if (!window.confirm(`¿Está seguro de que desea eliminar la marca "${brand.name}"?`)) return;
 
     try {
       await api.delete(`${API_URL}/${brand.id}`);
@@ -92,7 +89,7 @@ export default function BrandsManager() {
         setEditingId(null);
         setEditingName('');
       }
-      fetchbrands();
+      fetchBrands();
       showSuccess('Marca eliminada correctamente');
     } catch (err) {
       console.error('Error al eliminar marca:', err);
@@ -105,13 +102,9 @@ export default function BrandsManager() {
   }, [search]);
 
   // Filtrado por búsqueda
-  const filteredBrands = brands.filter((u) =>
-    u.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredBrands = brands.filter((u) => u.name?.toLowerCase().includes(search.toLowerCase()));
 
-  const sortedBrands = [...filteredBrands].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  const sortedBrands = [...filteredBrands].sort((a, b) => a.name.localeCompare(b.name));
 
   const totalPages = Math.ceil(sortedBrands.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -156,7 +149,7 @@ export default function BrandsManager() {
         deleteBrand={deleteBrand}
         editingId={editingId}
         editingName={editingName}
-        setnewBrand={setnewBrand}
+        setNewBrand={setNewBrand}
         setEditingName={setEditingName}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

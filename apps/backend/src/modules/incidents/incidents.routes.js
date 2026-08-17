@@ -1,3 +1,5 @@
+// incidents.routes.js
+
 import express from 'express';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
@@ -5,8 +7,8 @@ import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './incidents.controller.js';
 import {
   validateCreateIncident,
+  validateDeleteIncident,
   validateUpdateIncident,
-  validateDeleteIncident
 } from './incidents.validator.js';
 
 const router = express.Router();
@@ -19,15 +21,9 @@ router.get(
   controller.getAll
 );
 
-router.get(
-  '/public/:token',
-  controller.getPublicByToken
-);
+router.get('/public/:token', controller.getPublicByToken);
 
-router.get(
-  '/toner-options',
-  controller.getTonerOptions
-);
+router.get('/toner-options', controller.getTonerOptions);
 
 router.get(
   '/:id',
@@ -38,11 +34,7 @@ router.get(
   controller.getById
 );
 
-router.post(
-  '/',
-  validateCreateIncident,
-  controller.create
-);
+router.post('/', validateCreateIncident, controller.create);
 
 router.put(
   '/:id',
@@ -51,7 +43,6 @@ router.put(
   requirePermission('incidents.update'),
   validateUpdateIncident,
   controller.update
-
 );
 
 router.delete(
@@ -61,7 +52,6 @@ router.delete(
   requirePermission('incidents.delete'),
   validateDeleteIncident,
   controller.remove
-
 );
 
 export default router;

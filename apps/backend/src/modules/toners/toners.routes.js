@@ -1,3 +1,5 @@
+// toners.routes.js
+
 import express from 'express';
 import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './toners.controller.js';

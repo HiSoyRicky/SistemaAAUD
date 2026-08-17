@@ -1,18 +1,17 @@
-// src/pages/admin/AdminPage.jsx
-import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+// AdminPage.jsx
+
 import {
-  Users,
-  Home,
-  MapPin,
   Building,
   Cpu,
-  Tag,
-  Layers,
   Droplet,
-  ShieldCheck,
   GitBranch,
+  Layers,
+  MapPin,
+  ShieldCheck,
+  Tag,
+  Users,
 } from 'lucide-react';
+import { NavLink, Outlet } from 'react-router-dom';
 
 export default function AdminPage() {
   const menuItems = [
@@ -46,9 +45,7 @@ export default function AdminPage() {
 
   return (
     <div className="p-0">
-      <h1 className="mb-6 text-3xl font-bold text-gray-800">
-        Panel de Administración
-      </h1>
+      <h1 className="mb-6 text-3xl font-bold text-gray-800">Panel de Administración</h1>
 
       {/* Menú horizontal con scroll para móviles */}
       <div className="flex gap-3 pb-2 mb-6 overflow-x-auto">

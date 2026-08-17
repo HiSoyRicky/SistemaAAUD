@@ -1,3 +1,5 @@
+// users.repository.js
+
 import { prisma } from '../../config/prisma.js';
 
 const userSelect = {

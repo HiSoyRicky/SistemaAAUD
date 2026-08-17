@@ -1,48 +1,17 @@
+// TonerDeliveryPrint.jsx
+
 import FranjaInferior from '@/assets/images/FranjaInferior.png';
 import LogoDerecha from '@/assets/images/LogoDerecha.png';
 import LogoIzquierda from '@/assets/images/LogoIzquierda.png';
 import MarcaAgua from '@/assets/images/marca-agua.png';
 import { forwardRef } from 'react';
 
-function normalizeName(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .trim();
-}
-
-function isAvailablePlaceholder(value) {
-  return normalizeName(value) === 'DISPONIBLE';
-}
-
-function firstPrintableName(...values) {
-  for (const value of values) {
-    const trimmed = String(value || '').trim();
-    if (trimmed && trimmed !== '-') return trimmed;
-  }
-
-  return '';
-}
-
 const TransferPrint = forwardRef(function TransferPrint(
-  { device = {}, fecha = [] },
+  { device = {}, fecha, setDevice, departments = [] },
   ref
 ) {
-  const technicianName = firstPrintableName(
-    device.technicianName,
-    device.movedByName,
-    device.responsable,
-    device.moved_by?.name
-  );
-  const rawTransfiere =
-    device.role === 'transfiere' ? device.userName : device.userTransfiere;
-  const rawRecibe =
-    device.role === 'recibe' ? device.userName : device.userRecibe;
-  const transfiere = isAvailablePlaceholder(rawTransfiere)
-    ? technicianName
-    : rawTransfiere;
-  const recibe = isAvailablePlaceholder(rawRecibe) ? technicianName : rawRecibe;
+  const transfiere = device.role === 'transfiere' ? device.userName : device.userTransfiere;
+  const recibe = device.role === 'recibe' ? device.userName : device.userRecibe;
 
   return (
     <div
@@ -121,17 +90,15 @@ const TransferPrint = forwardRef(function TransferPrint(
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <td colSpan="6" className="text-center">
-                <h2 className="mt-2 text-lg font-bold">
-                  AUTORIDAD DE ASEO URBANO Y DOMICILIARIO
-                </h2>
+              <th colSpan="6" className="text-center">
+                <h2 className="mt-2 text-lg font-bold">AUTORIDAD DE ASEO URBANO Y DOMICILIARIO</h2>
                 <h3 className="mt-1 text-sm font-semibold leading-tight">
                   UNIDAD DE INFORMÁTICA Y BIENES PATRIMONIALES
                 </h3>
                 <h3 className="mt-1 text-sm font-semibold leading-tight">
                   TRASLADO DE EQUIPO INFORMÁTICO
                 </h3>
-              </td>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -145,9 +112,7 @@ const TransferPrint = forwardRef(function TransferPrint(
 
             {/* Datos del traslado */}
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Origen:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Origen:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.ubication_name
                   ? `${device.ubication_name} / ${device.department_name}`
@@ -156,73 +121,56 @@ const TransferPrint = forwardRef(function TransferPrint(
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Destino:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Destino:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
-                {device.ubication_destino_name || 'N/A'} /{' '}
-                {device.department_destino_name || 'N/A'}
+                {device.ubication_destino_name || 'N/A'} / {device.department_destino_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Dispositivo:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Dispositivo:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.device_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Marca:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Marca:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.brand_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Modelo:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Modelo:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.model_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Serie:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Serie:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.serie || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Marbete:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Marbete:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.tag || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Condición:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Condición:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.status_name || 'N/A'}
               </td>
             </tr>
 
             <tr>
-              <td className="w-1/4 px-2 font-semibold border border-black">
-                Observación:
-              </td>
+              <td className="w-1/4 px-2 font-semibold border border-black">Observación:</td>
               <td colSpan="5" className="px-2 py-1 border border-black">
                 {device.observation || 'N/A'}
               </td>
@@ -230,64 +178,35 @@ const TransferPrint = forwardRef(function TransferPrint(
 
             {/* Firmas superiores */}
             <tr>
-              <td
-                colSpan="3"
-                style={{ paddingTop: '10mm', textAlign: 'center' }}
-              >
-                <div style={{ marginBottom: '3mm' }}>
-                  __________________________
-                </div>
+              <td colSpan="3" style={{ paddingTop: '10mm', textAlign: 'center' }}>
+                <div style={{ marginBottom: '3mm' }}>__________________________</div>
                 <div style={{ fontWeight: 600, fontSize: '10pt' }}>
                   Firma del Jefe de Informática
                 </div>
               </td>
 
-              <td
-                colSpan="3"
-                style={{ paddingTop: '10mm', textAlign: 'center' }}
-              >
-                <div style={{ marginBottom: '3mm' }}>
-                  __________________________
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '10pt' }}>
-                  Firma de Jefa de Bienes
-                </div>
+              <td colSpan="3" style={{ paddingTop: '10mm', textAlign: 'center' }}>
+                <div style={{ marginBottom: '3mm' }}>__________________________</div>
+                <div style={{ fontWeight: 600, fontSize: '10pt' }}>Firma de Jefa de Bienes</div>
               </td>
             </tr>
 
             {/* Firmas Emisor / Receptor */}
             <tr>
-              <td
-                colSpan="3"
-                style={{ paddingTop: '8mm', textAlign: 'center' }}
-              >
-                <div style={{ marginBottom: '3mm' }}>
-                  __________________________
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '10pt' }}>
-                  Firma del Emisor
-                </div>
+              <td colSpan="3" style={{ paddingTop: '8mm', textAlign: 'center' }}>
+                <div style={{ marginBottom: '3mm' }}>__________________________</div>
+                <div style={{ fontWeight: 600, fontSize: '10pt' }}>Firma del Emisor</div>
               </td>
 
-              <td
-                colSpan="3"
-                style={{ paddingTop: '8mm', textAlign: 'center' }}
-              >
-                <div style={{ marginBottom: '3mm' }}>
-                  __________________________
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '10pt' }}>
-                  Firma del Receptor
-                </div>
+              <td colSpan="3" style={{ paddingTop: '8mm', textAlign: 'center' }}>
+                <div style={{ marginBottom: '3mm' }}>__________________________</div>
+                <div style={{ fontWeight: 600, fontSize: '10pt' }}>Firma del Receptor</div>
               </td>
             </tr>
 
             {/* Nombres */}
             <tr>
-              <td
-                colSpan="3"
-                style={{ paddingTop: '6mm', textAlign: 'center' }}
-              >
+              <td colSpan="3" style={{ paddingTop: '6mm', textAlign: 'center' }}>
                 <div style={{ marginBottom: '2mm' }}>{transfiere || ''}</div>
                 <div>__________________________</div>
                 <div
@@ -301,10 +220,7 @@ const TransferPrint = forwardRef(function TransferPrint(
                 </div>
               </td>
 
-              <td
-                colSpan="3"
-                style={{ paddingTop: '6mm', textAlign: 'center' }}
-              >
+              <td colSpan="3" style={{ paddingTop: '6mm', textAlign: 'center' }}>
                 <div style={{ marginBottom: '2mm' }}>{recibe || ''}</div>
                 <div>__________________________</div>
                 <div
@@ -324,16 +240,14 @@ const TransferPrint = forwardRef(function TransferPrint(
               <td colSpan="6" className="pt-5 text-xs text-justify">
                 <p>
                   <em>
-                    En cumplimiento a lo dispuesto en el Artículo 19 de nuestro
-                    Reglamento Interno, se recuerda lo siguiente:
+                    En cumplimiento a lo dispuesto en el Artículo 19 de nuestro Reglamento Interno,
+                    se recuerda lo siguiente:
                     <br />
                     <br />
-                    "El servidor público deberá tomar las precauciones
-                    necesarias a fin de evitar el deterioro, inutilización o
-                    destrucción del mobiliario y/o equipo que le sea asignado.
-                    El pago de los daños que sufra el mobiliario y/o equipo
-                    correrá por cuenta del servidor público, una vez se
-                    compruebe plenamente su responsabilidad por culpa o
+                    "El servidor público deberá tomar las precauciones necesarias a fin de evitar el
+                    deterioro, inutilización o destrucción del mobiliario y equipo. El pago de los
+                    daños que sufra el mobiliario y/o equipo correrá por cuenta del servidor
+                    público, una vez se compruebe plenamente su responsabilidad por culpa o
                     negligencia."
                   </em>
                 </p>

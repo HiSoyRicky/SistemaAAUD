@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import UsersTable from './UsersTable';
-import UserForm from './UsersForm';
-import { Users } from '../../../inventory/devices/services/inventory.api';
+// UsersManager.jsx
+
+import { useCallback, useEffect, useState } from 'react';
 import Pagination from '../../../../shared/components/ui/Pagination';
+import { Users } from '../../../inventory/devices/services/inventory.api';
+import UserForm from './UsersForm';
+import UsersTable from './UsersTable';
 
 export default function UsersManager() {
   const [users, setUsers] = useState([]);
@@ -21,25 +23,24 @@ export default function UsersManager() {
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
-  const [SuccessMessage, setSuccessMessage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const itemsPerPage = 10;
 
+  const loadUsers = useCallback(async () => {
+    const data = await Users.fetchAll();
+    setUsers(data);
+  }, []);
+
+  const loadRoles = useCallback(async () => {
+    const data = await Users.fetchRoles();
+    setRoles(data);
+  }, []);
+
   useEffect(() => {
     loadUsers();
     loadRoles();
-  }, []);
-
-  const loadUsers = async () => {
-    const data = await Users.fetchAll();
-    setUsers(data);
-  };
-
-  const loadRoles = async () => {
-    const data = await Users.fetchRoles();
-    setRoles(data);
-  };
+  }, [loadUsers, loadRoles]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,13 +115,12 @@ export default function UsersManager() {
       await Users.updatePassword(user.id, genericPassword, {
         requirePasswordChange: true,
       });
-      setMessage('Contraseña reseteada correctamente');
+      setMessage('Contraseña restablecida correctamente');
       setMessageType('success');
-      alert(
-        `Contraseña temporal asignada a ${user.username}: ${genericPassword}`
-      );
+      alert(`Contraseña temporal asignada a ${user.username}: ${genericPassword}`);
     } catch (err) {
-      setMessage('Error al resetear la contraseña');
+      console.error('Error resetting password:', err);
+      setMessage('Error al restablecer la contraseña');
       setMessageType('error');
     }
   };
@@ -159,9 +159,7 @@ export default function UsersManager() {
 
       loadUsers();
     } catch (error) {
-      setMessage(
-        error.response?.data?.message || 'No fue posible eliminar el usuario.'
-      );
+      setMessage(error.response?.data?.message || 'No fue posible eliminar el usuario.');
       setMessageType('error');
     }
   };
@@ -215,7 +213,6 @@ export default function UsersManager() {
         setMessage={setMessage}
         setMessageType={setMessageType}
         setEditing={setEditing}
-        SuccessMessage={SuccessMessage}
       />
 
       <Pagination

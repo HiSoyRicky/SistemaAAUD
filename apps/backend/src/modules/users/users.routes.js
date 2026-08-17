@@ -1,3 +1,5 @@
+// users.routes.js
+
 import express from 'express';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
@@ -9,11 +11,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get('/',
-  requirePasswordChange,
-  requirePermission('users.read'),
-  controller.getAll
-);
+router.get('/', requirePasswordChange, requirePermission('users.read'), controller.getAll);
 
 router.get(
   '/technicians',
@@ -22,11 +20,7 @@ router.get(
   controller.getTechnicians
 );
 
-router.get(
-  '/roles',
-  requirePasswordChange,
-  requirePermission('roles.read'),
-  controller.getRoles);
+router.get('/roles', requirePasswordChange, requirePermission('roles.read'), controller.getRoles);
 
 router.get(
   '/search',
@@ -52,11 +46,7 @@ router.put(
   controller.update
 );
 
-router.put(
-  '/:id/password',
-  validator.validateUpdatePassword,
-  controller.updatePassword
-);
+router.put('/:id/password', validator.validateUpdatePassword, controller.updatePassword);
 
 router.delete(
   '/:id',
@@ -64,7 +54,6 @@ router.delete(
   requirePermission('users.delete'),
   validator.validateUserId,
   controller.remove
-
 );
 
 export default router;

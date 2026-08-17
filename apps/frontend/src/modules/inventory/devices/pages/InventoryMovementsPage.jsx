@@ -1,3 +1,5 @@
+// InventoryMovementsPage.jsx
+
 import { Printer } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -34,12 +36,7 @@ function valueOrDash(value) {
 
   if (value && typeof value === 'object') {
     return (
-      value.name ||
-      value.label ||
-      value.title ||
-      value.nombre_completo ||
-      value.username ||
-      '-'
+      value.name || value.label || value.title || value.nombre_completo || value.username || '-'
     );
   }
 
@@ -121,9 +118,7 @@ function changedFieldsCell(changedFields = []) {
 
         return (
           <div key={`${change.field}-${index}`} className="mb-1 leading-tight">
-            <div className="text-[11px] font-semibold text-slate-700">
-              {change.field}
-            </div>
+            <div className="text-[11px] font-semibold text-slate-700">{change.field}</div>
             <div className="flex items-center gap-1 text-[11px]">
               <span className="text-red-600 line-through">{from}</span>
               <span className="text-gray-400">→</span>
@@ -136,13 +131,11 @@ function changedFieldsCell(changedFields = []) {
   );
 }
 
-function changedFieldValue(changedFields = [], fieldName) {
+function changedFieldValue(fieldName, changedFields = []) {
   if (!Array.isArray(changedFields)) return null;
 
   const normalizedTarget = normalizeText(fieldName);
-  const change = changedFields.find(
-    (item) => normalizeText(item?.field) === normalizedTarget
-  );
+  const change = changedFields.find((item) => normalizeText(item?.field) === normalizedTarget);
   if (!change) return null;
 
   return change.to ?? change.from ?? null;
@@ -179,22 +172,10 @@ function buildTransferPreviewDevice(item) {
       userName: snapshot.userName || snapshotTransfiere,
       userTransfiere: snapshotTransfiere,
       userRecibe: firstNonDash(snapshot.userRecibe, item.new_user),
-      ubication_name: firstNonDash(
-        snapshot.ubication_name,
-        item.previous_ubication
-      ),
-      department_name: firstNonDash(
-        snapshot.department_name,
-        item.previous_department
-      ),
-      ubication_destino_name: firstNonDash(
-        snapshot.ubication_destino_name,
-        item.new_ubication
-      ),
-      department_destino_name: firstNonDash(
-        snapshot.department_destino_name,
-        item.new_department
-      ),
+      ubication_name: firstNonDash(snapshot.ubication_name, item.previous_ubication),
+      department_name: firstNonDash(snapshot.department_name, item.previous_department),
+      ubication_destino_name: firstNonDash(snapshot.ubication_destino_name, item.new_ubication),
+      department_destino_name: firstNonDash(snapshot.department_destino_name, item.new_department),
       device_name: firstNonDash(
         snapshot.device_name,
         item.device_name,
@@ -218,11 +199,7 @@ function buildTransferPreviewDevice(item) {
       ),
       serie: firstNonDash(snapshot.serie, item.serie),
       tag: firstNonDash(snapshot.tag, item.tag),
-      status_name: firstNonDash(
-        snapshot.status_name,
-        item.new_status,
-        item.current_active?.status
-      ),
+      status_name: firstNonDash(snapshot.status_name, item.new_status, item.current_active?.status),
       observation: firstNonDash(snapshot.observation, item.new_observation),
     };
   }
@@ -241,8 +218,8 @@ function buildTransferPreviewDevice(item) {
     ubication_destino_name: entityValue(item.new_ubication),
     department_destino_name: entityValue(item.new_department),
     device_name: firstNonDash(
-      changedFieldValue(item.changed_fields, 'Equipo'),
-      changedFieldValue(item.changed_fields, 'Dispositivo'),
+      changedFieldValue('Equipo', item.changed_fields),
+      changedFieldValue('Dispositivo', item.changed_fields),
       item.device_name,
       item.new_device,
       item.previous_device,
@@ -262,18 +239,11 @@ function buildTransferPreviewDevice(item) {
       item.previous_model,
       item.current_active?.model
     ),
-    serie:
-      changedFieldValue(item.changed_fields, 'Serie') ||
-      valueOrDash(item.serie),
-    tag:
-      changedFieldValue(item.changed_fields, 'Marbete') ||
-      valueOrDash(item.tag),
-    status_name:
-      changedFieldValue(item.changed_fields, 'Estado') ||
-      entityValue(item.new_status),
+    serie: changedFieldValue(item.changed_fields, 'Serie') || valueOrDash(item.serie),
+    tag: changedFieldValue(item.changed_fields, 'Marbete') || valueOrDash(item.tag),
+    status_name: changedFieldValue(item.changed_fields, 'Estado') || entityValue(item.new_status),
     observation:
-      changedFieldValue(item.changed_fields, 'Observación') ||
-      valueOrDash(item.new_observation),
+      changedFieldValue(item.changed_fields, 'Observación') || valueOrDash(item.new_observation),
   };
 }
 
@@ -370,20 +340,18 @@ export default function InventoryMovementsPage() {
 
   const thClass =
     'px-3 py-2 text-xs font-semibold tracking-wide text-center uppercase border text-slate-600 bg-slate-50';
-  const tdClass =
-    'px-3 py-2 text-xs text-center border text-slate-700 align-middle';
+  const tdClass = 'px-3 py-2 text-xs text-center border text-slate-700 align-middle';
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Historial de equipos
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Historial de equipos</h1>
           <p className="text-sm text-slate-500">{summary}</p>
         </div>
 
         <button
+          type="button"
           onClick={() => navigate('/inventario/equipos')}
           className="px-3 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
         >
@@ -429,6 +397,7 @@ export default function InventoryMovementsPage() {
         />
 
         <button
+          type="button"
           onClick={() => {
             setSearchInput('');
             setSearch('');
@@ -466,10 +435,7 @@ export default function InventoryMovementsPage() {
           <tbody>
             {loading && (
               <tr>
-                <td
-                  className="px-4 py-8 text-sm text-center text-slate-400"
-                  colSpan={13}
-                >
+                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={13}>
                   Cargando historial de movimientos...
                 </td>
               </tr>
@@ -477,10 +443,7 @@ export default function InventoryMovementsPage() {
 
             {!loading && rows.length === 0 && (
               <tr>
-                <td
-                  className="px-4 py-8 text-sm text-center text-slate-400"
-                  colSpan={13}
-                >
+                <td className="px-4 py-8 text-sm text-center text-slate-400" colSpan={13}>
                   No se encontraron movimientos con esos filtros
                 </td>
               </tr>
@@ -494,34 +457,19 @@ export default function InventoryMovementsPage() {
                     {formatDurationFromMs(item.time_in_previous_location_ms)}
                   </td>
                   <td className={tdClass}>{valueOrDash(item.action)}</td>
-                  <td className={`${tdClass} font-semibold`}>
-                    {valueOrDash(item.tag)}
-                  </td>
+                  <td className={`${tdClass} font-semibold`}>{valueOrDash(item.tag)}</td>
                   <td className={tdClass}>{valueOrDash(item.serie)}</td>
-                  <td className={tdClass}>
-                    {movementCell(item.previous_user, item.new_user)}
-                  </td>
+                  <td className={tdClass}>{movementCell(item.previous_user, item.new_user)}</td>
                   <td className={tdClass}>
                     {movementCell(item.previous_ubication, item.new_ubication)}
                   </td>
                   <td className={tdClass}>
-                    {movementCell(
-                      item.previous_department,
-                      item.new_department
-                    )}
+                    {movementCell(item.previous_department, item.new_department)}
                   </td>
-                  <td className={tdClass}>
-                    {movementCell(item.previous_status, item.new_status)}
-                  </td>
-                  <td className={tdClass}>
-                    {currentLocationCell(item.current_active)}
-                  </td>
-                  <td className={tdClass}>
-                    {changedFieldsCell(item.changed_fields)}
-                  </td>
-                  <td className={tdClass}>
-                    {valueOrDash(item.moved_by?.name)}
-                  </td>
+                  <td className={tdClass}>{movementCell(item.previous_status, item.new_status)}</td>
+                  <td className={tdClass}>{currentLocationCell(item.current_active)}</td>
+                  <td className={tdClass}>{changedFieldsCell(item.changed_fields)}</td>
+                  <td className={tdClass}>{valueOrDash(item.moved_by?.name)}</td>
                   <td className={tdClass}>
                     {String(item.action || '').toUpperCase() === 'DELETE' ? (
                       <span className="text-xs text-slate-400">Sin hoja</span>
@@ -542,11 +490,7 @@ export default function InventoryMovementsPage() {
         </table>
       </div>
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
 
       {previewRow && previewDevice && (
         <div className="fixed left-[-10000px] top-0" aria-hidden="true">
