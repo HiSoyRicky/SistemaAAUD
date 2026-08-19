@@ -50,6 +50,10 @@ async function validateCreateReferences({ idDevice, idBrand, idModel, idStatus }
     throw new AppError('El modelo especificado no existe', 400);
   }
 
+  if (modelExists.id_brand !== idBrand || modelExists.id_device !== idDevice) {
+    throw new AppError('El modelo no corresponde a la marca y dispositivo seleccionados', 400);
+  }
+
   if (!statusExists) {
     throw new AppError('El estado especificado no existe', 400);
   }
@@ -188,21 +192,30 @@ export const create = async (payload, currentUser) => {
   const transferDateObj = resolveCreateTransferDate(transferdate);
 
   try {
-    const created = await repository.create({
-      tag,
-      id_ubication: location.idUbication,
-      id_department: location.idDepartment,
-      user: user || null,
-      id_device: ids.idDevice,
-      id_brand: ids.idBrand,
-      id_model: ids.idModel,
-      serie,
-      ip: ip || null,
-      id_status: ids.idStatus,
-      transferdate: transferDateObj,
-      observation: observation || null,
-      created_by: userId,
-      created_at: new Date(),
+    const created = await repository.createWithTechnology({
+      inventoryData: {
+        tag,
+        id_ubication: location.idUbication,
+        id_department: location.idDepartment,
+        user: user || null,
+        // Legacy obligatorio por schema actual; inventory_devices sigue siendo la fuente tecnológica.
+        id_device: ids.idDevice,
+        id_brand: ids.idBrand,
+        id_model: ids.idModel,
+        serie,
+        ip: ip || null,
+        id_status: ids.idStatus,
+        transferdate: transferDateObj,
+        observation: observation || null,
+        created_by: userId,
+        created_at: new Date(),
+      },
+      technologyData: {
+        id_device: ids.idDevice,
+        id_brand: ids.idBrand,
+        id_model: ids.idModel,
+        ip: ip || null,
+      },
     });
 
     return mapCreateInventoryResponse(created);

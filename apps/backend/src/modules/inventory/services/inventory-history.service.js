@@ -174,9 +174,9 @@ export const getHistory = async (query) => {
         ubication: row.ubications?.name || null,
         department: row.departments?.name || null,
         status: row.status?.name || null,
-        device: row.devices?.name || null,
-        brand: row.brands?.name || null,
-        model: row.models?.name || null,
+        device: row.inventory_devices?.device?.name || row.devices?.name || null,
+        brand: row.inventory_devices?.brand?.name || row.brands?.name || null,
+        model: row.inventory_devices?.model?.name || row.models?.name || null,
       },
     ])
   );

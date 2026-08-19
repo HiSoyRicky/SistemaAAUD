@@ -32,6 +32,7 @@ function shouldClearAssignedUser(snapshot) {
 
 function buildPreviewInventory(request, inventory) {
   const snapshot = request.snapshot || {};
+  const technology = inventory.inventory_devices;
 
   return mapInventoryItem({
     ...inventory,
@@ -40,18 +41,19 @@ function buildPreviewInventory(request, inventory) {
     devices: inventory.devices,
     brands: inventory.brands,
     models: inventory.models,
+    inventory_devices: inventory.inventory_devices,
     status: inventory.status,
     tag: snapshot.tag || inventory.tag,
     user: snapshot.userRecibe || snapshot.userName || inventory.user,
     serie: snapshot.serie || inventory.serie,
-    ip: snapshot.ip || inventory.ip,
+    ip: snapshot.ip ?? technology?.ip ?? inventory.ip,
     transferdate: inventory.transferdate,
     observation: snapshot.observation || inventory.observation,
     id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
     id_department: snapshot.department_destino_id ?? inventory.id_department,
-    id_device: inventory.id_device,
-    id_brand: inventory.id_brand,
-    id_model: inventory.id_model,
+    id_device: technology?.id_device ?? inventory.id_device,
+    id_brand: technology?.id_brand ?? inventory.id_brand,
+    id_model: technology?.id_model ?? inventory.id_model,
     id_status: inventory.id_status,
   });
 }
@@ -72,6 +74,13 @@ export const getAll = async (query = {}) => {
           devices: { select: { id: true, name: true } },
           brands: { select: { id: true, name: true } },
           models: { select: { id: true, name: true } },
+          inventory_devices: {
+            include: {
+              device: { select: { id: true, name: true } },
+              brand: { select: { id: true, name: true } },
+              model: { select: { id: true, name: true } },
+            },
+          },
           departments: { select: { id: true, name: true } },
           ubications: { select: { id: true, name: true } },
           status: { select: { id: true, name: true } },
@@ -109,6 +118,13 @@ export const getMine = async (currentUser, query = {}) => {
           devices: { select: { id: true, name: true } },
           brands: { select: { id: true, name: true } },
           models: { select: { id: true, name: true } },
+          inventory_devices: {
+            include: {
+              device: { select: { id: true, name: true } },
+              brand: { select: { id: true, name: true } },
+              model: { select: { id: true, name: true } },
+            },
+          },
           departments: { select: { id: true, name: true } },
           ubications: { select: { id: true, name: true } },
           status: { select: { id: true, name: true } },
@@ -145,6 +161,13 @@ export const create = async (payload, currentUser) => {
       devices: { select: { id: true, name: true } },
       brands: { select: { id: true, name: true } },
       models: { select: { id: true, name: true } },
+      inventory_devices: {
+        include: {
+          device: { select: { id: true, name: true } },
+          brand: { select: { id: true, name: true } },
+          model: { select: { id: true, name: true } },
+        },
+      },
       departments: { select: { id: true, name: true } },
       ubications: { select: { id: true, name: true } },
       status: { select: { id: true, name: true } },
@@ -195,6 +218,13 @@ async function resolveRequestOrFail(idParam) {
           devices: { select: { id: true, name: true } },
           brands: { select: { id: true, name: true } },
           models: { select: { id: true, name: true } },
+          inventory_devices: {
+            include: {
+              device: { select: { id: true, name: true } },
+              brand: { select: { id: true, name: true } },
+              model: { select: { id: true, name: true } },
+            },
+          },
           departments: { select: { id: true, name: true } },
           ubications: { select: { id: true, name: true } },
           status: { select: { id: true, name: true } },

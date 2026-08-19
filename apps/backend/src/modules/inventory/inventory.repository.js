@@ -6,6 +6,13 @@ const includeRelations = {
   devices: { select: { id: true, name: true } },
   brands: { select: { id: true, name: true } },
   models: { select: { id: true, name: true } },
+  inventory_devices: {
+    include: {
+      device: { select: { id: true, name: true } },
+      brand: { select: { id: true, name: true } },
+      model: { select: { id: true, name: true } },
+    },
+  },
   departments: { select: { id: true, name: true } },
   ubications: { select: { id: true, name: true } },
   status: { select: { id: true, name: true } },
@@ -21,11 +28,33 @@ export const findAll = async (search) => {
             { serie: { contains: search, mode: 'insensitive' } },
             { tag: { contains: search, mode: 'insensitive' } },
             { user: { contains: search, mode: 'insensitive' } },
-            { ip: { contains: search, mode: 'insensitive' } },
+            {
+              inventory_devices: {
+                is: { ip: { contains: search, mode: 'insensitive' } },
+              },
+            },
             { observation: { contains: search, mode: 'insensitive' } },
-            { devices: { is: { name: { contains: search, mode: 'insensitive' } } } },
-            { brands: { is: { name: { contains: search, mode: 'insensitive' } } } },
-            { models: { is: { name: { contains: search, mode: 'insensitive' } } } },
+            {
+              inventory_devices: {
+                is: {
+                  device: { is: { name: { contains: search, mode: 'insensitive' } } },
+                },
+              },
+            },
+            {
+              inventory_devices: {
+                is: {
+                  brand: { is: { name: { contains: search, mode: 'insensitive' } } },
+                },
+              },
+            },
+            {
+              inventory_devices: {
+                is: {
+                  model: { is: { name: { contains: search, mode: 'insensitive' } } },
+                },
+              },
+            },
             { departments: { is: { name: { contains: search, mode: 'insensitive' } } } },
             { ubications: { is: { name: { contains: search, mode: 'insensitive' } } } },
           ],
@@ -38,6 +67,7 @@ export const findAll = async (search) => {
 export const findById = async (id) => {
   return prisma.bd_inventory.findUnique({
     where: { id: Number(id) },
+    include: includeRelations,
   });
 };
 
@@ -68,7 +98,7 @@ export const findStatusById = async (id) => {
 export const findInventoryMovementLogs = async ({ action, from, to, inventoryId }) => {
   return prisma.activity_logs.findMany({
     where: {
-      entity_type: 'BD_INVENTORY',
+      entity_type: { in: ['BD_INVENTORY', 'INVENTORY_DEVICES'] },
       ...(inventoryId && { entity_id: Number(inventoryId) }),
       ...(action && { action }),
       ...((from || to) && {
@@ -154,9 +184,13 @@ export const findCurrentInventoryByIds = async (ids = []) => {
       ubications: { select: { name: true } },
       departments: { select: { name: true } },
       status: { select: { name: true } },
-      devices: { select: { name: true } },
-      brands: { select: { name: true } },
-      models: { select: { name: true } },
+      inventory_devices: {
+        include: {
+          device: { select: { name: true } },
+          brand: { select: { name: true } },
+          model: { select: { name: true } },
+        },
+      },
     },
   });
 };
@@ -180,17 +214,52 @@ export const areInventoryLocationFieldsNullable = async () => {
   return inventoryLocationNullableCache;
 };
 
-export const create = async (data) => {
-  return prisma.bd_inventory.create({
-    data,
-    include: includeRelations,
+export const createWithTechnology = async ({ inventoryData, technologyData }) => {
+  return prisma.$transaction(async (tx) => {
+    const inventory = await tx.bd_inventory.create({
+      data: inventoryData,
+    });
+
+    await tx.inventory_devices.create({
+      data: {
+        ...technologyData,
+        id_inventory: inventory.id,
+      },
+    });
+
+    return tx.bd_inventory.findUnique({
+      where: { id: inventory.id },
+      include: includeRelations,
+    });
   });
 };
 
-export const updateById = async (id, data) => {
-  return prisma.bd_inventory.update({
-    where: { id: Number(id) },
-    data,
-    include: includeRelations,
+export const updateWithTechnology = async ({
+  id,
+  inventoryData,
+  technologyData,
+  updateTechnology = true,
+}) => {
+  return prisma.$transaction(async (tx) => {
+    await tx.bd_inventory.update({
+      where: { id: Number(id) },
+      data: inventoryData,
+    });
+
+    if (updateTechnology) {
+      await tx.inventory_devices.upsert({
+        where: { id_inventory: Number(id) },
+        create: {
+          ...technologyData,
+          id_inventory: Number(id),
+        },
+        update: technologyData,
+      });
+    }
+
+    return tx.bd_inventory.findUnique({
+      where: { id: Number(id) },
+      include: includeRelations,
+    });
   });
 };
