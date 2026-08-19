@@ -62,7 +62,16 @@ async function assertInventoryUpdatePermissions(payload, currentUser) {
 }
 
 function parseUpdateIds(payload) {
-  const { id_ubication, id_department, id_device, id_brand, id_model, id_status } = payload;
+  const {
+    id_ubication,
+    id_department,
+    id_device,
+    id_brand,
+    id_model,
+    id_status,
+    id_condition,
+    id_administrative_area,
+  } = payload;
 
   const ids = {
     parsedUbication: parseOptionalPositiveInt(id_ubication),
@@ -71,6 +80,8 @@ function parseUpdateIds(payload) {
     parsedBrand: parseOptionalPositiveInt(id_brand),
     parsedModel: parseOptionalPositiveInt(id_model),
     parsedStatus: parseOptionalPositiveInt(id_status),
+    parsedCondition: parseOptionalPositiveInt(id_condition),
+    parsedAdministrativeArea: parseOptionalPositiveInt(id_administrative_area),
   };
 
   const validations = [
@@ -80,6 +91,8 @@ function parseUpdateIds(payload) {
     ['id_brand', ids.parsedBrand, 'Marca inválida'],
     ['id_model', ids.parsedModel, 'Modelo inválido'],
     ['id_status', ids.parsedStatus, 'Estado inválido'],
+    ['id_condition', ids.parsedCondition, 'Condición física inválida'],
+    ['id_administrative_area', ids.parsedAdministrativeArea, 'Área administradora inválida'],
   ];
 
   for (const [field, value, message] of validations) {
@@ -138,6 +151,18 @@ async function validateUpdateReferences(payload, ids) {
       id: ids.parsedModel,
       finder: repository.findModelById,
       message: 'El modelo proporcionado no existe',
+    }),
+    validateUpdateReference({
+      provided: payload.id_condition,
+      id: ids.parsedCondition,
+      finder: repository.findConditionById,
+      message: 'La condición física proporcionada no existe',
+    }),
+    validateUpdateReference({
+      provided: payload.id_administrative_area,
+      id: ids.parsedAdministrativeArea,
+      finder: repository.findAdministrativeAreaById,
+      message: 'El área administradora proporcionada no existe',
     }),
   ]);
 }
@@ -262,6 +287,9 @@ function applySimpleUpdateFields(updateData, payload, ids) {
     ['id_status', ids.parsedStatus],
     ['user', payload.user],
     ['observation', payload.observation],
+    ['description', payload.description],
+    ['id_condition', ids.parsedCondition],
+    ['id_administrative_area', ids.parsedAdministrativeArea],
   ];
 
   for (const [field, value] of fields) {

@@ -16,6 +16,8 @@ const includeRelations = {
   departments: { select: { id: true, name: true } },
   ubications: { select: { id: true, name: true } },
   status: { select: { id: true, name: true } },
+  condition: { select: { id: true, name: true } },
+  administrative_area: { select: { id: true, name: true } },
 };
 
 let inventoryLocationNullableCache = null;
@@ -95,6 +97,14 @@ export const findStatusById = async (id) => {
   return prisma.status.findUnique({ where: { id: Number(id) } });
 };
 
+export const findConditionById = async (id) => {
+  return prisma.inventory_conditions.findUnique({ where: { id: Number(id) } });
+};
+
+export const findAdministrativeAreaById = async (id) => {
+  return prisma.inventory_administrative_areas.findUnique({ where: { id: Number(id) } });
+};
+
 export const findInventoryMovementLogs = async ({ action, from, to, inventoryId }) => {
   return prisma.activity_logs.findMany({
     where: {
@@ -169,6 +179,24 @@ export const findModelsByIds = async (ids = []) => {
   if (!ids.length) return [];
 
   return prisma.models.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true },
+  });
+};
+
+export const findConditionsByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.inventory_conditions.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true },
+  });
+};
+
+export const findAdministrativeAreasByIds = async (ids = []) => {
+  if (!ids.length) return [];
+
+  return prisma.inventory_administrative_areas.findMany({
     where: { id: { in: ids } },
     select: { id: true, name: true },
   });

@@ -17,6 +17,7 @@ const inventoryIdParamsSchema = z.object({
 
 const createInventoryBodySchema = z.object({
   tag: zRequiredString('El campo tag es obligatorio'),
+  description: zOptionalNonEmptyField('El campo description no puede estar vacío'),
   id_ubication: zOptionalInt('El campo id_ubication debe ser un número entero', {
     nullable: true,
     allowEmptyString: true,
@@ -30,6 +31,14 @@ const createInventoryBodySchema = z.object({
   id_model: zRequiredInt('El campo id_model debe ser un número entero'),
   serie: zRequiredString('El campo serie es obligatorio'),
   id_status: zRequiredInt('El campo id_status debe ser un número entero'),
+  id_condition: zOptionalInt('El campo id_condition debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  id_administrative_area: zOptionalInt(
+    'El campo id_administrative_area debe ser un número entero',
+    { nullable: true, allowEmptyString: true }
+  ),
   transferdate: zOptionalDate('El campo transferdate debe ser una fecha válida', {
     nullable: true,
     allowEmptyString: true,
@@ -38,6 +47,7 @@ const createInventoryBodySchema = z.object({
 
 const updateInventoryBodySchema = z.object({
   tag: zOptionalNonEmptyField('El campo tag no puede estar vacío'),
+  description: zOptionalNonEmptyField('El campo description no puede estar vacío'),
   id_ubication: zOptionalInt('El campo id_ubication debe ser un número entero', {
     nullable: true,
     allowEmptyString: true,
@@ -55,6 +65,14 @@ const updateInventoryBodySchema = z.object({
     allowEmptyString: true,
   }),
   id_status: zOptionalInt('El campo id_status debe ser un número entero'),
+  id_condition: zOptionalInt('El campo id_condition debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  id_administrative_area: zOptionalInt(
+    'El campo id_administrative_area debe ser un número entero',
+    { nullable: true, allowEmptyString: true }
+  ),
   transferdate: zOptionalDate('El campo transferdate debe ser una fecha válida', {
     nullable: true,
     allowEmptyString: true,

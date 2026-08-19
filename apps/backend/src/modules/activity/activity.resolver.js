@@ -177,6 +177,8 @@ const FIELD_LABELS = {
   id_device: 'Tipo de equipo',
   id_brand: 'Marca',
   id_model: 'Modelo',
+  id_condition: 'Condición física',
+  id_administrative_area: 'Área administradora',
   id_printer_model: 'Modelo de impresora',
   id_role: 'Rol',
   id_rol: 'Rol',

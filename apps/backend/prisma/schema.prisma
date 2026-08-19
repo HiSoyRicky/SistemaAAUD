@@ -34,34 +34,51 @@ model bd_incidents {
 }
 
 model bd_inventory {
-  id            Int       @id(map: "pk_bd_inventory") @default(autoincrement())
-  tag           String    @db.VarChar(50)
-  id_ubication  Int?
-  id_department Int?
-  user          String?   @db.VarChar(50)
-  id_device     Int
-  id_brand      Int
-  id_model      Int
-  serie         String    @db.VarChar(50)
-  ip            String?   @db.VarChar(50)
-  id_status     Int
-  transferdate  DateTime? @db.Date
-  observation   String?   @db.VarChar(255)
-  created_by    Int?
-  created_at    DateTime? @db.Timetz(6)
-  updated_at    DateTime? @db.Timetz(6)
-  updated_by    Int?
+  id                     Int       @id(map: "pk_bd_inventory") @default(autoincrement())
+  tag                    String    @db.VarChar(50)
+  id_ubication           Int?
+  id_department          Int?
+  user                   String?   @db.VarChar(50)
+  description            String?   @db.VarChar(255)
+  id_device              Int
+  id_brand               Int
+  id_model               Int
+  serie                  String    @db.VarChar(50)
+  ip                     String?   @db.VarChar(50)
+  id_status              Int
+  id_condition           Int?
+  id_administrative_area Int?
+  transferdate           DateTime? @db.Date
+  observation            String?   @db.VarChar(255)
+  created_by             Int?
+  created_at             DateTime? @db.Timetz(6)
+  updated_at             DateTime? @db.Timetz(6)
+  updated_by             Int?
 
   transfer_requests inventory_transfer_requests[]
 
-  brands      brands       @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
-  departments departments? @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
-  devices     devices      @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
-  models      models       @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
-  status      status       @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
-  ubications  ubications?  @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
+  brands              brands                          @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
+  departments         departments?                    @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
+  devices             devices                         @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
+  models              models                          @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
+  status              status                          @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
+  condition           inventory_conditions?           @relation(fields: [id_condition], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_condition")
+  administrative_area inventory_administrative_areas? @relation(fields: [id_administrative_area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_administrative_area")
+  ubications          ubications?                     @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
 
   inventory_devices inventory_devices?
+}
+
+model inventory_conditions {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique @db.VarChar(50)
+  inventories bd_inventory[]
+}
+
+model inventory_administrative_areas {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique @db.VarChar(100)
+  inventories bd_inventory[]
 }
 
 model inventory_devices {

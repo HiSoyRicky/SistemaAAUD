@@ -11,6 +11,8 @@ const PERMISSIONS_CATALOG = [
   { module: 'inventory', action: 'update_location' },
   { module: 'inventory', action: 'update_department' },
   { module: 'inventory', action: 'update_assignee' },
+  { module: 'inventory', action: 'update_condition' },
+  { module: 'inventory', action: 'update_administrative_area' },
   { module: 'inventory', action: 'delete' },
   { module: 'toners', action: 'read' },
   { module: 'toners', action: 'create' },

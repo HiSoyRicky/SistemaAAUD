@@ -60,6 +60,8 @@ export const getHistory = async (query) => {
   const deviceIds = new Set();
   const brandIds = new Set();
   const modelIds = new Set();
+  const conditionIds = new Set();
+  const administrativeAreaIds = new Set();
 
   const rawMovements = logs.map((log) => {
     const oldValues = parseMovementObject(log.old_values);
@@ -77,6 +79,10 @@ export const getHistory = async (query) => {
     const newBrandId = parseNullableId(newValues.id_brand);
     const oldModelId = parseNullableId(oldValues.id_model);
     const newModelId = parseNullableId(newValues.id_model);
+    const oldConditionId = parseNullableId(oldValues.id_condition);
+    const newConditionId = parseNullableId(newValues.id_condition);
+    const oldAdministrativeAreaId = parseNullableId(oldValues.id_administrative_area);
+    const newAdministrativeAreaId = parseNullableId(newValues.id_administrative_area);
 
     if (oldUbicationId) ubicationIds.add(oldUbicationId);
     if (newUbicationId) ubicationIds.add(newUbicationId);
@@ -92,6 +98,10 @@ export const getHistory = async (query) => {
     if (newBrandId) brandIds.add(newBrandId);
     if (oldModelId) modelIds.add(oldModelId);
     if (newModelId) modelIds.add(newModelId);
+    if (oldConditionId) conditionIds.add(oldConditionId);
+    if (newConditionId) conditionIds.add(newConditionId);
+    if (oldAdministrativeAreaId) administrativeAreaIds.add(oldAdministrativeAreaId);
+    if (newAdministrativeAreaId) administrativeAreaIds.add(newAdministrativeAreaId);
 
     return {
       log,
@@ -100,13 +110,24 @@ export const getHistory = async (query) => {
     };
   });
 
-  const [ubications, departments, statuses, devices, brands, models] = await Promise.all([
+  const [
+    ubications,
+    departments,
+    statuses,
+    devices,
+    brands,
+    models,
+    conditions,
+    administrativeAreas,
+  ] = await Promise.all([
     repository.findUbicationsByIds([...ubicationIds]),
     repository.findDepartmentsByIds([...departmentIds]),
     repository.findStatusesByIds([...statusIds]),
     repository.findDevicesByIds([...deviceIds]),
     repository.findBrandsByIds([...brandIds]),
     repository.findModelsByIds([...modelIds]),
+    repository.findConditionsByIds([...conditionIds]),
+    repository.findAdministrativeAreasByIds([...administrativeAreaIds]),
   ]);
 
   const ubicationsMap = new Map(ubications.map((item) => [item.id, item.name]));
@@ -115,6 +136,10 @@ export const getHistory = async (query) => {
   const devicesMap = new Map(devices.map((item) => [item.id, item.name]));
   const brandsMap = new Map(brands.map((item) => [item.id, item.name]));
   const modelsMap = new Map(models.map((item) => [item.id, item.name]));
+  const conditionsMap = new Map(conditions.map((item) => [item.id, item.name]));
+  const administrativeAreasMap = new Map(
+    administrativeAreas.map((item) => [item.id, item.name])
+  );
 
   const mapped = rawMovements.map(({ log, oldValues, newValues }) =>
     buildHistoryItem({
@@ -127,6 +152,8 @@ export const getHistory = async (query) => {
       devicesMap,
       brandsMap,
       modelsMap,
+      conditionsMap,
+      administrativeAreasMap,
     })
   );
 
@@ -272,6 +299,14 @@ function formatChangedValue(key, value, maps) {
       const id = parseNullableId(value);
       return id ? maps.modelsMap.get(id) || String(id) : null;
     }
+    case 'id_condition': {
+      const id = parseNullableId(value);
+      return id ? maps.conditionsMap.get(id) || String(id) : null;
+    }
+    case 'id_administrative_area': {
+      const id = parseNullableId(value);
+      return id ? maps.administrativeAreasMap.get(id) || String(id) : null;
+    }
     case 'transferdate':
       return formatHistoryDate(value);
     default:
@@ -322,6 +357,10 @@ function resolveHistoryIds(oldValues, newValues) {
     newBrandId: parseNullableId(newValues.id_brand),
     oldModelId: parseNullableId(oldValues.id_model),
     newModelId: parseNullableId(newValues.id_model),
+    oldConditionId: parseNullableId(oldValues.id_condition),
+    newConditionId: parseNullableId(newValues.id_condition),
+    oldAdministrativeAreaId: parseNullableId(oldValues.id_administrative_area),
+    newAdministrativeAreaId: parseNullableId(newValues.id_administrative_area),
   };
 }
 
@@ -339,6 +378,10 @@ function resolveHistoryNames(ids, maps) {
     newBrandId,
     oldModelId,
     newModelId,
+    oldConditionId,
+    newConditionId,
+    oldAdministrativeAreaId,
+    newAdministrativeAreaId,
   } = ids;
 
   return {
@@ -354,6 +397,14 @@ function resolveHistoryNames(ids, maps) {
     newBrand: newBrandId ? maps.brandsMap.get(newBrandId) || null : null,
     previousModel: oldModelId ? maps.modelsMap.get(oldModelId) || null : null,
     newModel: newModelId ? maps.modelsMap.get(newModelId) || null : null,
+    previousCondition: oldConditionId ? maps.conditionsMap.get(oldConditionId) || null : null,
+    newCondition: newConditionId ? maps.conditionsMap.get(newConditionId) || null : null,
+    previousAdministrativeArea: oldAdministrativeAreaId
+      ? maps.administrativeAreasMap.get(oldAdministrativeAreaId) || null
+      : null,
+    newAdministrativeArea: newAdministrativeAreaId
+      ? maps.administrativeAreasMap.get(newAdministrativeAreaId) || null
+      : null,
   };
 }
 
@@ -390,6 +441,8 @@ function buildHistoryItem({
   devicesMap,
   brandsMap,
   modelsMap,
+  conditionsMap,
+  administrativeAreasMap,
 }) {
   const ids = resolveHistoryIds(oldValues, newValues);
   const names = resolveHistoryNames(ids, {
@@ -399,6 +452,8 @@ function buildHistoryItem({
     devicesMap,
     brandsMap,
     modelsMap,
+    conditionsMap,
+    administrativeAreasMap,
   });
 
   const previousUser = sanitizeMovementValue(oldValues.user) || null;
@@ -420,6 +475,8 @@ function buildHistoryItem({
     devicesMap,
     brandsMap,
     modelsMap,
+    conditionsMap,
+    administrativeAreasMap,
   });
 
   return {
