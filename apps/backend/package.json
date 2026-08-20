@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "nodemon src/Server.js",
     "start": "node src/Server.js",
-    "prisma:seed:permissions": "node prisma/seed.permissions.js"
+    "prisma:seed:permissions": "node prisma/seed.permissions.js",
+    "prisma:seed:inventory-products": "node prisma/seed.inventory-product-catalog.js",
+    "prisma:seed:inventory-product-synonyms": "node prisma/seed.inventory-product-synonyms.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

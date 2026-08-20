@@ -81,6 +81,32 @@ model inventory_administrative_areas {
   inventories bd_inventory[]
 }
 
+model inventory_product_catalog {
+  id              Int                          @id @default(autoincrement())
+  codigo_producto String                       @unique @db.VarChar(50)
+  titulo_espanol  String                       @db.VarChar(255)
+  titulo_ingles   String?                      @db.VarChar(255)
+  activo          Boolean                      @default(true)
+  created_at      DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                     @updatedAt @db.Timestamptz(6)
+  synonyms        inventory_product_synonyms[]
+}
+
+model inventory_product_synonyms {
+  id                 Int      @id @default(autoincrement())
+  product_id         Int
+  synonym            String   @db.Text
+  synonym_normalized String   @db.Text
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @updatedAt @db.Timestamptz(6)
+
+  product inventory_product_catalog @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, synonym_normalized])
+  @@index([product_id])
+  @@index([synonym_normalized])
+}
+
 model inventory_devices {
   id           Int      @id @default(autoincrement())
   id_inventory Int      @unique
