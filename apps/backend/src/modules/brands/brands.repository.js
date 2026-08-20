@@ -34,7 +34,7 @@ export const updateById = async (id, data) => {
 };
 
 export const countInventoryByBrandId = async (id) => {
-  return prisma.bd_inventory.count({
+  return prisma.inventory_devices.count({
     where: { id_brand: Number(id) },
   });
 };

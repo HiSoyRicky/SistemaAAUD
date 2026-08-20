@@ -31,6 +31,8 @@ export const HISTORY_FIELD_LABELS = {
   id_device: 'Equipo',
   id_brand: 'Marca',
   id_model: 'Modelo',
+  id_condition: 'Condición física',
+  id_administrative_area: 'Área administradora',
   ip: 'IP',
   observation: 'Observación',
   transferdate: 'Fecha de traslado',
@@ -39,11 +41,15 @@ export const INVENTORY_FIELD_PERMISSIONS = {
   id_ubication: 'inventory.update_location',
   id_department: 'inventory.update_department',
   user: 'inventory.update_assignee',
+  id_condition: 'inventory.update_condition',
+  id_administrative_area: 'inventory.update_administrative_area',
 };
 export const INVENTORY_FIELD_LABELS = {
   id_ubication: 'Ubicación',
   id_department: 'Departamento',
   user: 'Usuario asignado',
+  id_condition: 'Condición física',
+  id_administrative_area: 'Área administradora',
 };
 export const INVENTORY_UPDATE_FIELDS = new Set([
   'tag',
@@ -58,4 +64,7 @@ export const INVENTORY_UPDATE_FIELDS = new Set([
   'id_status',
   'transferdate',
   'observation',
+  'description',
+  'id_condition',
+  'id_administrative_area',
 ]);

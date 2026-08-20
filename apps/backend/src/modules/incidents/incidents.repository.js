@@ -92,10 +92,14 @@ export const findPrinterModelsWithTonersByLocationDepartment = async ({
       devices: {
         name: 'Impresora',
       },
-      bd_inventory: {
+      inventory_devices: {
         some: {
-          id_ubication: Number(id_ubication),
-          id_department: Number(id_department),
+          inventory: {
+            is: {
+            id_ubication: Number(id_ubication),
+            id_department: Number(id_department),
+            },
+          },
         },
       },
     },

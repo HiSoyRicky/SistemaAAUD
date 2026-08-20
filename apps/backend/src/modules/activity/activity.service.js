@@ -7,6 +7,7 @@ import { buildDiff, buildRecordLabel } from './activity.resolver.js';
 const ENTITY_LABELS = {
   BD_INCIDENTS: 'Incidente',
   BD_INVENTORY: 'Inventario',
+  INVENTORY_DEVICES: 'Tecnología del inventario',
   TONER_MOVEMENTS: 'Movimiento de tóner',
   TONERS: 'Tóner',
   TONER_STOCK: 'Stock de tóner',
@@ -50,6 +51,7 @@ const SUMMARY_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
 const ENTITY_ALIASES = {
   BD_INCIDENTS: ['BD_INCIDENTS', 'bd_incidents'],
   BD_INVENTORY: ['BD_INVENTORY', 'bd_inventory'],
+  INVENTORY_DEVICES: ['INVENTORY_DEVICES', 'inventory_devices'],
   TONER_MOVEMENTS: ['TONER_MOVEMENTS', 'toner_movements'],
   TONERS: ['TONERS', 'toners'],
   TONER_STOCK: ['TONER_STOCK', 'toner_stock'],

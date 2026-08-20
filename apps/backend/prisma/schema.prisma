@@ -34,37 +34,105 @@ model bd_incidents {
 }
 
 model bd_inventory {
-  id                Int                           @id(map: "pk_bd_inventory") @default(autoincrement())
-  tag               String                        @db.VarChar(50)
-  id_ubication      Int?
-  id_department     Int?
-  user              String?                       @db.VarChar(50)
-  id_device         Int
-  id_brand          Int
-  id_model          Int
-  serie             String                        @db.VarChar(50)
-  ip                String?                       @db.VarChar(50)
-  id_status         Int
-  transferdate      DateTime?                     @db.Date
-  observation       String?                       @db.VarChar(255)
-  created_by        Int?
-  created_at        DateTime?                     @db.Timetz(6)
-  updated_at        DateTime?                     @db.Timetz(6)
-  updated_by        Int?
+  id                     Int       @id(map: "pk_bd_inventory") @default(autoincrement())
+  tag                    String    @db.VarChar(50)
+  id_ubication           Int?
+  id_department          Int?
+  user                   String?   @db.VarChar(50)
+  description            String?   @db.VarChar(255)
+  id_device              Int
+  id_brand               Int
+  id_model               Int
+  serie                  String    @db.VarChar(50)
+  ip                     String?   @db.VarChar(50)
+  id_status              Int
+  id_condition           Int?
+  id_administrative_area Int?
+  transferdate           DateTime? @db.Date
+  observation            String?   @db.VarChar(255)
+  created_by             Int?
+  created_at             DateTime? @db.Timetz(6)
+  updated_at             DateTime? @db.Timetz(6)
+  updated_by             Int?
+
   transfer_requests inventory_transfer_requests[]
-  brands            brands                        @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
-  departments       departments?                  @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
-  devices           devices                       @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
-  models            models                        @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
-  status            status                        @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
-  ubications        ubications?                   @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
+
+  brands              brands                          @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
+  departments         departments?                    @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
+  devices             devices                         @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
+  models              models                          @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
+  status              status                          @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_status")
+  condition           inventory_conditions?           @relation(fields: [id_condition], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_condition")
+  administrative_area inventory_administrative_areas? @relation(fields: [id_administrative_area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_administrative_area")
+  ubications          ubications?                     @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
+
+  inventory_devices inventory_devices?
+}
+
+model inventory_conditions {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique @db.VarChar(50)
+  inventories bd_inventory[]
+}
+
+model inventory_administrative_areas {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique @db.VarChar(100)
+  inventories bd_inventory[]
+}
+
+model inventory_product_catalog {
+  id              Int                          @id @default(autoincrement())
+  codigo_producto String                       @unique @db.VarChar(50)
+  titulo_espanol  String                       @db.VarChar(255)
+  titulo_ingles   String?                      @db.VarChar(255)
+  activo          Boolean                      @default(true)
+  created_at      DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                     @updatedAt @db.Timestamptz(6)
+  synonyms        inventory_product_synonyms[]
+}
+
+model inventory_product_synonyms {
+  id                 Int      @id @default(autoincrement())
+  product_id         Int
+  synonym            String   @db.Text
+  synonym_normalized String   @db.Text
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @updatedAt @db.Timestamptz(6)
+
+  product inventory_product_catalog @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, synonym_normalized])
+  @@index([product_id])
+  @@index([synonym_normalized])
+}
+
+model inventory_devices {
+  id           Int      @id @default(autoincrement())
+  id_inventory Int      @unique
+  id_device    Int
+  id_brand     Int
+  id_model     Int
+  ip           String?  @db.VarChar(45)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  inventory bd_inventory @relation(fields: [id_inventory], references: [id], onDelete: Cascade)
+  device    devices      @relation(fields: [id_device], references: [id])
+  brand     brands       @relation(fields: [id_brand], references: [id])
+  model     models       @relation(fields: [id_model], references: [id])
+
+  @@index([id_device])
+  @@index([id_brand])
+  @@index([id_model])
 }
 
 model brands {
-  id           Int            @id(map: "pk_brands") @default(autoincrement())
-  name         String         @unique @db.VarChar(50)
-  bd_inventory bd_inventory[]
-  models       models[]
+  id                Int                 @id(map: "pk_brands") @default(autoincrement())
+  name              String              @unique @db.VarChar(50)
+  bd_inventory      bd_inventory[]
+  models            models[]
+  inventory_devices inventory_devices[]
 }
 
 model categories {
@@ -85,21 +153,23 @@ model departments {
 }
 
 model devices {
-  id           Int            @id(map: "pk_device") @default(autoincrement())
-  name         String         @unique(map: "name_devices_unique") @db.VarChar(50)
-  bd_inventory bd_inventory[]
-  models       models[]
+  id                Int                 @id(map: "pk_device") @default(autoincrement())
+  name              String              @unique(map: "name_devices_unique") @db.VarChar(50)
+  bd_inventory      bd_inventory[]
+  models            models[]
+  inventory_devices inventory_devices[]
 }
 
 model models {
-  id           Int            @id(map: "pk_models") @default(autoincrement())
-  name         String         @db.VarChar(50)
-  id_brand     Int
-  id_device    Int
-  bd_inventory bd_inventory[]
-  brands       brands         @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_brands")
-  devices      devices        @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
-  toners       toners[]
+  id                Int                 @id(map: "pk_models") @default(autoincrement())
+  name              String              @db.VarChar(50)
+  id_brand          Int
+  id_device         Int
+  bd_inventory      bd_inventory[]
+  brands            brands              @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_brands")
+  devices           devices             @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
+  toners            toners[]
+  inventory_devices inventory_devices[]
 }
 
 model roles {

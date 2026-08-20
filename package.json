@@ -18,12 +18,18 @@
     "prisma:deploy": "npm exec -w apps/backend prisma migrate deploy",
     "prisma:studio": "npm exec -w apps/backend prisma studio",
     "prisma:seed:permissions": "npm run prisma:seed:permissions -w apps/backend",
+    "prisma:seed:inventory-products": "npm run prisma:seed:inventory-products -w apps/backend",
+    "prisma:seed:inventory-product-synonyms": "npm run prisma:seed:inventory-product-synonyms -w apps/backend",
     "prisma:safe:dev": "npm run prisma:format && npm run prisma:validate && npm run prisma:dev && npm run prisma:generate",
     "prisma:safe:deploy": "npm run prisma:format && npm run prisma:validate && npm run prisma:deploy",
-    "prisma:status": "npm exec -w apps/backend prisma migrate status"
+    "prisma:status": "npm exec -w apps/backend prisma migrate status",
+    "inventory:diagnostic": "npm exec -w apps/backend -- prisma db execute --schema prisma/schema.prisma --stdin < tools/inventory-phase-0-diagnostic.sql"
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
-    "pm2": "^7.0.3"
+    "pm2": "^5.3.1"
+  },
+  "dependencies": {
+    "exceljs": "3.4.0"
   }
 }

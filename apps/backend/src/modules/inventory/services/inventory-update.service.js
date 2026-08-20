@@ -62,7 +62,16 @@ async function assertInventoryUpdatePermissions(payload, currentUser) {
 }
 
 function parseUpdateIds(payload) {
-  const { id_ubication, id_department, id_device, id_brand, id_model, id_status } = payload;
+  const {
+    id_ubication,
+    id_department,
+    id_device,
+    id_brand,
+    id_model,
+    id_status,
+    id_condition,
+    id_administrative_area,
+  } = payload;
 
   const ids = {
     parsedUbication: parseOptionalPositiveInt(id_ubication),
@@ -71,6 +80,8 @@ function parseUpdateIds(payload) {
     parsedBrand: parseOptionalPositiveInt(id_brand),
     parsedModel: parseOptionalPositiveInt(id_model),
     parsedStatus: parseOptionalPositiveInt(id_status),
+    parsedCondition: parseOptionalPositiveInt(id_condition),
+    parsedAdministrativeArea: parseOptionalPositiveInt(id_administrative_area),
   };
 
   const validations = [
@@ -80,6 +91,8 @@ function parseUpdateIds(payload) {
     ['id_brand', ids.parsedBrand, 'Marca inválida'],
     ['id_model', ids.parsedModel, 'Modelo inválido'],
     ['id_status', ids.parsedStatus, 'Estado inválido'],
+    ['id_condition', ids.parsedCondition, 'Condición física inválida'],
+    ['id_administrative_area', ids.parsedAdministrativeArea, 'Área administradora inválida'],
   ];
 
   for (const [field, value, message] of validations) {
@@ -139,7 +152,39 @@ async function validateUpdateReferences(payload, ids) {
       finder: repository.findModelById,
       message: 'El modelo proporcionado no existe',
     }),
+    validateUpdateReference({
+      provided: payload.id_condition,
+      id: ids.parsedCondition,
+      finder: repository.findConditionById,
+      message: 'La condición física proporcionada no existe',
+    }),
+    validateUpdateReference({
+      provided: payload.id_administrative_area,
+      id: ids.parsedAdministrativeArea,
+      finder: repository.findAdministrativeAreaById,
+      message: 'El área administradora proporcionada no existe',
+    }),
   ]);
+}
+
+async function validateTechnologyUpdateConsistency(existing, payload, ids) {
+  const technology = existing.inventory_devices;
+  const effectiveDevice =
+    payload.id_device !== undefined ? ids.parsedDevice : technology?.id_device ?? existing.id_device;
+  const effectiveBrand =
+    payload.id_brand !== undefined ? ids.parsedBrand : technology?.id_brand ?? existing.id_brand;
+  const effectiveModel =
+    payload.id_model !== undefined ? ids.parsedModel : technology?.id_model ?? existing.id_model;
+
+  if (![effectiveDevice, effectiveBrand, effectiveModel].every(Number.isInteger)) {
+    throw new AppError('El activo debe conservar un dispositivo, marca y modelo válidos', 400);
+  }
+
+  const model = await repository.findModelById(effectiveModel);
+
+  if (!model || model.id_brand !== effectiveBrand || model.id_device !== effectiveDevice) {
+    throw new AppError('El modelo no corresponde a la marca y dispositivo seleccionados', 400);
+  }
 }
 
 async function resolveUpdateLocation(existing, payload, ids) {
@@ -238,14 +283,13 @@ function applyLocationUpdate(updateData, payload, location, ids, existing) {
 function applySimpleUpdateFields(updateData, payload, ids) {
   const fields = [
     ['tag', payload.tag],
-    ['id_device', ids.parsedDevice],
-    ['id_brand', ids.parsedBrand],
-    ['id_model', ids.parsedModel],
     ['serie', payload.serie],
     ['id_status', ids.parsedStatus],
     ['user', payload.user],
-    ['ip', payload.ip],
     ['observation', payload.observation],
+    ['description', payload.description],
+    ['id_condition', ids.parsedCondition],
+    ['id_administrative_area', ids.parsedAdministrativeArea],
   ];
 
   for (const [field, value] of fields) {
@@ -253,6 +297,12 @@ function applySimpleUpdateFields(updateData, payload, ids) {
       updateData[field] = value;
     }
   }
+}
+
+function hasTechnologyUpdate(payload) {
+  return ['id_device', 'id_brand', 'id_model', 'ip'].some(
+    (field) => payload[field] !== undefined
+  );
 }
 
 function applyTransferDateUpdate(updateData, transferdate) {
@@ -326,6 +376,7 @@ export const update = async (idParam, payload, currentUser) => {
   const ids = parseUpdateIds(payload);
 
   await validateUpdateReferences(payload, ids);
+  await validateTechnologyUpdateConsistency(existing, payload, ids);
 
   const location = await resolveUpdateLocation(existing, payload, ids);
 
@@ -337,12 +388,30 @@ export const update = async (idParam, payload, currentUser) => {
     existing,
   });
 
-  if (Object.keys(updateData).length === 1) {
+  if (Object.keys(updateData).length === 1 && !hasTechnologyUpdate(payload)) {
     throw new AppError('No hay campos para actualizar', 400);
   }
 
   try {
-    const updated = await repository.updateById(id, updateData);
+    const technology = existing.inventory_devices;
+    const technologyData = {
+      id_device:
+        payload.id_device !== undefined
+          ? ids.parsedDevice
+          : technology?.id_device ?? existing.id_device,
+      id_brand:
+        payload.id_brand !== undefined ? ids.parsedBrand : technology?.id_brand ?? existing.id_brand,
+      id_model:
+        payload.id_model !== undefined ? ids.parsedModel : technology?.id_model ?? existing.id_model,
+      ip: payload.ip !== undefined ? payload.ip : technology?.ip ?? existing.ip,
+    };
+
+    const updated = await repository.updateWithTechnology({
+      id,
+      inventoryData: updateData,
+      technologyData,
+      updateTechnology: hasTechnologyUpdate(payload) || !technology,
+    });
 
     return mapUpdateInventoryResponse(updated);
   } catch (error) {

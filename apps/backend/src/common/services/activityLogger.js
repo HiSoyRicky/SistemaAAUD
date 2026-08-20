@@ -17,6 +17,7 @@ const ACTIONS = {
 
 const ENTITY_MAP = {
   bd_inventory: 'BD_INVENTORY',
+  inventory_devices: 'INVENTORY_DEVICES',
   bd_incidents: 'BD_INCIDENTS',
   users: 'USERS',
   departments: 'DEPARTMENTS',
@@ -76,7 +77,11 @@ function resolveAction(operation, oldValues) {
   return ACTIONS[operation] ?? null;
 }
 
-function getEntityId({ operation, result, args }) {
+function getEntityId({ model, operation, result, args }) {
+  if (model === 'inventory_devices') {
+    return args?.data?.id_inventory ?? args?.where?.id_inventory ?? result?.id_inventory ?? null;
+  }
+
   if (result?.id !== undefined && result?.id !== null) {
     return result.id;
   }
@@ -178,7 +183,7 @@ export function getPrismaWithActivityLogger(prisma) {
             await prisma.activity_logs.create({
               data: {
                 entity_type: ENTITY_MAP[model] || model,
-                entity_id: getEntityId({ operation, result, args }),
+                entity_id: getEntityId({ model, operation, result, args }),
                 action,
                 old_values: toSafeJson(oldValues),
                 new_values: toSafeJson(newValues),

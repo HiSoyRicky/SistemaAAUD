@@ -44,6 +44,16 @@ async function getResolutionTables() {
         id_device: true,
         id_brand: true,
         id_model: true,
+        inventory_devices: {
+          select: {
+            id_device: true,
+            id_brand: true,
+            id_model: true,
+            device: { select: { name: true } },
+            brand: { select: { name: true } },
+            model: { select: { name: true } },
+          },
+        },
       },
     }),
     prisma.toners.findMany({
@@ -84,9 +94,9 @@ async function getResolutionTables() {
         r.tag,
         r.serie && `Serie ${r.serie}`,
         r.user && `Asignado a ${r.user}`,
-        devicesById[r.id_device],
-        brandsById[r.id_brand],
-        modelsById[r.id_model],
+        r.inventory_devices?.device?.name || devicesById[r.id_device],
+        r.inventory_devices?.brand?.name || brandsById[r.id_brand],
+        r.inventory_devices?.model?.name || modelsById[r.id_model],
       ]
         .filter(Boolean)
         .join(' · '),
@@ -135,6 +145,8 @@ async function getResolutionTables() {
     record: {
       BD_INVENTORY: inventoryById,
       bd_inventory: inventoryById,
+      INVENTORY_DEVICES: inventoryById,
+      inventory_devices: inventoryById,
       BD_INCIDENTS: incidentsById,
       bd_incidents: incidentsById,
       TONERS: tonersById,
@@ -165,6 +177,8 @@ const FIELD_LABELS = {
   id_device: 'Tipo de equipo',
   id_brand: 'Marca',
   id_model: 'Modelo',
+  id_condition: 'Condición física',
+  id_administrative_area: 'Área administradora',
   id_printer_model: 'Modelo de impresora',
   id_role: 'Rol',
   id_rol: 'Rol',
@@ -307,6 +321,7 @@ const FIELD_ORDER = {
     'created_by',
     'updated_by',
   ],
+  INVENTORY_DEVICES: ['id_inventory', 'id_device', 'id_brand', 'id_model', 'ip'],
   bd_inventory: [
     'tag',
     'serie',
@@ -323,6 +338,7 @@ const FIELD_ORDER = {
     'created_by',
     'updated_by',
   ],
+  inventory_devices: ['id_inventory', 'id_device', 'id_brand', 'id_model', 'ip'],
   TONER_MOVEMENTS: [
     'id_toner',
     'movement_type',

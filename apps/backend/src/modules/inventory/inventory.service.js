@@ -30,13 +30,23 @@ function validateCreateIds(ids) {
   }
 }
 
-async function validateCreateReferences({ idDevice, idBrand, idModel, idStatus }) {
-  const [deviceExists, brandExists, modelExists, statusExists] = await Promise.all([
+async function validateCreateReferences({
+  idDevice,
+  idBrand,
+  idModel,
+  idStatus,
+  idCondition,
+  idAdministrativeArea,
+}) {
+  const [deviceExists, brandExists, modelExists, statusExists, conditionExists, areaExists] =
+    await Promise.all([
     repository.findDeviceById(idDevice),
     repository.findBrandById(idBrand),
     repository.findModelById(idModel),
     repository.findStatusById(idStatus),
-  ]);
+      idCondition === null ? null : repository.findConditionById(idCondition),
+      idAdministrativeArea === null ? null : repository.findAdministrativeAreaById(idAdministrativeArea),
+    ]);
 
   if (!deviceExists) {
     throw new AppError('El dispositivo especificado no existe', 400);
@@ -50,8 +60,20 @@ async function validateCreateReferences({ idDevice, idBrand, idModel, idStatus }
     throw new AppError('El modelo especificado no existe', 400);
   }
 
+  if (modelExists.id_brand !== idBrand || modelExists.id_device !== idDevice) {
+    throw new AppError('El modelo no corresponde a la marca y dispositivo seleccionados', 400);
+  }
+
   if (!statusExists) {
     throw new AppError('El estado especificado no existe', 400);
+  }
+
+  if (idCondition !== null && !conditionExists) {
+    throw new AppError('La condición física especificada no existe', 400);
+  }
+
+  if (idAdministrativeArea !== null && !areaExists) {
+    throw new AppError('El área administradora especificada no existe', 400);
   }
 
   return statusExists;
@@ -155,6 +177,9 @@ export const create = async (payload, currentUser) => {
     id_status,
     transferdate,
     observation,
+    description,
+    id_condition,
+    id_administrative_area,
   } = payload;
 
   validateCreateRequiredFields({
@@ -173,6 +198,8 @@ export const create = async (payload, currentUser) => {
     idBrand: parseRequiredPositiveInt(id_brand),
     idModel: parseRequiredPositiveInt(id_model),
     idStatus: parseRequiredPositiveInt(id_status),
+    idCondition: parseOptionalPositiveInt(id_condition),
+    idAdministrativeArea: parseOptionalPositiveInt(id_administrative_area),
   };
 
   validateCreateIds(ids);
@@ -188,21 +215,33 @@ export const create = async (payload, currentUser) => {
   const transferDateObj = resolveCreateTransferDate(transferdate);
 
   try {
-    const created = await repository.create({
-      tag,
-      id_ubication: location.idUbication,
-      id_department: location.idDepartment,
-      user: user || null,
-      id_device: ids.idDevice,
-      id_brand: ids.idBrand,
-      id_model: ids.idModel,
-      serie,
-      ip: ip || null,
-      id_status: ids.idStatus,
-      transferdate: transferDateObj,
-      observation: observation || null,
-      created_by: userId,
-      created_at: new Date(),
+    const created = await repository.createWithTechnology({
+      inventoryData: {
+        tag,
+        id_ubication: location.idUbication,
+        id_department: location.idDepartment,
+        user: user || null,
+        description: description || null,
+        // Legacy obligatorio por schema actual; inventory_devices sigue siendo la fuente tecnológica.
+        id_device: ids.idDevice,
+        id_brand: ids.idBrand,
+        id_model: ids.idModel,
+        serie,
+        ip: ip || null,
+        id_status: ids.idStatus,
+        transferdate: transferDateObj,
+        observation: observation || null,
+        id_condition: ids.idCondition,
+        id_administrative_area: ids.idAdministrativeArea,
+        created_by: userId,
+        created_at: new Date(),
+      },
+      technologyData: {
+        id_device: ids.idDevice,
+        id_brand: ids.idBrand,
+        id_model: ids.idModel,
+        ip: ip || null,
+      },
     });
 
     return mapCreateInventoryResponse(created);
