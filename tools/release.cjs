@@ -11,12 +11,14 @@ const readline = require('node:readline');
 
 function exec(cmd, options = {}) {
   try {
-    return execSync(cmd, {
+    const result = execSync(cmd, {
       encoding: 'utf8',
       cwd: path.join(__dirname, '..'),
       stdio: options.silent ? 'pipe' : 'inherit',
       ...options,
-    }).trim();
+    });
+
+    return result == null ? '' : String(result).trim();
   } catch (error) {
     if (options.throws !== false) {
       throw error;
@@ -168,7 +170,6 @@ function printLine(label, value) {
 
 function isWorkingTreeClean() {
   const status = exec('git status --porcelain', {
-    throws: false,
     silent: true,
   });
   return status.trim() === '';
