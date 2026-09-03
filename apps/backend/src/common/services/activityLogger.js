@@ -35,6 +35,11 @@ const ENTITY_MAP = {
   toners: 'TONERS',
   toner_stock: 'TONER_STOCK',
   inventory_transfer_requests: 'INVENTORY_TRANSFER_REQUESTS',
+  inventory_asset_types: 'INVENTORY_ASSET_TYPES',
+  inventory_asset_extensions: 'INVENTORY_ASSET_EXTENSIONS',
+  inventory_asset_classifications: 'INVENTORY_ASSET_CLASSIFICATIONS',
+  inventory_asset_classification_mappings: 'INVENTORY_ASSET_CLASSIFICATION_MAPPINGS',
+  inventory_asset_classification_rules: 'INVENTORY_ASSET_CLASSIFICATION_RULES',
 };
 
 const MANY_OPERATIONS = new Set([

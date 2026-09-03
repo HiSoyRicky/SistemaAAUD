@@ -16,11 +16,13 @@ import {
   inventoryTransferRequestsRouter,
   modelsRouter,
   permissionsRouter,
+  rolesRouter,
   statusRouter,
   tonerMovementsRouter,
   tonersRouter,
   ubicationsRouter,
   usersRouter,
+  warehouseRouter,
 } from './index.js';
 
 const router = express.Router();
@@ -46,6 +48,8 @@ router.use('/inventory', inventoryRouter);
 router.use('/inventory-transfer-requests', inventoryTransferRequestsRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
+router.use('/warehouse', warehouseRouter);
 router.use('/permissions', permissionsRouter);
+router.use('/roles', rolesRouter);
 
 export default router;

@@ -11,7 +11,7 @@ import {
 const frontendUrl = process.env.FRONTEND_BASE_URL;
 const internalRecipients =
   process.env.INCIDENT_INTERNAL_RECIPIENTS ||
-  'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa, aramos@aaud.gob.pa';
+  'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa, aramos@aaud.gob.pa, hhunt@aaud.gob.pa';
 
 function getPublicViewUrl(incident) {
   const token = generarTokenIncidencia(incident.id, incident.email);

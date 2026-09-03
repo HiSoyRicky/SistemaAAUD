@@ -41,6 +41,14 @@ async function getResolutionTables() {
         tag: true,
         serie: true,
         user: true,
+        description: true,
+        asset_classification_rule: {
+          include: {
+            classification: { select: { code_new: true, description: true } },
+            asset_type: { select: { code: true, name: true } },
+            extension: { select: { code: true, name: true } },
+          },
+        },
         id_device: true,
         id_brand: true,
         id_model: true,
@@ -92,8 +100,11 @@ async function getResolutionTables() {
       r.id,
       [
         r.tag,
+        r.description,
         r.serie && `Serie ${r.serie}`,
         r.user && `Asignado a ${r.user}`,
+        r.asset_classification_rule?.classification?.description,
+        r.asset_classification_rule?.asset_type?.name,
         r.inventory_devices?.device?.name || devicesById[r.id_device],
         r.inventory_devices?.brand?.name || brandsById[r.id_brand],
         r.inventory_devices?.model?.name || modelsById[r.id_model],
@@ -173,6 +184,7 @@ const FIELD_LABELS = {
   id_technician: 'Técnico',
   id_user: 'Usuario',
   id_category: 'Categoría',
+  asset_classification_rule_id: 'Regla de clasificación',
   other_category_detail: 'Detalle de categoría',
   id_device: 'Tipo de equipo',
   id_brand: 'Marca',
@@ -185,7 +197,7 @@ const FIELD_LABELS = {
   requester_id: 'Solicitante',
   approver_id: 'Aprobador',
   inventory_id: 'Equipo',
-  id_inventory: 'Equipo',
+  id_inventory: 'Activo',
   id_toner: 'Tóner',
   solution: 'Solución',
   solution_date: 'Fecha de solución',
@@ -322,6 +334,13 @@ const FIELD_ORDER = {
     'updated_by',
   ],
   INVENTORY_DEVICES: ['id_inventory', 'id_device', 'id_brand', 'id_model', 'ip'],
+  INVENTORY_ASSET_CLASSIFICATION_RULES: [
+    'classification_id',
+    'asset_type_id',
+    'extension_id',
+    'active',
+    'is_default',
+  ],
   bd_inventory: [
     'tag',
     'serie',
@@ -652,7 +671,7 @@ export async function buildRecordLabel(entityType, entityId, oldValues, newValue
     entityType === 'INVENTORY_TRANSFER_REQUESTS' ||
     entityType === 'inventory_transfer_requests'
   ) {
-    return `Equipo: ${resolveFieldValue(tables, 'inventory_id', values.inventory_id)}`;
+    return `Activo: ${resolveFieldValue(tables, 'inventory_id', values.inventory_id)}`;
   }
 
   if (entityType === 'TONERS' || entityType === 'toners') {

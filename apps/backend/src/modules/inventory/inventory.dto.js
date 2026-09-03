@@ -26,6 +26,31 @@ export const mapInventoryItem = (item) => {
   const brandId = technology?.id_brand ?? item.id_brand;
   const modelId = technology?.id_model ?? item.id_model;
   const ip = technology?.ip ?? item.ip;
+  const classificationRule = item.asset_classification_rule;
+  const classification = classificationRule?.classification || null;
+  const assetType = classificationRule?.asset_type || null;
+  const extensionType = classificationRule?.extension || null;
+  const deviceExtension = technology
+    ? {
+        id: technology.id,
+        id_inventory: technology.id_inventory,
+        id_device: technology.id_device,
+        id_brand: technology.id_brand,
+        id_model: technology.id_model,
+        ip: technology.ip,
+        device: technology.device || null,
+        brand: technology.brand || null,
+        model: technology.model || null,
+      }
+    : null;
+  const technologyData = deviceExtension
+    ? {
+        device: deviceExtension.device,
+        brand: deviceExtension.brand,
+        model: deviceExtension.model,
+        ip: deviceExtension.ip,
+      }
+    : null;
 
   return {
     id: item.id,
@@ -52,6 +77,71 @@ export const mapInventoryItem = (item) => {
     model_name: technology?.model?.name || item.models?.name || null,
     id_status: item.id_status,
     status_name: statusName,
+    classification: classification
+      ? {
+          id: classification.id,
+          code_new: classification.code_new,
+          description: classification.description,
+          code: classification.code_new,
+          name: classification.description,
+        }
+      : null,
+    asset_type: assetType
+      ? {
+          id: assetType.id,
+          code: assetType.code,
+          name: assetType.name,
+        }
+      : null,
+    extension: classificationRule
+      ? {
+          type: extensionType?.code || null,
+          extension: extensionType
+            ? {
+                id: extensionType.id,
+                code: extensionType.code,
+                name: extensionType.name,
+              }
+            : null,
+          devices: deviceExtension,
+          vehicles: null,
+          properties: null,
+        }
+      : null,
+    technology: technologyData,
+    classification_rule: classificationRule
+      ? {
+          id: classificationRule.id,
+          active: classificationRule.active,
+          is_default: classificationRule.is_default,
+          classification: classification
+            ? {
+                id: classification.id,
+                code_new: classification.code_new,
+                description: classification.description,
+                code: classification.code_new,
+                name: classification.description,
+                parent_id: classification.parent_id,
+                level: classification.level,
+                is_assignable: classification.is_assignable,
+              }
+            : null,
+          asset_type: assetType
+            ? {
+                id: assetType.id,
+                code: assetType.code,
+                name: assetType.name,
+              }
+            : null,
+          extension: classificationRule.extension
+            ? {
+                id: classificationRule.extension.id,
+                code: classificationRule.extension.code,
+                name: classificationRule.extension.name,
+              }
+            : null,
+        }
+      : null,
   };
 };
 

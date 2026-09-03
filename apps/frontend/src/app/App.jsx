@@ -22,10 +22,12 @@ import InventoryMovementsPage from '../modules/inventory/devices/pages/Inventory
 import InventoryPage from '../modules/inventory/devices/pages/InventoryPage';
 import TonerMovementsPage from '../modules/inventory/toners/pages/TonerMovementsPage';
 import TonersPage from '../modules/inventory/toners/pages/TonersPage';
+import WarehousePage from '../modules/warehouse/pages/WarehousePage';
 
 // Rutas de administración
 import AdminRoute from '../modules/admin/AdminRoute';
 import BrandsManager from '../modules/admin/components/brands/BrandsManager';
+import ClassificationRulesManager from '../modules/admin/components/classificationRules/ClassificationRulesManager';
 import DepartmentsManager from '../modules/admin/components/departments/DepartmentManager';
 import DevicesManager from '../modules/admin/components/devices/DevicesManager';
 import ModelsManager from '../modules/admin/components/models/ModelsManager';
@@ -35,6 +37,8 @@ import TonersManager from '../modules/admin/components/toners/TonersManager';
 import TransferRequestsManager from '../modules/admin/components/transfers/TransferRequestsManager';
 import UbicationsManager from '../modules/admin/components/ubications/UbicationsManager';
 import UsersManager from '../modules/admin/components/users/UsersManager';
+import WarehouseItemsManager from '../modules/admin/components/warehouseItems/WarehouseItemsManager';
+import RolesManager from '../modules/admin/components/roles/RolesManager';
 import AdminPage from '../modules/admin/pages/AdminPage';
 
 import PrivateLayout from '../shared/components/layout/PrivateLayout';
@@ -61,9 +65,29 @@ const PrivateRoute = ({ children, allowedUserTypes, allowForcedPasswordChange = 
     return <Navigate to="/cambiar-contraseña" replace />;
   }
 
-  if (allowedUserTypes && !allowedUserTypes.includes(userType)) {
+  if (allowedUserTypes && userType !== 'custom' && !allowedUserTypes.includes(userType)) {
     return <Navigate to="/" replace />; // O a una página 403
   }
+  return children;
+};
+
+const PermissionRoute = ({ children, permission }) => {
+  const { hasPermission } = useAuth();
+
+  if (!hasPermission(permission)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const AnyPermissionRoute = ({ children, permissions }) => {
+  const { hasAnyPermission } = useAuth();
+
+  if (!hasAnyPermission(permissions)) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 };
 
@@ -114,7 +138,7 @@ function App() {
         <Route
           path="/incidencias"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
               <PrivateLayout>
                 <IncidentsPage />
               </PrivateLayout>
@@ -146,10 +170,12 @@ function App() {
         <Route
           path="/inventario/equipos"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
-              <PrivateLayout>
-                <InventoryPage />
-              </PrivateLayout>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+              <AnyPermissionRoute permissions={['inventory.read', 'warehouse_stock.read']}>
+                <PrivateLayout>
+                  <InventoryPage />
+                </PrivateLayout>
+              </AnyPermissionRoute>
             </PrivateRoute>
           }
         />
@@ -185,6 +211,31 @@ function App() {
               <PrivateLayout>
                 <TonerMovementsPage />
               </PrivateLayout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/almacen"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+              <PermissionRoute permission="warehouse_stock.read">
+                <PrivateLayout>
+                  <WarehousePage />
+                </PrivateLayout>
+              </PermissionRoute>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/almacen/historial"
+          element={
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+              <PermissionRoute permission="warehouse_movements.read">
+                <PrivateLayout>
+                  <WarehousePage historyOnly />
+                </PrivateLayout>
+              </PermissionRoute>
             </PrivateRoute>
           }
         />
@@ -233,6 +284,7 @@ function App() {
           }
         >
           <Route path="devices" element={<DevicesManager />} />
+          <Route path="classification-rules" element={<ClassificationRulesManager />} />
           <Route path="users" element={<UsersManager />} />
           <Route path="ubications" element={<UbicationsManager />} />
           <Route path="models" element={<ModelsManager />} />
@@ -240,7 +292,9 @@ function App() {
           <Route path="departments" element={<DepartmentsManager />} />
           <Route path="statuses" element={<StatusManager />} />
           <Route path="toners" element={<TonersManager />} />
+          <Route path="warehouse-items" element={<WarehouseItemsManager />} />
           <Route path="permissions" element={<PermissionsManager />} />
+          <Route path="roles" element={<RolesManager />} />
           <Route path="transfers" element={<TransferRequestsManager />} />
           <Route
             index

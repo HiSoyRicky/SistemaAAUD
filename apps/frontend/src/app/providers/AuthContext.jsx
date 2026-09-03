@@ -15,26 +15,13 @@ function normalizeRoleName(roleName) {
 }
 
 function resolveUserType({ roleId, roleName }) {
-  const userRoleMap = {
-    1: 'admin',
-    2: 'tecnico',
-    3: 'consultor',
-    4: 'trabajador',
-  };
-
-  if (Number.isInteger(Number(roleId))) {
-    const mapped = userRoleMap[Number(roleId)];
-    if (mapped) {
-      return mapped;
-    }
-  }
-
   const normalized = normalizeRoleName(roleName);
   if (normalized.includes('admin')) return 'admin';
   if (normalized.includes('tecnico')) return 'tecnico';
   if (normalized.includes('consultor')) return 'consultor';
+  if (normalized.includes('trabajador')) return 'trabajador';
 
-  return 'trabajador';
+  return 'custom';
 }
 
 function normalizePermissionCode(code) {
@@ -109,17 +96,34 @@ export const AuthProvider = ({ children }) => {
 
     if (token && storedUserType && storedUserName && storedUserId) {
       let fallbackPermissions = parsedStoredPermissions;
+      let restoredUserType = storedUserType;
 
       if (!fallbackPermissions.length) {
         try {
+          const decoded = jwtDecode(token);
           fallbackPermissions = Array.isArray(decoded.permissions) ? decoded.permissions : [];
+          restoredUserType = resolveUserType({
+            roleId: decoded.roleId ?? decoded.id_rol,
+            roleName: decoded.role,
+          });
         } catch (_error) {
+          // El token puede ser ilegible durante una sesión antigua; se conservarán permisos vacíos.
           fallbackPermissions = [];
         }
       }
 
+      try {
+        const decoded = jwtDecode(token);
+        restoredUserType = resolveUserType({
+          roleId: decoded.roleId ?? decoded.id_rol,
+          roleName: decoded.role,
+        });
+      } catch (_error) {
+        // Mantener compatibilidad con sesiones antiguas si el token no puede leerse.
+      }
+
       setIsAuthenticated(true);
-      setUserType(storedUserType);
+      setUserType(restoredUserType);
       setLoggedUserName(storedUserName);
       setLoggedUserId(storedUserId);
       setUsername(storedUsername);

@@ -6,6 +6,8 @@ import {
   zEmail,
   zOptionalNonEmptyField,
   zOptionalString,
+  zOptionalInt,
+  zOptionalNullableString,
   zRequiredField,
   zRequiredInt,
   zRequiredString,
@@ -20,12 +22,27 @@ const createUserBodySchema = z.object({
   password: zRequiredString('La contraseña es requerida'),
   email: zEmail('El correo electrónico no es válido'),
   id_rol: zRequiredField('El rol es requerido'),
+  id_ubication: zOptionalInt('La ubicación no es válida', { min: 1, nullable: true }),
+  id_department: zOptionalInt('El departamento no es válido', {
+    min: 1,
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  active: z.any().optional(),
 });
 
 const updateUserBodySchema = z.object({
   username: zOptionalNonEmptyField('El nombre de usuario no puede estar vacío'),
   nombre_completo: zOptionalNonEmptyField('El nombre completo no puede estar vacío'),
   id_rol: zOptionalNonEmptyField('El rol no puede estar vacío'),
+  email: zOptionalNullableString('El correo no es válido'),
+  id_ubication: zOptionalInt('La ubicación no es válida', { min: 1, nullable: true }),
+  id_department: zOptionalInt('El departamento no es válido', {
+    min: 1,
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  active: z.any().optional(),
 });
 
 const updatePasswordBodySchema = z.object({

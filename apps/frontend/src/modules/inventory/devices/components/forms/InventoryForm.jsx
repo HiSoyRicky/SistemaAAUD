@@ -1,5 +1,17 @@
 // InventoryFormModal.jsx
 
+import {
+  BadgeCheck,
+  Boxes,
+  BriefcaseBusiness,
+  ChevronDown,
+  ClipboardList,
+  Cpu,
+  Info,
+  MapPinned,
+  Settings2,
+  X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
 import useAuth from '../../../../../shared/hooks/useAuth';
@@ -24,16 +36,21 @@ const validateInventoryForm = (formData, isDiscardedStatus) => {
     errors.id_department = 'Seleccione un departamento';
   }
 
-  if (!formData.id_device) {
-    errors.id_device = 'Seleccione un equipo';
-  }
+  const hasTechnologySelection =
+    formData.id_device || formData.id_brand || formData.id_model || formData.ip;
 
-  if (!formData.id_brand) {
-    errors.id_brand = 'Seleccione una marca';
-  }
+  if (hasTechnologySelection) {
+    if (!formData.id_device) {
+      errors.id_device = 'Seleccione un equipo';
+    }
 
-  if (!formData.id_model) {
-    errors.id_model = 'Seleccione un modelo';
+    if (!formData.id_brand) {
+      errors.id_brand = 'Seleccione una marca';
+    }
+
+    if (!formData.id_model) {
+      errors.id_model = 'Seleccione un modelo';
+    }
   }
 
   if (!formData.id_status) {
@@ -60,15 +77,21 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   const canEditLocation = !isEdit || canFullEdit || hasPermission('inventory.update_location');
   const canEditDepartment = !isEdit || canFullEdit || hasPermission('inventory.update_department');
   const canEditAssignee = !isEdit || canFullEdit || hasPermission('inventory.update_assignee');
+  const canEditAdministrativeArea =
+    !isEdit || canFullEdit || hasPermission('inventory.update_administrative_area');
 
   const [formData, setFormData] = useState({
     tag: initialData.tag || '',
     id_ubication: initialData.id_ubication || null,
     id_department: initialData.id_department || null,
+    id_administrative_area: initialData.id_administrative_area || null,
+    asset_type_id: initialData.asset_type_id || null,
+    extension_id: initialData.extension_id || null,
     user: initialData.user || '',
-    id_device: initialData.id_device,
-    id_brand: initialData.id_brand,
-    id_model: initialData.id_model,
+    id_device: initialData.id_device || '',
+    id_brand: initialData.id_brand || '',
+    id_model: initialData.id_model || '',
+    asset_classification_rule_id: initialData.classification_rule?.id || null,
     serie: initialData.serie || '',
     ip: initialData.ip || '',
     id_status: initialData.id_status || null,
@@ -82,11 +105,19 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   });
 
   const [errors, setErrors] = useState({});
+  const [safeMode, setSafeMode] = useState(!!isEdit);
+  const [unlocked, setUnlocked] = useState(() => ({}));
+  const [showAdvancedClassification, setShowAdvancedClassification] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState(() => ({}));
   const [options, setOptions] = useState({
     devices: [],
     brands: [],
     models: [],
     statuses: [],
+    administrativeAreas: [],
+    assetTypes: [],
+    extensions: [],
+    classificationRules: [],
   });
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -111,13 +142,43 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     async function fetchOptions() {
       try {
         setLoadingOptions(true);
-        const [devices, brands, models, statuses] = await Promise.all([
-          Inventory.fetchDeviceTypes(),
-          Inventory.fetchBrands(),
-          Inventory.fetchModels(),
-          Inventory.fetchStatuses(),
-        ]);
-        setOptions({ devices, brands, models, statuses });
+        const [devices, brands, models, statuses, administrativeAreas, assetTypes, extensions] =
+          await Promise.all([
+            Inventory.fetchDeviceTypes(),
+            Inventory.fetchBrands(),
+            Inventory.fetchModels(),
+            Inventory.fetchStatuses(),
+            Inventory.fetchAdministrativeAreas(),
+            Inventory.fetchAssetTypes(),
+            Inventory.fetchAssetExtensions(),
+          ]);
+        setOptions({
+          devices,
+          brands,
+          models,
+          statuses,
+          administrativeAreas,
+          assetTypes,
+          extensions,
+          classificationRules: [],
+        });
+
+        if (isEdit) {
+          setFormData((previous) => ({
+            ...previous,
+            asset_type_id:
+              previous.asset_type_id ||
+              initialData.classification_rule?.asset_type?.id ||
+              assetTypes.find((item) => item.code === 'TECHNOLOGY')?.id ||
+              null,
+            extension_id:
+              previous.extension_id ||
+              (initialData.technology
+                ? extensions.find((item) => item.code === 'DEVICES')?.id
+                : initialData.classification_rule?.extension?.id) ||
+              null,
+          }));
+        }
       } catch (error) {
         console.error('Error fetching options:', error);
         setFetchError('Error al cargar opciones. Verifica la conexión o el backend.');
@@ -148,7 +209,100 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   const selectedStatus = options.statuses.find(
     (status) => String(status.id) === String(formData.id_status)
   );
+  const [resolvedClassificationRule, setResolvedClassificationRule] = useState(
+    initialData.classification_rule || null
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!formData.id_device) {
+      setResolvedClassificationRule(null);
+      setFormData((prev) => ({
+        ...prev,
+        asset_classification_rule_id: null,
+      }));
+      return undefined;
+    }
+
+    Inventory.resolveClassificationRule({
+      device_id: Number(formData.id_device),
+      asset_type_id: formData.asset_type_id || null,
+      extension_id: formData.extension_id || null,
+      administrative_area_id: formData.id_administrative_area || null,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setResolvedClassificationRule(
+          result?.asset_classification_rule_id
+            ? {
+                id: result.asset_classification_rule_id,
+                classification: result.classification,
+                asset_type: result.asset_type,
+                extension: result.extension,
+                administrative_area: result.administrative_area,
+              }
+            : null
+        );
+        setFormData((prev) => ({
+          ...prev,
+          asset_classification_rule_id: result?.asset_classification_rule_id ?? null,
+        }));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setResolvedClassificationRule(null);
+        setErrors((prev) => ({
+          ...prev,
+          classification: error.response?.data?.message || 'No se pudo resolver la clasificación',
+        }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    formData.id_device,
+    formData.id_administrative_area,
+    formData.asset_type_id,
+    formData.extension_id,
+  ]);
+
+  useEffect(() => {
+    if (!formData.id_device || formData.asset_type_id || formData.extension_id) {
+      return;
+    }
+
+    const technologyType = options.assetTypes.find((item) => item.code === 'TECHNOLOGY');
+    const devicesExtension = options.extensions.find((item) => item.code === 'DEVICES');
+
+    if (!technologyType || !devicesExtension) {
+      return;
+    }
+
+    setFormData((previous) => ({
+      ...previous,
+      asset_type_id: technologyType.id,
+      extension_id: devicesExtension.id,
+    }));
+  }, [
+    formData.id_device,
+    formData.asset_type_id,
+    formData.extension_id,
+    options.assetTypes,
+    options.extensions,
+  ]);
+
   const isDiscardedStatus = normalizeText(selectedStatus?.name) === 'DESCARTADO';
+  const selectedContextExtension = options.extensions.find(
+    (extension) => String(extension.id) === String(formData.extension_id)
+  );
+  const selectedAdministrativeArea = options.administrativeAreas.find(
+    (area) => String(area.id) === String(formData.id_administrative_area)
+  );
+  const selectedAssetType = options.assetTypes.find(
+    (assetType) => String(assetType.id) === String(formData.asset_type_id)
+  );
 
   useEffect(() => {
     if (!isDiscardedStatus) return;
@@ -218,10 +372,15 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
       transferdate,
       id_ubication: isDiscardedStatus ? null : formData.id_ubication,
       id_department: isDiscardedStatus ? null : formData.id_department,
+      id_administrative_area: formData.id_administrative_area || null,
+      asset_type_id: formData.asset_type_id || null,
+      extension_id: formData.extension_id || null,
       user: formData.user.trim() === '' ? null : formData.user,
       ip: formData.ip.trim() === '' ? null : formData.ip,
       observation: formData.observation.trim() === '' ? null : formData.observation,
     };
+
+    completeSubmitData.asset_classification_rule_id = resolvedClassificationRule?.id ?? null;
 
     const submitData =
       isEdit && !canFullEdit
@@ -234,6 +393,9 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
             }),
             ...(canEditAssignee && {
               user: completeSubmitData.user,
+            }),
+            ...(canEditAdministrativeArea && {
+              id_administrative_area: completeSubmitData.id_administrative_area,
             }),
           }
         : completeSubmitData;
@@ -267,9 +429,6 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 
   const EDITABLE_ALWAYS = new Set(['user', 'ip', 'id_status', 'transferDateInput', 'observation']);
 
-  const [safeMode, setSafeMode] = useState(!!isEdit);
-  const [unlocked, setUnlocked] = useState(() => ({}));
-
   const isFieldLocked = (name) => {
     if (!isEdit) return false;
     if (!canFullEdit) {
@@ -286,25 +445,54 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     setUnlocked((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
+  const toggleSection = (name) => {
+    setCollapsedSections((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const classificationCode = resolvedClassificationRule?.classification?.code_new || 'Sin regla';
+  const classificationDescription =
+    resolvedClassificationRule?.classification?.description || 'Contexto pendiente';
+  const classificationType =
+    resolvedClassificationRule?.asset_type?.code ||
+    selectedAssetType?.code ||
+    resolvedClassificationRule?.asset_type?.name ||
+    'Tipo';
+  const classificationExtension =
+    resolvedClassificationRule?.extension?.code ||
+    selectedContextExtension?.code ||
+    resolvedClassificationRule?.extension?.name ||
+    'Sin extensión';
+  const classificationArea =
+    resolvedClassificationRule?.administrative_area?.name ||
+    selectedAdministrativeArea?.name ||
+    'Global';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
-      <div className="relative w-full max-w-5xl p-6 bg-white shadow-2xl rounded-2xl md:p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-3">
+      <div className="relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold md:text-2xl">
-            {isEdit ? `Editar Equipo #${formData.tag}` : 'Agregar Equipo al Inventario'}
-          </h3>
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-950 md:text-xl">
+              {isEdit ? `Editar equipo #${formData.tag}` : 'Agregar equipo al inventario'}
+            </h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Información patrimonial, técnica y de asignación.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onCancel}
-            className="text-xl text-gray-500 hover:text-gray-700"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            aria-label="Cerrar"
+            title="Cerrar"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
         {isEdit && canFullEdit && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 border-b border-slate-100 px-5 py-2">
             <span className="text-xs text-gray-600">Edición segura</span>
             <button
               type="button"
@@ -320,169 +508,279 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         )}
 
         {loadingOptions ? (
-          <p className="text-center">Cargando opciones...</p>
+          <p className="px-5 py-8 text-center text-sm text-slate-500">Cargando opciones...</p>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Fila 1: Marbete / Usuario / Estado */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <InputField
-                label="Marbete *"
-                name="tag"
-                value={formData.tag}
-                onChange={handleChange}
-                error={errors.tag}
-                locked={isFieldLocked('tag')}
-                onToggle={() => toggleField('tag')}
-              />
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+              <CompactSection
+                title="Ubicación"
+                icon={MapPinned}
+                collapsed={collapsedSections.location}
+                onToggle={() => toggleSection('location')}
+              >
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <UbiDepSelector
+                      id_ubication={formData.id_ubication}
+                      id_department={formData.id_department}
+                      onChange={handleUbiDepChange}
+                      disabled={isDiscardedStatus}
+                      disabledUbication={!canEditLocation}
+                      disabledDepartment={!canEditDepartment}
+                      errors={{
+                        ubication: errors.id_ubication,
+                        department: errors.id_department,
+                      }}
+                      mode="inventory"
+                      compact
+                    />
+                  </div>
+                </div>
+                {isDiscardedStatus && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Para estado descartado, ubicación y departamento se limpian automáticamente.
+                  </p>
+                )}
+              </CompactSection>
 
-              <InputField
-                label="Usuario asignado"
-                name="user"
-                value={formData.user}
-                onChange={handleChange}
-                locked={!canEditAssignee}
-              />
-              <SelectField
-                label="Estado *"
-                name="id_status"
-                value={formData.id_status}
-                onChange={handleChange}
-                options={options.statuses
-                  .filter((s) => ALLOWED_STATUS.has(s.name))
-                  .map((s) => ({ id: s.id, name: s.name }))}
-                error={errors.id_status}
-                locked={!canFullEdit}
-              />
-            </div>
+              <CompactSection
+                title="Estado y asignación"
+                icon={BriefcaseBusiness}
+                collapsed={collapsedSections.assignment}
+                onToggle={() => toggleSection('assignment')}
+              >
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <InputField
+                    label="Usuario"
+                    name="user"
+                    value={formData.user}
+                    onChange={handleChange}
+                    locked={!canEditAssignee}
+                  />
+                  <SelectField
+                    label="Estado *"
+                    name="id_status"
+                    value={formData.id_status}
+                    onChange={handleChange}
+                    options={options.statuses
+                      .filter((s) => ALLOWED_STATUS.has(s.name))
+                      .map((s) => ({ id: s.id, name: s.name }))}
+                    error={errors.id_status}
+                    locked={!canFullEdit}
+                  />
+                </div>
+              </CompactSection>
 
-            {/* Fila 2: Ubicación / Departamento */}
-            <div className="p-3 border rounded-xl bg-gray-50">
-              <p className="mb-2 text-sm font-semibold text-gray-700">Ubicación y Departamento *</p>
-              <UbiDepSelector
-                id_ubication={formData.id_ubication}
-                id_department={formData.id_department}
-                onChange={handleUbiDepChange}
-                disabled={isDiscardedStatus}
-                disabledUbication={!canEditLocation}
-                disabledDepartment={!canEditDepartment}
-                errors={{
-                  ubication: errors.id_ubication,
-                  department: errors.id_department,
-                }}
-                mode="inventory"
-              />
-              {isDiscardedStatus && (
-                <p className="mt-2 text-xs text-gray-500">
-                  Para estado descartado, ubicación y departamento se limpian automáticamente.
-                </p>
-              )}
-            </div>
+              <CompactSection
+                title="Identificación del equipo"
+                icon={Cpu}
+                collapsed={collapsedSections.identity}
+                onToggle={() => toggleSection('identity')}
+              >
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <InputField
+                    label="Marbete *"
+                    name="tag"
+                    value={formData.tag}
+                    onChange={handleChange}
+                    error={errors.tag}
+                    locked={isFieldLocked('tag')}
+                    onToggle={() => toggleField('tag')}
+                  />
+                  <SelectField
+                    label="Nombre del equipo *"
+                    name="id_device"
+                    value={formData.id_device}
+                    onChange={handleChange}
+                    options={options.devices.map((d) => ({
+                      id: d.id,
+                      name: d.name,
+                    }))}
+                    error={errors.id_device}
+                    locked={isFieldLocked('id_device')}
+                    onToggle={() => toggleField('id_device')}
+                  />
+                  <InputField
+                    label="Serie *"
+                    name="serie"
+                    value={formData.serie}
+                    onChange={handleChange}
+                    error={errors.serie}
+                    locked={isFieldLocked('serie')}
+                    onToggle={() => toggleField('serie')}
+                  />
+                  <SelectField
+                    label="Marca *"
+                    name="id_brand"
+                    value={formData.id_brand}
+                    onChange={(e) => {
+                      handleChange(e);
+                      setFormData((prev) => ({ ...prev, id_model: '' }));
+                    }}
+                    options={filteredBrands.map((b) => ({
+                      id: b.id,
+                      name: b.name,
+                    }))}
+                    error={errors.id_brand}
+                    disabled={!formData.id_device}
+                    locked={isFieldLocked('id_brand')}
+                    onToggle={() => toggleField('id_brand')}
+                  />
+                  <SelectField
+                    label="Modelo *"
+                    name="id_model"
+                    value={formData.id_model}
+                    onChange={handleChange}
+                    options={filteredModels.map((m) => ({
+                      id: m.id,
+                      name: m.name,
+                    }))}
+                    error={errors.id_model}
+                    disabled={!formData.id_brand}
+                    locked={isFieldLocked('id_model')}
+                    onToggle={() => toggleField('id_model')}
+                  />
+                </div>
+              </CompactSection>
 
-            {/* Fila 3: Equipo / Marca / Modelo */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <SelectField
-                label="Nombre del equipo *"
-                name="id_device"
-                value={formData.id_device}
-                onChange={handleChange}
-                options={options.devices.map((d) => ({
-                  id: d.id,
-                  name: d.name,
-                }))}
-                error={errors.id_device}
-                locked={isFieldLocked('id_device')}
-                onToggle={() => toggleField('id_device')}
-              />
-              <SelectField
-                label="Marca *"
-                name="id_brand"
-                value={formData.id_brand}
-                onChange={(e) => {
-                  handleChange(e);
-                  setFormData((prev) => ({ ...prev, id_model: '' }));
-                }}
-                options={filteredBrands.map((b) => ({
-                  id: b.id,
-                  name: b.name,
-                }))}
-                error={errors.id_brand}
-                disabled={!formData.id_device}
-                locked={isFieldLocked('id_brand')}
-                onToggle={() => toggleField('id_brand')}
-              />
-              <SelectField
-                label="Modelo *"
-                name="id_model"
-                value={formData.id_model}
-                onChange={handleChange}
-                options={filteredModels.map((m) => ({
-                  id: m.id,
-                  name: m.name,
-                }))}
-                error={errors.id_model}
-                disabled={!formData.id_brand}
-                locked={isFieldLocked('id_model')}
-                onToggle={() => toggleField('id_model')}
-              />
-            </div>
+              <CompactSection
+                title="Información técnica"
+                icon={Boxes}
+                collapsed={collapsedSections.technical}
+                onToggle={() => toggleSection('technical')}
+              >
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <InputField
+                    label="IP"
+                    name="ip"
+                    value={formData.ip}
+                    onChange={handleChange}
+                    error={errors.ip}
+                    locked={!canFullEdit}
+                  />
+                  <DateField
+                    label="Fecha de traslado"
+                    name="transferDateInput"
+                    value={formData.transferDateInput}
+                    onChange={handleChange}
+                    disabled={!canFullEdit}
+                  />
+                </div>
+              </CompactSection>
 
-            {/* Fila 4: Serie / IP / Fecha traslado */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <InputField
-                label="Serie *"
-                name="serie"
-                value={formData.serie}
-                onChange={handleChange}
-                error={errors.serie}
-                locked={isFieldLocked('serie')}
-                onToggle={() => toggleField('serie')}
-              />
-              <InputField
-                label="IP"
-                name="ip"
-                value={formData.ip}
-                onChange={handleChange}
-                error={errors.ip}
-                locked={!canFullEdit}
-              />
-              <div>
-                <label htmlFor="transferDateInput" className="block mb-1 text-sm font-medium">
-                  Fecha de Traslado
-                </label>
-                <input
-                  id="transferDateInput"
-                  type="date"
-                  name="transferDateInput"
-                  value={formData.transferDateInput}
+              <CompactSection
+                title="Clasificación patrimonial"
+                icon={BadgeCheck}
+                collapsed={collapsedSections.classification}
+                onToggle={() => toggleSection('classification')}
+                action={
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                    <BadgeCheck size={12} />
+                    Automática
+                  </span>
+                }
+              >
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {classificationCode} — {classificationDescription}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {classificationType} · {classificationExtension} · {classificationArea}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedClassification((value) => !value)}
+                      className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Settings2 size={14} />
+                      {showAdvancedClassification ? 'Ocultar avanzada' : 'Mostrar avanzada'}
+                      <ChevronDown
+                        size={14}
+                        className={`transition ${showAdvancedClassification ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  </div>
+                  {!resolvedClassificationRule && (
+                    <p className="mt-2 flex items-center gap-1 text-xs text-amber-700">
+                      <Info size={13} />
+                      Sin clasificación configurada para el contexto seleccionado.
+                    </p>
+                  )}
+                  {errors.classification && (
+                    <p className="mt-2 text-xs text-red-600">{errors.classification}</p>
+                  )}
+                </div>
+
+                {showAdvancedClassification && (
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <SelectField
+                      label="Tipo general de activo"
+                      name="asset_type_id"
+                      value={formData.asset_type_id || ''}
+                      onChange={handleChange}
+                      options={options.assetTypes.map((item) => ({
+                        id: item.id,
+                        name: `${item.code} — ${item.name}`,
+                      }))}
+                      locked={false}
+                    />
+                    <SelectField
+                      label="Extensión técnica"
+                      name="extension_id"
+                      value={formData.extension_id || ''}
+                      onChange={handleChange}
+                      options={[
+                        { id: '', name: 'Sin extensión' },
+                        ...options.extensions.map((item) => ({
+                          id: item.id,
+                          name: `${item.code} — ${item.name}`,
+                        })),
+                      ]}
+                      locked={false}
+                    />
+                    <SelectField
+                      label="Área administrativa"
+                      name="id_administrative_area"
+                      value={formData.id_administrative_area}
+                      onChange={handleChange}
+                      options={options.administrativeAreas}
+                      locked={!canEditAdministrativeArea}
+                    />
+                  </div>
+                )}
+              </CompactSection>
+
+              <CompactSection
+                title="Información adicional"
+                icon={ClipboardList}
+                collapsed={collapsedSections.additional}
+                onToggle={() => toggleSection('additional')}
+              >
+                <TextAreaField
+                  label="Observaciones / ubicación anterior"
+                  name="observation"
+                  value={formData.observation}
                   onChange={handleChange}
                   disabled={!canFullEdit}
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  maxLength={255}
                 />
-              </div>
+              </CompactSection>
             </div>
 
-            {/* Fila 5: Observaciones */}
-            <TextAreaField
-              label="Observaciones / Ubicación Anterior"
-              name="observation"
-              value={formData.observation}
-              onChange={handleChange}
-              disabled={!canFullEdit}
-              maxLength={255}
-            />
-
-            {/* Botones */}
-            <div className="flex justify-end gap-3 pt-3">
+            <div className="flex justify-end gap-3 border-t border-slate-200 bg-white px-5 py-3">
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="h-9 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white transition bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700"
+                className="h-9 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
               >
                 Guardar
               </button>
@@ -495,17 +793,43 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 }
 
 //  Reutilizables
+function CompactSection({ title, icon: Icon, children, collapsed, onToggle, action }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-slate-50/70">
+      <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-slate-600 shadow-sm">
+            <Icon size={15} />
+          </span>
+          <span className="truncate text-sm font-semibold text-slate-900">{title}</span>
+          <ChevronDown
+            size={15}
+            className={`shrink-0 text-slate-400 transition ${collapsed ? '-rotate-90' : ''}`}
+          />
+        </button>
+        {action}
+      </div>
+      {!collapsed && <div className="border-t border-slate-200 px-3 py-3">{children}</div>}
+    </section>
+  );
+}
+
 function InputField({ label, name, value, onChange, error, locked, onToggle }) {
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <label className="block mb-1 text-sm font-medium">{label}</label>
-
+      <div className="mb-1 flex min-h-5 items-center justify-between gap-2">
+        <label htmlFor={name} className="block truncate text-xs font-semibold text-slate-700">
+          {label}
+        </label>
         {locked !== undefined && onToggle && (
           <button
             type="button"
             onClick={onToggle}
-            className="text-xs text-blue-600 hover:text-blue-800"
+            className="shrink-0 text-[11px] font-medium text-blue-600 hover:text-blue-800"
           >
             {locked ? 'Editar' : 'Bloquear'}
           </button>
@@ -519,9 +843,9 @@ function InputField({ label, name, value, onChange, error, locked, onToggle }) {
         value={value}
         onChange={onChange}
         disabled={!!locked}
-        className={`w-full border px-3 py-2 rounded text-sm ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${locked ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}`}
+        className={`h-9 w-full rounded-lg border px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${
+          error ? 'border-red-500' : 'border-slate-300'
+        } ${locked ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-white text-slate-900'}`}
       />
       {error && (
         <div className="flex items-start gap-2 mt-1 text-xs text-red-600">
@@ -540,13 +864,13 @@ function TextAreaField({ label, name, value, onChange, disabled = false, maxLeng
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <label htmlFor={name} className="text-sm font-medium">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <label htmlFor={name} className="text-xs font-semibold text-slate-700">
           {label}
         </label>
 
         {maxLength && (
-          <span className="text-xs text-gray-500">
+          <span className="text-[11px] text-slate-500">
             {currentLength} / {maxLength}
           </span>
         )}
@@ -560,8 +884,8 @@ function TextAreaField({ label, name, value, onChange, disabled = false, maxLeng
         disabled={disabled}
         maxLength={maxLength}
         rows={3}
-        className={`w-full px-3 py-2 text-sm border border-gray-300 rounded ${
-          disabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''
+        className={`w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${
+          disabled ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-white text-slate-900'
         }`}
       />
     </div>
@@ -583,14 +907,15 @@ function SelectField({
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <label className="block mb-1 text-sm font-medium">{label}</label>
-
+      <div className="mb-1 flex min-h-5 items-center justify-between gap-2">
+        <label htmlFor={name} className="block truncate text-xs font-semibold text-slate-700">
+          {label}
+        </label>
         {locked !== undefined && onToggle && (
           <button
             type="button"
             onClick={onToggle}
-            className="text-xs text-blue-600 hover:text-blue-800"
+            className="shrink-0 text-[11px] font-medium text-blue-600 hover:text-blue-800"
           >
             {locked ? 'Editar' : 'Bloquear'}
           </button>
@@ -603,9 +928,13 @@ function SelectField({
         value={value || ''}
         onChange={onChange}
         disabled={finalDisabled}
-        className={`w-full border px-3 py-2 rounded text-sm ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${finalDisabled ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}`}
+        className={`h-9 w-full rounded-lg border px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${
+          error ? 'border-red-500' : 'border-slate-300'
+        } ${
+          finalDisabled
+            ? 'cursor-not-allowed bg-slate-100 text-slate-500'
+            : 'bg-white text-slate-900'
+        }`}
       >
         <option value="">Selecciona {label.toLowerCase()}</option>
         {options.map((opt) => (
@@ -623,6 +952,29 @@ function SelectField({
           <span>{error}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function DateField({ label, name, value, onChange, disabled }) {
+  return (
+    <div>
+      <div className="mb-1 flex min-h-5 items-center">
+        <label htmlFor={name} className="block truncate text-xs font-semibold text-slate-700">
+          {label}
+        </label>
+      </div>
+      <input
+        id={name}
+        type="date"
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`h-9 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${
+          disabled ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-white text-slate-900'
+        }`}
+      />
     </div>
   );
 }

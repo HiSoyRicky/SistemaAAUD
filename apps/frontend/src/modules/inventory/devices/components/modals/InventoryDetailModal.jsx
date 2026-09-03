@@ -37,6 +37,10 @@ function TransitionText({ from, to }) {
   );
 }
 
+function classificationText(value) {
+  return textOrDash(value?.classification?.description || value?.classification?.code_new || value);
+}
+
 function InventoryDetailModal({ isOpen, onClose, item }) {
   const [historyRows, setHistoryRows] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -82,9 +86,28 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
         textOrDash(row.previous_ubication) !== textOrDash(row.new_ubication);
       const hasDepartmentChange =
         textOrDash(row.previous_department) !== textOrDash(row.new_department);
+      const hasAdministrativeAreaChange =
+        textOrDash(row.previous_administrative_area) !== textOrDash(row.new_administrative_area);
+      const hasClassificationChange =
+        classificationText(row.previous_classification_rule) !==
+        classificationText(row.new_classification_rule);
+      const hasTechnologyChange = [
+        ['previous_device', 'new_device'],
+        ['previous_brand', 'new_brand'],
+        ['previous_model', 'new_model'],
+        ['previous_ip', 'new_ip'],
+      ].some(([from, to]) => textOrDash(row[from]) !== textOrDash(row[to]));
       const isCreate = String(row.action || '').toUpperCase() === 'CREATE';
 
-      return isCreate || hasUserChange || hasUbicationChange || hasDepartmentChange;
+      return (
+        isCreate ||
+        hasUserChange ||
+        hasUbicationChange ||
+        hasDepartmentChange ||
+        hasAdministrativeAreaChange ||
+        hasClassificationChange ||
+        hasTechnologyChange
+      );
     });
   }, [historyRows]);
 
@@ -94,26 +117,45 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Detalle del Equipo - {item.tag}</h2>
+          <h2 className="text-lg font-semibold">Detalle del Activo - {item.tag}</h2>
           <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700">
             ✖
           </button>
         </div>
 
+        <h3 className="mb-2 text-sm font-semibold text-gray-800">Datos generales</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
+          <Detail label="Marbete" value={item.tag} />
+          <Detail label="Descripción" value={item.description} />
+          <Detail label="Serie" value={item.serie} />
           <Detail label="Ubicación" value={item.ubication_name} />
           <Detail label="Departamento" value={item.department_name} />
+          <Detail label="Área administradora" value={item.administrative_area_name} />
           <Detail label="Usuario" value={item.user || 'N/A'} />
-          <Detail label="Equipo" value={item.device_name} />
-          <Detail label="Marca" value={item.brand_name} />
-          <Detail label="Modelo" value={item.model_name} />
-          <Detail label="Serie" value={item.serie} />
-          <Detail label="IP" value={item.ip || 'N/A'} />
           <Detail label="Estado" value={item.status_name} />
+          <Detail label="Condición" value={item.condition_name} />
           <Detail
             label="Fecha de traslado"
             value={item.transferdate ? formatDateOnlyToDDMMYYYY(item.transferdate) : 'N/A'}
           />
+        </div>
+
+        <h3 className="mt-6 mb-2 text-sm font-semibold text-gray-800">Clasificación</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <Detail
+            label="Clasificación"
+            value={item.classification?.description || 'Sin clasificación'}
+          />
+          <Detail label="Tipo de activo" value={item.asset_type?.name || 'Sin clasificar'} />
+          <Detail label="Extensión" value={item.extension?.type || 'Sin extensión'} />
+        </div>
+
+        <h3 className="mt-6 mb-2 text-sm font-semibold text-gray-800">Tecnología</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <Detail label="Equipo" value={item.device_name || 'N/A'} />
+          <Detail label="Marca" value={item.brand_name || 'N/A'} />
+          <Detail label="Modelo" value={item.model_name || 'N/A'} />
+          <Detail label="IP" value={item.ip || 'N/A'} />
         </div>
 
         <div className="mt-4">
@@ -122,9 +164,7 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
         </div>
 
         <div className="mt-6">
-          <h3 className="mb-2 text-sm font-semibold text-gray-800">
-            Historial del equipo (Ubicación / Departamento / Usuario)
-          </h3>
+          <h3 className="mb-2 text-sm font-semibold text-gray-800">Historial del activo</h3>
 
           <div className="overflow-x-auto border rounded-lg">
             <table className="min-w-full text-xs">
@@ -133,14 +173,17 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
                   <th className="px-2 py-2 border">Fecha</th>
                   <th className="px-2 py-2 border">Ubicación</th>
                   <th className="px-2 py-2 border">Departamento</th>
+                  <th className="px-2 py-2 border">Área administradora</th>
                   <th className="px-2 py-2 border">Usuario</th>
+                  <th className="px-2 py-2 border">Clasificación</th>
+                  <th className="px-2 py-2 border">Tecnología</th>
                   <th className="px-2 py-2 border">Responsable</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingHistory && (
                   <tr>
-                    <td className="px-2 py-3 text-center border text-gray-500" colSpan={5}>
+                    <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
                       Cargando historial...
                     </td>
                   </tr>
@@ -148,7 +191,7 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
 
                 {!loadingHistory && locationHistory.length === 0 && (
                   <tr>
-                    <td className="px-2 py-3 text-center border text-gray-500" colSpan={5}>
+                    <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
                       Sin historial de cambios para este equipo.
                     </td>
                   </tr>
@@ -167,7 +210,27 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
                         <TransitionText from={row.previous_department} to={row.new_department} />
                       </td>
                       <td className="px-2 py-2 text-center border">
+                        <TransitionText
+                          from={row.previous_administrative_area}
+                          to={row.new_administrative_area}
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-center border">
                         <TransitionText from={row.previous_user} to={row.new_user} />
+                      </td>
+                      <td className="px-2 py-2 text-center border">
+                        <TransitionText
+                          from={classificationText(row.previous_classification_rule)}
+                          to={classificationText(row.new_classification_rule)}
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-center border">
+                        <div className="flex flex-col gap-1">
+                          <TransitionText from={row.previous_device} to={row.new_device} />
+                          <TransitionText from={row.previous_brand} to={row.new_brand} />
+                          <TransitionText from={row.previous_model} to={row.new_model} />
+                          <TransitionText from={row.previous_ip} to={row.new_ip} />
+                        </div>
                       </td>
                       <td className="px-2 py-2 text-center border">{row.moved_by?.name || '-'}</td>
                     </tr>

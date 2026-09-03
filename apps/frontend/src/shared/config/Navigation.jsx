@@ -7,6 +7,7 @@ import {
   Monitor,
   Package,
   Printer,
+  Warehouse,
   Users,
   UserSquare,
 } from 'lucide-react';
@@ -50,6 +51,13 @@ export const getNavigation = (userType, hasPermission = () => true) => {
       ],
     },
     {
+      label: 'Almacén',
+      path: '/almacen',
+      icon: Warehouse,
+      roles: ['admin', 'tecnico', 'consultor', 'trabajador'],
+      permission: 'warehouse_stock.read',
+    },
+    {
       label: 'Administración',
       icon: Users,
       roles: ['admin', 'tecnico', 'consultor'],
@@ -75,14 +83,13 @@ export const getNavigation = (userType, hasPermission = () => true) => {
 
   return items
 
-    .filter((item) => item.roles.includes(userType))
     .filter((item) => !item.permission || hasPermission(item.permission))
     .map((item) => {
       if (!item.children) return item;
 
       const filteredChildren = item.children.filter(
         (child) =>
-          child.roles.includes(userType) && (!child.permission || hasPermission(child.permission))
+          (!child.permission || hasPermission(child.permission))
       );
 
       if (filteredChildren.length === 0) {

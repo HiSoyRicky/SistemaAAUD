@@ -24,11 +24,7 @@ import DeletePrint from '../../../../shared/components/Print/DeviceDeletePrint';
 import TransferPrint from '../../../../shared/components/Print/DeviceTransferPrint';
 import useAuth from '../../../../shared/hooks/useAuth';
 import { exportInventoryToExcel } from '../../../../shared/utils/exportExcel';
-import {
-  formatDateTime,
-  formatDateToDDMMYYYY,
-  toDateOnlyInputValue,
-} from '../../../../shared/utils/formatDate';
+import { formatDateTime, formatDateToDDMMYYYY } from '../../../../shared/utils/formatDate';
 import InventoryFormModal from '../components/forms/InventoryForm';
 import InventoryDetailModal from '../components/modals/InventoryDetailModal';
 import PrintWizardModal from '../components/modals/PrintWizardModal';
@@ -84,11 +80,28 @@ function getTransferSummary(request) {
 
 function InventoryPage() {
   const navigate = useNavigate();
-  const { authData, userType, loggedUserName, loggedUserId } = useAuth();
+  const { authData, userType, loggedUserName, loggedUserId, hasPermission } = useAuth();
+
+  const canCreateInventory = hasPermission('inventory.create');
   const [search, setSearch] = useState('');
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [inventoryLimit, setInventoryLimit] = useState(20);
+  const [inventoryMeta, setInventoryMeta] = useState({ total: 0, totalPages: 1 });
+  const [inventoryFilters, setInventoryFilters] = useState({
+    ubication_name: '',
+    department_name: '',
+    administrative_area_name: '',
+    user: '',
+    device_name: '',
+    brand_name: '',
+    model_name: '',
+    status_name: '',
+  });
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [administrativeAreas, setAdministrativeAreas] = useState([]);
+  const [filterOptions, setFilterOptions] = useState({});
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showInventoryForm, setShowInventoryForm] = useState(false);
@@ -108,7 +121,6 @@ function InventoryPage() {
   const [pendingTransfers, setPendingTransfers] = useState([]);
   const [pendingTransfersLoading, setPendingTransfersLoading] = useState(false);
   const [showPendingTransfers, setShowPendingTransfers] = useState(false);
-  const [exportDevices, setExportDevices] = useState([]);
   const [inventoryMetrics, setInventoryMetrics] = useState({
     total: 0,
     active: 0,
@@ -132,7 +144,7 @@ function InventoryPage() {
       setPendingTransfers(Array.isArray(response?.data) ? response.data : []);
     } catch (error) {
       console.error('Error cargando traslados pendientes:', error);
-      addNotification('No se pudieron cargar los traslados pendientes ❌', 'error');
+      addNotification('No se pudieron cargar los traslados pendientes', 'error');
     } finally {
       setPendingTransfersLoading(false);
     }
@@ -152,6 +164,8 @@ function InventoryPage() {
       department_destino_id: device.department_destino_id || null,
       ubication_destino_name: device.ubication_destino_name || '',
       department_destino_name: device.department_destino_name || '',
+      administrative_area_destino_id: device.id_administrative_area || null,
+      administrative_area_destino_name: device.administrative_area_name || '',
     });
 
     setPrintModalOpen(true);
@@ -159,8 +173,27 @@ function InventoryPage() {
 
   const loadDevices = async (searchTerm = '') => {
     try {
-      const data = await Inventory.fetchDevices(searchTerm);
+      const queryFilters = {
+        ubication: inventoryFilters.ubication_name,
+        department: inventoryFilters.department_name,
+        administrative_area: inventoryFilters.administrative_area_name,
+        user: inventoryFilters.user,
+        device: inventoryFilters.device_name,
+        brand: inventoryFilters.brand_name,
+        model: inventoryFilters.model_name,
+        status: inventoryFilters.status_name,
+      };
+      const response = await Inventory.fetchDevices(searchTerm, {
+        page: inventoryPage,
+        limit: inventoryLimit,
+        ...queryFilters,
+      });
+      const data = Array.isArray(response) ? response : response?.data || [];
       setDevices(data);
+      setInventoryMeta({
+        total: Number(response?.total) || data.length,
+        totalPages: Number(response?.totalPages) || 1,
+      });
     } catch (error) {
       console.error('Error al obtener dispositivos:', error);
     }
@@ -168,7 +201,11 @@ function InventoryPage() {
 
   useEffect(() => {
     loadDevices(search);
-  }, [search]);
+  }, [search, inventoryPage, inventoryLimit, inventoryFilters]);
+
+  useEffect(() => {
+    setInventoryPage(1);
+  }, [search, inventoryFilters]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -233,6 +270,40 @@ function InventoryPage() {
     fetchDepartments();
   }, []);
 
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      const requests = await Promise.allSettled([
+        api.get('/api/ubications'),
+        api.get('/api/departments'),
+        Inventory.fetchAdministrativeAreas(),
+        Inventory.fetchDeviceTypes(),
+        Inventory.fetchBrands(),
+        Inventory.fetchModels(),
+        Inventory.fetchStatuses(),
+      ]);
+      const values = requests.map((result) =>
+        result.status === 'fulfilled' && Array.isArray(result.value?.data)
+          ? result.value.data
+          : result.status === 'fulfilled' && Array.isArray(result.value)
+            ? result.value
+            : []
+      );
+
+      setFilterOptions({
+        ubication_name: values[0].map((item) => item.name),
+        department_name: values[1].map((item) => item.name),
+        administrative_area_name: values[2].map((item) => item.name),
+        device_name: values[3].map((item) => item.name),
+        brand_name: values[4].map((item) => item.name),
+        model_name: values[5].map((item) => item.name),
+        status_name: values[6].map((item) => item.name),
+      });
+      setAdministrativeAreas(values[2]);
+    };
+
+    fetchFilterOptions();
+  }, []);
+
   const editDevice = (device) => {
     setEditingDevice(device);
   };
@@ -257,7 +328,8 @@ function InventoryPage() {
       setShowInventoryForm(false);
       try {
         const result = await Inventory.addDevice(formData);
-        setDevices([...devices, { id: result.id, ...formData }]);
+        const createdInventory = result?.inventory || result;
+        setDevices((currentDevices) => [...currentDevices, createdInventory]);
         toast.success('Dispositivo agregado con éxito');
       } catch (error) {
         console.error('Error al agregar dispositivo:', error);
@@ -266,9 +338,19 @@ function InventoryPage() {
     }
   };
 
-  const handleExportDevices = () => {
-    const dataToExport = exportDevices.length ? exportDevices : filteredDevices;
-    exportInventoryToExcel(dataToExport);
+  const handleExportDevices = async () => {
+    const response = await Inventory.fetchDevices(search, {
+      ubication: inventoryFilters.ubication_name,
+      department: inventoryFilters.department_name,
+      administrative_area: inventoryFilters.administrative_area_name,
+      user: inventoryFilters.user,
+      device: inventoryFilters.device_name,
+      brand: inventoryFilters.brand_name,
+      model: inventoryFilters.model_name,
+      status: inventoryFilters.status_name,
+    });
+    const dataToExport = Array.isArray(response) ? response : response?.data || [];
+    await exportInventoryToExcel(dataToExport);
   };
 
   const handleSummaryChange = useCallback((summary) => {
@@ -286,60 +368,7 @@ function InventoryPage() {
     });
   }, []);
 
-  const handleFilteredDataChange = useCallback((rows) => {
-    const nextRows = Array.isArray(rows) ? rows : [];
-
-    setExportDevices((prevRows) => {
-      if (prevRows.length === nextRows.length) {
-        const sameOrderAndIds = prevRows.every((row, index) => row?.id === nextRows[index]?.id);
-
-        if (sameOrderAndIds) {
-          return prevRows;
-        }
-      }
-
-      return nextRows;
-    });
-  }, []);
-
-  const [filters] = useState({
-    ubication: '',
-    department: '',
-    status: '',
-    transferdate: '',
-  });
-
-  const filteredDevices = devices.filter((d) => {
-    const searchWords = search
-      .toLowerCase()
-      .split(' ')
-      .filter((w) => w.trim() !== '');
-
-    const toStrLower = (val) =>
-      val === null || val === undefined ? '' : String(val).toLowerCase();
-
-    const matchesSearch = searchWords.every(
-      (word) =>
-        toStrLower(d.ubication_name).includes(word) ||
-        toStrLower(d.tag).includes(word) ||
-        toStrLower(d.department_name).includes(word) ||
-        toStrLower(d.user).includes(word) ||
-        toStrLower(d.device_name).includes(word) ||
-        toStrLower(d.brand_name).includes(word) ||
-        toStrLower(d.model_name).includes(word) ||
-        toStrLower(d.ip).includes(word) ||
-        toStrLower(d.observation).includes(word) ||
-        toStrLower(d.transferdate).includes(word) || // ahora seguro
-        toStrLower(d.serie).includes(word)
-    );
-
-    const matchesUbication = !filters.ubication || d.ubication_name === filters.ubication;
-    const matchesDepartment = !filters.department || d.department_name === filters.department;
-    const matchesTransferDate =
-      !filters.transferdate || toDateOnlyInputValue(d.transferdate) >= filters.transferdate;
-
-    return matchesSearch && matchesUbication && matchesDepartment && matchesTransferDate;
-  });
+  const filteredDevices = devices;
 
   return (
     <div className="w-full space-y-5">
@@ -394,7 +423,7 @@ function InventoryPage() {
               </>
             )}
 
-            {userType === 'admin' && (
+            {canCreateInventory && (
               <button
                 type="button"
                 onClick={() => setShowInventoryForm(true)}
@@ -447,6 +476,7 @@ function InventoryPage() {
         open={printModalOpen}
         device={deviceToPrint}
         departments={departments}
+        administrativeAreas={administrativeAreas}
         authData={authData}
         onClose={() => setPrintModalOpen(false)}
         onPrint={async ({ docType, payload }) => {
@@ -552,7 +582,22 @@ function InventoryPage() {
           search={search}
           visibleColumns={visibleColumns}
           onSummaryChange={handleSummaryChange}
-          onFilteredDataChange={handleFilteredDataChange}
+          serverPagination
+          currentPage={inventoryPage}
+          totalPages={inventoryMeta.totalPages}
+          serverTotal={inventoryMeta.total}
+          pageSize={inventoryLimit}
+          onPageChange={setInventoryPage}
+          onPageSizeChange={(size) => {
+            setInventoryLimit(size);
+            setInventoryPage(1);
+          }}
+          serverFilters={inventoryFilters}
+          onFiltersChange={(nextFilters) => {
+            setInventoryFilters(nextFilters);
+            setInventoryPage(1);
+          }}
+          filterOptions={filterOptions}
           onView={(item) => {
             setSelectedItem(item);
             setShowDetailModal(true);

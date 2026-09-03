@@ -62,24 +62,29 @@ async function assignDefaultsByRole() {
           .map((code) => permissionIdByCode.get(code))
           .filter((id) => Number.isInteger(id));
 
-    await prisma.$transaction(async (tx) => {
-      await tx.role_permissions.deleteMany({
-        where: { id_role: role.id }
-      });
-
-      if (permissionIds.length) {
-        await tx.role_permissions.createMany({
-          data: permissionIds.map((permissionId) => ({
-            id_role: role.id,
-            id_permission: permissionId
-          })),
-          skipDuplicates: true
-        });
-      }
+    const assignedPermissions = await prisma.role_permissions.findMany({
+      where: { id_role: role.id },
+      select: { id_permission: true }
     });
+    const assignedPermissionIds = new Set(
+      assignedPermissions.map(({ id_permission }) => id_permission)
+    );
+    const missingPermissionIds = permissionIds.filter(
+      (permissionId) => !assignedPermissionIds.has(permissionId)
+    );
+
+    if (missingPermissionIds.length) {
+      await prisma.role_permissions.createMany({
+        data: missingPermissionIds.map((permissionId) => ({
+          id_role: role.id,
+          id_permission: permissionId
+        })),
+        skipDuplicates: true
+      });
+    }
 
     console.log(
-      `[seed.permissions] Rol "${role.name}" actualizado con ${permissionIds.length} permisos`
+      `[seed.permissions] Rol "${role.name}": ${missingPermissionIds.length} permisos nuevos asignados`
     );
   }
 }

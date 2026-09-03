@@ -4,10 +4,10 @@ import { Navigate } from 'react-router-dom';
 import useAuth from '../../shared/hooks/useAuth';
 
 export default function AdminRoute({ children }) {
-  const { userType } = useAuth();
+  const { isAuthenticated, hasPermission } = useAuth();
 
-  if (!userType) return <Navigate to="/login" />;
-  if (userType !== 'admin') return <Navigate to="/" />;
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (!hasPermission('users.read')) return <Navigate to="/" />;
 
   return children;
 }

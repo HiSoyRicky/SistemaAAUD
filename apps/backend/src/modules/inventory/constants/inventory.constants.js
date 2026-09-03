@@ -22,9 +22,10 @@ export const IGNORED_DIFF_FIELDS = new Set([
   'models',
 ]);
 export const HISTORY_FIELD_LABELS = {
+  asset_classification_rule_id: 'Regla de clasificación',
   tag: 'Marbete',
   serie: 'Serie',
-  user: 'Usuario',
+  user: 'Persona tenedora',
   id_ubication: 'Ubicación',
   id_department: 'Departamento',
   id_status: 'Estado',
@@ -43,11 +44,12 @@ export const INVENTORY_FIELD_PERMISSIONS = {
   user: 'inventory.update_assignee',
   id_condition: 'inventory.update_condition',
   id_administrative_area: 'inventory.update_administrative_area',
+  asset_classification_rule_id: 'inventory.update',
 };
 export const INVENTORY_FIELD_LABELS = {
   id_ubication: 'Ubicación',
   id_department: 'Departamento',
-  user: 'Usuario asignado',
+  user: 'Persona tenedora',
   id_condition: 'Condición física',
   id_administrative_area: 'Área administradora',
 };
@@ -67,4 +69,5 @@ export const INVENTORY_UPDATE_FIELDS = new Set([
   'description',
   'id_condition',
   'id_administrative_area',
+  'asset_classification_rule_id',
 ]);

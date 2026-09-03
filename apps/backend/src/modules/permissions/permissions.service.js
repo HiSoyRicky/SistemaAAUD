@@ -97,10 +97,18 @@ export const getRolePermissions = async (idRoleParam) => {
 
 export const updateRolePermissions = async (idRoleParam, payload) => {
   const roleId = parseRoleId(idRoleParam);
+  const role = await permissionsRepository.findRoleById(roleId);
+  if (!role) throw new AppError('Rol no encontrado', 404);
 
   const requestedPermissions = Array.isArray(payload?.permissions) ? payload.permissions : [];
 
   const normalized = normalizePermissionCodes(requestedPermissions);
+  const protectedAdminPermissions = ['roles.read', 'roles.update', 'permissions.assign', 'users.read'];
+  if (role.name.trim().toLowerCase() === 'administrador' &&
+      !protectedAdminPermissions.every((permission) => normalized.includes(permission)) &&
+      !normalized.includes('*.*')) {
+    throw new AppError('El rol Administrador debe conservar sus permisos administrativos esenciales', 403);
+  }
 
   const result = await setRolePermissionsByCodes({
     roleId,

@@ -17,6 +17,9 @@ export const findUserByIdWithRole = async (userId) =>
       nombre_completo: true,
       username: true,
       id_rol: true,
+      departments: {
+        select: { name: true },
+      },
       roles: {
         select: {
           id: true,
@@ -37,7 +40,7 @@ export const findRoles = async () =>
 
 export const findAllPermissions = async () => {
   try {
-    return await prisma.permissions.findMany({
+    const storedPermissions = await prisma.permissions.findMany({
       orderBy: [{ module: 'asc' }, { action: 'asc' }],
       select: {
         id: true,
@@ -45,6 +48,32 @@ export const findAllPermissions = async () => {
         action: true,
       },
     });
+
+    const storedByCode = new Map(
+      storedPermissions.map((permission) => [
+        `${permission.module}.${permission.action}`.toLowerCase(),
+        permission,
+      ])
+    );
+    const catalogPermissions = PERMISSIONS_CATALOG.map((permission, index) => {
+      const code = `${permission.module}.${permission.action}`.toLowerCase();
+      return (
+        storedByCode.get(code) || {
+          id: -(index + 1),
+          module: permission.module,
+          action: permission.action,
+        }
+      );
+    });
+
+    const catalogCodes = new Set(catalogPermissions.map(({ module, action }) => `${module}.${action}`));
+    const legacyPermissions = storedPermissions.filter(
+      ({ module, action }) => !catalogCodes.has(`${module}.${action}`)
+    );
+
+    return [...catalogPermissions, ...legacyPermissions].sort((a, b) =>
+      `${a.module}.${a.action}`.localeCompare(`${b.module}.${b.action}`)
+    );
   } catch (error) {
     const message = String(error?.message || '').toLowerCase();
     const tableMeta = String(error?.meta?.table || '').toLowerCase();

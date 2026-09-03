@@ -15,8 +15,9 @@ export default function UsersManager() {
     username: '',
     email: '',
     password: '',
+    id_ubication: '',
     id_department: '',
-    id_rol: 1,
+    id_rol: '',
     active: true,
   });
   const [editing, setEditing] = useState(false);
@@ -51,6 +52,7 @@ export default function UsersManager() {
       email: form.email || null,
       id_rol: Number(form.id_rol),
       active: Boolean(form.active),
+      id_ubication: form.id_ubication ? Number(form.id_ubication) : null,
       id_department: form.id_department ? Number(form.id_department) : null,
     };
 
@@ -77,10 +79,11 @@ export default function UsersManager() {
       id: null,
       nombre_completo: '',
       username: '',
+      id_ubication: '',
       id_department: '',
       email: '',
       password: '',
-      id_rol: 1,
+      id_rol: roles[0]?.id || '',
       active: true,
     });
 
@@ -94,10 +97,11 @@ export default function UsersManager() {
       id: user.id,
       nombre_completo: user.nombre_completo || '',
       username: user.username || '',
+      id_ubication: user.id_ubication || '',
       id_department: user.id_department || '',
       email: user.email || '',
       password: '',
-      id_rol: user.id_rol || 1,
+      id_rol: user.id_rol || '',
       active: Boolean(user.active),
     });
     setEditing(true);
@@ -130,10 +134,11 @@ export default function UsersManager() {
       id: null,
       nombre_completo: '',
       username: '',
+      id_ubication: '',
       id_department: '',
       email: '',
       password: '',
-      id_rol: 1,
+      id_rol: roles[0]?.id || '',
       active: true,
     });
     setEditing(false);

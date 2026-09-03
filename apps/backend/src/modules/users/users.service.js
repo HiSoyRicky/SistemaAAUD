@@ -44,6 +44,22 @@ function parseOptionalRoleId(value) {
   return parsed;
 }
 
+async function validateLocationAssignment(idUbication, idDepartment) {
+  if (idUbication !== null && idUbication !== undefined) {
+    if (!(await repository.findUbicationById(idUbication))) {
+      throw new AppError('La ubicación no existe', 400);
+    }
+  }
+
+  if (idDepartment !== null && idDepartment !== undefined) {
+    const department = await repository.findDepartmentById(idDepartment);
+    if (!department) throw new AppError('El departamento no existe', 400);
+    if (idUbication !== null && idUbication !== undefined && department.id_ubication !== idUbication) {
+      throw new AppError('El departamento no pertenece a la ubicación seleccionada', 400);
+    }
+  }
+}
+
 function parseOptionalActive(value) {
   if (value === undefined) {
     return undefined;
@@ -76,10 +92,6 @@ function normalizeRole(value) {
 function isAdminActor(actor) {
   if (!actor) {
     return false;
-  }
-
-  if (Number(actor.roleId) === 1) {
-    return true;
   }
 
   const normalizedRole = normalizeRole(actor.role);
@@ -140,6 +152,8 @@ export const create = async (payload) => {
   }
 
   const id_rol = parseOptionalRoleId(payload.id_rol);
+  const id_ubication = parseOptionalId(payload.id_ubication) ?? null;
+  const id_department = parseOptionalId(payload.id_department) ?? null;
   const active = payload.active ?? true;
 
   const existingUser = await repository.findByUsername(username);
@@ -148,6 +162,7 @@ export const create = async (payload) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  await validateLocationAssignment(id_ubication, id_department);
 
   const created = await repository.create({
     username,
@@ -156,6 +171,8 @@ export const create = async (payload) => {
     must_change_password: true,
     email,
     id_rol,
+    id_ubication,
+    id_department,
     active: parseOptionalActive(active) ?? true,
   });
 
@@ -166,6 +183,8 @@ export const update = async (idParam, payload) => {
   const userId = parseUserId(idParam);
 
   const dataToUpdate = {};
+  const existingUser = await repository.findById(userId);
+  if (!existingUser) throw new AppError('Usuario no encontrado', 404);
 
   if (payload.username !== undefined) {
     dataToUpdate.username = String(payload.username).trim();
@@ -190,6 +209,14 @@ export const update = async (idParam, payload) => {
   if (payload.id_department !== undefined) {
     dataToUpdate.id_department = parseOptionalId(payload.id_department);
   }
+
+  const finalUbication = Object.hasOwn(dataToUpdate, 'id_ubication')
+    ? dataToUpdate.id_ubication
+    : existingUser.id_ubication;
+  const finalDepartment = Object.hasOwn(dataToUpdate, 'id_department')
+    ? dataToUpdate.id_department
+    : existingUser.id_department;
+  await validateLocationAssignment(finalUbication, finalDepartment);
 
   if (payload.active !== undefined) {
     dataToUpdate.active = parseOptionalActive(payload.active);
