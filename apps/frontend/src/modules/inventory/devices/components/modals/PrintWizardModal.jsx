@@ -30,6 +30,7 @@ export default function PrintWizardModal({
   open,
   device,
   departments = [],
+  administrativeAreas = [],
   authData,
   onClose,
   onPrint,
@@ -66,6 +67,13 @@ export default function PrintWizardModal({
       { label: 'Serie', value: localDevice.serie || 'No especificada' },
       { label: 'Ubicación actual', value: localDevice.ubication_name || 'Sin ubicación' },
       { label: 'Departamento', value: localDevice.department_name || 'Sin departamento' },
+      {
+        label: 'Área administradora',
+        value:
+          localDevice.administrative_area_destino_name ||
+          localDevice.administrative_area_name ||
+          'Sin área',
+      },
       { label: 'Usuario asignado', value: localDevice.userRecibe || 'Sin asignar' },
     ];
   }, [localDevice]);
@@ -269,6 +277,37 @@ export default function PrintWizardModal({
                       />
                     </div>
 
+                    <div className="mt-4">
+                      <label
+                        htmlFor="administrativeAreaDestino"
+                        className="block mb-1 text-sm font-medium text-gray-700"
+                      >
+                        Área administradora destino
+                      </label>
+                      <select
+                        id="administrativeAreaDestino"
+                        value={localDevice.administrative_area_destino_id || ''}
+                        onChange={(e) => {
+                          const area = administrativeAreas.find(
+                            (item) => String(item.id) === e.target.value
+                          );
+                          setLocalDevice((prev) => ({
+                            ...prev,
+                            administrative_area_destino_id: area?.id || null,
+                            administrative_area_destino_name: area?.name || '',
+                          }));
+                        }}
+                        className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+                      >
+                        <option value="">Sin cambio</option>
+                        {administrativeAreas.map((area) => (
+                          <option key={area.id} value={area.id}>
+                            {area.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     {!isInformaticsDestination ? (
                       <div className="mt-4">
                         <label
@@ -345,6 +384,10 @@ export default function PrintWizardModal({
                           <div className="mt-1 text-blue-800/90">
                             <span className="font-medium">Departamento destino:</span>{' '}
                             {localDevice.department_destino_name || '-'}
+                          </div>
+                          <div className="mt-1 text-blue-800/90">
+                            <span className="font-medium">Área administradora destino:</span>{' '}
+                            {localDevice.administrative_area_destino_name || '-'}
                           </div>
                           <div className="mt-1 text-blue-800/90">
                             <span className="font-medium">Usuario asignado:</span>{' '}

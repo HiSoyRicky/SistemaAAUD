@@ -44,6 +44,9 @@ const MODULE_LABELS = {
   ubications: 'Ubicaciones',
   status: 'Estados',
   permissions: 'Permisos',
+  warehouse_items: 'Insumos de almacén',
+  warehouse_stock: 'Existencias de almacén',
+  warehouse_movements: 'Movimientos de almacén',
 };
 
 const ACTION_DETAILS = {

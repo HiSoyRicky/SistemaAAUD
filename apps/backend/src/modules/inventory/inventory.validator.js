@@ -6,6 +6,7 @@ import {
   zOptionalDate,
   zOptionalIP,
   zOptionalInt,
+  zOptionalNullableString,
   zOptionalNonEmptyField,
   zRequiredInt,
   zRequiredString,
@@ -26,10 +27,24 @@ const createInventoryBodySchema = z.object({
     nullable: true,
     allowEmptyString: true,
   }),
-  id_device: zRequiredInt('El campo id_device debe ser un número entero'),
-  id_brand: zRequiredInt('El campo id_brand debe ser un número entero'),
-  id_model: zRequiredInt('El campo id_model debe ser un número entero'),
+  user: zOptionalNullableString('El campo user debe ser texto'),
+  id_device: zOptionalInt('El campo id_device debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  id_brand: zOptionalInt('El campo id_brand debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  id_model: zOptionalInt('El campo id_model debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
   serie: zRequiredString('El campo serie es obligatorio'),
+  ip: zOptionalIP('El campo ip debe ser una dirección IP válida', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
   id_status: zRequiredInt('El campo id_status debe ser un número entero'),
   id_condition: zOptionalInt('El campo id_condition debe ser un número entero', {
     nullable: true,
@@ -39,6 +54,18 @@ const createInventoryBodySchema = z.object({
     'El campo id_administrative_area debe ser un número entero',
     { nullable: true, allowEmptyString: true }
   ),
+  asset_classification_rule_id: zOptionalInt(
+    'El campo asset_classification_rule_id debe ser un número entero',
+    { nullable: true, allowEmptyString: true }
+  ),
+  asset_type_id: zOptionalInt('El campo asset_type_id debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  extension_id: zOptionalInt('El campo extension_id debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
   transferdate: zOptionalDate('El campo transferdate debe ser una fecha válida', {
     nullable: true,
     allowEmptyString: true,
@@ -56,9 +83,19 @@ const updateInventoryBodySchema = z.object({
     nullable: true,
     allowEmptyString: true,
   }),
-  id_device: zOptionalInt('El campo id_device debe ser un número entero'),
-  id_brand: zOptionalInt('El campo id_brand debe ser un número entero'),
-  id_model: zOptionalInt('El campo id_model debe ser un número entero'),
+  user: zOptionalNullableString('El campo user debe ser texto'),
+  id_device: zOptionalInt('El campo id_device debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  id_brand: zOptionalInt('El campo id_brand debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  id_model: zOptionalInt('El campo id_model debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
   serie: zOptionalNonEmptyField('El campo serie no puede estar vacío'),
   ip: zOptionalIP('El campo ip debe ser una dirección IP válida', {
     nullable: true,
@@ -73,6 +110,18 @@ const updateInventoryBodySchema = z.object({
     'El campo id_administrative_area debe ser un número entero',
     { nullable: true, allowEmptyString: true }
   ),
+  asset_classification_rule_id: zOptionalInt(
+    'El campo asset_classification_rule_id debe ser un número entero',
+    { nullable: true, allowEmptyString: true }
+  ),
+  asset_type_id: zOptionalInt('El campo asset_type_id debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
+  extension_id: zOptionalInt('El campo extension_id debe ser un número entero', {
+    nullable: true,
+    allowEmptyString: true,
+  }),
   transferdate: zOptionalDate('El campo transferdate debe ser una fecha válida', {
     nullable: true,
     allowEmptyString: true,
@@ -86,4 +135,9 @@ const validateUpdateInventory = validateZod({
   body: updateInventoryBodySchema,
 });
 
-export { validateCreateInventory, validateUpdateInventory };
+export {
+  createInventoryBodySchema,
+  updateInventoryBodySchema,
+  validateCreateInventory,
+  validateUpdateInventory,
+};

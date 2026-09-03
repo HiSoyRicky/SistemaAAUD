@@ -20,6 +20,7 @@ import {
 } from '../constants/inventory.constants.js';
 
 import * as repository from '../inventory.repository.js';
+import AppError from '../../../common/utils/AppError.js';
 
 export const getHistory = async (query) => {
   const { page, limit } = parsePagination(query);
@@ -62,6 +63,7 @@ export const getHistory = async (query) => {
   const modelIds = new Set();
   const conditionIds = new Set();
   const administrativeAreaIds = new Set();
+  const classificationRuleIds = new Set();
 
   const rawMovements = logs.map((log) => {
     const oldValues = parseMovementObject(log.old_values);
@@ -83,6 +85,8 @@ export const getHistory = async (query) => {
     const newConditionId = parseNullableId(newValues.id_condition);
     const oldAdministrativeAreaId = parseNullableId(oldValues.id_administrative_area);
     const newAdministrativeAreaId = parseNullableId(newValues.id_administrative_area);
+    const oldClassificationRuleId = parseNullableId(oldValues.asset_classification_rule_id);
+    const newClassificationRuleId = parseNullableId(newValues.asset_classification_rule_id);
 
     if (oldUbicationId) ubicationIds.add(oldUbicationId);
     if (newUbicationId) ubicationIds.add(newUbicationId);
@@ -102,6 +106,8 @@ export const getHistory = async (query) => {
     if (newConditionId) conditionIds.add(newConditionId);
     if (oldAdministrativeAreaId) administrativeAreaIds.add(oldAdministrativeAreaId);
     if (newAdministrativeAreaId) administrativeAreaIds.add(newAdministrativeAreaId);
+    if (oldClassificationRuleId) classificationRuleIds.add(oldClassificationRuleId);
+    if (newClassificationRuleId) classificationRuleIds.add(newClassificationRuleId);
 
     return {
       log,
@@ -119,6 +125,7 @@ export const getHistory = async (query) => {
     models,
     conditions,
     administrativeAreas,
+    classificationRules,
   ] = await Promise.all([
     repository.findUbicationsByIds([...ubicationIds]),
     repository.findDepartmentsByIds([...departmentIds]),
@@ -128,6 +135,7 @@ export const getHistory = async (query) => {
     repository.findModelsByIds([...modelIds]),
     repository.findConditionsByIds([...conditionIds]),
     repository.findAdministrativeAreasByIds([...administrativeAreaIds]),
+    repository.findAssetClassificationRulesByIds([...classificationRuleIds]),
   ]);
 
   const ubicationsMap = new Map(ubications.map((item) => [item.id, item.name]));
@@ -140,6 +148,7 @@ export const getHistory = async (query) => {
   const administrativeAreasMap = new Map(
     administrativeAreas.map((item) => [item.id, item.name])
   );
+  const classificationRulesMap = new Map(classificationRules.map((item) => [item.id, item]));
 
   const mapped = rawMovements.map(({ log, oldValues, newValues }) =>
     buildHistoryItem({
@@ -154,6 +163,7 @@ export const getHistory = async (query) => {
       modelsMap,
       conditionsMap,
       administrativeAreasMap,
+      classificationRulesMap,
     })
   );
 
@@ -200,7 +210,19 @@ export const getHistory = async (query) => {
       {
         ubication: row.ubications?.name || null,
         department: row.departments?.name || null,
+        administrative_area: row.administrative_area?.name || null,
         status: row.status?.name || null,
+        classification: row.asset_classification_rule?.classification?.code_new || null,
+        asset_type: row.asset_classification_rule?.asset_type?.code || null,
+        extension: row.asset_classification_rule?.extension?.code || null,
+                technology: row.inventory_devices
+                  ? {
+                      device: row.inventory_devices.device?.name || null,
+                      brand: row.inventory_devices.brand?.name || null,
+                      model: row.inventory_devices.model?.name || null,
+                      ip: row.inventory_devices.ip || null,
+                    }
+                  : null,
         device: row.inventory_devices?.device?.name || row.devices?.name || null,
         brand: row.inventory_devices?.brand?.name || row.brands?.name || null,
         model: row.inventory_devices?.model?.name || row.models?.name || null,
@@ -307,6 +329,22 @@ function formatChangedValue(key, value, maps) {
       const id = parseNullableId(value);
       return id ? maps.administrativeAreasMap.get(id) || String(id) : null;
     }
+    case 'asset_classification_rule_id': {
+      const id = parseNullableId(value);
+      const rule = id ? maps.classificationRulesMap.get(id) : null;
+      return rule
+        ? [
+            rule.classification?.code_new,
+            rule.classification?.description,
+            rule.asset_type?.code,
+            rule.extension?.code,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : id
+          ? String(id)
+          : null;
+    }
     case 'transferdate':
       return formatHistoryDate(value);
     default:
@@ -361,6 +399,8 @@ function resolveHistoryIds(oldValues, newValues) {
     newConditionId: parseNullableId(newValues.id_condition),
     oldAdministrativeAreaId: parseNullableId(oldValues.id_administrative_area),
     newAdministrativeAreaId: parseNullableId(newValues.id_administrative_area),
+    oldClassificationRuleId: parseNullableId(oldValues.asset_classification_rule_id),
+    newClassificationRuleId: parseNullableId(newValues.asset_classification_rule_id),
   };
 }
 
@@ -382,6 +422,8 @@ function resolveHistoryNames(ids, maps) {
     newConditionId,
     oldAdministrativeAreaId,
     newAdministrativeAreaId,
+    oldClassificationRuleId,
+    newClassificationRuleId,
   } = ids;
 
   return {
@@ -404,6 +446,12 @@ function resolveHistoryNames(ids, maps) {
       : null,
     newAdministrativeArea: newAdministrativeAreaId
       ? maps.administrativeAreasMap.get(newAdministrativeAreaId) || null
+      : null,
+    previousClassificationRule: oldClassificationRuleId
+      ? maps.classificationRulesMap.get(oldClassificationRuleId) || null
+      : null,
+    newClassificationRule: newClassificationRuleId
+      ? maps.classificationRulesMap.get(newClassificationRuleId) || null
       : null,
   };
 }
@@ -431,7 +479,7 @@ function resolveMovedBy(
   return null;
 }
 
-function buildHistoryItem({
+export function buildHistoryItem({
   log,
   oldValues,
   newValues,
@@ -443,6 +491,7 @@ function buildHistoryItem({
   modelsMap,
   conditionsMap,
   administrativeAreasMap,
+  classificationRulesMap,
 }) {
   const ids = resolveHistoryIds(oldValues, newValues);
   const names = resolveHistoryNames(ids, {
@@ -454,6 +503,7 @@ function buildHistoryItem({
     modelsMap,
     conditionsMap,
     administrativeAreasMap,
+    classificationRulesMap,
   });
 
   const previousUser = sanitizeMovementValue(oldValues.user) || null;
@@ -477,6 +527,7 @@ function buildHistoryItem({
     modelsMap,
     conditionsMap,
     administrativeAreasMap,
+    classificationRulesMap,
   });
 
   return {
@@ -498,6 +549,10 @@ function buildHistoryItem({
     new_ubication: names.newUbication,
     previous_department: names.previousDepartment,
     new_department: names.newDepartment,
+    previous_administrative_area: names.previousAdministrativeArea,
+    new_administrative_area: names.newAdministrativeArea,
+      previous_classification_rule: names.previousClassificationRule,
+      new_classification_rule: names.newClassificationRule,
     previous_status: names.previousStatus,
     new_status: names.newStatus,
     previous_device: names.previousDevice,

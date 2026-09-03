@@ -24,8 +24,8 @@ export const findAll = async () => {
 export const findTechnicians = async () => {
   return prisma.users.findMany({
     where: {
-      id_rol: 2,
       active: true,
+      roles: { name: { contains: 'tecnic', mode: 'insensitive' } },
     },
     select: userSelect,
   });
@@ -71,6 +71,15 @@ export const findById = async (id) => {
     where: { id: Number(id) },
   });
 };
+
+export const findUbicationById = async (id) =>
+  prisma.ubications.findUnique({ where: { id: Number(id) }, select: { id: true } });
+
+export const findDepartmentById = async (id) =>
+  prisma.departments.findUnique({
+    where: { id: Number(id) },
+    select: { id: true, id_ubication: true },
+  });
 
 export const create = async (data) => {
   return prisma.users.create({ data });

@@ -7,15 +7,22 @@ import {
   GitBranch,
   Layers,
   MapPin,
+  Scale,
   ShieldCheck,
   Tag,
   Users,
+  Shield,
+  Boxes,
 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
+import useAuth from '../../../shared/hooks/useAuth';
 
 export default function AdminPage() {
+  const { hasPermission } = useAuth();
   const menuItems = [
     { path: 'users', label: 'Usuarios', icon: <Users className="w-5 h-5" /> },
+    { path: 'roles', label: 'Roles', icon: <Shield className="w-5 h-5" /> },
+    { path: 'warehouse-items', label: 'Insumos de Almacén', icon: <Boxes className="w-5 h-5" />, permission: 'warehouse_items.read' },
     {
       path: 'permissions',
       label: 'Permisos',
@@ -37,6 +44,7 @@ export default function AdminPage() {
       icon: <Building className="w-5 h-5" />,
     },
     { path: 'devices', label: 'Equipos', icon: <Cpu className="w-5 h-5" /> },
+    { path: 'classification-rules', label: 'Clasificación patrimonial', icon: <Scale className="w-5 h-5" /> },
     { path: 'brands', label: 'Marcas', icon: <Tag className="w-5 h-5" /> },
     { path: 'models', label: 'Modelos', icon: <Layers className="w-5 h-5" /> },
     // { path: "statuses", label: "Estados", icon: <Home className="w-5 h-5" /> },
@@ -49,7 +57,7 @@ export default function AdminPage() {
 
       {/* Menú horizontal con scroll para móviles */}
       <div className="flex gap-3 pb-2 mb-6 overflow-x-auto">
-        {menuItems.map((item) => (
+        {menuItems.filter((item) => !item.permission || hasPermission(item.permission)).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

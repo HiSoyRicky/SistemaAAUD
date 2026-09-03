@@ -34,26 +34,27 @@ model bd_incidents {
 }
 
 model bd_inventory {
-  id                     Int       @id(map: "pk_bd_inventory") @default(autoincrement())
-  tag                    String    @db.VarChar(50)
-  id_ubication           Int?
-  id_department          Int?
-  user                   String?   @db.VarChar(50)
-  description            String?   @db.VarChar(255)
-  id_device              Int
-  id_brand               Int
-  id_model               Int
-  serie                  String    @db.VarChar(50)
-  ip                     String?   @db.VarChar(50)
-  id_status              Int
-  id_condition           Int?
-  id_administrative_area Int?
-  transferdate           DateTime? @db.Date
-  observation            String?   @db.VarChar(255)
-  created_by             Int?
-  created_at             DateTime? @db.Timetz(6)
-  updated_at             DateTime? @db.Timetz(6)
-  updated_by             Int?
+  id                           Int       @id(map: "pk_bd_inventory") @default(autoincrement())
+  tag                          String    @db.VarChar(50)
+  id_ubication                 Int?
+  id_department                Int?
+  user                         String?   @db.VarChar(50)
+  description                  String?   @db.VarChar(255)
+  id_device                    Int
+  id_brand                     Int
+  id_model                     Int
+  serie                        String    @db.VarChar(50)
+  ip                           String?   @db.VarChar(50)
+  id_status                    Int
+  id_condition                 Int?
+  id_administrative_area       Int?
+  transferdate                 DateTime? @db.Date
+  observation                  String?   @db.VarChar(255)
+  created_by                   Int?
+  created_at                   DateTime? @db.Timetz(6)
+  updated_at                   DateTime? @db.Timetz(6)
+  updated_by                   Int?
+  asset_classification_rule_id Int?
 
   transfer_requests inventory_transfer_requests[]
 
@@ -66,7 +67,98 @@ model bd_inventory {
   administrative_area inventory_administrative_areas? @relation(fields: [id_administrative_area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_administrative_area")
   ubications          ubications?                     @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_ubications")
 
-  inventory_devices inventory_devices?
+  inventory_devices         inventory_devices?
+  asset_classification_rule inventory_asset_classification_rules? @relation(fields: [asset_classification_rule_id], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "fk_bd_inventory_asset_classification_rule")
+}
+
+model inventory_asset_types {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+
+  classification_rules inventory_asset_classification_rules[]
+}
+
+model inventory_asset_extensions {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+
+  classification_rules inventory_asset_classification_rules[]
+}
+
+model inventory_asset_classifications {
+  id             Int      @id @default(autoincrement())
+  code_new       String   @db.VarChar(20)
+  description    String   @db.VarChar(255)
+  parent_id      Int?
+  level          Int
+  is_assignable  Boolean  @default(false)
+  active         Boolean  @default(true)
+  source         String   @db.VarChar(100)
+  source_version String   @db.VarChar(50)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @updatedAt @db.Timestamptz(6)
+
+  parent               inventory_asset_classifications?          @relation("AssetClassificationHierarchy", fields: [parent_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  children             inventory_asset_classifications[]         @relation("AssetClassificationHierarchy")
+  mappings             inventory_asset_classification_mappings[]
+  classification_rules inventory_asset_classification_rules[]
+
+  @@unique([source, source_version, code_new])
+  @@index([parent_id])
+  @@index([active, is_assignable])
+}
+
+model inventory_asset_classification_mappings {
+  id                 Int      @id @default(autoincrement())
+  classification_id  Int
+  legacy_code        String   @db.VarChar(20)
+  legacy_description String?  @db.VarChar(255)
+  source             String   @db.VarChar(100)
+  source_version     String   @db.VarChar(50)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+
+  classification inventory_asset_classifications @relation(fields: [classification_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([source, source_version, legacy_code, classification_id])
+  @@index([legacy_code])
+  @@index([classification_id])
+}
+
+model inventory_asset_classification_rules {
+  id                     Int      @id @default(autoincrement())
+  device_id              Int?
+  classification_id      Int
+  asset_type_id          Int
+  extension_id           Int?
+  administrative_area_id Int?
+  active                 Boolean  @default(true)
+  is_default             Boolean  @default(true)
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  device              devices?                        @relation(fields: [device_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  classification      inventory_asset_classifications @relation(fields: [classification_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  asset_type          inventory_asset_types           @relation(fields: [asset_type_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  administrative_area inventory_administrative_areas? @relation(fields: [administrative_area_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  extension           inventory_asset_extensions?     @relation(fields: [extension_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  inventories bd_inventory[]
+
+  @@index([device_id, active])
+  @@index([asset_type_id, extension_id, administrative_area_id, active])
+  @@index([classification_id, active])
+  @@index([administrative_area_id, active])
+  @@index([asset_type_id, active])
 }
 
 model inventory_conditions {
@@ -76,9 +168,12 @@ model inventory_conditions {
 }
 
 model inventory_administrative_areas {
-  id          Int            @id @default(autoincrement())
-  name        String         @unique @db.VarChar(100)
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(100)
+
   inventories bd_inventory[]
+
+  classification_rules inventory_asset_classification_rules[]
 }
 
 model inventory_product_catalog {
@@ -149,15 +244,17 @@ model departments {
   bd_inventory    bd_inventory[]
   ubications      ubications?       @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
   toner_movements toner_movements[] @relation("DepartmentTonerMovements")
+  warehouse_movements WarehouseMovement[]
   users           users[]
 }
 
 model devices {
-  id                Int                 @id(map: "pk_device") @default(autoincrement())
-  name              String              @unique(map: "name_devices_unique") @db.VarChar(50)
-  bd_inventory      bd_inventory[]
-  models            models[]
-  inventory_devices inventory_devices[]
+  id                   Int                                    @id(map: "pk_device") @default(autoincrement())
+  name                 String                                 @unique(map: "name_devices_unique") @db.VarChar(50)
+  bd_inventory         bd_inventory[]
+  models               models[]
+  inventory_devices    inventory_devices[]
+  classification_rules inventory_asset_classification_rules[]
 }
 
 model models {
@@ -193,6 +290,8 @@ model ubications {
   bd_inventory    bd_inventory[]
   departments     departments[]
   toner_movements toner_movements[] @relation("UbicationTonerMovements")
+  warehouse_stock WarehouseStock[]
+  warehouse_movements WarehouseMovement[] @relation("UbicationWarehouseMovements")
   users           users[]
 }
 
@@ -211,6 +310,7 @@ model users {
   bd_incidents_bd_incidents_id_userTousers       bd_incidents[]                @relation("bd_incidents_id_userTousers")
   bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]                @relation("bd_incidents_id_technicianTousers")
   toner_movements                                toner_movements[]             @relation("UserTonerMovements")
+  warehouse_movements                            WarehouseMovement[]           @relation("UserWarehouseMovements")
   inventory_transfer_requests_requested          inventory_transfer_requests[] @relation("InventoryTransferRequester")
   inventory_transfer_requests_reviewed           inventory_transfer_requests[] @relation("InventoryTransferApprover")
   departments                                    departments?                  @relation(fields: [id_department], references: [id], map: "fk_users_departments")
@@ -272,6 +372,71 @@ model toner_stock {
   toner      toners   @relation(fields: [id_toner], references: [id])
 }
 
+model WarehouseItem {
+  id          Int      @id @default(autoincrement())
+  code        String?  @unique @db.VarChar(50)
+  name        String   @db.VarChar(150)
+  description String?  @db.VarChar(255)
+  unit        String   @db.VarChar(30)
+  category    String?  @db.VarChar(80)
+  min_stock   Int      @default(0)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+
+  stock     WarehouseStock[]
+  movements WarehouseMovement[]
+
+  @@index([active])
+  @@index([category])
+  @@index([name])
+  @@map("warehouse_items")
+}
+
+model WarehouseStock {
+  id           Int      @id @default(autoincrement())
+  item_id      Int
+  ubication_id Int
+  quantity     Int      @default(0)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  item      WarehouseItem @relation(fields: [item_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ubication ubications    @relation(fields: [ubication_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([item_id, ubication_id])
+  @@index([ubication_id])
+  @@map("warehouse_stock")
+}
+
+model WarehouseMovement {
+  id             Int                   @id @default(autoincrement())
+  item_id        Int
+  quantity       Int
+  movement_type  WarehouseMovementType
+  previous_stock Int
+  new_stock      Int
+  ubication_id   Int
+  department_id  Int?
+  receiver_name  String?               @db.VarChar(100)
+  vehicle_target String?               @db.VarChar(100)
+  reference      String?               @db.VarChar(120)
+  observation    String?               @db.VarChar(255)
+  created_by     Int?
+  created_at     DateTime              @default(now()) @db.Timestamptz(6)
+
+  item       WarehouseItem @relation(fields: [item_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ubication  ubications    @relation("UbicationWarehouseMovements", fields: [ubication_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department departments?  @relation(fields: [department_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user       users?        @relation("UserWarehouseMovements", fields: [created_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([item_id])
+  @@index([movement_type])
+  @@index([created_at])
+  @@index([ubication_id])
+  @@index([department_id])
+  @@map("warehouse_movements")
+}
+
 model activity_logs {
   id          Int            @id @default(autoincrement())
   entity_type String?        @db.VarChar(50)
@@ -309,6 +474,12 @@ enum TonerDocumentStatus {
   PENDING
   SIGNED
   REJECTED
+}
+
+enum WarehouseMovementType {
+  IN
+  OUT
+  ADJUSTMENT
 }
 
 enum ActivityAction {

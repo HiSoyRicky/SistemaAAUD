@@ -30,7 +30,47 @@ function shouldClearAssignedUser(snapshot) {
   return departmentName.includes('INFORMATICA');
 }
 
-function buildPreviewInventory(request, inventory) {
+function resolveSnapshotAdministrativeArea(snapshot, currentAreaId) {
+  if (!Object.hasOwn(snapshot, 'administrative_area_destino_id')) {
+    return currentAreaId;
+  }
+
+  const value = snapshot.administrative_area_destino_id;
+  if (value === null || value === '') return null;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new AppError('Área administradora destino inválida', 400);
+  }
+
+  return parsed;
+}
+
+const transferInventoryInclude = {
+  asset_classification_rule: {
+    include: {
+      classification: true,
+      asset_type: true,
+      extension: true,
+    },
+  },
+  devices: { select: { id: true, name: true } },
+  brands: { select: { id: true, name: true } },
+  models: { select: { id: true, name: true } },
+  inventory_devices: {
+    include: {
+      device: { select: { id: true, name: true } },
+      brand: { select: { id: true, name: true } },
+      model: { select: { id: true, name: true } },
+    },
+  },
+  departments: { select: { id: true, name: true } },
+  ubications: { select: { id: true, name: true } },
+  administrative_area: { select: { id: true, name: true } },
+  status: { select: { id: true, name: true } },
+};
+
+export function buildPreviewInventory(request, inventory) {
   const snapshot = request.snapshot || {};
   const technology = inventory.inventory_devices;
 
@@ -38,6 +78,11 @@ function buildPreviewInventory(request, inventory) {
     ...inventory,
     ubications: { name: snapshot.ubication_destino_name || inventory.ubications?.name || null },
     departments: { name: snapshot.department_destino_name || inventory.departments?.name || null },
+    administrative_area: {
+      id: snapshot.administrative_area_destino_id ?? inventory.id_administrative_area ?? null,
+      name:
+        snapshot.administrative_area_destino_name || inventory.administrative_area?.name || null,
+    },
     devices: inventory.devices,
     brands: inventory.brands,
     models: inventory.models,
@@ -51,6 +96,8 @@ function buildPreviewInventory(request, inventory) {
     observation: snapshot.observation || inventory.observation,
     id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
     id_department: snapshot.department_destino_id ?? inventory.id_department,
+    id_administrative_area:
+      snapshot.administrative_area_destino_id ?? inventory.id_administrative_area,
     id_device: technology?.id_device ?? inventory.id_device,
     id_brand: technology?.id_brand ?? inventory.id_brand,
     id_model: technology?.id_model ?? inventory.id_model,
@@ -71,19 +118,7 @@ export const getAll = async (query = {}) => {
     include: {
       inventory: {
         include: {
-          devices: { select: { id: true, name: true } },
-          brands: { select: { id: true, name: true } },
-          models: { select: { id: true, name: true } },
-          inventory_devices: {
-            include: {
-              device: { select: { id: true, name: true } },
-              brand: { select: { id: true, name: true } },
-              model: { select: { id: true, name: true } },
-            },
-          },
-          departments: { select: { id: true, name: true } },
-          ubications: { select: { id: true, name: true } },
-          status: { select: { id: true, name: true } },
+                ...transferInventoryInclude,
         },
       },
       requester: { select: { id: true, nombre_completo: true, username: true } },
@@ -115,19 +150,7 @@ export const getMine = async (currentUser, query = {}) => {
     include: {
       inventory: {
         include: {
-          devices: { select: { id: true, name: true } },
-          brands: { select: { id: true, name: true } },
-          models: { select: { id: true, name: true } },
-          inventory_devices: {
-            include: {
-              device: { select: { id: true, name: true } },
-              brand: { select: { id: true, name: true } },
-              model: { select: { id: true, name: true } },
-            },
-          },
-          departments: { select: { id: true, name: true } },
-          ubications: { select: { id: true, name: true } },
-          status: { select: { id: true, name: true } },
+          ...transferInventoryInclude,
         },
       },
       requester: { select: { id: true, nombre_completo: true, username: true } },
@@ -158,24 +181,12 @@ export const create = async (payload, currentUser) => {
   const inventory = await prisma.bd_inventory.findUnique({
     where: { id: inventoryId },
     include: {
-      devices: { select: { id: true, name: true } },
-      brands: { select: { id: true, name: true } },
-      models: { select: { id: true, name: true } },
-      inventory_devices: {
-        include: {
-          device: { select: { id: true, name: true } },
-          brand: { select: { id: true, name: true } },
-          model: { select: { id: true, name: true } },
-        },
-      },
-      departments: { select: { id: true, name: true } },
-      ubications: { select: { id: true, name: true } },
-      status: { select: { id: true, name: true } },
+      ...transferInventoryInclude,
     },
   });
 
   if (!inventory) {
-    throw new AppError('Equipo no encontrado', 404);
+    throw new AppError('Activo no encontrado', 404);
   }
 
   const pendingRequest = await prisma.inventory_transfer_requests.findFirst({
@@ -186,7 +197,7 @@ export const create = async (payload, currentUser) => {
   });
 
   if (pendingRequest) {
-    throw new AppError('Ya existe una solicitud pendiente para este equipo', 409);
+    throw new AppError('Ya existe una solicitud pendiente para este activo', 409);
   }
 
   const created = await prisma.inventory_transfer_requests.create({
@@ -215,19 +226,7 @@ async function resolveRequestOrFail(idParam) {
     include: {
       inventory: {
         include: {
-          devices: { select: { id: true, name: true } },
-          brands: { select: { id: true, name: true } },
-          models: { select: { id: true, name: true } },
-          inventory_devices: {
-            include: {
-              device: { select: { id: true, name: true } },
-              brand: { select: { id: true, name: true } },
-              model: { select: { id: true, name: true } },
-            },
-          },
-          departments: { select: { id: true, name: true } },
-          ubications: { select: { id: true, name: true } },
-          status: { select: { id: true, name: true } },
+          ...transferInventoryInclude,
         },
       },
       requester: { select: { id: true, nombre_completo: true, username: true } },
@@ -257,6 +256,21 @@ export const approve = async (idParam, payload, currentUser) => {
   const clearAssignedUser = shouldClearAssignedUser(snapshot);
   const assignedUser = typeof snapshot.userRecibe === 'string' ? snapshot.userRecibe.trim() : '';
   const nextUser = clearAssignedUser ? null : assignedUser || snapshot.userName || inventory.user;
+  const nextAdministrativeAreaId = resolveSnapshotAdministrativeArea(
+    snapshot,
+    inventory.id_administrative_area
+  );
+
+  if (nextAdministrativeAreaId !== null) {
+    const administrativeArea = await prisma.inventory_administrative_areas.findUnique({
+      where: { id: nextAdministrativeAreaId },
+      select: { id: true },
+    });
+
+    if (!administrativeArea) {
+      throw new AppError('Área administradora destino no encontrada', 400);
+    }
+  }
 
   const { updatedInventory, updatedRequest } = await prisma.$transaction(async (tx) => {
     const nextInventory = await tx.bd_inventory.update({
@@ -264,18 +278,14 @@ export const approve = async (idParam, payload, currentUser) => {
       data: {
         id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
         id_department: snapshot.department_destino_id ?? inventory.id_department,
+        id_administrative_area: nextAdministrativeAreaId,
         user: nextUser,
         transferdate: new Date(),
         observation: snapshot.observation ?? inventory.observation,
         updated_by: currentUser?.id ?? null,
       },
       include: {
-        devices: { select: { id: true, name: true } },
-        brands: { select: { id: true, name: true } },
-        models: { select: { id: true, name: true } },
-        departments: { select: { id: true, name: true } },
-        ubications: { select: { id: true, name: true } },
-        status: { select: { id: true, name: true } },
+        ...transferInventoryInclude,
       },
     });
 

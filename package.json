@@ -1,6 +1,7 @@
 {
   "name": "aaud-system",
   "private": true,
+  "version": "1.2.1",
   "packageManager": "npm@11.7.0",
   "workspaces": [
     "apps/backend",
@@ -11,6 +12,8 @@
     "build": "npm run build -w apps/frontend",
     "start": "npm run start -w apps/backend",
     "tree": "node tools/generateTree.cjs",
+    "release:check": "node tools/release.cjs --check",
+    "release": "node tools/release.cjs",
     "prisma:format": "npm exec -w apps/backend prisma format",
     "prisma:validate": "npm exec -w apps/backend prisma validate",
     "prisma:generate": "npm exec -w apps/backend prisma generate",

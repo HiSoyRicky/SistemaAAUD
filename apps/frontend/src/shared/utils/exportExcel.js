@@ -109,7 +109,11 @@ export function mapInventoryToRow(item) {
     tag: item.tag || 'N/A',
     ubication: item.ubication_name || 'N/A',
     departamento: item.department_name || 'N/A',
-    usuario: item.user || 'N/A',
+    area_administradora: item.administrative_area_name || 'N/A',
+    persona_tenedora: item.user || 'N/A',
+    clasificacion: item.classification?.description || 'Sin clasificación',
+    tipo_activo: item.asset_type?.name || 'Sin clasificar',
+    extension: item.extension?.type || 'Sin extensión',
     device: item.device_name || 'N/A',
     marca: item.brand_name || 'N/A',
     modelo: item.model_name || 'N/A',
@@ -156,7 +160,11 @@ export async function exportInventoryToExcel(devices) {
     { header: 'Marbete', key: 'tag', width: 14 },
     { header: 'Ubicación', key: 'ubication', width: 20 },
     { header: 'Departamento', key: 'departamento', width: 25 },
-    { header: 'Usuario', key: 'usuario', width: 30 },
+    { header: 'Área administradora', key: 'area_administradora', width: 28 },
+    { header: 'Persona tenedora', key: 'persona_tenedora', width: 30 },
+    { header: 'Clasificación', key: 'clasificacion', width: 32 },
+    { header: 'Tipo de activo', key: 'tipo_activo', width: 20 },
+    { header: 'Extensión', key: 'extension', width: 18 },
     { header: 'Dispositivo', key: 'device', width: 22 },
     { header: 'Marca', key: 'marca', width: 18 },
     { header: 'Modelo', key: 'modelo', width: 30 },
@@ -203,5 +211,55 @@ export async function exportTonerMovementsToExcel(movements) {
     columns,
     rows,
     fileName,
+  });
+}
+
+export async function exportWarehouseStockToExcel(rows) {
+  await exportToExcel({
+    sheetName: 'Existencias Almacén',
+    columns: [
+      { header: 'Insumo', key: 'insumo', width: 38 },
+      { header: 'Código', key: 'codigo', width: 22 },
+      { header: 'Unidad', key: 'unidad', width: 12 },
+      { header: 'Cantidad', key: 'cantidad', width: 12 },
+    ],
+    rows: rows.map((row) => ({
+      insumo: row.item?.name || '-',
+      codigo: row.item?.code || '-',
+      unidad: row.item?.unit || '-',
+      cantidad: row.quantity ?? 0,
+    })),
+    fileName: `Existencias-Almacen-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  });
+}
+
+export async function exportWarehouseMovementsToExcel(rows) {
+  await exportToExcel({
+    sheetName: 'Movimientos Almacén',
+    columns: [
+      { header: 'Fecha', key: 'fecha', width: 24 },
+      { header: 'Insumo', key: 'insumo', width: 38 },
+      { header: 'Código', key: 'codigo', width: 22 },
+      { header: 'Tipo', key: 'tipo', width: 14 },
+      { header: 'Cantidad', key: 'cantidad', width: 12 },
+      { header: 'Ubicación', key: 'ubicacion', width: 24 },
+      { header: 'Departamento', key: 'departamento', width: 28 },
+      { header: 'Receptor', key: 'receptor', width: 28 },
+      { header: 'Despachado por', key: 'despachado_por', width: 28 },
+    ],
+    rows: rows.map((row) => ({
+      fecha: formatDateTime(row.created_at),
+      insumo: row.item?.name || '-',
+      codigo: row.item?.code || '-',
+      tipo:
+        { IN: 'Entrada', OUT: 'Salida', ADJUSTMENT: 'Ajuste' }[row.movement_type] ||
+        row.movement_type,
+      cantidad: row.quantity ?? 0,
+      ubicacion: row.ubication?.name || '-',
+      departamento: row.department?.name || '-',
+      receptor: row.receiver_name || '-',
+      despachado_por: row.user?.nombre_completo || '-',
+    })),
+    fileName: `Movimientos-Almacen-${new Date().toISOString().slice(0, 10)}.xlsx`,
   });
 }

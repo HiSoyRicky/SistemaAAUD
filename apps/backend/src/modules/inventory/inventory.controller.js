@@ -2,7 +2,12 @@
 
 import catchAsync from '../../common/utils/catchAsync.js';
 
-import { create as createInventory, getAll as getAllInventory } from './inventory.service.js';
+import {
+  create as createInventory,
+  getAdministrativeAreas as listAdministrativeAreas,
+  getAll as getAllInventory,
+  getClassificationRules as listClassificationRules,
+} from './inventory.service.js';
 
 import { update as updateInventory } from './services/inventory-update.service.js';
 
@@ -18,6 +23,14 @@ export const getHistory = catchAsync(async (req, res) => {
   const data = await getInventoryHistory(req.query);
 
   res.json(data);
+});
+
+export const getAdministrativeAreas = catchAsync(async (_req, res) => {
+  res.json(await listAdministrativeAreas());
+});
+
+export const getClassificationRules = catchAsync(async (_req, res) => {
+  res.json(await listClassificationRules());
 });
 
 export const create = catchAsync(async (req, res) => {

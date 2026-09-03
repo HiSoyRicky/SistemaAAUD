@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useUbicationDepartments } from '../utils/useUbicationDepartments.js';
 
-const Field = ({ label, children, error, hint, htmlFor }) => {
+const Field = ({ label, children, error, hint, htmlFor, compact = false }) => {
   let helperText = null;
 
   if (error) {
@@ -16,8 +16,11 @@ const Field = ({ label, children, error, hint, htmlFor }) => {
     helperText = <p className="pt-1 text-xs text-gray-500">{hint}</p>;
   }
   return (
-    <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-semibold text-gray-800">
+    <div className={compact ? 'space-y-1' : 'space-y-1.5'}>
+      <label
+        htmlFor={htmlFor}
+        className={`block font-semibold text-gray-800 ${compact ? 'text-xs' : 'text-sm'}`}
+      >
         {label}
       </label>
 
@@ -37,6 +40,7 @@ function UbiDepSelector({
   disabled = false,
   disabledUbication = false,
   disabledDepartment = false,
+  compact = false,
 }) {
   const {
     ubications,
@@ -75,7 +79,9 @@ function UbiDepSelector({
   }, [id_ubication, id_department, mode, departments]);
 
   const baseSelect =
-    'w-full appearance-none rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm outline-none transition ' +
+    `w-full appearance-none border bg-white text-sm text-gray-900 shadow-sm outline-none transition ${
+      compact ? 'h-9 rounded-lg px-3 pr-9' : 'rounded-xl px-4 py-2.5'
+    } ` +
     'focus:ring-4 focus:ring-blue-100 focus:border-blue-500 ' +
     'placeholder:text-gray-400';
 
@@ -147,14 +153,23 @@ function UbiDepSelector({
   }
 
   return (
-    <div className="p-4 bg-white border border-gray-200 shadow-sm rounded-2xl md:p-5">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+    <div
+      className={
+        compact ? '' : 'p-4 bg-white border border-gray-200 shadow-sm rounded-2xl md:p-5'
+      }
+    >
+      <div
+        className={`grid grid-cols-1 ${
+          compact ? 'gap-3 md:grid-cols-2' : 'gap-4 md:grid-cols-2 md:gap-5'
+        }`}
+      >
         {/* Ubicación */}
         <Field
           label="Ubicación"
           htmlFor="id_ubication"
           error={errors.ubication}
-          hint="Selecciona primero una ubicación para filtrar departamentos."
+          hint={compact ? null : 'Selecciona primero una ubicación para filtrar departamentos.'}
+          compact={compact}
         >
           <div className={wrapSelect}>
             <select
@@ -201,7 +216,8 @@ function UbiDepSelector({
           label="Departamento"
           htmlFor="id_department"
           error={errors.department}
-          hint={departmentHint}
+          hint={compact && !depDisabled ? null : departmentHint}
+          compact={compact}
         >
           <div className={wrapSelect}>
             <select

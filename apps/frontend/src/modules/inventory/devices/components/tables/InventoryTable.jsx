@@ -14,8 +14,18 @@ function InventoryTable({
   visibleColumns = {},
   onSummaryChange,
   onFilteredDataChange,
+  serverPagination = false,
+  currentPage: controlledPage,
+  totalPages: controlledTotalPages,
+  serverTotal,
+  pageSize = 20,
+  onPageChange,
+  onPageSizeChange,
+  serverFilters,
+  onFiltersChange,
+  filterOptions = {},
 }) {
-  const itemsPerPage = 15;
+  const itemsPerPage = serverPagination ? pageSize : 15;
   const [currentPage, setCurrentPage] = useState(1);
   const { hasAnyPermission } = useAuth();
   const canEditInventory = hasAnyPermission([
@@ -38,9 +48,10 @@ function InventoryTable({
   }, [search]);
 
   // estado para filtros
-  const [filters, setFilters] = useState({
+  const [localFilters, setLocalFilters] = useState({
     ubication_name: '',
     department_name: '',
+    administrative_area_name: '',
     user: '',
     device_name: '',
     brand_name: '',
@@ -50,17 +61,30 @@ function InventoryTable({
 
   // función para actualizar un filtro
   const handleFilterChange = (column, value) => {
-    setFilters((prev) => ({ ...prev, [column]: value }));
+    if (serverPagination && onFiltersChange) {
+      onFiltersChange((prev) => ({ ...prev, [column]: value }));
+    } else {
+      setLocalFilters((prev) => ({ ...prev, [column]: value }));
+    }
     setCurrentPage(1);
   };
 
+  const filters = serverPagination ? serverFilters || {} : localFilters;
+
+  const getOptions = (key, currentValues) =>
+    [...new Set([...(filterOptions[key] || []), ...currentValues.filter(Boolean)])].sort((a, b) =>
+      String(a).localeCompare(String(b), 'es', { sensitivity: 'base' })
+    );
+
   // aplicar filtros antes de paginar
-  const filteredInventory = inventory.filter((item) => {
+  const locallyFilteredInventory = inventory.filter((item) => {
     return Object.keys(filters).every((key) => {
       if (!filters[key]) return true;
       return String(item[key]) === String(filters[key]);
     });
   });
+
+  const filteredInventory = serverPagination ? inventory : locallyFilteredInventory;
 
   //  Ordenar por Marbete (tag) ascendente
   const sortedInventory = [...filteredInventory].sort((a, b) => {
@@ -70,7 +94,7 @@ function InventoryTable({
   });
 
   const inventorySummary = useMemo(() => {
-    const total = filteredInventory.length;
+    const total = serverPagination ? Number(serverTotal) || 0 : filteredInventory.length;
     const active = filteredInventory.filter((item) => {
       const status = String(item.status_name || '').toUpperCase();
       return status && !['DESCARTADO', 'PARA DESCARTE', 'MAL ESTADO'].includes(status);
@@ -99,42 +123,54 @@ function InventoryTable({
 
   // Crear opciones ordenadas alfabéticamente
   const options = {
-    ubication_name: [
-      ...new Set(filteredInventory.map((i) => i.ubication_name).filter(Boolean)),
-    ].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })),
-
-    department_name: [
-      ...new Set(filteredInventory.map((i) => i.department_name).filter(Boolean)),
-    ].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })),
-
-    user: [...new Set(filteredInventory.map((i) => i.user).filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b, 'es', { sensitivity: 'base' })
+    ubication_name: getOptions(
+      'ubication_name',
+      filteredInventory.map((i) => i.ubication_name)
     ),
-
-    device_name: [...new Set(filteredInventory.map((i) => i.device_name).filter(Boolean))].sort(
-      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    department_name: getOptions(
+      'department_name',
+      filteredInventory.map((i) => i.department_name)
     ),
-
-    brand_name: [...new Set(filteredInventory.map((i) => i.brand_name).filter(Boolean))].sort(
-      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    administrative_area_name: getOptions(
+      'administrative_area_name',
+      filteredInventory.map((i) => i.administrative_area_name)
     ),
-
-    model_name: [...new Set(filteredInventory.map((i) => i.model_name).filter(Boolean))].sort(
-      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    user: getOptions(
+      'user',
+      filteredInventory.map((i) => i.user)
     ),
-
-    status_name: [...new Set(filteredInventory.map((i) => i.status_name).filter(Boolean))].sort(
-      (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+    device_name: getOptions(
+      'device_name',
+      filteredInventory.map((i) => i.device_name)
+    ),
+    brand_name: getOptions(
+      'brand_name',
+      filteredInventory.map((i) => i.brand_name)
+    ),
+    model_name: getOptions(
+      'model_name',
+      filteredInventory.map((i) => i.model_name)
+    ),
+    status_name: getOptions(
+      'status_name',
+      filteredInventory.map((i) => i.status_name)
     ),
   };
 
   const showIpColumn = isColumnVisible('ip');
+  const classificationLabel = (item) => item.classification?.description || 'Sin clasificación';
+  const assetTypeLabel = (item) => item.asset_type?.name || 'Sin clasificar';
+  const extensionLabel = (item) => item.extension?.type || 'Sin extensión';
   const visibleColumnCount =
     [
       'tag',
       'ubication_name',
       'department_name',
+      'administrative_area_name',
       'user',
+      'classification_name',
+      'asset_type_name',
+      'extension_name',
       'device_name',
       'brand_name',
       'model_name',
@@ -144,10 +180,14 @@ function InventoryTable({
     1;
 
   // ahora paginar sobre filteredInventory en vez de inventory
-  const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
+  const totalPages = serverPagination
+    ? controlledTotalPages || 1
+    : Math.ceil(sortedInventory.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedItems = sortedInventory.slice(startIndex, endIndex);
+  const paginatedItems = serverPagination
+    ? sortedInventory
+    : sortedInventory.slice(startIndex, endIndex);
 
   const getStatusClasses = (statusName) => {
     const status = statusName?.toUpperCase() || '';
@@ -380,10 +420,28 @@ function InventoryTable({
       {/* Paginación */}
       <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
         <Pagination
-          currentPage={currentPage}
+          currentPage={serverPagination ? controlledPage : currentPage}
           totalPages={totalPages}
-          onPageChange={(page) => setCurrentPage(page)}
+          onPageChange={(page) =>
+            serverPagination && onPageChange ? onPageChange(page) : setCurrentPage(page)
+          }
         />
+        {serverPagination && onPageSizeChange && (
+          <label className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-600">
+            Registros por página
+            <select
+              value={pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              className="rounded border border-slate-300 bg-white px-2 py-1"
+            >
+              {[10, 20, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
     </div>
   );

@@ -42,6 +42,16 @@ const ENTITY_LABELS = {
   role_permissions: 'Permisos de rol',
   user_permissions: 'Permisos de usuario',
   inventory_transfer_requests: 'Solicitud de traslado',
+  INVENTORY_ASSET_TYPES: 'Tipo general de activo',
+  INVENTORY_ASSET_EXTENSIONS: 'Extensión de activo',
+  INVENTORY_ASSET_CLASSIFICATIONS: 'Clasificación patrimonial',
+  INVENTORY_ASSET_CLASSIFICATION_MAPPINGS: 'Conversión de clasificación patrimonial',
+  INVENTORY_ASSET_CLASSIFICATION_RULES: 'Regla de clasificación patrimonial',
+  inventory_asset_types: 'Tipo general de activo',
+  inventory_asset_extensions: 'Extensión de activo',
+  inventory_asset_classifications: 'Clasificación patrimonial',
+  inventory_asset_classification_mappings: 'Conversión de clasificación patrimonial',
+  inventory_asset_classification_rules: 'Regla de clasificación patrimonial',
 };
 
 const DEFAULT_PAGE = 1;
@@ -70,6 +80,20 @@ const ENTITY_ALIASES = {
   INVENTORY_TRANSFER_REQUESTS: [
     'INVENTORY_TRANSFER_REQUESTS',
     'inventory_transfer_requests',
+  ],
+  INVENTORY_ASSET_TYPES: ['INVENTORY_ASSET_TYPES', 'inventory_asset_types'],
+  INVENTORY_ASSET_EXTENSIONS: ['INVENTORY_ASSET_EXTENSIONS', 'inventory_asset_extensions'],
+  INVENTORY_ASSET_CLASSIFICATIONS: [
+    'INVENTORY_ASSET_CLASSIFICATIONS',
+    'inventory_asset_classifications',
+  ],
+  INVENTORY_ASSET_CLASSIFICATION_MAPPINGS: [
+    'INVENTORY_ASSET_CLASSIFICATION_MAPPINGS',
+    'inventory_asset_classification_mappings',
+  ],
+  INVENTORY_ASSET_CLASSIFICATION_RULES: [
+    'INVENTORY_ASSET_CLASSIFICATION_RULES',
+    'inventory_asset_classification_rules',
   ],
 };
 
