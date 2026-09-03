@@ -21,7 +21,7 @@ function exec(cmd, options = {}) {
     if (options.throws !== false) {
       throw error;
     }
-    return null;
+    return '';
   }
 }
 
@@ -51,18 +51,18 @@ function getLatestTag() {
 function getCommitsSinceTag(tag) {
   if (!tag) {
     // Si no hay tag, obtener todos los commits
-    return exec('git log --pretty=format:%s', {
+    return (exec('git log --pretty=format:%s', {
       throws: false,
       silent: true,
-    })
+    }) || '')
       .split('\n')
       .filter((line) => line.trim());
   }
 
-  return exec(`git log ${tag}..HEAD --pretty=format:%s`, {
+  return (exec(`git log ${tag}..HEAD --pretty=format:%s`, {
     throws: false,
     silent: true,
-  })
+  }) || '')
     .split('\n')
     .filter((line) => line.trim());
 }
@@ -171,7 +171,7 @@ function isWorkingTreeClean() {
     throws: false,
     silent: true,
   });
-  return !status || status.trim() === '';
+  return status.trim() === '';
 }
 
 function getCurrentBranch() {
@@ -261,6 +261,42 @@ function updateChangelog(newVersion, releaseDate, commits) {
   }
 }
 
+function captureReleaseFiles() {
+  const root = path.join(__dirname, '..');
+  const files = {
+    packageJson: path.join(root, 'package.json'),
+    changelog: path.join(root, 'CHANGELOG.md'),
+  };
+
+  return {
+    files,
+    snapshots: {
+      packageJson: fs.readFileSync(files.packageJson),
+      changelog: fs.readFileSync(files.changelog),
+    },
+  };
+}
+
+function restoreReleaseFiles(state) {
+  fs.writeFileSync(state.files.packageJson, state.snapshots.packageJson);
+  fs.writeFileSync(state.files.changelog, state.snapshots.changelog);
+}
+
+function rollbackRelease({ state, preReleaseHead, releaseCommit, releaseTag }) {
+  exec('git reset HEAD -- package.json CHANGELOG.md', { silent: true, throws: false });
+
+  if (releaseTag && exec(`git tag --list ${releaseTag}`, { silent: true, throws: false })) {
+    exec(`git tag -d ${releaseTag}`, { silent: true, throws: false });
+  }
+
+  const currentHead = exec('git rev-parse HEAD', { silent: true, throws: false });
+  if (releaseCommit && currentHead === releaseCommit) {
+    exec(`git reset --hard ${preReleaseHead}`, { silent: true });
+  }
+
+  restoreReleaseFiles(state);
+}
+
 function getGitHubToken() {
   // Check common GitHub token environment variables
   return process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_PAT || null;
@@ -279,7 +315,7 @@ async function prompt(question) {
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
       rl.close();
-      resolve(answer.trim().toLowerCase());
+      resolve(String(answer || '').trim().toLowerCase());
     });
   });
 }
@@ -454,6 +490,13 @@ async function runReleaseMode(latestTag, commits, currentVersionStr, newVersionP
 
   console.log('\n✓ Actualizando archivos...');
 
+  const releaseState = captureReleaseFiles();
+  const preReleaseHead = exec('git rev-parse HEAD');
+  let releaseCommit = '';
+  let releaseTag = '';
+
+  try {
+
   // Update package.json
   updatePackageVersion(newVersionShort);
   console.log('  ✓ package.json actualizado');
@@ -467,10 +510,12 @@ async function runReleaseMode(latestTag, commits, currentVersionStr, newVersionP
 
   // Create commit
   exec(`git commit -m "chore(release): ${newVersionStr}"`);
+  releaseCommit = exec('git rev-parse HEAD');
   console.log(`  ✓ Commit creado: chore(release): ${newVersionStr}`);
 
   // Create tag
   exec(`git tag -a ${newVersionStr} -m "Release ${newVersionStr}"`);
+  releaseTag = newVersionStr;
   console.log(`  ✓ Tag creado: ${newVersionStr}`);
 
   // Push
@@ -511,6 +556,16 @@ async function runReleaseMode(latestTag, commits, currentVersionStr, newVersionP
   console.log('');
   console.log(`✓ Release ${newVersionStr} completado exitosamente.`);
   console.log('');
+  } catch (error) {
+    console.error('⚠ Falló el release. Restaurando cambios realizados por release.cjs...');
+    try {
+      rollbackRelease({ state: releaseState, preReleaseHead, releaseCommit, releaseTag });
+      console.error('✓ Rollback completado. package.json, CHANGELOG.md, commit y tag locales restaurados.');
+    } catch (rollbackError) {
+      throw new Error(`${error.message}. Además, el rollback falló: ${rollbackError.message}`);
+    }
+    throw error;
+  }
 }
 
 // ============================================================================
@@ -558,4 +613,13 @@ async function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  exec,
+  getCommitsSinceTag,
+  isWorkingTreeClean,
+  rollbackRelease,
+};
