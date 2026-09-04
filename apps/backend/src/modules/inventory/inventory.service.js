@@ -57,6 +57,9 @@ export const getAll = async (query) => {
 
 export const getAdministrativeAreas = async () => repository.findAdministrativeAreas();
 
+export const getInventoryFilterOptions = async (ubicationName = '') =>
+  repository.findInventoryFilterOptions(ubicationName);
+
 export const getClassificationRules = async (options = {}) => {
   const findActiveRules = options.findActiveRules ?? repository.findActiveAssetClassificationRules;
   const rules = await findActiveRules();

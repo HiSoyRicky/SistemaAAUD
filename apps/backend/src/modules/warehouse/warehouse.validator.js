@@ -22,12 +22,13 @@ const listQuerySchema = z.object({
   ubication_id: zOptionalInt('Ubicación inválida', { min: 1 }),
   department_id: zOptionalInt('Departamento inválido', { min: 1 }),
   movement_type: z.any().optional(),
+  from: zOptionalNullableString('Fecha inicial inválida'),
+  to: zOptionalNullableString('Fecha final inválida'),
 });
 
 const createItemBodySchema = z.object({
   code: zOptionalNullableString('El código debe ser texto'),
   name: zRequiredString('El nombre es requerido'),
-  description: zOptionalNullableString('La descripción debe ser texto'),
   unit: zRequiredString('La unidad es requerida'),
   category: zOptionalNullableString('La categoría debe ser texto'),
   min_stock: zOptionalInt('El stock mínimo debe ser válido', { min: 0 }),
@@ -37,7 +38,6 @@ const createItemBodySchema = z.object({
 const updateItemBodySchema = z.object({
   code: zOptionalNullableString('El código debe ser texto'),
   name: z.any().optional(),
-  description: zOptionalNullableString('La descripción debe ser texto'),
   unit: z.any().optional(),
   category: zOptionalNullableString('La categoría debe ser texto'),
   min_stock: zOptionalInt('El stock mínimo debe ser válido', { min: 0 }),
@@ -53,14 +53,16 @@ const createMovementBodySchema = z.object({
     allowEmptyString: true,
   }),
   quantity: zRequiredInt('Cantidad inválida', { min: 1 }),
-  movement_type: z
-    .any()
-    .refine(
-      (value) => MOVEMENT_TYPES.includes(String(value || '').toUpperCase().trim()),
-      { message: 'Tipo de movimiento inválido' }
-    ),
+  movement_type: z.any().refine(
+    (value) =>
+      MOVEMENT_TYPES.includes(
+        String(value || '')
+          .toUpperCase()
+          .trim()
+      ),
+    { message: 'Tipo de movimiento inválido' }
+  ),
   receiver_name: zOptionalNullableString('El receptor debe ser texto'),
-  vehicle_target: zOptionalNullableString('El vehículo destino debe ser texto'),
   reference: zOptionalNullableString('La referencia debe ser texto'),
   observation: zOptionalNullableString('La observación debe ser texto'),
 });
@@ -69,11 +71,25 @@ const createBatchOutBodySchema = z.object({
   ubication_id: zRequiredInt('Ubicación inválida', { min: 1 }),
   department_id: zRequiredInt('Departamento inválido', { min: 1 }),
   receiver_name: zRequiredString('El receptor es requerido'),
-  items: z.array(z.object({ item_id: zRequiredInt('Insumo inválido', { min: 1 }), quantity: zRequiredInt('Cantidad inválida', { min: 1 }) })).min(1, 'Debe agregar al menos un insumo'),
+  items: z
+    .array(
+      z.object({
+        item_id: zRequiredInt('Insumo inválido', { min: 1 }),
+        quantity: zRequiredInt('Cantidad inválida', { min: 1 }),
+      })
+    )
+    .min(1, 'Debe agregar al menos un insumo'),
 });
 
 const createBatchInBodySchema = z.object({
-  items: z.array(z.object({ item_id: zRequiredInt('Insumo inválido', { min: 1 }), quantity: zRequiredInt('Cantidad inválida', { min: 1 }) })).min(1, 'Debe agregar al menos un insumo'),
+  items: z
+    .array(
+      z.object({
+        item_id: zRequiredInt('Insumo inválido', { min: 1 }),
+        quantity: zRequiredInt('Cantidad inválida', { min: 1 }),
+      })
+    )
+    .min(1, 'Debe agregar al menos un insumo'),
 });
 
 export const validateListWarehouse = validateZod({ query: listQuerySchema });

@@ -150,7 +150,7 @@ function App() {
         <Route
           path="/incidencias/:id"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
               <IncidentDetails />
             </PrivateRoute>
           }
@@ -160,7 +160,7 @@ function App() {
         <Route
           path="/incidencias/monitor"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'custom']}>
               <IncidentsMonitorPage />
             </PrivateRoute>
           }
@@ -170,7 +170,7 @@ function App() {
         <Route
           path="/inventario/equipos"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
               <AnyPermissionRoute permissions={['inventory.read', 'warehouse_stock.read']}>
                 <PrivateLayout>
                   <InventoryPage />
@@ -183,7 +183,7 @@ function App() {
         <Route
           path="/inventario/equipos/history"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'custom']}>
               <PrivateLayout>
                 <InventoryMovementsPage />
               </PrivateLayout>
@@ -195,7 +195,7 @@ function App() {
         <Route
           path="/inventario/toners"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'custom']}>
               <PrivateLayout>
                 <TonersPage />
               </PrivateLayout>
@@ -218,7 +218,7 @@ function App() {
         <Route
           path="/almacen"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador']}>
+            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
               <PermissionRoute permission="warehouse_stock.read">
                 <PrivateLayout>
                   <WarehousePage />

@@ -1,5 +1,14 @@
 import ExcelJS from 'exceljs';
-import { prisma } from '../src/config/prisma.js';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
+
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_ENV_PATH = path.resolve(SCRIPT_DIR, '../../../.env');
+dotenv.config({ path: ROOT_ENV_PATH });
+
+const prisma = new PrismaClient();
 
 const FILE_PATH = new URL('../../../tools/LISTADO DE STOCKS AGOSTO 2026.xlsx', import.meta.url);
 const VALID_UNITS = new Set([
@@ -82,9 +91,9 @@ function analyzeRows(rows) {
   };
 }
 
-async function inspectDatabase(validRows) {
+async function inspectDatabase(validRows, db = prisma) {
   const codes = validRows.map((row) => row.code);
-  const existing = await prisma.warehouseItem.findMany({
+  const existing = await db.warehouseItem.findMany({
     where: { code: { in: codes } },
     select: { id: true, code: true, name: true, unit: true },
   });
@@ -131,18 +140,23 @@ export async function main() {
     throw new Error('Importación detenida: corrija las inconsistencias del Excel antes de usar --apply');
   }
 
-  await prisma.$transaction(async (tx) => {
-    for (const row of analysis.valid) {
-      await tx.warehouseItem.upsert({
-        where: { code: row.code },
-        create: { code: row.code, name: row.name, unit: row.unit, category: null, min_stock: 0, active: true },
-        update: { name: row.name, unit: row.unit },
-      });
-    }
-  }, {
-    maxWait: 10000,
-    timeout: 120000,
-  });
+  const rowsToCreate = analysis.valid
+    .filter((row) => !database.existingByCode.has(row.code))
+    .map((row) => ({
+      code: row.code,
+      name: row.name,
+      unit: row.unit,
+      category: null,
+      min_stock: 0,
+      active: true,
+    }));
+
+  await prisma.$transaction([
+    prisma.warehouseItem.createMany({
+      data: rowsToCreate,
+      skipDuplicates: true,
+    }),
+  ]);
 
   console.log(`[warehouse.catalog] Importación completada: ${analysis.valid.length} registros procesados.`);
 }

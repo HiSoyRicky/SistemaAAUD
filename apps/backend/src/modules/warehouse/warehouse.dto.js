@@ -2,7 +2,6 @@ export const mapItem = (item) => ({
   id: item.id,
   code: item.code,
   name: item.name,
-  description: item.description,
   unit: item.unit,
   category: item.category,
   min_stock: item.min_stock,
@@ -35,7 +34,6 @@ export const mapMovement = (movement) => ({
   department_id: movement.department_id,
   department: movement.department || null,
   receiver_name: movement.receiver_name,
-  vehicle_target: movement.vehicle_target,
   reference: movement.reference,
   observation: movement.observation,
   created_by: movement.created_by,
@@ -45,10 +43,11 @@ export const mapMovement = (movement) => ({
   created_at: movement.created_at,
 });
 
-export const mapPaginated = ({ data, total, page, limit }) => ({
+export const mapPaginated = ({ data, total, page, limit, summary }) => ({
   data,
   page,
   limit,
   total,
   totalPages: Math.max(Math.ceil(total / limit), 1),
+  ...(summary ? { summary } : {}),
 });

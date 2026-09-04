@@ -273,36 +273,36 @@ function InventoryPage() {
   useEffect(() => {
     const fetchFilterOptions = async () => {
       const requests = await Promise.allSettled([
-        api.get('/api/ubications'),
-        api.get('/api/departments'),
+        Inventory.fetchFilterOptions({ ubication: inventoryFilters.ubication_name }),
         Inventory.fetchAdministrativeAreas(),
         Inventory.fetchDeviceTypes(),
         Inventory.fetchBrands(),
         Inventory.fetchModels(),
         Inventory.fetchStatuses(),
       ]);
-      const values = requests.map((result) =>
-        result.status === 'fulfilled' && Array.isArray(result.value?.data)
-          ? result.value.data
-          : result.status === 'fulfilled' && Array.isArray(result.value)
-            ? result.value
-            : []
-      );
+      const filterLocationData =
+        requests[0].status === 'fulfilled' ? requests[0].value : { ubications: [], departments: [] };
+      const values = requests.slice(1).map((result) => {
+        if (result.status !== 'fulfilled') return [];
+        if (Array.isArray(result.value?.data)) return result.value.data;
+        if (Array.isArray(result.value)) return result.value;
+        return [];
+      });
 
       setFilterOptions({
-        ubication_name: values[0].map((item) => item.name),
-        department_name: values[1].map((item) => item.name),
-        administrative_area_name: values[2].map((item) => item.name),
-        device_name: values[3].map((item) => item.name),
-        brand_name: values[4].map((item) => item.name),
-        model_name: values[5].map((item) => item.name),
-        status_name: values[6].map((item) => item.name),
+        ubication_name: (filterLocationData.ubications || []).map((item) => item.name),
+        department_name: (filterLocationData.departments || []).map((item) => item.name),
+        administrative_area_name: values[0].map((item) => item.name),
+        device_name: values[1].map((item) => item.name),
+        brand_name: values[2].map((item) => item.name),
+        model_name: values[3].map((item) => item.name),
+        status_name: values[4].map((item) => item.name),
       });
-      setAdministrativeAreas(values[2]);
+      setAdministrativeAreas(values[0]);
     };
 
     fetchFilterOptions();
-  }, []);
+  }, [inventoryFilters.ubication_name]);
 
   const editDevice = (device) => {
     setEditingDevice(device);

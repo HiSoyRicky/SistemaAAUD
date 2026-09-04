@@ -62,7 +62,11 @@ function InventoryTable({
   // función para actualizar un filtro
   const handleFilterChange = (column, value) => {
     if (serverPagination && onFiltersChange) {
-      onFiltersChange((prev) => ({ ...prev, [column]: value }));
+      onFiltersChange((prev) => ({
+        ...prev,
+        [column]: value,
+        ...(column === 'ubication_name' ? { department_name: '' } : {}),
+      }));
     } else {
       setLocalFilters((prev) => ({ ...prev, [column]: value }));
     }
@@ -127,10 +131,7 @@ function InventoryTable({
       'ubication_name',
       filteredInventory.map((i) => i.ubication_name)
     ),
-    department_name: getOptions(
-      'department_name',
-      filteredInventory.map((i) => i.department_name)
-    ),
+    department_name: getOptions('department_name', filteredInventory.map((i) => i.department_name)),
     administrative_area_name: getOptions(
       'administrative_area_name',
       filteredInventory.map((i) => i.administrative_area_name)
