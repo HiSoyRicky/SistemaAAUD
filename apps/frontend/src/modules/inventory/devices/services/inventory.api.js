@@ -7,6 +7,8 @@ const Inventory = {
   fetchDeviceTypes: () => api.get('/api/devices').then((res) => res.data),
   fetchDevices: (search = '', params = {}) =>
     api.get('/api/inventory', { params: { search, ...params } }).then((res) => res.data),
+  fetchFilterOptions: (params = {}) =>
+    api.get('/api/inventory/filter-options', { params }).then((res) => res.data),
   fetchMovementHistory: (params = {}) =>
     api.get('/api/inventory/history', { params }).then((res) => res.data),
   addDevice: (data) => api.post('/api/inventory', data).then((res) => res.data),

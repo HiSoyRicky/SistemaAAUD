@@ -311,6 +311,47 @@ export const findAll = async (search, filters = {}) => {
   });
 };
 
+export const findInventoryFilterOptions = async (ubicationName = '') => {
+  const allLocationsWhere = {
+    id_ubication: { not: null },
+    id_department: { not: null },
+  };
+  const departmentsWhere = ubicationName
+    ? {
+        ...allLocationsWhere,
+        ubications: { is: { name: { equals: ubicationName, mode: 'insensitive' } } },
+      }
+    : allLocationsWhere;
+
+  const [locationRows, departmentRows] = await Promise.all([
+    prisma.bd_inventory.findMany({
+      where: allLocationsWhere,
+      distinct: ['id_ubication'],
+      select: { id_ubication: true },
+    }),
+    prisma.bd_inventory.findMany({
+      where: departmentsWhere,
+      distinct: ['id_department'],
+      select: { id_department: true },
+    }),
+  ]);
+
+  const [ubications, departments] = await Promise.all([
+    prisma.ubications.findMany({
+      where: { id: { in: locationRows.map((row) => row.id_ubication) } },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.departments.findMany({
+      where: { id: { in: departmentRows.map((row) => row.id_department) } },
+      select: { id: true, name: true, id_ubication: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+
+  return { ubications, departments };
+};
+
 export const findPage = async ({ search, filters, skip, take }) => {
   const where = buildInventorySearchWhere(search, filters);
   const [data, total] = await prisma.$transaction([

@@ -5,7 +5,6 @@ const itemSelect = {
   id: true,
   code: true,
   name: true,
-  description: true,
   unit: true,
   category: true,
   min_stock: true,
@@ -105,6 +104,22 @@ export const findMovements = async ({ where = {}, skip = 0, take = 100 } = {}) =
 
 export const countMovements = async (where = {}) => prisma.warehouseMovement.count({ where });
 
+export const summarizeMovements = async (where = {}) => {
+  const rows = await prisma.warehouseMovement.groupBy({
+    by: ['movement_type'],
+    where,
+    _sum: { quantity: true },
+    _count: { _all: true },
+  });
+  return rows.reduce((summary, row) => {
+    summary[row.movement_type] = {
+      quantity: row._sum.quantity || 0,
+      count: row._count._all,
+    };
+    return summary;
+  }, { IN: { quantity: 0, count: 0 }, OUT: { quantity: 0, count: 0 }, ADJUSTMENT: { quantity: 0, count: 0 } });
+};
+
 export const createMovementWithStock = async ({
   itemId,
   ubicationId,
@@ -160,7 +175,6 @@ export const createMovementWithStock = async ({
           new_stock: previousTotalStock - quantity,
           department_id: departmentId,
           receiver_name: receiverName,
-          vehicle_target: vehicleTarget,
           reference,
           observation,
           created_by: createdBy,
@@ -211,7 +225,6 @@ export const createMovementWithStock = async ({
         new_stock: newStock,
         department_id: departmentId,
         receiver_name: receiverName,
-        vehicle_target: vehicleTarget,
         reference,
         observation,
         created_by: createdBy,

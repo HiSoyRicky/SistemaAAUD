@@ -7,74 +7,64 @@ import {
   Monitor,
   Package,
   Printer,
-  Warehouse,
   Users,
   UserSquare,
+  Warehouse,
 } from 'lucide-react';
 
-export const getNavigation = (userType, hasPermission = () => true) => {
+export const getNavigation = (_userType, hasPermission = () => true) => {
   const items = [
     {
       label: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
-      roles: ['admin', 'tecnico', 'consultor'],
       permission: 'incidents.read',
     },
     {
       label: 'Incidencias',
       path: '/incidencias',
       icon: AlertTriangle,
-      roles: ['admin', 'tecnico', 'consultor'],
       permission: 'incidents.read',
     },
     {
       label: 'Inventario',
       icon: Package,
-      roles: ['admin', 'tecnico', 'consultor'],
-      permission: 'inventory.read',
       children: [
         {
           label: 'Equipos',
           path: '/inventario/equipos',
           icon: Monitor,
-          roles: ['admin', 'tecnico', 'consultor'],
           permission: 'inventory.read',
         },
         {
           label: 'Tóners',
           path: '/inventario/toners',
           icon: Printer,
-          roles: ['admin', 'tecnico', 'consultor'],
           permission: 'toners.read',
+        },
+        {
+          label: 'Almacén',
+          path: '/almacen',
+          icon: Warehouse,
+          permission: 'warehouse_stock.read',
         },
       ],
     },
-    {
-      label: 'Almacén',
-      path: '/almacen',
-      icon: Warehouse,
-      roles: ['admin', 'tecnico', 'consultor', 'trabajador'],
-      permission: 'warehouse_stock.read',
-    },
+
     {
       label: 'Administración',
       icon: Users,
-      roles: ['admin', 'tecnico', 'consultor'],
-      permission: 'inventory.read',
       children: [
         {
           label: 'Actividad',
           path: '/actividad',
           icon: FileText,
-          roles: ['admin'],
           permission: 'users.read',
         },
         {
           label: 'Panel principal',
           path: '/admin',
           icon: UserSquare,
-          roles: ['admin'],
           permission: 'users.read',
         },
       ],
@@ -88,8 +78,7 @@ export const getNavigation = (userType, hasPermission = () => true) => {
       if (!item.children) return item;
 
       const filteredChildren = item.children.filter(
-        (child) =>
-          (!child.permission || hasPermission(child.permission))
+        (child) => !child.permission || hasPermission(child.permission)
       );
 
       if (filteredChildren.length === 0) {

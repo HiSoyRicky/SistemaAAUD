@@ -376,7 +376,6 @@ model WarehouseItem {
   id          Int      @id @default(autoincrement())
   code        String?  @unique @db.VarChar(50)
   name        String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
   unit        String   @db.VarChar(30)
   category    String?  @db.VarChar(80)
   min_stock   Int      @default(0)
@@ -418,7 +417,6 @@ model WarehouseMovement {
   ubication_id   Int
   department_id  Int?
   receiver_name  String?               @db.VarChar(100)
-  vehicle_target String?               @db.VarChar(100)
   reference      String?               @db.VarChar(120)
   observation    String?               @db.VarChar(255)
   created_by     Int?

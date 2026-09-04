@@ -84,7 +84,6 @@ function parseItemData(payload, { partial = false } = {}) {
 
   if (!partial || payload.code !== undefined) data.code = normalizeOptionalText(payload.code);
   if (!partial || payload.name !== undefined) data.name = normalizeRequiredText(payload.name, 'El nombre');
-  if (!partial || payload.description !== undefined) data.description = normalizeOptionalText(payload.description);
   if (!partial || payload.unit !== undefined) data.unit = parseUnit(payload.unit);
   if (!partial || payload.category !== undefined) {
     data.category = parseCategory(payload.category);
@@ -115,7 +114,6 @@ function buildItemWhere(query = {}) {
     where.OR = [
       { code: { contains: search, mode: 'insensitive' } },
       { name: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
       { category: { contains: search, mode: 'insensitive' } },
     ];
   }
@@ -150,6 +148,8 @@ function buildMovementWhere(query = {}) {
   const departmentId = parseOptionalPositiveInt(query.department_id, 'Departamento');
   const movementType = normalizeOptionalText(query.movement_type)?.toUpperCase();
   const search = normalizeOptionalText(query.search);
+  const from = normalizeOptionalText(query.from);
+  const to = normalizeOptionalText(query.to);
 
   if (movementType && !MOVEMENT_TYPES.includes(movementType)) {
     throw new AppError('Tipo de movimiento inválido', 400);
@@ -160,13 +160,18 @@ function buildMovementWhere(query = {}) {
     ...(ubicationId && { ubication_id: ubicationId }),
     ...(departmentId && { department_id: departmentId }),
     ...(movementType && { movement_type: movementType }),
+    ...((from || to) && {
+      created_at: {
+        ...(from && { gte: new Date(`${from}T00:00:00.000Z`) }),
+        ...(to && { lte: new Date(`${to}T23:59:59.999Z`) }),
+      },
+    }),
   };
 
   if (search) {
     where.OR = [
       { reference: { contains: search, mode: 'insensitive' } },
       { receiver_name: { contains: search, mode: 'insensitive' } },
-      { vehicle_target: { contains: search, mode: 'insensitive' } },
       { observation: { contains: search, mode: 'insensitive' } },
       { item: { is: { name: { contains: search, mode: 'insensitive' } } } },
       { item: { is: { code: { contains: search, mode: 'insensitive' } } } },
@@ -237,13 +242,15 @@ export const listStock = async (query = {}) => {
 export const listMovements = async (query = {}) => {
   const pagination = parsePagination(query);
   const where = buildMovementWhere(query);
-  const [movements, total] = await Promise.all([
+  const [movements, total, summary] = await Promise.all([
     repository.findMovements({ where, skip: pagination.skip, take: pagination.limit }),
     repository.countMovements(where),
+    repository.summarizeMovements(where),
   ]);
   return dto.mapPaginated({
     data: movements.map(dto.mapMovement),
     total,
+    summary,
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -256,7 +263,6 @@ export const createMovement = async ({ payload, currentUser }) => {
   let ubicationId = parseOptionalPositiveInt(payload.ubication_id, 'Ubicación');
   let departmentId = parseOptionalPositiveInt(payload.department_id, 'Departamento');
   let receiverName = normalizeOptionalText(payload.receiver_name);
-  const vehicleTarget = normalizeOptionalText(payload.vehicle_target);
   const reference = normalizeOptionalText(payload.reference);
   const observation = normalizeOptionalText(payload.observation);
   const createdBy = parseOptionalPositiveInt(currentUser?.id, 'Usuario');
@@ -314,7 +320,6 @@ export const createMovement = async ({ payload, currentUser }) => {
     quantity,
     departmentId,
     receiverName,
-    vehicleTarget,
     reference,
     observation,
     createdBy,

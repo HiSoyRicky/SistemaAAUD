@@ -18,6 +18,7 @@ import {
 const router = express.Router();
 
 router.get('/', requirePermission('inventory.read'), controller.getAll);
+router.get('/filter-options', requirePermission('inventory.read'), controller.getFilterOptions);
 router.get('/administrative-areas', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), controller.getAdministrativeAreas);
 router.get('/asset-types', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getAssetTypes);
 router.get('/asset-extensions', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getAssetExtensions);

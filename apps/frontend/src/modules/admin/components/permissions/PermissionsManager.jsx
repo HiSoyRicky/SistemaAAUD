@@ -1,6 +1,6 @@
 // PermissionsManager.jsx
 
-import { MapPinned, RotateCcw, ShieldCheck, UserCog, Users } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, MapPinned, RotateCcw, Search, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import useAuth from '../../../../shared/hooks/useAuth';
 import PermissionsApi from '../../services/permissions.api';
@@ -116,6 +116,9 @@ export default function PermissionsManager() {
   const [userRolePermissionSet, setUserRolePermissionSet] = useState(new Set());
   const [userGrantSet, setUserGrantSet] = useState(new Set());
   const [userDenySet, setUserDenySet] = useState(new Set());
+  const [permissionSearch, setPermissionSearch] = useState('');
+  const [expandedModules, setExpandedModules] = useState(new Set());
+  const [moduleOrder, setModuleOrder] = useState([]);
 
   const groupedPermissions = useMemo(() => {
     const groups = new Map();
@@ -128,13 +131,67 @@ export default function PermissionsManager() {
       groups.get(key).push(permission);
     });
 
+    const term = permissionSearch.trim().toLowerCase();
     return [...groups.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([module, permissions]) => ({
         module,
-        permissions: [...permissions].sort((a, b) => a.action.localeCompare(b.action)),
-      }));
-  }, [permissionsCatalog]);
+        permissions: [...permissions]
+          .filter((permission) => {
+            if (!term) return true;
+            const haystack = `${module} ${getModuleLabel(module)} ${permission.action} ${getActionDetail(permission.action).join(' ')}`.toLowerCase();
+            return haystack.includes(term);
+          })
+          .sort((a, b) => a.action.localeCompare(b.action)),
+      }))
+      .filter((group) => group.permissions.length)
+      .sort((a, b) => {
+        const aIndex = moduleOrder.indexOf(a.module);
+        const bIndex = moduleOrder.indexOf(b.module);
+        if (aIndex === -1 && bIndex === -1) return getModuleLabel(a.module).localeCompare(getModuleLabel(b.module));
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
+      });
+  }, [permissionsCatalog, permissionSearch, moduleOrder]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('aaud.permissions.moduleOrder');
+    if (stored) {
+      try { setModuleOrder(JSON.parse(stored)); } catch { setModuleOrder([]); }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (permissionsCatalog.length && !moduleOrder.length) {
+      const modules = [...new Set(permissionsCatalog.map((permission) => permission.module))];
+      setModuleOrder(modules);
+    }
+  }, [permissionsCatalog, moduleOrder.length]);
+
+  const toggleModule = (module) => {
+    setExpandedModules((previous) => {
+      const next = new Set(previous);
+      if (next.has(module)) next.delete(module); else next.add(module);
+      return next;
+    });
+  };
+
+  const moveModule = (module, direction) => {
+    setModuleOrder((previous) => {
+      const next = [...previous];
+      const index = next.indexOf(module);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= next.length) return previous;
+      [next[index], next[target]] = [next[target], next[index]];
+      localStorage.setItem('aaud.permissions.moduleOrder', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!permissionSearch.trim()) return;
+    setExpandedModules(new Set(groupedPermissions.map((group) => group.module)));
+  }, [permissionSearch, groupedPermissions]);
 
   const filteredUsers = useMemo(() => {
     const term = userSearch.trim().toLowerCase();
@@ -491,14 +548,17 @@ export default function PermissionsManager() {
               Rol seleccionado: {selectedRoleName || 'N/D'}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <label className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" /><input value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} placeholder="Buscar permiso, módulo o acción" className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm" /></label>
+              <button type="button" onClick={() => { setModuleOrder([]); localStorage.removeItem('aaud.permissions.moduleOrder'); }} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">Restablecer orden</button>
+            </div>
+
+            <div className="space-y-3">
               {groupedPermissions.map((group) => (
                 <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
-                  <h3 className="mb-3 text-sm font-semibold text-gray-800">
-                    {getModuleLabel(group.module)}
-                  </h3>
+                  <div className="flex items-center gap-2"><button type="button" onClick={() => toggleModule(group.module)} className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-800">{expandedModules.has(group.module) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{getModuleLabel(group.module)}<span className="text-xs font-normal text-gray-500">({group.permissions.length})</span></button><button type="button" title="Subir módulo" onClick={() => moveModule(group.module, -1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronUp className="h-4 w-4" /></button><button type="button" title="Bajar módulo" onClick={() => moveModule(group.module, 1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronDown className="h-4 w-4" /></button></div>
 
-                  <div className="space-y-2">
+                  {expandedModules.has(group.module) && <div className="mt-3 space-y-2">
                     {group.permissions.map((permission) => {
                       const code = normalizeCode(permission.code);
                       const checkboxId = `permission-${code}`;
@@ -525,7 +585,7 @@ export default function PermissionsManager() {
                         </div>
                       );
                     })}
-                  </div>
+                  </div>}
                 </article>
               ))}
             </div>
@@ -651,14 +711,13 @@ export default function PermissionsManager() {
               </span>
             </div>
 
-            <div className="space-y-4">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><label className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" /><input value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} placeholder="Buscar permiso, módulo o acción" className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm" /></label><button type="button" onClick={() => { setModuleOrder([]); localStorage.removeItem('aaud.permissions.moduleOrder'); }} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">Restablecer orden</button></div>
+            <div className="space-y-3">
               {groupedPermissions.map((group) => (
                 <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
-                  <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    {getModuleLabel(group.module)}
-                  </h3>
+                  <div className="flex items-center gap-2"><button type="button" onClick={() => toggleModule(group.module)} className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-800">{expandedModules.has(group.module) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{getModuleLabel(group.module)}<span className="text-xs font-normal text-gray-500">({group.permissions.length})</span></button><button type="button" title="Subir módulo" onClick={() => moveModule(group.module, -1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronUp className="h-4 w-4" /></button><button type="button" title="Bajar módulo" onClick={() => moveModule(group.module, 1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronDown className="h-4 w-4" /></button></div>
 
-                  <div className="space-y-2">
+                  {expandedModules.has(group.module) && <div className="mt-3 space-y-2">
                     {group.permissions.map((permission) => {
                       const code = normalizeCode(permission.code);
                       const roleHasPermission = userRolePermissionSet.has(code);
@@ -720,7 +779,7 @@ export default function PermissionsManager() {
                         </div>
                       );
                     })}
-                  </div>
+                  </div>}
                 </article>
               ))}
             </div>

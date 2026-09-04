@@ -6,6 +6,7 @@ import {
   create as createInventory,
   getAdministrativeAreas as listAdministrativeAreas,
   getAll as getAllInventory,
+  getInventoryFilterOptions,
   getClassificationRules as listClassificationRules,
 } from './inventory.service.js';
 
@@ -27,6 +28,10 @@ export const getHistory = catchAsync(async (req, res) => {
 
 export const getAdministrativeAreas = catchAsync(async (_req, res) => {
   res.json(await listAdministrativeAreas());
+});
+
+export const getFilterOptions = catchAsync(async (req, res) => {
+  res.json(await getInventoryFilterOptions(req.query.ubication));
 });
 
 export const getClassificationRules = catchAsync(async (_req, res) => {

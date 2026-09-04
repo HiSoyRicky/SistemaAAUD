@@ -13,14 +13,15 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import Pagination from '../../../shared/components/ui/Pagination';
 import useAuth from '../../../shared/hooks/useAuth';
-import { formatDateTime } from '../../../shared/utils/formatDate';
 import {
   exportWarehouseMovementsToExcel,
   exportWarehouseStockToExcel,
 } from '../../../shared/utils/exportExcel';
-import Warehouse from '../services/warehouse.api';
+import { formatDateTime } from '../../../shared/utils/formatDate';
 import WarehouseMovementModal from '../components/WarehouseMovementModal';
+import Warehouse from '../services/warehouse.api';
 
 const emptyMovement = {
   item_id: '',
@@ -48,6 +49,20 @@ function WarehousePage({ historyOnly = false }) {
   const [movementModalOpen, setMovementModalOpen] = useState(false);
   const [stockSearch, setStockSearch] = useState('');
   const [historySearch, setHistorySearch] = useState('');
+  const [stockPage, setStockPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [stockMeta, setStockMeta] = useState({ total: 0, totalPages: 1 });
+  const [historyMeta, setHistoryMeta] = useState({ total: 0, totalPages: 1 });
+  const [movementTypeFilter, setMovementTypeFilter] = useState('');
+  const [historyFrom, setHistoryFrom] = useState('');
+  const [historyTo, setHistoryTo] = useState('');
+  const [historyUbication, setHistoryUbication] = useState('');
+  const [historyDepartment, setHistoryDepartment] = useState('');
+  const [movementSummary, setMovementSummary] = useState({
+    IN: { quantity: 0 },
+    OUT: { quantity: 0 },
+    ADJUSTMENT: { quantity: 0 },
+  });
   const [dispatchLines, setDispatchLines] = useState([]);
 
   const canCreateMovement = hasPermission('warehouse_movements.create');
@@ -55,15 +70,49 @@ function WarehousePage({ historyOnly = false }) {
   const load = async () => {
     setLoading(true);
     try {
-      const requests = [
-        Warehouse.fetchStock({ search: stockSearch, limit: 200 }),
-        Warehouse.fetchMovements({ search: historySearch, limit: 200 }),
-        Warehouse.fetchUbications(),
-        Warehouse.fetchDepartments(),
-      ];
-      const [stockData, movementData, ubicationData, departmentData] = await Promise.all(requests);
+      const requests = [Warehouse.fetchUbications(), Warehouse.fetchDepartments()];
+      if (!historyOnly && hasPermission('warehouse_stock.read')) {
+        requests.unshift(Warehouse.fetchStock({ search: stockSearch, page: stockPage, limit: 25 }));
+      }
+      if (historyOnly && hasPermission('warehouse_movements.read')) {
+        requests.splice(
+          0,
+          0,
+          Warehouse.fetchMovements({
+            search: historySearch,
+            movement_type: movementTypeFilter,
+            ubication_id: historyUbication || undefined,
+            department_id: historyDepartment || undefined,
+            from: historyFrom,
+            to: historyTo,
+            page: historyPage,
+            limit: 25,
+          })
+        );
+      }
+      const responses = await Promise.all(requests);
+      const hasStockResponse = !historyOnly && hasPermission('warehouse_stock.read');
+      const stockData = hasStockResponse ? responses[0] : null;
+      const offset = hasStockResponse ? 1 : 0;
+      const hasMovementResponse = historyOnly && hasPermission('warehouse_movements.read');
+      const movementData = hasMovementResponse ? responses[offset] : null;
+      const ubicationIndex = offset + (hasMovementResponse ? 1 : 0);
+      const ubicationData = responses[ubicationIndex];
+      const departmentData = responses[ubicationIndex + 1];
       setStock(stockData?.data || []);
+      setStockMeta({ total: stockData?.total || 0, totalPages: stockData?.totalPages || 1 });
       setMovements(movementData?.data || []);
+      setHistoryMeta({
+        total: movementData?.total || 0,
+        totalPages: movementData?.totalPages || 1,
+      });
+      setMovementSummary(
+        movementData?.summary || {
+          IN: { quantity: 0 },
+          OUT: { quantity: 0 },
+          ADJUSTMENT: { quantity: 0 },
+        }
+      );
       setUbications(Array.isArray(ubicationData) ? ubicationData : []);
       setDepartments(Array.isArray(departmentData) ? departmentData : []);
     } catch (error) {
@@ -75,7 +124,36 @@ function WarehousePage({ historyOnly = false }) {
 
   useEffect(() => {
     load();
-  }, [stockSearch, historySearch]);
+  }, [
+    stockSearch,
+    historySearch,
+    stockPage,
+    historyPage,
+    movementTypeFilter,
+    historyFrom,
+    historyTo,
+    historyUbication,
+    historyDepartment,
+    historyOnly,
+  ]);
+
+  useEffect(() => {
+    setStockPage(1);
+  }, [stockSearch]);
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [
+    historySearch,
+    movementTypeFilter,
+    historyFrom,
+    historyTo,
+    historyUbication,
+    historyDepartment,
+  ]);
+
+  useEffect(() => {
+    setHistoryDepartment('');
+  }, [historyUbication]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -145,7 +223,11 @@ function WarehousePage({ historyOnly = false }) {
     }
     setDispatchLines((lines) => [
       ...lines,
-      { item_id: selectedMovementItem.id, quantity: Number(movementForm.quantity), item: selectedMovementItem },
+      {
+        item_id: selectedMovementItem.id,
+        quantity: Number(movementForm.quantity),
+        item: selectedMovementItem,
+      },
     ]);
     setMovementForm((current) => ({ ...current, item_id: '', quantity: 1 }));
     setMovementSearch('');
@@ -163,7 +245,9 @@ function WarehousePage({ historyOnly = false }) {
 
   const exportStock = async () => {
     try {
-      await exportWarehouseStockToExcel(await fetchAllPages(Warehouse.fetchStock, { search: stockSearch }));
+      await exportWarehouseStockToExcel(
+        await fetchAllPages(Warehouse.fetchStock, { search: stockSearch })
+      );
     } catch (error) {
       toast.error('No se pudieron exportar las existencias');
     }
@@ -171,7 +255,16 @@ function WarehousePage({ historyOnly = false }) {
 
   const exportMovements = async () => {
     try {
-      await exportWarehouseMovementsToExcel(await fetchAllPages(Warehouse.fetchMovements, { search: historySearch }));
+      await exportWarehouseMovementsToExcel(
+        await fetchAllPages(Warehouse.fetchMovements, {
+          search: historySearch,
+          movement_type: movementTypeFilter,
+          ubication_id: historyUbication || undefined,
+          department_id: historyDepartment || undefined,
+          from: historyFrom,
+          to: historyTo,
+        })
+      );
     } catch (error) {
       toast.error('No se pudieron exportar los movimientos');
     }
@@ -213,7 +306,7 @@ function WarehousePage({ historyOnly = false }) {
               Registrar movimiento
             </button>
           )}
-          {!historyOnly && (
+          {!historyOnly && hasPermission('warehouse_movements.read') && (
             <button
               type="button"
               onClick={() => navigate('/almacen/historial')}
@@ -278,16 +371,36 @@ function WarehousePage({ historyOnly = false }) {
               </select>
               {itemDetails(selectedMovementItem)}
               {movementForm.movement_type === 'OUT' && (
-                <button type="button" onClick={addDispatchLine} className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
+                <button
+                  type="button"
+                  onClick={addDispatchLine}
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-blue-600"
+                >
                   <Plus size={15} /> Agregar a la salida
                 </button>
               )}
               {movementForm.movement_type === 'OUT' && dispatchLines.length > 0 && (
                 <div className="mt-2 space-y-1 rounded-md border border-slate-200 p-2">
                   {dispatchLines.map((line) => (
-                    <div key={line.item_id} className="flex items-center justify-between gap-2 text-sm">
-                      <span>{line.item?.name || line.item_id} x {line.quantity}</span>
-                      <button type="button" title="Quitar artículo" onClick={() => setDispatchLines((lines) => lines.filter((current) => current.item_id !== line.item_id))} className="text-red-600"><Trash2 size={15} /></button>
+                    <div
+                      key={line.item_id}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span>
+                        {line.item?.name || line.item_id} x {line.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        title="Quitar artículo"
+                        onClick={() =>
+                          setDispatchLines((lines) =>
+                            lines.filter((current) => current.item_id !== line.item_id)
+                          )
+                        }
+                        className="text-red-600"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -434,7 +547,22 @@ function WarehousePage({ historyOnly = false }) {
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <h2 className="text-lg font-bold text-slate-900">Existencias actuales</h2>
-            <div className="flex flex-wrap gap-2"><input value={stockSearch} onChange={(event) => setStockSearch(event.target.value)} placeholder="Buscar insumo, código o ubicación" className="h-9 rounded-md border border-slate-300 px-3 text-sm" /><button type="button" onClick={exportStock} className="inline-flex h-9 items-center gap-1 rounded-md border border-slate-300 px-3 text-sm font-semibold"><Download size={15} />Exportar</button></div>
+            <div className="flex flex-wrap items-end gap-2">
+              <input
+                value={stockSearch}
+                onChange={(event) => setStockSearch(event.target.value)}
+                placeholder="Buscar insumo, código o ubicación"
+                className="h-9 min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
+              />
+              <button
+                type="button"
+                onClick={exportStock}
+                className="inline-flex h-9 items-center gap-1 rounded-md border border-slate-300 px-3 text-sm font-semibold"
+              >
+                <Download size={15} />
+                Exportar
+              </button>
+            </div>
           </div>
           {loading ? (
             <p className="p-6 text-sm text-slate-500">Cargando existencias...</p>
@@ -472,6 +600,14 @@ function WarehousePage({ historyOnly = false }) {
               </table>
             </div>
           )}
+          <Pagination
+            currentPage={stockPage}
+            totalPages={stockMeta.totalPages}
+            onPageChange={setStockPage}
+          />
+          <p className="px-5 pb-4 text-xs text-slate-500">
+            {stockMeta.total} existencias encontradas
+          </p>
         </section>
       )}
 
@@ -479,7 +615,95 @@ function WarehousePage({ historyOnly = false }) {
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <h2 className="text-lg font-bold text-slate-900">Últimos movimientos</h2>
-            <div className="flex flex-wrap gap-2"><input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder="Buscar movimiento" className="h-9 rounded-md border border-slate-300 px-3 text-sm" /><button type="button" onClick={exportMovements} className="inline-flex h-9 items-center gap-1 rounded-md border border-slate-300 px-3 text-sm font-semibold"><Download size={15} />Exportar</button></div>
+            <div className="flex flex-wrap gap-2">
+              <input
+                value={historySearch}
+                onChange={(event) => setHistorySearch(event.target.value)}
+                placeholder="Buscar movimiento, código o persona"
+                className="h-9 rounded-md border border-slate-300 px-9 text-sm"
+              />
+              <select
+                value={movementTypeFilter}
+                onChange={(event) => setMovementTypeFilter(event.target.value)}
+                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
+              >
+                <option value="">Todos</option>
+                <option value="IN">Entradas</option>
+                <option value="OUT">Salidas</option>
+                <option value="ADJUSTMENT">Ajustes</option>
+              </select>
+              <select
+                value={historyUbication}
+                onChange={(event) => setHistoryUbication(event.target.value)}
+                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
+              >
+                <option value="">Todas las ubicaciones</option>
+                {[...ubications]
+                  .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+                  .map((ubication) => (
+                    <option key={ubication.id} value={ubication.id}>
+                      {ubication.name}
+                    </option>
+                  ))}
+              </select>
+              <select
+                value={historyDepartment}
+                onChange={(event) => setHistoryDepartment(event.target.value)}
+                disabled={!historyUbication}
+                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
+              >
+                <option value="">
+                  {historyUbication ? 'Todos los departamentos' : 'Seleccione ubicación primero'}
+                </option>
+                {departments
+                  .filter(
+                    (department) =>
+                      Number(department.id_ubication) === Number(historyUbication)
+                  )
+                  .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+                  .map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+              </select>
+              <input
+                aria-label="Fecha desde"
+                type="date"
+                value={historyFrom}
+                onChange={(event) => setHistoryFrom(event.target.value)}
+                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
+              />
+              <input
+                aria-label="Fecha hasta"
+                type="date"
+                value={historyTo}
+                onChange={(event) => setHistoryTo(event.target.value)}
+                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={exportMovements}
+                className="inline-flex h-9 items-center gap-1 rounded-md border border-slate-300 px-3 text-sm font-semibold"
+              >
+                <Download size={15} />
+                Exportar
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 px-5 py-3 text-xs">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+              Entradas: {movementSummary.IN?.quantity || 0}
+            </span>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
+              Salidas: {movementSummary.OUT?.quantity || 0}
+            </span>
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+              Ajustes: {movementSummary.ADJUSTMENT?.quantity || 0}
+            </span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+              Movimientos: {historyMeta.total}
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -522,6 +746,11 @@ function WarehousePage({ historyOnly = false }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={historyPage}
+            totalPages={historyMeta.totalPages}
+            onPageChange={setHistoryPage}
+          />
         </section>
       )}
     </div>
