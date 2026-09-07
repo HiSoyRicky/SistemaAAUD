@@ -77,7 +77,11 @@ function getModuleLabel(moduleName) {
   return MODULE_LABELS[moduleName] || formatLabel(moduleName);
 }
 
-function getActionDetail(actionName) {
+function getActionDetail(actionName, moduleName) {
+  if (moduleName === 'incidents' && actionName === 'assign') {
+    return ['Asignar técnico', 'Permite asignar o reasignar incidencias a técnicos.'];
+  }
+
   return (
     ACTION_DETAILS[actionName] || [
       formatLabel(actionName),
@@ -138,7 +142,7 @@ export default function PermissionsManager() {
         permissions: [...permissions]
           .filter((permission) => {
             if (!term) return true;
-            const haystack = `${module} ${getModuleLabel(module)} ${permission.action} ${getActionDetail(permission.action).join(' ')}`.toLowerCase();
+            const haystack = `${module} ${getModuleLabel(module)} ${permission.action} ${getActionDetail(permission.action, module).join(' ')}`.toLowerCase();
             return haystack.includes(term);
           })
           .sort((a, b) => a.action.localeCompare(b.action)),
@@ -563,7 +567,7 @@ export default function PermissionsManager() {
                       const code = normalizeCode(permission.code);
                       const checkboxId = `permission-${code}`;
                       const checked = rolePermissionSet.has(code);
-                      const [actionLabel, actionDescription] = getActionDetail(permission.action);
+                      const [actionLabel, actionDescription] = getActionDetail(permission.action, group.module);
 
                       return (
                         <div
@@ -722,7 +726,7 @@ export default function PermissionsManager() {
                       const code = normalizeCode(permission.code);
                       const roleHasPermission = userRolePermissionSet.has(code);
                       const effectiveHasPermission = liveUserEffectiveSet.has(code);
-                      const [actionLabel, actionDescription] = getActionDetail(permission.action);
+                      const [actionLabel, actionDescription] = getActionDetail(permission.action, group.module);
 
                       let overrideValue = 'inherit';
                       if (userGrantSet.has(code)) {

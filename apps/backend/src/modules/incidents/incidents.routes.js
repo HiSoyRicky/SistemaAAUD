@@ -3,7 +3,9 @@
 import express from 'express';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
-import requirePermission from '../../common/middleware/requirePermission.js';
+import requirePermission, {
+  requireAnyPermission,
+} from '../../common/middleware/requirePermission.js';
 import * as controller from './incidents.controller.js';
 import {
   validateCreateIncident,
@@ -40,7 +42,7 @@ router.put(
   '/:id',
   authMiddleware,
   requirePasswordChange,
-  requirePermission('incidents.update'),
+  requireAnyPermission('incidents.update', 'incidents.assign'),
   validateUpdateIncident,
   controller.update
 );

@@ -201,6 +201,21 @@ export const ensurePermissionsByCodes = async (codes = []) => {
   }
 
   if (found.length !== pairs.length) {
+    try {
+      await Promise.all(pairs.map((pair) => repository.upsertPermission(pair)));
+      found = await repository.findPermissionsByPairs(pairs);
+    } catch (error) {
+      if (isMissingPermissionTableError(error, ['permissions'])) {
+        throw buildMigrationRequiredError(
+          'Falta la estructura de permisos. Ejecuta las migraciones de base de datos.'
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  if (found.length !== pairs.length) {
     const foundCodes = mapPairsToCodes(found);
     const missing = uniqueCodes.filter((code) => !foundCodes.includes(code));
 

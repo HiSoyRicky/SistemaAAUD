@@ -63,7 +63,16 @@ const getCategoryName = (id_category) => {
   }
 };
 
-function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visibleColumns }) {
+function IncidentTable({
+  incidents,
+  userType,
+  canAssignIncidents = false,
+  canUpdateIncidents = false,
+  onAssign,
+  onResolve,
+  onEdit,
+  visibleColumns,
+}) {
   if (!Array.isArray(incidents)) incidents = [];
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -229,9 +238,10 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
                           ></ActionButton>
 
                           {/* Botón Asignar/Reasignar técnico */}
-                          {((userType === 'consultor' && incident.id_status === 1) ||
-                            (userType === 'admin' &&
-                              (incident.id_status === 1 || incident.id_status === 2))) && (
+                          {canAssignIncidents &&
+                            ((userType === 'consultor' && incident.id_status === 1) ||
+                              (userType === 'admin' &&
+                                (incident.id_status === 1 || incident.id_status === 2))) && (
                             <ActionButton
                               type={'assign'}
                               title={
@@ -251,7 +261,8 @@ function IncidentTable({ incidents, userType, onAssign, onResolve, onEdit, visib
                           )}
 
                           {/* Botón Editar */}
-                          {['admin', 'consultor'].includes(userType) &&
+                          {canUpdateIncidents &&
+                            ['admin', 'consultor'].includes(userType) &&
                             incident.id_status === 1 && (
                               <ActionButton
                                 type={'edit'}

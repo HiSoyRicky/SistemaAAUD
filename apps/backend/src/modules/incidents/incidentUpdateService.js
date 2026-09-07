@@ -1,6 +1,7 @@
 // incidentUpdateService.js
 
 import AppError from '../../common/utils/AppError.js';
+import { getResolvedUserPermissionCodes, hasPermissionCode } from '../../common/rbac/permissions.service.js';
 import { prisma } from '../../config/prisma.js';
 import { scheduleIncidentUpdatedNotification } from './incidentUpdateNotificationService.js';
 
@@ -102,6 +103,31 @@ function mapUpdatedIncident(updated) {
 
 async function buildUpdateData({ tx, payload, previousIncident, currentUser, requestedStatusId }) {
   const data = {};
+  const grantedPermissions = await getResolvedUserPermissionCodes(currentUser);
+  const canUpdate = hasPermissionCode({
+    grantedCodes: grantedPermissions,
+    requiredCode: 'incidents.update',
+  });
+  const canAssign = hasPermissionCode({
+    grantedCodes: grantedPermissions,
+    requiredCode: 'incidents.assign',
+  });
+  const hasAssignment = payload.id_technician !== undefined;
+  const hasOtherChanges = [
+    'description',
+    'category',
+    'solution',
+    'status',
+    'solution_date',
+  ].some((field) => payload[field] !== undefined);
+
+  if ((!hasAssignment || hasOtherChanges) && !canUpdate) {
+    throw new AppError('No tiene permiso para editar incidencias', 403);
+  }
+
+  if (hasAssignment && !canAssign) {
+    throw new AppError('No tiene permiso para asignar incidencias', 403);
+  }
 
   if (payload.description !== undefined) {
     data.description = payload.description;

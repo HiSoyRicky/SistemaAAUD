@@ -16,7 +16,7 @@ router.get('/', requirePasswordChange, requirePermission('users.read'), controll
 router.get(
   '/technicians',
   requirePasswordChange,
-  requirePermission('users.read'),
+  requirePermission('incidents.assign'),
   controller.getTechnicians
 );
 

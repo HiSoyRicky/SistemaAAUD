@@ -12,7 +12,7 @@ import {
   Warehouse,
 } from 'lucide-react';
 
-export const getNavigation = (_userType, hasPermission = () => true) => {
+export const getNavigation = (userType, hasPermission = () => true) => {
   const items = [
     {
       label: 'Dashboard',
@@ -54,6 +54,7 @@ export const getNavigation = (_userType, hasPermission = () => true) => {
     {
       label: 'Administración',
       icon: Users,
+      adminOnly: true,
       children: [
         {
           label: 'Actividad',
@@ -73,7 +74,11 @@ export const getNavigation = (_userType, hasPermission = () => true) => {
 
   return items
 
-    .filter((item) => !item.permission || hasPermission(item.permission))
+    .filter(
+      (item) =>
+        (!item.adminOnly || userType === 'admin') &&
+        (!item.permission || hasPermission(item.permission))
+    )
     .map((item) => {
       if (!item.children) return item;
 
