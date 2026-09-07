@@ -60,7 +60,7 @@ const CATEGORY_OPTIONS = [
   'Seguridad y protección',
   'Vehículos y transporte',
 ];
-const emptyForm = { code: '', name: '', unit: 'C/U', category: '', active: true };
+const emptyForm = { code: '', name: '', unit: 'C/U', category: '', min_stock: 0, active: true };
 
 function getErrorMessage(error) {
   return (
@@ -114,6 +114,7 @@ export default function WarehouseItemsManager() {
       code: form.code.trim() || null,
       name: form.name.trim(),
       category: form.category === 'Sin categoría' ? null : form.category,
+      min_stock: Number(form.min_stock),
       active: Boolean(form.active),
     };
     try {
@@ -135,6 +136,7 @@ export default function WarehouseItemsManager() {
       name: item.name,
       unit: item.unit,
       category: item.category || 'Sin categoría',
+      min_stock: Number(item.min_stock || 0),
       active: item.active,
     });
     setShowForm(true);
@@ -264,6 +266,19 @@ export default function WarehouseItemsManager() {
                   ))}
                 </select>
               </label>
+              <label className="text-sm font-semibold text-slate-700">
+                Stock mínimo
+                <input
+                  required
+                  min="0"
+                  step="1"
+                  type="number"
+                  disabled={editingId && !fieldsUnlocked}
+                  value={form.min_stock}
+                  onChange={(event) => setForm({ ...form, min_stock: event.target.value })}
+                  className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal disabled:bg-slate-100 disabled:text-slate-500"
+                />
+              </label>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -291,6 +306,7 @@ export default function WarehouseItemsManager() {
               <th className="px-4 py-3">Nombre</th>
               <th className="px-4 py-3">Unidad</th>
               <th className="px-4 py-3">Categoría</th>
+              <th className="px-4 py-3">Stock mínimo</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3 text-right">Acciones</th>
             </tr>
@@ -298,7 +314,7 @@ export default function WarehouseItemsManager() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6" className="px-4 py-8 text-center">
+                <td colSpan="7" className="px-4 py-8 text-center">
                   Cargando...
                 </td>
               </tr>
@@ -309,6 +325,7 @@ export default function WarehouseItemsManager() {
                   <td className="px-4 py-3 font-semibold">{item.name}</td>
                   <td className="px-4 py-3">{item.unit}</td>
                   <td className="px-4 py-3">{item.category || 'Sin categoría'}</td>
+                  <td className="px-4 py-3">{item.min_stock ?? 0}</td>
                   <td className="px-4 py-3">{item.active ? 'Activo' : 'Inactivo'}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

@@ -6,7 +6,12 @@ import { connectSocket, disconnectSocket, socket } from '../../../services/socke
 import { exportIncidentsToExcel } from '../../../shared/utils/exportExcel';
 import { Incidents, Users } from '../services/incidents.api';
 
-export default function useIncidentsPage({ userType, loggedUserName, loggedUserId }) {
+export default function useIncidentsPage({
+  userType,
+  loggedUserName,
+  loggedUserId,
+  canAssignIncidents = false,
+}) {
   const [incidents, setIncidents] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -164,7 +169,9 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
 
     if (canReadIncidents) {
       fetchIncidents();
-      fetchTechnicians();
+      if (canAssignIncidents) {
+        fetchTechnicians();
+      }
     }
 
     return () => {
@@ -178,7 +185,15 @@ export default function useIncidentsPage({ userType, loggedUserName, loggedUserI
         disconnectSocket();
       }
     };
-  }, [userType, fetchIncidents, fetchTechnicians, showNotification, joinRoom, leaveAllRooms]);
+  }, [
+    userType,
+    fetchIncidents,
+    fetchTechnicians,
+    showNotification,
+    joinRoom,
+    leaveAllRooms,
+    canAssignIncidents,
+  ]);
 
   const handleAddIncident = useCallback(
     async (newIncidentData) => {

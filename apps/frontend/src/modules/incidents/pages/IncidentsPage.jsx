@@ -50,7 +50,9 @@ function getStatusMetrics(incidents = []) {
 }
 
 function IncidentsPage() {
-  const { userType, loggedUserName, loggedUserId } = useAuth();
+  const { userType, loggedUserName, loggedUserId, hasPermission } = useAuth();
+  const canAssignIncidents = hasPermission('incidents.assign');
+  const canUpdateIncidents = hasPermission('incidents.update');
 
   const {
     technicians,
@@ -79,7 +81,7 @@ function IncidentsPage() {
     confirmAssign,
     submitSolution,
     handleExportIncidents,
-  } = useIncidentsPage({ userType, loggedUserName, loggedUserId });
+  } = useIncidentsPage({ userType, loggedUserName, loggedUserId, canAssignIncidents });
 
   const pageCopy = roleCopy[userType] || roleCopy.trabajador;
   const metrics = useMemo(
@@ -259,6 +261,8 @@ function IncidentsPage() {
           <IncidentTable
             incidents={filteredIncidentsForTable}
             userType={userType}
+            canAssignIncidents={canAssignIncidents}
+            canUpdateIncidents={canUpdateIncidents}
             onAssign={['admin', 'consultor'].includes(userType) ? handleOpenAssignModal : null}
             onResolve={userType === 'tecnico' ? handleOpenResolveModal : null}
             onEdit={setIncidentToEdit}
@@ -266,7 +270,7 @@ function IncidentsPage() {
         </section>
       )}
 
-      {incidentToEdit && incidentToEdit.id_incident ? (
+      {incidentToEdit?.id_incident ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-white p-5 shadow-2xl">
             <IncidentEditForm

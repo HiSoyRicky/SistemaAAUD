@@ -25,7 +25,12 @@ export const findTechnicians = async () => {
   return prisma.users.findMany({
     where: {
       active: true,
-      roles: { name: { contains: 'tecnic', mode: 'insensitive' } },
+      roles: {
+        OR: [
+          { name: { contains: 'tecnic', mode: 'insensitive' } },
+          { name: { contains: 'técnic', mode: 'insensitive' } },
+        ],
+      },
     },
     select: userSelect,
   });
