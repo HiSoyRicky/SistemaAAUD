@@ -57,6 +57,7 @@ function hasPermissionCode(requiredPermission, grantedPermissions = []) {
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userType, setUserType] = useState(null);
+  const [roleName, setRoleName] = useState(null);
   const [loggedUserName, setLoggedUserName] = useState(null);
   const [loggedUserId, setLoggedUserId] = useState(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
@@ -87,6 +88,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
 
     const storedUserType = sessionStorage.getItem('userType');
+    const storedRoleName = sessionStorage.getItem('roleName');
     const storedUserName = sessionStorage.getItem('loggedUserName');
     const storedUserId = sessionStorage.getItem('loggedUserId');
     const storedUsername = sessionStorage.getItem('username');
@@ -97,6 +99,7 @@ export const AuthProvider = ({ children }) => {
     if (token && storedUserType && storedUserName && storedUserId) {
       let fallbackPermissions = parsedStoredPermissions;
       let restoredUserType = storedUserType;
+      let restoredRoleName = storedRoleName;
 
       if (!fallbackPermissions.length) {
         try {
@@ -106,6 +109,7 @@ export const AuthProvider = ({ children }) => {
             roleId: decoded.roleId ?? decoded.id_rol,
             roleName: decoded.role,
           });
+          restoredRoleName = decoded.role || restoredRoleName;
         } catch (_error) {
           // El token puede ser ilegible durante una sesión antigua; se conservarán permisos vacíos.
           fallbackPermissions = [];
@@ -118,12 +122,14 @@ export const AuthProvider = ({ children }) => {
           roleId: decoded.roleId ?? decoded.id_rol,
           roleName: decoded.role,
         });
+        restoredRoleName = decoded.role || restoredRoleName;
       } catch (_error) {
         // Mantener compatibilidad con sesiones antiguas si el token no puede leerse.
       }
 
       setIsAuthenticated(true);
       setUserType(restoredUserType);
+      setRoleName(restoredRoleName || null);
       setLoggedUserName(storedUserName);
       setLoggedUserId(storedUserId);
       setUsername(storedUsername);
@@ -144,6 +150,7 @@ export const AuthProvider = ({ children }) => {
 
         setIsAuthenticated(true);
         setUserType(type);
+        setRoleName(decoded.role || null);
         setLoggedUserName(decoded.nombre_completo || decoded.username);
         setLoggedUserId(decoded.id);
         setUsername(decoded.username);
@@ -151,6 +158,7 @@ export const AuthProvider = ({ children }) => {
         storePermissions(decodedPermissions);
 
         sessionStorage.setItem('userType', type);
+        sessionStorage.setItem('roleName', decoded.role || '');
         sessionStorage.setItem('loggedUserName', decoded.nombre_completo || decoded.username || '');
         sessionStorage.setItem('loggedUserId', decoded.id);
         sessionStorage.setItem('username', decoded.username || '');
@@ -218,6 +226,7 @@ export const AuthProvider = ({ children }) => {
 
       setIsAuthenticated(true);
       setUserType(type);
+      setRoleName(usuario.role_name || null);
       setLoggedUserName(usuario.nombre_completo || resolvedUsername);
       setLoggedUserId(usuario.id);
       setUsername(resolvedUsername);
@@ -226,6 +235,7 @@ export const AuthProvider = ({ children }) => {
 
       sessionStorage.setItem('user', JSON.stringify(usuario));
       sessionStorage.setItem('userType', type);
+      sessionStorage.setItem('roleName', usuario.role_name || '');
       sessionStorage.setItem('loggedUserName', usuario.nombre_completo || resolvedUsername);
       sessionStorage.setItem('loggedUserId', usuario.id);
       sessionStorage.setItem('username', resolvedUsername);
@@ -254,8 +264,11 @@ export const AuthProvider = ({ children }) => {
     const nextPermissions = normalizePermissionCodes(
       Array.isArray(data.permissions) ? data.permissions : []
     );
+    const nextRoleName = data.user?.role_name || data.roleName || null;
+
     setIsAuthenticated(true);
     setUserType(data.userType);
+    setRoleName(nextRoleName);
     setLoggedUserName(data.loggedUserName);
     setLoggedUserId(data.user ? data.user.id : null);
     setMustChangePassword(nextMustChangePassword);
@@ -263,6 +276,7 @@ export const AuthProvider = ({ children }) => {
 
     sessionStorage.setItem('user', JSON.stringify(data.user));
     sessionStorage.setItem('userType', data.userType);
+    sessionStorage.setItem('roleName', nextRoleName || '');
     sessionStorage.setItem('loggedUserName', data.loggedUserName);
     sessionStorage.setItem('loggedUserId', data.user ? data.user.id : null);
     sessionStorage.setItem('mustChangePassword', String(nextMustChangePassword));
@@ -277,6 +291,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setUserType(null);
+    setRoleName(null);
     setLoggedUserName(null);
     setLoggedUserId(null);
     setUsername(null);
@@ -291,6 +306,7 @@ export const AuthProvider = ({ children }) => {
     () => ({
       isAuthenticated,
       userType,
+      roleName,
       loggedUserName,
       loggedUserId,
       username,
@@ -307,6 +323,7 @@ export const AuthProvider = ({ children }) => {
     [
       isAuthenticated,
       userType,
+      roleName,
       loggedUserName,
       loggedUserId,
       username,

@@ -6,19 +6,10 @@ import useAuth from '../../../shared/hooks/useAuth';
 import ChangePasswordForm from '../forms/ChangePasswordForm';
 
 function ProfilePage() {
-  const { loggedUserName, userType, loggedUserId, logout, username } = useAuth();
+  const { loggedUserName, roleName, loggedUserId, logout, username } = useAuth();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
-  const getRoleLabel = (type) => {
-    const roleMap = {
-      admin: 'Administrador',
-      tecnico: 'Técnico',
-      consultor: 'Consultor',
-    };
-    return roleMap[type] || 'Trabajador';
-  };
-
-  const roleLabel = getRoleLabel(userType);
+  const roleLabel = roleName || 'Usuario';
 
   const initials = loggedUserName
     ? loggedUserName

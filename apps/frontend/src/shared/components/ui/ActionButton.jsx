@@ -60,7 +60,7 @@ const actionConfig = {
   },
 };
 
-function ActionButton({ type, onClick, size = 5 }) {
+function ActionButton({ type, onClick, size = 5, title, disabled = false }) {
   const config = actionConfig[type];
 
   if (!config) return null;
@@ -86,8 +86,9 @@ function ActionButton({ type, onClick, size = 5 }) {
     <button
       type="button"
       onClick={onClick}
-      title={tooltip}
-      className={`p-2 rounded flex items-center justify-center ${bgHoverClass}`}
+      title={title || tooltip}
+      disabled={disabled}
+      className={`p-2 rounded flex items-center justify-center ${bgHoverClass} disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent`}
     >
       <Icon className={`w-${size} h-${size} ${textClass}`} />
     </button>

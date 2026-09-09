@@ -10,6 +10,7 @@ export { default as incidentsRouter } from './incidents/incidents.routes.js';
 export { default as inventoryRouter } from './inventory/inventory.routes.js';
 export { default as inventoryTransferRequestsRouter } from './inventoryTransferRequests/inventoryTransferRequests.routes.js';
 export { default as modelsRouter } from './models/models.routes.js';
+export { default as notificationRecipientsRouter } from './notificationRecipients/notificationRecipients.routes.js';
 export { default as permissionsRouter } from './permissions/permissions.routes.js';
 export { default as rolesRouter } from './roles/roles.routes.js';
 export { default as statusRouter } from './status/status.routes.js';

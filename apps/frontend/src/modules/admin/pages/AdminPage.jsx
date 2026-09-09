@@ -8,6 +8,7 @@ import {
   GitBranch,
   Layers,
   MapPin,
+  Mail,
   Scale,
   Shield,
   ShieldCheck,
@@ -92,6 +93,12 @@ export default function AdminPage() {
       label: 'Toners',
       icon: <Droplet className="w-5 h-5" />,
       permission: 'toners.read',
+    },
+    {
+      path: 'notifications',
+      label: 'Correos de Notificación',
+      icon: <Mail className="w-5 h-5" />,
+      permission: 'notification_settings.read',
     },
   ];
 

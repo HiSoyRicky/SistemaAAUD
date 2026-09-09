@@ -15,6 +15,7 @@ import {
   inventoryRouter,
   inventoryTransferRequestsRouter,
   modelsRouter,
+  notificationRecipientsRouter,
   permissionsRouter,
   rolesRouter,
   statusRouter,
@@ -51,5 +52,6 @@ router.use('/toner-movements', tonerMovementsRouter);
 router.use('/warehouse', warehouseRouter);
 router.use('/permissions', permissionsRouter);
 router.use('/roles', rolesRouter);
+router.use('/notification-recipients', notificationRecipientsRouter);
 
 export default router;

@@ -31,7 +31,18 @@ export const getAdministrativeAreas = catchAsync(async (_req, res) => {
 });
 
 export const getFilterOptions = catchAsync(async (req, res) => {
-  res.json(await getInventoryFilterOptions(req.query.ubication));
+  const filters = {
+    ubication: req.query.ubication?.trim(),
+    department: req.query.department?.trim(),
+    administrative_area: req.query.administrative_area?.trim(),
+    user: req.query.user?.trim(),
+    device: req.query.device?.trim(),
+    brand: req.query.brand?.trim(),
+    model: req.query.model?.trim(),
+    status: req.query.status?.trim(),
+  };
+
+  res.json(await getInventoryFilterOptions(filters));
 });
 
 export const getClassificationRules = catchAsync(async (_req, res) => {

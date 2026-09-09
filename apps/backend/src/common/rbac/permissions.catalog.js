@@ -67,6 +67,9 @@ const PERMISSIONS_CATALOG = [
   { module: 'status', action: 'delete' },
   { module: 'permissions', action: 'read' },
   { module: 'permissions', action: 'assign' },
+  { module: 'notification_settings', action: 'read' },
+  { module: 'notification_settings', action: 'create' },
+  { module: 'notification_settings', action: 'delete' },
 ];
 
 export const buildPermissionCode = (moduleName, actionName) =>

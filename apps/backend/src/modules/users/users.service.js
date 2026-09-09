@@ -98,6 +98,10 @@ function isAdminActor(actor) {
   return normalizedRole.includes('admin');
 }
 
+function isAdministratorRoleName(name) {
+  return normalizeRole(name) === 'administrador';
+}
+
 function parseRequirePasswordChange(value) {
   if (value === undefined || value === null || value === '') {
     return false;
@@ -183,8 +187,12 @@ export const update = async (idParam, payload) => {
   const userId = parseUserId(idParam);
 
   const dataToUpdate = {};
-  const existingUser = await repository.findById(userId);
+  const existingUser = await repository.findByIdWithRole(userId);
   if (!existingUser) throw new AppError('Usuario no encontrado', 404);
+
+  if (isAdministratorRoleName(existingUser.roles?.name)) {
+    throw new AppError('El usuario Administrador está protegido y no puede editarse', 403);
+  }
 
   if (payload.username !== undefined) {
     dataToUpdate.username = String(payload.username).trim();
@@ -268,7 +276,7 @@ export const updatePassword = async (
 export const remove = async (idParam, { actor } = {}) => {
   const userId = parseUserId(idParam);
 
-  const user = await repository.findById(userId);
+  const user = await repository.findByIdWithRole(userId);
 
   if (!user) {
     throw new AppError('Usuario no encontrado.', 404);
@@ -276,8 +284,8 @@ export const remove = async (idParam, { actor } = {}) => {
 
   // No eliminar al administrador principal
 
-  if (user.username.toLowerCase() === 'admin') {
-    throw new AppError('El usuario administrador principal no puede eliminarse.', 400);
+  if (user.username.toLowerCase() === 'admin' || isAdministratorRoleName(user.roles?.name)) {
+    throw new AppError('El usuario administrador está protegido y no puede eliminarse.', 400);
   }
 
   // No eliminarse a sí mismo

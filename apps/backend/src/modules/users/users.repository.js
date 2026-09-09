@@ -77,6 +77,13 @@ export const findById = async (id) => {
   });
 };
 
+export const findByIdWithRole = async (id) => {
+  return prisma.users.findUnique({
+    where: { id: Number(id) },
+    include: { roles: { select: { name: true } } },
+  });
+};
+
 export const findUbicationById = async (id) =>
   prisma.ubications.findUnique({ where: { id: Number(id) }, select: { id: true } });
 

@@ -615,12 +615,12 @@ function WarehousePage({ historyOnly = false }) {
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <h2 className="text-lg font-bold text-slate-900">Últimos movimientos</h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <input
                 value={historySearch}
                 onChange={(event) => setHistorySearch(event.target.value)}
                 placeholder="Buscar movimiento, código o persona"
-                className="h-9 rounded-md border border-slate-300 px-9 text-sm"
+                className="h-9 w-56 min-w-[220px] rounded-md border border-slate-300 px-3 text-sm"
               />
               <select
                 value={movementTypeFilter}
@@ -667,20 +667,26 @@ function WarehousePage({ historyOnly = false }) {
                     </option>
                   ))}
               </select>
-              <input
-                aria-label="Fecha desde"
-                type="date"
-                value={historyFrom}
-                onChange={(event) => setHistoryFrom(event.target.value)}
-                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
-              />
-              <input
-                aria-label="Fecha hasta"
-                type="date"
-                value={historyTo}
-                onChange={(event) => setHistoryTo(event.target.value)}
-                className="h-9 rounded-md border border-slate-300 px-2 text-sm"
-              />
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                Fecha de inicio
+                <input
+                  aria-label="Fecha de inicio"
+                  type="date"
+                  value={historyFrom}
+                  onChange={(event) => setHistoryFrom(event.target.value)}
+                  className="h-9 rounded-md border border-slate-300 px-2 text-sm font-normal"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                Fecha de fin
+                <input
+                  aria-label="Fecha de fin"
+                  type="date"
+                  value={historyTo}
+                  onChange={(event) => setHistoryTo(event.target.value)}
+                  className="h-9 rounded-md border border-slate-300 px-2 text-sm font-normal"
+                />
+              </label>
               <button
                 type="button"
                 onClick={exportMovements}
@@ -690,6 +696,7 @@ function WarehousePage({ historyOnly = false }) {
                 Exportar
               </button>
             </div>
+
           </div>
           <div className="flex flex-wrap gap-2 border-b border-slate-200 px-5 py-3 text-xs">
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
