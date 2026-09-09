@@ -33,6 +33,14 @@ model bd_incidents {
   toner_movements                         toner_movements[] @relation("IncidentTonerMovements")
 }
 
+model incident_notification_recipients {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique @db.VarChar(255)
+  active     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  created_by Int?
+}
+
 model bd_inventory {
   id                           Int       @id(map: "pk_bd_inventory") @default(autoincrement())
   tag                          String    @db.VarChar(50)

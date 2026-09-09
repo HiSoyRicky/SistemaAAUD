@@ -39,7 +39,10 @@ export const getAll = async (query) => {
 
   if (query?.page !== undefined || query?.limit !== undefined) {
     const pagination = resolveInventoryPagination(query);
-    const result = await repository.findPage({ search, filters, ...pagination });
+    const [result, stats] = await Promise.all([
+      repository.findPage({ search, filters, ...pagination }),
+      repository.findInventoryStats({ search, filters }),
+    ]);
 
     return {
       data: mapInventoryResponse(result.data),
@@ -48,6 +51,7 @@ export const getAll = async (query) => {
       offset: pagination.skip,
       total: result.total,
       totalPages: Math.max(Math.ceil(result.total / pagination.take), 1),
+      stats,
     };
   }
 
@@ -57,8 +61,8 @@ export const getAll = async (query) => {
 
 export const getAdministrativeAreas = async () => repository.findAdministrativeAreas();
 
-export const getInventoryFilterOptions = async (ubicationName = '') =>
-  repository.findInventoryFilterOptions(ubicationName);
+export const getInventoryFilterOptions = async (filters = {}) =>
+  repository.findInventoryFilterOptions(filters);
 
 export const getClassificationRules = async (options = {}) => {
   const findActiveRules = options.findActiveRules ?? repository.findActiveAssetClassificationRules;

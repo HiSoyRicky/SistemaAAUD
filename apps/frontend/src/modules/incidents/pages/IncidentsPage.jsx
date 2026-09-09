@@ -132,8 +132,8 @@ function IncidentsPage() {
 
     return cards;
   }, [metrics, userType]);
-  const canManageIncidents = userType && userType !== 'trabajador';
-  const canUseActions = ['admin', 'tecnico', 'consultor'].includes(userType);
+  const canManageIncidents = hasPermission('incidents.read');
+  const canUseActions = canManageIncidents;
 
   return (
     <div className="w-full space-y-5">
@@ -224,7 +224,7 @@ function IncidentsPage() {
         )}
       </section>
 
-      {userType === 'trabajador' ? (
+      {!canManageIncidents ? (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
         </section>
@@ -263,8 +263,8 @@ function IncidentsPage() {
             userType={userType}
             canAssignIncidents={canAssignIncidents}
             canUpdateIncidents={canUpdateIncidents}
-            onAssign={['admin', 'consultor'].includes(userType) ? handleOpenAssignModal : null}
-            onResolve={userType === 'tecnico' ? handleOpenResolveModal : null}
+            onAssign={canAssignIncidents ? handleOpenAssignModal : null}
+            onResolve={canUpdateIncidents ? handleOpenResolveModal : null}
             onEdit={setIncidentToEdit}
           />
         </section>

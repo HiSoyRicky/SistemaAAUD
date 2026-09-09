@@ -193,6 +193,7 @@ function InventoryPage() {
       setInventoryMeta({
         total: Number(response?.total) || data.length,
         totalPages: Number(response?.totalPages) || 1,
+        stats: response?.stats || null,
       });
     } catch (error) {
       console.error('Error al obtener dispositivos:', error);
@@ -272,37 +273,45 @@ function InventoryPage() {
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
-      const requests = await Promise.allSettled([
-        Inventory.fetchFilterOptions({ ubication: inventoryFilters.ubication_name }),
-        Inventory.fetchAdministrativeAreas(),
-        Inventory.fetchDeviceTypes(),
-        Inventory.fetchBrands(),
-        Inventory.fetchModels(),
-        Inventory.fetchStatuses(),
-      ]);
-      const filterLocationData =
-        requests[0].status === 'fulfilled' ? requests[0].value : { ubications: [], departments: [] };
-      const values = requests.slice(1).map((result) => {
-        if (result.status !== 'fulfilled') return [];
-        if (Array.isArray(result.value?.data)) return result.value.data;
-        if (Array.isArray(result.value)) return result.value;
-        return [];
-      });
+      try {
+        const data = await Inventory.fetchFilterOptions({
+          ubication: inventoryFilters.ubication_name,
+          department: inventoryFilters.department_name,
+          administrative_area: inventoryFilters.administrative_area_name,
+          user: inventoryFilters.user,
+          device: inventoryFilters.device_name,
+          brand: inventoryFilters.brand_name,
+          model: inventoryFilters.model_name,
+          status: inventoryFilters.status_name,
+        });
 
-      setFilterOptions({
-        ubication_name: (filterLocationData.ubications || []).map((item) => item.name),
-        department_name: (filterLocationData.departments || []).map((item) => item.name),
-        administrative_area_name: values[0].map((item) => item.name),
-        device_name: values[1].map((item) => item.name),
-        brand_name: values[2].map((item) => item.name),
-        model_name: values[3].map((item) => item.name),
-        status_name: values[4].map((item) => item.name),
-      });
-      setAdministrativeAreas(values[0]);
+        setFilterOptions({
+          ubication_name: (data.ubications || []).map((item) => item.name),
+          department_name: (data.departments || []).map((item) => item.name),
+          administrative_area_name: (data.administrative_areas || []).map((item) => item.name),
+          user: data.users || [],
+          device_name: (data.devices || []).map((item) => item.name),
+          brand_name: (data.brands || []).map((item) => item.name),
+          model_name: (data.models || []).map((item) => item.name),
+          status_name: (data.statuses || []).map((item) => item.name),
+        });
+        setAdministrativeAreas(data.administrative_areas || []);
+      } catch (error) {
+        console.error('Error al obtener opciones de filtro:', error);
+      }
     };
 
     fetchFilterOptions();
-  }, [inventoryFilters.ubication_name]);
+  }, [
+    inventoryFilters.ubication_name,
+    inventoryFilters.department_name,
+    inventoryFilters.administrative_area_name,
+    inventoryFilters.user,
+    inventoryFilters.device_name,
+    inventoryFilters.brand_name,
+    inventoryFilters.model_name,
+    inventoryFilters.status_name,
+  ]);
 
   const editDevice = (device) => {
     setEditingDevice(device);
@@ -312,7 +321,8 @@ function InventoryPage() {
     try {
       await Inventory.updateDevice(editingDevice.id, updatedData);
 
-      await loadDevices();
+      // Mantiene la búsqueda y los filtros activos tras guardar los cambios.
+      await loadDevices(search);
 
       setEditingDevice(null);
 
@@ -586,6 +596,7 @@ function InventoryPage() {
           currentPage={inventoryPage}
           totalPages={inventoryMeta.totalPages}
           serverTotal={inventoryMeta.total}
+          serverSummary={inventoryMeta.stats}
           pageSize={inventoryLimit}
           onPageChange={setInventoryPage}
           onPageSizeChange={(size) => {

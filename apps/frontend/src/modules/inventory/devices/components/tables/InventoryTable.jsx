@@ -18,6 +18,7 @@ function InventoryTable({
   currentPage: controlledPage,
   totalPages: controlledTotalPages,
   serverTotal,
+  serverSummary,
   pageSize = 20,
   onPageChange,
   onPageSizeChange,
@@ -98,6 +99,17 @@ function InventoryTable({
   });
 
   const inventorySummary = useMemo(() => {
+    // En modo servidor, "filteredInventory" solo contiene la p\u00e1gina actual,
+    // por lo que los KPIs deben venir de un resumen global calculado en el backend.
+    if (serverPagination && serverSummary) {
+      return {
+        total: Number(serverTotal) || 0,
+        active: Number(serverSummary.active) || 0,
+        warning: Number(serverSummary.warning) || 0,
+        locations: Number(serverSummary.locations) || 0,
+      };
+    }
+
     const total = serverPagination ? Number(serverTotal) || 0 : filteredInventory.length;
     const active = filteredInventory.filter((item) => {
       const status = String(item.status_name || '').toUpperCase();
@@ -111,7 +123,7 @@ function InventoryTable({
       .size;
 
     return { total, active, warning, locations };
-  }, [filteredInventory]);
+  }, [filteredInventory, serverPagination, serverSummary, serverTotal]);
 
   React.useEffect(() => {
     if (typeof onSummaryChange === 'function') {

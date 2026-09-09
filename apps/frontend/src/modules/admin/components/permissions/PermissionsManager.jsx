@@ -94,6 +94,16 @@ function toSortedArray(setValue) {
   return [...setValue].sort((a, b) => a.localeCompare(b));
 }
 
+function isAdministratorRoleName(name) {
+  return (
+    String(name || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') === 'administrador'
+  );
+}
+
 export default function PermissionsManager() {
   const { loggedUserId } = useAuth();
 
@@ -123,6 +133,9 @@ export default function PermissionsManager() {
   const [permissionSearch, setPermissionSearch] = useState('');
   const [expandedModules, setExpandedModules] = useState(new Set());
   const [moduleOrder, setModuleOrder] = useState([]);
+
+  const isSelectedRoleProtected = isAdministratorRoleName(selectedRoleName);
+  const isSelectedUserProtected = isAdministratorRoleName(selectedUserMeta?.role?.name);
 
   const groupedPermissions = useMemo(() => {
     const groups = new Map();
@@ -539,7 +552,8 @@ export default function PermissionsManager() {
             <button
               type="button"
               onClick={saveRolePermissions}
-              disabled={saving || loadingRole || !selectedRoleId}
+              disabled={saving || loadingRole || !selectedRoleId || isSelectedRoleProtected}
+              title={isSelectedRoleProtected ? 'El rol Administrador siempre conserva todos los permisos' : undefined}
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Guardando...' : 'Guardar permisos del rol'}
@@ -551,6 +565,12 @@ export default function PermissionsManager() {
               <ShieldCheck className="h-4 w-4" />
               Rol seleccionado: {selectedRoleName || 'N/D'}
             </div>
+
+            {isSelectedRoleProtected && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                El rol Administrador está protegido: siempre conserva todos los permisos y no puede modificarse.
+              </div>
+            )}
 
             <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <label className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" /><input value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} placeholder="Buscar permiso, módulo o acción" className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm" /></label>
@@ -583,6 +603,7 @@ export default function PermissionsManager() {
                             id={checkboxId}
                             type="checkbox"
                             checked={checked}
+                            disabled={isSelectedRoleProtected}
                             onChange={() => handleRoleToggle(code)}
                             className="h-4 w-4"
                           />
@@ -662,12 +683,18 @@ export default function PermissionsManager() {
               )}
             </div>
 
+            {isSelectedUserProtected && (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                El usuario Administrador está protegido y no admite permisos personalizados.
+              </div>
+            )}
+
             <div className="mt-3">
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={applyLimitedInventoryPreset}
-                  disabled={saving || loadingUser || !selectedUserId}
+                  disabled={saving || loadingUser || !selectedUserId || isSelectedUserProtected}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <MapPinned className="h-4 w-4" />
@@ -677,7 +704,7 @@ export default function PermissionsManager() {
                 <button
                   type="button"
                   onClick={clearUserOverrides}
-                  disabled={loadingUser || !selectedUserId}
+                  disabled={loadingUser || !selectedUserId || isSelectedUserProtected}
                   className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -687,7 +714,7 @@ export default function PermissionsManager() {
                 <button
                   type="button"
                   onClick={saveUserOverrides}
-                  disabled={saving || loadingUser || !selectedUserId}
+                  disabled={saving || loadingUser || !selectedUserId || isSelectedUserProtected}
                   className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? 'Guardando...' : 'Guardar permisos del usuario'}

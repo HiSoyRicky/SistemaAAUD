@@ -51,29 +51,6 @@ function applyUserOverrides(baseCodes = [], overrides = {}) {
   return [...effectiveSet].sort((a, b) => a.localeCompare(b));
 }
 
-const WAREHOUSE_PERMISSION_CODES = [
-  'warehouse_items.read',
-  'warehouse_items.create',
-  'warehouse_items.update',
-  'warehouse_stock.read',
-  'warehouse_movements.read',
-  'warehouse_movements.create',
-];
-
-function applyDepartmentPermissions(baseCodes, departmentName) {
-  const normalizedDepartment = String(departmentName || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  if (!normalizedDepartment.includes('almacen')) {
-    return baseCodes;
-  }
-
-  return uniquePermissionCodes([...baseCodes, ...WAREHOUSE_PERMISSION_CODES]);
-}
-
 function isAdministratorRole(roleName) {
   const normalized = String(roleName || '')
     .trim()
@@ -167,11 +144,9 @@ export const getEffectivePermissionCodesForUser = async ({ userId }) => {
     getUserPermissionOverrideCodes(parsedUserId),
   ]);
 
-  const departmentPermissions = isAdministratorRole(user.roles?.name)
-    ? ['*.*']
-    : applyDepartmentPermissions(rolePermissions, user.departments?.name);
+  const baseCodes = isAdministratorRole(user.roles?.name) ? ['*.*'] : rolePermissions;
 
-  return applyUserOverrides(departmentPermissions, userOverrides);
+  return applyUserOverrides(baseCodes, userOverrides);
 };
 
 export const ensurePermissionsByCodes = async (codes = []) => {

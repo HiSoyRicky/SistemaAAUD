@@ -22,6 +22,14 @@ function parseRoleId(idParam) {
   return roleId;
 }
 
+function isAdministratorRoleName(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') === 'administrador';
+}
+
 function mapPermissions(permissions = []) {
   return permissions.map((permission) => ({
     id: permission.id,
@@ -100,15 +108,13 @@ export const updateRolePermissions = async (idRoleParam, payload) => {
   const role = await permissionsRepository.findRoleById(roleId);
   if (!role) throw new AppError('Rol no encontrado', 404);
 
+  if (isAdministratorRoleName(role.name)) {
+    throw new AppError('El rol Administrador está protegido y siempre conserva todos los permisos', 403);
+  }
+
   const requestedPermissions = Array.isArray(payload?.permissions) ? payload.permissions : [];
 
   const normalized = normalizePermissionCodes(requestedPermissions);
-  const protectedAdminPermissions = ['roles.read', 'roles.update', 'permissions.assign', 'users.read'];
-  if (role.name.trim().toLowerCase() === 'administrador' &&
-      !protectedAdminPermissions.every((permission) => normalized.includes(permission)) &&
-      !normalized.includes('*.*')) {
-    throw new AppError('El rol Administrador debe conservar sus permisos administrativos esenciales', 403);
-  }
 
   const result = await setRolePermissionsByCodes({
     roleId,
@@ -159,6 +165,15 @@ export const updateUserPermissions = async (idUserParam, payload) => {
 
   if (!Number.isInteger(userId) || userId <= 0) {
     throw new AppError('Usuario inválido', 400);
+  }
+
+  const targetUser = await permissionsRepository.findUserByIdWithRole(userId);
+  if (!targetUser) {
+    throw new AppError('Usuario no encontrado', 404);
+  }
+
+  if (isAdministratorRoleName(targetUser.roles?.name)) {
+    throw new AppError('El usuario Administrador está protegido y no admite permisos personalizados', 403);
   }
 
   const grants = Array.isArray(payload?.grants) ? payload.grants : [];

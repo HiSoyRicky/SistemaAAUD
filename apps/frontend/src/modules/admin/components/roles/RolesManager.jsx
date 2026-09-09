@@ -9,6 +9,16 @@ function getErrorMessage(error) {
   return error?.response?.data?.message || error?.response?.data?.error || 'Ocurrió un error';
 }
 
+function isAdministratorRoleName(name) {
+  return (
+    String(name || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') === 'administrador'
+  );
+}
+
 export default function RolesManager() {
   const { hasPermission } = useAuth();
   const [roles, setRoles] = useState([]);
@@ -129,7 +139,7 @@ export default function RolesManager() {
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
         <table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Rol</th><th className="px-4 py-3">Usuarios</th><th className="px-4 py-3">Permisos</th><th className="px-4 py-3 text-right">Acciones</th></tr></thead>
-          <tbody>{loading ? <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-500">Cargando roles...</td></tr> : roles.map((role) => <tr key={role.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold text-slate-900">{role.name}</td><td className="px-4 py-3">{role.users_count}</td><td className="px-4 py-3">{role.permissions_count}</td><td className="px-4 py-3"><div className="flex justify-end gap-2">{canUpdate && <button type="button" title="Editar rol" onClick={() => startEdit(role)} className="rounded-md p-2 text-blue-600 hover:bg-blue-50"><Edit3 size={17} /></button>}{canDelete && <button type="button" title="Eliminar rol" onClick={() => remove(role)} className="rounded-md p-2 text-red-600 hover:bg-red-50"><Trash2 size={17} /></button>}<Link title="Gestionar permisos" to={`/admin/permissions?role=${role.id}`} className="rounded-md p-2 text-slate-600 hover:bg-slate-100"><Plus size={17} /></Link></div></td></tr>)}{!loading && !roles.length && <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-500">No hay roles registrados.</td></tr>}</tbody>
+          <tbody>{loading ? <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-500">Cargando roles...</td></tr> : roles.map((role) => { const isProtected = isAdministratorRoleName(role.name); return <tr key={role.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold text-slate-900">{role.name}{isProtected && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">Protegido</span>}</td><td className="px-4 py-3">{role.users_count}</td><td className="px-4 py-3">{role.permissions_count}</td><td className="px-4 py-3"><div className="flex justify-end gap-2">{canUpdate && <button type="button" title={isProtected ? 'El rol Administrador no puede editarse' : 'Editar rol'} disabled={isProtected} onClick={() => startEdit(role)} className="rounded-md p-2 text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"><Edit3 size={17} /></button>}{canDelete && <button type="button" title={isProtected ? 'El rol Administrador no puede eliminarse' : 'Eliminar rol'} disabled={isProtected} onClick={() => remove(role)} className="rounded-md p-2 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"><Trash2 size={17} /></button>}{isProtected ? <span title="Los permisos del rol Administrador no pueden modificarse" className="rounded-md p-2 text-slate-300"><Plus size={17} /></span> : <Link title="Gestionar permisos" to={`/admin/permissions?role=${role.id}`} className="rounded-md p-2 text-slate-600 hover:bg-slate-100"><Plus size={17} /></Link>}</div></td></tr>; })}{!loading && !roles.length && <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-500">No hay roles registrados.</td></tr>}</tbody>
         </table>
       </div>
     </div>

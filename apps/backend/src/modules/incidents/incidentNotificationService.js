@@ -2,6 +2,7 @@
 
 import sendMail from '../../common/utils/mailer.js';
 import { generarTokenIncidencia } from '../../common/utils/token.js';
+import { getActiveEmails } from '../notificationRecipients/notificationRecipients.service.js';
 import {
   buildInternalIncidentEmail,
   buildReporterIncidentEmail,
@@ -9,9 +10,18 @@ import {
 } from '../../templates/incidents/incidentEmailTemplate.js';
 
 const frontendUrl = process.env.FRONTEND_BASE_URL;
-const internalRecipients =
-  process.env.INCIDENT_INTERNAL_RECIPIENTS ||
-  'abethancourt@aaud.gob.pa, lchanis@aaud.gob.pa, gmedina@aaud.gob.pa, aramos@aaud.gob.pa, hhunt@aaud.gob.pa';
+
+// Los destinatarios internos se administran desde el panel de Administración
+// (Notificaciones). La variable de entorno solo se usa como respaldo si aún
+// no se ha configurado ningún destinatario en la base de datos.
+async function getInternalRecipients() {
+  const emails = await getActiveEmails();
+  if (emails.length) {
+    return emails.join(', ');
+  }
+
+  return process.env.INCIDENT_INTERNAL_RECIPIENTS || '';
+}
 
 function getPublicViewUrl(incident) {
   const token = generarTokenIncidencia(incident.id, incident.email);
@@ -23,16 +33,20 @@ async function notifyIncidentCreated({ incident, response, io, tonerRequestConte
   const publicViewUrl = getPublicViewUrl(incident);
 
   try {
-    await sendMail({
-      from: '"No responder" <no-responder@aaud.gob.pa>',
-      to: internalRecipients,
-      subject: `📥 Nueva incidencia registrada (#${formattedTicket})`,
-      html: buildInternalIncidentEmail({
-        incident,
-        formattedTicket,
-        publicViewUrl,
-      }),
-    });
+    const internalRecipients = await getInternalRecipients();
+
+    if (internalRecipients) {
+      await sendMail({
+        from: '"No responder" <no-responder@aaud.gob.pa>',
+        to: internalRecipients,
+        subject: `📥 Nueva incidencia registrada (#${formattedTicket})`,
+        html: buildInternalIncidentEmail({
+          incident,
+          formattedTicket,
+          publicViewUrl,
+        }),
+      });
+    }
 
     if (incident.email) {
       await sendMail({

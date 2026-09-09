@@ -1,16 +1,21 @@
 // Dashboard.jsx
 
 import { useEffect, useState } from 'react';
+import useAuth from '../../../shared/hooks/useAuth';
 import { Incidents } from '../../incidents/services/incidents.api.js';
 import { Inventory } from '../../inventory/devices/services/inventory.api.js';
 import IncidentsSection from '../components/IncidentsSection.jsx';
 import InventorySection from '../components/InventorySection.jsx';
 
 export default function Dashboard() {
+  const { hasPermission } = useAuth();
+  const canSeeIncidents = hasPermission('incidents.read');
+  const canSeeInventory = hasPermission('inventory.read');
+
   const [incidences, setIncidences] = useState([]);
   const [inventory, setInventory] = useState([]);
-  const [loadingIncidences, setLoadingIncidences] = useState(true);
-  const [loadingInventory, setLoadingInventory] = useState(true);
+  const [loadingIncidences, setLoadingIncidences] = useState(canSeeIncidents);
+  const [loadingInventory, setLoadingInventory] = useState(canSeeInventory);
 
   const loadIncidences = async () => {
     setLoadingIncidences(true);
@@ -34,10 +39,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
-      await Promise.all([loadIncidences(), loadInventory()]);
+      await Promise.all([
+        canSeeIncidents ? loadIncidences() : Promise.resolve(),
+        canSeeInventory ? loadInventory() : Promise.resolve(),
+      ]);
     };
 
     load();
+    // Solo se ejecuta al montar: los permisos no cambian durante la sesión activa.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -55,8 +65,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <IncidentsSection incidences={incidences} loading={loadingIncidences} />
-          <InventorySection inventory={inventory} loading={loadingInventory} />
+          {canSeeIncidents && <IncidentsSection incidences={incidences} loading={loadingIncidences} />}
+          {canSeeInventory && <InventorySection inventory={inventory} loading={loadingInventory} />}
+          {!canSeeIncidents && !canSeeInventory && (
+            <p className="text-sm text-slate-500">No tienes permisos para ver este panel.</p>
+          )}
         </div>
       </main>
     </div>

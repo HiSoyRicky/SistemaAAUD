@@ -311,45 +311,147 @@ export const findAll = async (search, filters = {}) => {
   });
 };
 
-export const findInventoryFilterOptions = async (ubicationName = '') => {
-  const allLocationsWhere = {
-    id_ubication: { not: null },
-    id_department: { not: null },
+// Cada filtro de columna solo debe ofrecer valores que aun existan dado el resto
+// de filtros ya aplicados (filtrado en cascada / "faceted search").
+export const findInventoryFilterOptions = async (filters = {}) => {
+  const buildWhereExcluding = (excludeKey) => {
+    const rest = { ...filters };
+    delete rest[excludeKey];
+    return buildInventorySearchWhere('', rest);
   };
-  const departmentsWhere = ubicationName
-    ? {
-        ...allLocationsWhere,
-        ubications: { is: { name: { equals: ubicationName, mode: 'insensitive' } } },
-      }
-    : allLocationsWhere;
 
-  const [locationRows, departmentRows] = await Promise.all([
+  const withAnd = (where, extra) => ({ AND: [where, extra] });
+
+  const [
+    locationRows,
+    departmentRows,
+    administrativeAreaRows,
+    deviceRows,
+    brandRows,
+    modelRows,
+    statusRows,
+    userRows,
+  ] = await Promise.all([
     prisma.bd_inventory.findMany({
-      where: allLocationsWhere,
+      where: withAnd(buildWhereExcluding('ubication'), { id_ubication: { not: null } }),
       distinct: ['id_ubication'],
       select: { id_ubication: true },
     }),
     prisma.bd_inventory.findMany({
-      where: departmentsWhere,
+      where: withAnd(buildWhereExcluding('department'), { id_department: { not: null } }),
       distinct: ['id_department'],
       select: { id_department: true },
     }),
+    prisma.bd_inventory.findMany({
+      where: withAnd(buildWhereExcluding('administrative_area'), { id_administrative_area: { not: null } }),
+      distinct: ['id_administrative_area'],
+      select: { id_administrative_area: true },
+    }),
+    prisma.bd_inventory.findMany({
+      where: buildWhereExcluding('device'),
+      distinct: ['id_device'],
+      select: { id_device: true },
+    }),
+    prisma.bd_inventory.findMany({
+      where: buildWhereExcluding('brand'),
+      distinct: ['id_brand'],
+      select: { id_brand: true },
+    }),
+    prisma.bd_inventory.findMany({
+      where: buildWhereExcluding('model'),
+      distinct: ['id_model'],
+      select: { id_model: true },
+    }),
+    prisma.bd_inventory.findMany({
+      where: buildWhereExcluding('status'),
+      distinct: ['id_status'],
+      select: { id_status: true },
+    }),
+    prisma.bd_inventory.findMany({
+      where: withAnd(buildWhereExcluding('user'), { user: { not: null } }),
+      distinct: ['user'],
+      select: { user: true },
+    }),
   ]);
 
-  const [ubications, departments] = await Promise.all([
-    prisma.ubications.findMany({
-      where: { id: { in: locationRows.map((row) => row.id_ubication) } },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.departments.findMany({
-      where: { id: { in: departmentRows.map((row) => row.id_department) } },
-      select: { id: true, name: true, id_ubication: true },
-      orderBy: { name: 'asc' },
-    }),
-  ]);
+  const [ubications, departments, administrativeAreas, devices, brands, models, statuses] =
+    await Promise.all([
+      prisma.ubications.findMany({
+        where: { id: { in: locationRows.map((row) => row.id_ubication) } },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.departments.findMany({
+        where: { id: { in: departmentRows.map((row) => row.id_department) } },
+        select: { id: true, name: true, id_ubication: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.inventory_administrative_areas.findMany({
+        where: { id: { in: administrativeAreaRows.map((row) => row.id_administrative_area) } },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.devices.findMany({
+        where: { id: { in: deviceRows.map((row) => row.id_device) } },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.brands.findMany({
+        where: { id: { in: brandRows.map((row) => row.id_brand) } },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.models.findMany({
+        where: { id: { in: modelRows.map((row) => row.id_model) } },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.status.findMany({
+        where: { id: { in: statusRows.map((row) => row.id_status) } },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
 
-  return { ubications, departments };
+  return {
+    ubications,
+    departments,
+    administrative_areas: administrativeAreas,
+    devices,
+    brands,
+    models,
+    statuses,
+    users: userRows.map((row) => row.user).filter(Boolean).sort(),
+  };
+};
+
+// Estadisticas globales para los KPIs del encabezado (no deben limitarse a la
+// pagina actual cuando el listado usa paginacion en el servidor).
+export const findInventoryStats = async ({ search, filters }) => {
+  const where = buildInventorySearchWhere(search, filters);
+  const rows = await prisma.bd_inventory.findMany({
+    where,
+    select: {
+      status: { select: { name: true } },
+      ubications: { select: { name: true } },
+    },
+  });
+
+  const DISCARD_STATUSES = new Set(['DESCARTADO', 'PARA DESCARTE', 'MAL ESTADO']);
+  const REVIEW_STATUSES = new Set(['PARA DESCARTE', 'MAL ESTADO']);
+
+  let active = 0;
+  let warning = 0;
+  const locations = new Set();
+
+  for (const row of rows) {
+    const statusName = String(row.status?.name || '').toUpperCase();
+    if (statusName && !DISCARD_STATUSES.has(statusName)) active += 1;
+    if (REVIEW_STATUSES.has(statusName)) warning += 1;
+    if (row.ubications?.name) locations.add(row.ubications.name);
+  }
+
+  return { total: rows.length, active, warning, locations: locations.size };
 };
 
 export const findPage = async ({ search, filters, skip, take }) => {

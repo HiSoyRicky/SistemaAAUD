@@ -8,7 +8,7 @@ import { getNavigation } from '../../config/Navigation';
 import useAuth from '../../hooks/useAuth';
 
 function Header({ sidebarFixed }) {
-  const { isAuthenticated, userType, loggedUserName, logout, hasPermission } = useAuth();
+  const { isAuthenticated, userType, roleName, loggedUserName, logout, hasPermission } = useAuth();
 
   const navigate = useNavigate();
 
@@ -30,13 +30,7 @@ function Header({ sidebarFixed }) {
       .toUpperCase();
   }, [loggedUserName]);
 
-  const ROLE_LABELS = {
-    admin: 'Admin',
-    tecnico: 'Técnico',
-    consultor: 'Consultor',
-  };
-
-  const roleLabel = ROLE_LABELS[userType] || 'Trabajador';
+  const roleLabel = roleName || 'Usuario';
 
   const goTo = (path) => {
     setMobileOpen(false);
@@ -141,17 +135,14 @@ function Header({ sidebarFixed }) {
                     </div>
 
                     <div className="p-2">
-                      {/* SOLO si NO es trabajador */}
-                      {userType !== 'trabajador' && (
-                        <button
-                          type="button"
-                          onClick={() => goTo('/perfil')}
-                          className="flex items-center w-full gap-2 px-3 py-2 text-sm transition rounded-xl text-slate-700 hover:bg-slate-100"
-                        >
-                          <Settings className="w-4 h-4" />
-                          Mi perfil
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => goTo('/perfil')}
+                        className="flex items-center w-full gap-2 px-3 py-2 text-sm transition rounded-xl text-slate-700 hover:bg-slate-100"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Mi perfil
+                      </button>
 
                       <button
                         type="button"

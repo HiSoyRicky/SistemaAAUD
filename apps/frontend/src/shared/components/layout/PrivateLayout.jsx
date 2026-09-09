@@ -3,19 +3,21 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import { getNavigation } from '../../config/Navigation';
 import Footer from './Footer';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
 export default function PrivateLayout({ children }) {
-  const { userType } = useAuth();
+  const { userType, hasPermission } = useAuth();
 
   const [isFixed, setIsFixed] = useState(false);
 
   // Ahora SOLO depende del click (candado)
   const isSidebarOpen = isFixed;
 
-  const showSidebar = userType !== 'trabajador';
+  // El sidebar solo tiene sentido si el usuario tiene acceso a alguna sección navegable.
+  const showSidebar = getNavigation(userType, hasPermission).length > 0;
 
   const location = useLocation();
   const isIncidentsPage = location.pathname.startsWith('/incidencias');

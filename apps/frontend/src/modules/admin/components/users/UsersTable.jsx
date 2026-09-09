@@ -2,6 +2,16 @@
 
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 
+function isAdministratorRoleName(name) {
+  return (
+    String(name || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') === 'administrador'
+  );
+}
+
 export default function UsersTable({
   users,
   roles,
@@ -74,7 +84,10 @@ export default function UsersTable({
         </thead>
 
         <tbody>
-          {users.map((u, index) => (
+          {users.map((u, index) => {
+            const roleName = roles.find((r) => r.id === u.id_rol)?.name || 'Desconocido';
+            const isProtected = isAdministratorRoleName(roleName);
+            return (
             <tr key={u.id} className="hover:bg-gray-50">
               {/* Enumeración consecutiva considerando la página */}
               <td className="p-2 text-center border">
@@ -86,13 +99,19 @@ export default function UsersTable({
               <td className="p-2 border">{u.departments?.name ?? '-'}</td>
               <td className="p-2 border">{u.email}</td>
               <td className="p-2 border">
-                {roles.find((r) => r.id === u.id_rol)?.name || 'Desconocido'}
+                {roleName}
+                {isProtected && (
+                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                    Protegido
+                  </span>
+                )}
               </td>
               <td className="p-2 text-center border">{u.active ? 'Sí' : 'No'}</td>
               <td className="flex justify-center gap-1 p-2 border">
                 <ActionButton
                   type={'edit'}
-                  title="Editar usuario"
+                  title={isProtected ? 'El usuario Administrador no puede editarse' : 'Editar usuario'}
+                  disabled={isProtected}
                   onClick={() => editUser(u)}
                 ></ActionButton>
                 <ActionButton
@@ -102,7 +121,8 @@ export default function UsersTable({
                 ></ActionButton>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
