@@ -7,16 +7,17 @@ import ForcedPasswordChangePage from '../modules/auth/pages/ForcedPasswordChange
 import LoginPage from '../modules/auth/pages/LoginPage';
 
 // Incidencias
+import CreateIncidentPage from '../modules/incidents/pages/CreateIncidentPage';
 import IncidentDetails from '../modules/incidents/pages/IncidentDetails';
 import IncidentsMonitorPage from '../modules/incidents/pages/IncidentsMonitorPage';
 import IncidentsPage from '../modules/incidents/pages/IncidentsPage';
 
 import ActivityLogsPage from '../modules/activity/pages/ActivityLogsPage';
 import Dashboard from '../modules/dashboard/pages/Dashboard';
-import useAuth from '../shared/hooks/useAuth';
-import NotFoundPage from './NotFoundPage';
 import NoAccessPage from '../shared/components/pages/NoAccessPage';
+import useAuth from '../shared/hooks/useAuth';
 import { getDefaultRoute } from '../shared/utils/accessRoutes';
+import NotFoundPage from './NotFoundPage';
 
 // Inventario
 import ProfilePage from '../modules/auth/pages/ProfilePage';
@@ -33,15 +34,15 @@ import ClassificationRulesManager from '../modules/admin/components/classificati
 import DepartmentsManager from '../modules/admin/components/departments/DepartmentManager';
 import DevicesManager from '../modules/admin/components/devices/DevicesManager';
 import ModelsManager from '../modules/admin/components/models/ModelsManager';
+import NotificationRecipientsManager from '../modules/admin/components/notifications/NotificationRecipientsManager';
 import PermissionsManager from '../modules/admin/components/permissions/PermissionsManager';
+import RolesManager from '../modules/admin/components/roles/RolesManager';
 import StatusManager from '../modules/admin/components/status/StatusManager';
 import TonersManager from '../modules/admin/components/toners/TonersManager';
 import TransferRequestsManager from '../modules/admin/components/transfers/TransferRequestsManager';
 import UbicationsManager from '../modules/admin/components/ubications/UbicationsManager';
 import UsersManager from '../modules/admin/components/users/UsersManager';
 import WarehouseItemsManager from '../modules/admin/components/warehouseItems/WarehouseItemsManager';
-import RolesManager from '../modules/admin/components/roles/RolesManager';
-import NotificationRecipientsManager from '../modules/admin/components/notifications/NotificationRecipientsManager';
 import AdminPage from '../modules/admin/pages/AdminPage';
 
 import PrivateLayout from '../shared/components/layout/PrivateLayout';
@@ -75,7 +76,14 @@ const PrivateRoute = ({ children, allowedUserTypes, allowForcedPasswordChange = 
 };
 
 const DefaultLandingRedirect = () => {
-  const { hasAnyPermission } = useAuth();
+  const { hasAnyPermission, permissionsLoading } = useAuth();
+
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">Cargando permisos...</div>
+    );
+  }
+
   return <Navigate to={getDefaultRoute(hasAnyPermission)} replace />;
 };
 
@@ -149,19 +157,27 @@ function App() {
         <Route
           path="/incidencias"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
-              <PrivateLayout>
-                <IncidentsPage />
-              </PrivateLayout>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
+              <AnyPermissionRoute permissions={['incidents.read', 'incidents.create']}>
+                <PrivateLayout>
+                  <IncidentsPage />
+                </PrivateLayout>
+              </AnyPermissionRoute>
             </PrivateRoute>
           }
         />
+
+        <Route path="/crear-incidencia" element={<CreateIncidentPage />} />
 
         {/* Ruta para ver detalles de una incidencia */}
         <Route
           path="/incidencias/:id"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <IncidentDetails />
             </PrivateRoute>
           }
@@ -171,7 +187,9 @@ function App() {
         <Route
           path="/incidencias/monitor"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="incidents.read">
                 <IncidentsMonitorPage />
               </PermissionRoute>
@@ -183,7 +201,9 @@ function App() {
         <Route
           path="/inventario/equipos"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <AnyPermissionRoute permissions={['inventory.read', 'warehouse_stock.read']}>
                 <PrivateLayout>
                   <InventoryPage />
@@ -196,7 +216,9 @@ function App() {
         <Route
           path="/inventario/equipos/history"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="inventory.read">
                 <PrivateLayout>
                   <InventoryMovementsPage />
@@ -210,7 +232,9 @@ function App() {
         <Route
           path="/inventario/toners"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="toners.read">
                 <PrivateLayout>
                   <TonersPage />
@@ -224,7 +248,9 @@ function App() {
         <Route
           path="/inventario/toners/history"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="toner_movements.read">
                 <PrivateLayout>
                   <TonerMovementsPage />
@@ -237,7 +263,9 @@ function App() {
         <Route
           path="/almacen"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="warehouse_stock.read">
                 <PrivateLayout>
                   <WarehousePage />
@@ -249,7 +277,9 @@ function App() {
         <Route
           path="/almacen/historial"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="warehouse_movements.read">
                 <PrivateLayout>
                   <WarehousePage historyOnly />
@@ -273,7 +303,9 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <AnyPermissionRoute permissions={['incidents.read', 'inventory.read']}>
                 <PrivateLayout>
                   <Dashboard />
@@ -286,7 +318,9 @@ function App() {
         <Route
           path="/actividad"
           element={
-            <PrivateRoute allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}>
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
               <PermissionRoute permission="users.read">
                 <PrivateLayout>
                   <ActivityLogsPage />

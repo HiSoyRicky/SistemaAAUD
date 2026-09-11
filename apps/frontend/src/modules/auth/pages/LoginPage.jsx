@@ -3,7 +3,7 @@
 import LogoGobNal from '@/assets/images/LogoSistema.png';
 import { Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import useAuth from '../../../shared/hooks/useAuth';
 
 function LoginPage() {
@@ -15,6 +15,7 @@ function LoginPage() {
   const { login, isAuthenticated, mustChangePassword, setAuthData } = useAuth();
   const [retryAfter, setRetryAfter] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   // En useEffect al cargar LoginPage
   useEffect(() => {
@@ -67,18 +68,10 @@ function LoginPage() {
         setLoading(false);
       }
     } else {
-      // Invitado (sin cuenta)
-      setAuthData({
-        user: {
-          id: 2,
-          username: 'Invitado',
-          nombre_completo: 'Usuario Invitado',
-          id_rol: 4,
-        },
-        userType: 'trabajador',
-        loggedUserName: 'Invitado',
-      });
+      // Invitado: acceso público para reportar una incidencia.
+      // No se autentica ni se crea una sesión.
       setLoading(false);
+      navigate('/crear-incidencia');
     }
   };
 

@@ -4,8 +4,10 @@ import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
 import useAuth from '../../../../shared/hooks/useAuth';
 import { useIncidentForm } from '../../hooks/useIncidentForm';
 
-function IncidentForm({ onSubmit }) {
-  const { loggedUserId, logout } = useAuth();
+function IncidentForm({ loggedUserId: propLoggedUserId, onSubmit }) {
+  const { loggedUserId: authLoggedUserId, logout } = useAuth();
+
+  const loggedUserId = propLoggedUserId ?? authLoggedUserId;
 
   const {
     register,

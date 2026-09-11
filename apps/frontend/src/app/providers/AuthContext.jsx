@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }) => {
   const [loggedUserId, setLoggedUserId] = useState(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [permissions, setPermissions] = useState([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState(null);
 
@@ -135,6 +136,7 @@ export const AuthProvider = ({ children }) => {
       setUsername(storedUsername);
       setMustChangePassword(storedMustChangePassword === 'true');
       storePermissions(fallbackPermissions);
+      setPermissionsLoading(false);
     } else if (token) {
       try {
         const decoded = jwtDecode(token);
@@ -156,6 +158,7 @@ export const AuthProvider = ({ children }) => {
         setUsername(decoded.username);
         setMustChangePassword(decodedMustChange);
         storePermissions(decodedPermissions);
+        setPermissionsLoading(false);
 
         sessionStorage.setItem('userType', type);
         sessionStorage.setItem('roleName', decoded.role || '');
@@ -186,13 +189,14 @@ export const AuthProvider = ({ children }) => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
+          timeout: 10000,
         });
 
-        if (!cancelled) {
-          storePermissions(response.data?.permissions || []);
+        if (!cancelled && Array.isArray(response.data?.permissions)) {
+          storePermissions(response.data.permissions);
         }
       } catch (error) {
-        console.warn('No se pudieron actualizar los permisos: ', error);
+        console.warn('No se pudieron actualizar los permisos:', error);
       }
     };
 
@@ -210,9 +214,22 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/auth/login', { username: loginIdentifier, password });
       const { usuario, token } = response.data;
       const mustChange = Boolean(usuario?.must_change_password);
-      const nextPermissions = normalizePermissionCodes(
-        Array.isArray(usuario?.permissions) ? usuario.permissions : []
-      );
+
+      let nextPermissions = [];
+
+      try {
+        const permissionsResponse = await axios.get('/api/permissions/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 10000,
+        });
+
+        nextPermissions = normalizePermissionCodes(permissionsResponse.data?.permissions || []);
+      } catch (permissionError) {
+        console.error('No se pudieron cargar los permisos del usuario:', permissionError);
+      }
+      console.log('PERMISOS RECIBIDOS:', nextPermissions);
 
       localStorage.setItem('token', token);
       const type = resolveUserType({
@@ -232,6 +249,7 @@ export const AuthProvider = ({ children }) => {
       setUsername(resolvedUsername);
       setMustChangePassword(mustChange);
       storePermissions(nextPermissions);
+      setPermissionsLoading(false);
 
       sessionStorage.setItem('user', JSON.stringify(usuario));
       sessionStorage.setItem('userType', type);
@@ -273,6 +291,7 @@ export const AuthProvider = ({ children }) => {
     setLoggedUserId(data.user ? data.user.id : null);
     setMustChangePassword(nextMustChangePassword);
     storePermissions(nextPermissions);
+    setPermissionsLoading(false);
 
     sessionStorage.setItem('user', JSON.stringify(data.user));
     sessionStorage.setItem('userType', data.userType);
@@ -297,6 +316,7 @@ export const AuthProvider = ({ children }) => {
     setUsername(null);
     setMustChangePassword(false);
     setPermissions([]);
+    setPermissionsLoading(false);
 
     sessionStorage.clear();
     localStorage.removeItem('token');
@@ -312,6 +332,7 @@ export const AuthProvider = ({ children }) => {
       username,
       mustChangePassword,
       permissions,
+      permissionsLoading,
       hasPermission: (permissionCode) => hasPermissionCode(permissionCode, permissions),
       hasAnyPermission: (permissionCodes = []) =>
         permissionCodes.some((permissionCode) => hasPermissionCode(permissionCode, permissions)),
@@ -329,6 +350,7 @@ export const AuthProvider = ({ children }) => {
       username,
       mustChangePassword,
       permissions,
+      permissionsLoading,
       loading,
       login,
       logout,
