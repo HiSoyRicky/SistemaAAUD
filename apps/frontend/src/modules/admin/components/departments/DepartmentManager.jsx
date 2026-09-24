@@ -107,23 +107,24 @@ export default function DepartmentsManager() {
 
   // Eliminar
   const handleDelete = async (id, depName) => {
-    const password = prompt('Para eliminar este departamento, ingresa tu contraseña:');
-    if (!password) return;
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar el departamento "${depName}"?`)) {
+      return;
+    }
 
     try {
-      // Verificar contraseña
-      await Departments.authorize(id, password);
+      await Departments.delete(id);
 
-      // Si es correcta, borrar
-      await Departments.delete(id, { authorized: true });
+      await fetchDepartments();
 
-      fetchDepartments();
-      setSuccessMessage(`✅ Departamento "${depName}" eliminado correctamente`);
+      setSuccessMessage(`Departamento "${depName}" eliminado correctamente`);
       setErrorMessage('');
+
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       console.error('Error al eliminar departamento:', err);
+
       setErrorMessage(err.response?.data?.message || 'Error al eliminar departamento');
+
       setTimeout(() => setErrorMessage(''), 5000);
     }
   };

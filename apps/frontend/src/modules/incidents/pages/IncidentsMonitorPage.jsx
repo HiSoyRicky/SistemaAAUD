@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { formatDateWithWeekday, formatTime } from '../../../shared/utils/formatDate';
-import IncidentsSection from '../../dashboard/components/IncidentsSection.jsx';
+import IncidentsTechnicianChart from '../components/IncidentsTechnicianChart.jsx';
 import IncidentTable from '../components/tables/IncidentTable';
 import { Incidents } from '../services/incidents.api';
 
@@ -65,9 +65,8 @@ export default function IncidentsMonitorPage() {
         </div>
       </div>
 
-      {/* INDICADORES */}
       <div className="bg-white rounded-3xl shadow-lg p-6 mb-8 border border-slate-200">
-        <IncidentsSection incidences={incidents} loading={loading} />
+        <IncidentsTechnicianChart incidents={incidents} loading={loading} />
       </div>
 
       {/* TABLA */}

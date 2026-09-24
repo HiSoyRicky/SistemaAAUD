@@ -55,6 +55,13 @@ export default function IncidentDetailModal({ isOpen, onClose, incident }) {
             <Info label="Técnico" value={incident.technician_full_name || 'Sin asignar'} />
             <Info label="Fecha de creación" value={formatDateTimeLocal(incident.creation_date)} />
             <Info
+              label="Fecha de asignación"
+              value={
+                incident.assigned_at ? formatDateTimeLocal(incident.assigned_at) : 'No asignada'
+              }
+              muted={!incident.assigned_at}
+            />
+            <Info
               label="Fecha de solución"
               value={
                 incident.solution_date ? formatDateTimeLocal(incident.solution_date) : 'No resuelto'

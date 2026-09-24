@@ -20,6 +20,7 @@ model bd_incidents {
   creation_date                           DateTime
   id_status                               Int
   id_technician                           Int?
+  assigned_at                             DateTime?
   solution_date                           DateTime?
   solution                                String            @db.VarChar(255)
   client_ip                               String?           @db.VarChar(50)
@@ -245,15 +246,15 @@ model categories {
 }
 
 model departments {
-  id              Int               @id(map: "pk_department") @default(autoincrement())
-  name            String            @db.VarChar(50)
-  id_ubication    Int?
-  bd_incidents    bd_incidents[]
-  bd_inventory    bd_inventory[]
-  ubications      ubications?       @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
-  toner_movements toner_movements[] @relation("DepartmentTonerMovements")
+  id                  Int                 @id(map: "pk_department") @default(autoincrement())
+  name                String              @db.VarChar(50)
+  id_ubication        Int?
+  bd_incidents        bd_incidents[]
+  bd_inventory        bd_inventory[]
+  ubications          ubications?         @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departments_ubications")
+  toner_movements     toner_movements[]   @relation("DepartmentTonerMovements")
   warehouse_movements WarehouseMovement[]
-  users           users[]
+  users               users[]
 }
 
 model devices {
@@ -292,15 +293,15 @@ model status {
 }
 
 model ubications {
-  id              Int               @id(map: "pk_ubication") @default(autoincrement())
-  name            String            @unique(map: "name_ubications_unique") @db.VarChar(50)
-  bd_incidents    bd_incidents[]
-  bd_inventory    bd_inventory[]
-  departments     departments[]
-  toner_movements toner_movements[] @relation("UbicationTonerMovements")
-  warehouse_stock WarehouseStock[]
+  id                  Int                 @id(map: "pk_ubication") @default(autoincrement())
+  name                String              @unique(map: "name_ubications_unique") @db.VarChar(50)
+  bd_incidents        bd_incidents[]
+  bd_inventory        bd_inventory[]
+  departments         departments[]
+  toner_movements     toner_movements[]   @relation("UbicationTonerMovements")
+  warehouse_stock     WarehouseStock[]
   warehouse_movements WarehouseMovement[] @relation("UbicationWarehouseMovements")
-  users           users[]
+  users               users[]
 }
 
 model users {
@@ -381,15 +382,15 @@ model toner_stock {
 }
 
 model WarehouseItem {
-  id          Int      @id @default(autoincrement())
-  code        String?  @unique @db.VarChar(50)
-  name        String   @db.VarChar(150)
-  unit        String   @db.VarChar(30)
-  category    String?  @db.VarChar(80)
-  min_stock   Int      @default(0)
-  active      Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+  id         Int      @id @default(autoincrement())
+  code       String?  @unique @db.VarChar(50)
+  name       String   @db.VarChar(150)
+  unit       String   @db.VarChar(30)
+  category   String?  @db.VarChar(80)
+  min_stock  Int      @default(0)
+  active     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
 
   stock     WarehouseStock[]
   movements WarehouseMovement[]

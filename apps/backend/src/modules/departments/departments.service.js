@@ -88,11 +88,7 @@ export const update = async (idParam, payload) => {
   }
 };
 
-export const remove = async (idParam, { authorized }) => {
-  if (!authorized) {
-    throw new AppError('No autorizado para eliminar', 403);
-  }
-
+export const remove = async (idParam) => {
   const id = Number(idParam);
   if (!Number.isInteger(id) || id <= 0) {
     throw new AppError('ID inválido', 400);

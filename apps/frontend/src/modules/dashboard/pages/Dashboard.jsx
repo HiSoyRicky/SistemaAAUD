@@ -65,7 +65,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {canSeeIncidents && <IncidentsSection incidences={incidences} loading={loadingIncidences} />}
+          {canSeeIncidents && (
+            <IncidentsSection incidences={incidences} loading={loadingIncidences} />
+          )}
           {canSeeInventory && <InventorySection inventory={inventory} loading={loadingInventory} />}
           {!canSeeIncidents && !canSeeInventory && (
             <p className="text-sm text-slate-500">No tienes permisos para ver este panel.</p>

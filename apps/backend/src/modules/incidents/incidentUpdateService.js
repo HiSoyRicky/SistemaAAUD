@@ -1,7 +1,10 @@
 // incidentUpdateService.js
 
+import {
+  getResolvedUserPermissionCodes,
+  hasPermissionCode,
+} from '../../common/rbac/permissions.service.js';
 import AppError from '../../common/utils/AppError.js';
-import { getResolvedUserPermissionCodes, hasPermissionCode } from '../../common/rbac/permissions.service.js';
 import { prisma } from '../../config/prisma.js';
 import { scheduleIncidentUpdatedNotification } from './incidentUpdateNotificationService.js';
 
@@ -18,6 +21,7 @@ const updatedIncidentSelect = {
   other_category_detail: true,
   id_status: true,
   creation_date: true,
+  assigned_at: true,
   solution_date: true,
   solution: true,
   id_technician: true,
@@ -94,6 +98,7 @@ function mapUpdatedIncident(updated) {
     other_category_detail: updated.other_category_detail,
     id_status: updated.id_status,
     creation_date: updated.creation_date,
+    assigned_at: updated.assigned_at,
     solution_date: updated.solution_date,
     solution: updated.solution,
     id_technician: updated.id_technician,
@@ -113,13 +118,9 @@ async function buildUpdateData({ tx, payload, previousIncident, currentUser, req
     requiredCode: 'incidents.assign',
   });
   const hasAssignment = payload.id_technician !== undefined;
-  const hasOtherChanges = [
-    'description',
-    'category',
-    'solution',
-    'status',
-    'solution_date',
-  ].some((field) => payload[field] !== undefined);
+  const hasOtherChanges = ['description', 'category', 'solution', 'status', 'solution_date'].some(
+    (field) => payload[field] !== undefined
+  );
 
   if ((!hasAssignment || hasOtherChanges) && !canUpdate) {
     throw new AppError('No tiene permiso para editar incidencias', 403);
@@ -166,6 +167,7 @@ async function buildUpdateData({ tx, payload, previousIncident, currentUser, req
 
     if (previousIncident.id_status === 1) {
       data.id_status = 2;
+      data.assigned_at = new Date();
     }
   }
 

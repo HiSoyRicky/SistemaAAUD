@@ -1,13 +1,18 @@
 // IncidentsSection.jsx
 
 import { CheckCircle2, ClipboardList, Clock3, Wrench } from 'lucide-react';
+
+import IncidentsTechnicianChart from '../../incidents/components/IncidentsTechnicianChart.jsx';
 import SectionHeader from './SectionHeader.jsx';
 import StatCard from './StatCard.jsx';
 
 export default function IncidentsSection({ incidences, loading }) {
   const totalIncidences = incidences.length;
+
   const pendientes = incidences.filter((incident) => Number(incident.id_status) === 1).length;
+
   const enProceso = incidences.filter((incident) => Number(incident.id_status) === 2).length;
+
   const resueltas = incidences.filter((incident) => Number(incident.id_status) === 3).length;
 
   return (
@@ -18,6 +23,7 @@ export default function IncidentsSection({ incidences, loading }) {
         icon={ClipboardList}
       />
 
+      {/* TARJETAS */}
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total"
@@ -46,6 +52,11 @@ export default function IncidentsSection({ incidences, loading }) {
           icon={CheckCircle2}
           gradient="from-emerald-400 to-emerald-700"
         />
+      </div>
+
+      {/* GRÁFICA */}
+      <div className="mt-8">
+        <IncidentsTechnicianChart incidents={incidences} loading={loading} />
       </div>
     </section>
   );
