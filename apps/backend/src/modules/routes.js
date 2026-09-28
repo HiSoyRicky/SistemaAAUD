@@ -18,6 +18,7 @@ import {
   notificationRecipientsRouter,
   permissionsRouter,
   rolesRouter,
+  healthRouter,
   statusRouter,
   tonerMovementsRouter,
   tonersRouter,
@@ -30,6 +31,7 @@ const router = express.Router();
 
 // Rutas públicas
 router.use('/auth', authRouter);
+router.use('/health', healthRouter);
 router.use('/users', usersRouter);
 router.use('/incidents', incidentsRouter);
 router.use('/ubications', ubicationsRouter);

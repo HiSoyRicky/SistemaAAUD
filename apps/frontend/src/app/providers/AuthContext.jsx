@@ -6,6 +6,20 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+function isTokenExpired(token) {
+  try {
+    const decoded = jwtDecode(token);
+
+    if (!decoded?.exp) {
+      return true;
+    }
+
+    return decoded.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
 function normalizeRoleName(roleName) {
   return String(roleName || '')
     .trim()
@@ -87,6 +101,14 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+
+    if (token && isTokenExpired(token)) {
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
 
     const storedUserType = sessionStorage.getItem('userType');
     const storedRoleName = sessionStorage.getItem('roleName');
@@ -318,7 +340,21 @@ export const AuthProvider = ({ children }) => {
     setPermissions([]);
     setPermissionsLoading(false);
 
-    sessionStorage.clear();
+    const authKeys = [
+      'user',
+      'userType',
+      'roleName',
+      'loggedUserName',
+      'loggedUserId',
+      'username',
+      'mustChangePassword',
+      'permissions',
+    ];
+
+    authKeys.forEach((key) => {
+      sessionStorage.removeItem(key);
+    });
+
     localStorage.removeItem('token');
   };
 

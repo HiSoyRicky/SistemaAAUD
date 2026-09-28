@@ -6,6 +6,7 @@ export { default as brandsRouter } from './brands/brands.routes.js';
 export { default as categoriesRouter } from './categories/categories.routes.js';
 export { default as departmentsRouter } from './departments/departments.routes.js';
 export { default as devicesRouter } from './devices/devices.routes.js';
+export { default as healthRouter } from './health/health.routes.js';
 export { default as incidentsRouter } from './incidents/incidents.routes.js';
 export { default as inventoryRouter } from './inventory/inventory.routes.js';
 export { default as inventoryTransferRequestsRouter } from './inventoryTransferRequests/inventoryTransferRequests.routes.js';

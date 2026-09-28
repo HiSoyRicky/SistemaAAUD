@@ -7,6 +7,8 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+let handlingUnauthorized = false;
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -27,8 +29,17 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
+      if (handlingUnauthorized) {
+        return Promise.reject(error);
+      }
+
+      handlingUnauthorized = true;
+
       localStorage.removeItem('token');
+
       window.location.href = '/login?expired=true';
+
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   }

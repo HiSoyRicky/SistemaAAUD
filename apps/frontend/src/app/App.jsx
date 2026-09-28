@@ -5,6 +5,10 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ForcedPasswordChangePage from '../modules/auth/pages/ForcedPasswordChangePage';
 import LoginPage from '../modules/auth/pages/LoginPage';
+import { useMaintenance } from './MaintenanceContext.jsx';
+import MaintenancePage from './MaintenancePage.jsx';
+import NotFoundPage from './NotFoundPage';
+import SessionTimeoutManager from './SessionTimeoutManager';
 
 // Incidencias
 import CreateIncidentPage from '../modules/incidents/pages/CreateIncidentPage';
@@ -17,7 +21,6 @@ import Dashboard from '../modules/dashboard/pages/Dashboard';
 import NoAccessPage from '../shared/components/pages/NoAccessPage';
 import useAuth from '../shared/hooks/useAuth';
 import { getDefaultRoute } from '../shared/utils/accessRoutes';
-import NotFoundPage from './NotFoundPage';
 
 // Inventario
 import ProfilePage from '../modules/auth/pages/ProfilePage';
@@ -109,6 +112,7 @@ const AnyPermissionRoute = ({ children, permissions }) => {
 
 function App() {
   const { loading, isAuthenticated } = useAuth();
+  const { maintenance, retry } = useMaintenance();
 
   // Muestra un loader mientras se verifica la autenticación inicial
   if (loading) {
@@ -117,8 +121,14 @@ function App() {
     );
   }
 
+  // Muestra la pantalla de mantenimiento
+  if (maintenance) {
+    return <MaintenancePage onRetry={retry} />;
+  }
+
   return (
     <>
+      <SessionTimeoutManager />
       <Routes>
         {/* Login público */}
         <Route path="/login" element={<LoginPage />} />

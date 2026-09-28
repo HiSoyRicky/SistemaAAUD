@@ -3,7 +3,7 @@
 import LogoGobNal from '@/assets/images/LogoSistema.png';
 import { Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../../../shared/hooks/useAuth';
 
 function LoginPage() {
@@ -13,6 +13,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [loginMode, setLoginMode] = useState('guest');
   const { login, isAuthenticated, mustChangePassword, setAuthData } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [retryAfter, setRetryAfter] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +38,16 @@ function LoginPage() {
     // Guardar en localStorage el tiempo hasta el que está bloqueado el login
     localStorage.setItem('loginBlockedUntil', Date.now() + retryAfter * 1000);
   }, [retryAfter]);
+
+  const sessionExpired = searchParams.get('expired') === 'true';
+
+  useEffect(() => {
+    if (sessionExpired) {
+      setError('Tu sesión expiró por inactividad. Inicia sesión nuevamente para continuar.');
+
+      setSearchParams({}, { replace: true });
+    }
+  }, [sessionExpired, setSearchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -154,18 +165,28 @@ function LoginPage() {
             </>
           )}
 
-          {/* Mostrar mensaje de error si existe */}
-          {error && (
-            <div className="relative px-4 py-3 text-sm text-red-700 bg-red-100 border border-red-400 rounded">
-              <strong className="font-bold">Error:</strong>
-              <span className="block ml-1 sm:inline">{error}</span>
-              {retryAfter > 0 && (
-                <div className="mt-2 text-xs text-gray-600">
-                  Vuelve a intentarlo en {Math.floor(retryAfter / 60)}:
-                  {String(retryAfter % 60).padStart(2, '0')} segundos
-                </div>
-              )}
+          {/* Mostrar mensaje de sesión expirada */}
+          {sessionExpired ? (
+            <div className="relative px-4 py-3 text-sm text-blue-700 bg-blue-100 border border-blue-300 rounded">
+              <strong className="font-bold">Sesión expirada:</strong>
+              <span className="block ml-1 sm:inline">
+                Tu sesión expiró por inactividad. Inicia sesión nuevamente para continuar.
+              </span>
             </div>
+          ) : (
+            error && (
+              <div className="relative px-4 py-3 text-sm text-red-700 bg-red-100 border border-red-400 rounded">
+                <strong className="font-bold">Error:</strong>
+                <span className="block ml-1 sm:inline">{error}</span>
+
+                {retryAfter > 0 && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    Vuelve a intentarlo en {Math.floor(retryAfter / 60)}:
+                    {String(retryAfter % 60).padStart(2, '0')} segundos
+                  </div>
+                )}
+              </div>
+            )
           )}
 
           {/* Botón de envío */}
