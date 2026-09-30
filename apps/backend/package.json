@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/Server.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "test": "node --test test/**/*.test.js",
     "inventory:classification:preview": "node scripts/inventory-classification-preview.js",
@@ -14,29 +17,29 @@
     "warehouse:import-catalog": "node scripts/import-warehouse-catalog.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.2",
+    "@prisma/client": "6.19.3",
     "bcrypt": "^6.0.0",
-    "compression": "^1.8.1",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.0",
+    "dotenv": "^17.4.2",
     "express": "^5.1.0",
-    "express-rate-limit": "^8.1.0",
+    "express-rate-limit": "^8.7.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^9.1.1",
     "pg": "^8.16.3",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
-    "socket.io": "^4.8.1",
-    "uuid": "14.0.1",
-    "zod": "^4.1.9"
+    "socket.io": "^4.8.4",
+    "uuid": "14.0.2",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "eslint": "^9.39.4",
+    "eslint": "^9.39.5",
     "eslint-plugin-import": "^2.32.0",
     "nodemon": "^3.0.0",
     "pino-pretty": "^13.1.3",
-    "prisma": "^6.12.0"
+    "prisma": "6.19.3"
   }
 }

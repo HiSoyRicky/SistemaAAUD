@@ -13,6 +13,7 @@ const listSelect = {
   other_category_detail: true,
   id_status: true,
   creation_date: true,
+  assigned_at: true,
   solution_date: true,
   solution: true,
   id_technician: true,
@@ -38,6 +39,7 @@ const detailSelect = {
   description: true,
   other_category_detail: true,
   creation_date: true,
+  assigned_at: true,
   solution: true,
   solution_date: true,
   id_status: true,
@@ -96,8 +98,8 @@ export const findPrinterModelsWithTonersByLocationDepartment = async ({
         some: {
           inventory: {
             is: {
-            id_ubication: Number(id_ubication),
-            id_department: Number(id_department),
+              id_ubication: Number(id_ubication),
+              id_department: Number(id_department),
             },
           },
         },
