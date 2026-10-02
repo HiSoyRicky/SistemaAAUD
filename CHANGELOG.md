@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-10-02
+
+### Added
+
+- feat(prisma): Actualziación masvida de archivos
+- feat: Actualziación de paquetes y frontend de la fecha de asignación
+- feat: Nueva función de tiempo de actividad en la sesión
+- feat(prisma): Se agrego la fecha de asignación y mejora en la intefaz de incidencias
+- feat: Creación de incidencias público
+- feat(prisma): Actualización de funciones y de interfaz de almacén y permisos de usuarios
+
+### Maintenance
+
+- chore: modernizar runtime y dependencias seguras
+
+
+
 ## [1.4.0] - 2026-09-07
 
 ### Added
