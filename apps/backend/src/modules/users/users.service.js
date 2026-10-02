@@ -2,6 +2,11 @@
 
 import bcrypt from 'bcrypt';
 import AppError from '../../common/utils/AppError.js';
+import {
+  getResolvedUserPermissionCodes,
+  hasPermissionCode,
+} from '../../common/rbac/permissions.service.js';
+import { passwordSchema } from '../auth/auth.validator.js';
 import { buildDeleteDependencyMessage } from '../../common/utils/deleteDependencyMessage.js';
 import * as dto from './users.dto.js';
 import * as repository from './users.repository.js';
@@ -89,15 +94,6 @@ function normalizeRole(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-function isAdminActor(actor) {
-  if (!actor) {
-    return false;
-  }
-
-  const normalizedRole = normalizeRole(actor.role);
-  return normalizedRole.includes('admin');
-}
-
 function isAdministratorRoleName(name) {
   return normalizeRole(name) === 'administrador';
 }
@@ -121,6 +117,13 @@ function parseRequirePasswordChange(value) {
   if (normalized === 'false' || normalized === '0') return false;
 
   throw new AppError('Valor inválido para requirePasswordChange', 400);
+}
+
+export function canChangePassword({ actorId, targetId, permissions = [] }) {
+  return (
+    Number(actorId) === Number(targetId) ||
+    hasPermissionCode({ grantedCodes: permissions, requiredCode: 'users.update_password' })
+  );
 }
 
 export const getAll = async () => {
@@ -244,22 +247,37 @@ export const updatePassword = async (
   { actor, requirePasswordChange } = {}
 ) => {
   const userId = parseUserId(idParam);
-  const password = String(newPassword || '').trim();
+  const password = String(newPassword ?? '');
 
   if (!actor?.id) {
     throw new AppError('No autenticado', 401);
   }
 
   const actorId = Number(actor.id);
-  const actorIsAdmin = isAdminActor(actor);
-  const isOwnPasswordChange = actorId === userId;
+  const currentActor = await repository.findByIdWithRole(actorId);
+  if (!currentActor?.active) {
+    throw new AppError('Usuario no válido o inactivo', 401);
+  }
 
-  if (!isOwnPasswordChange && !actorIsAdmin) {
+  const permissions =
+    actorId === userId
+      ? []
+      : await getResolvedUserPermissionCodes({
+      id: actorId,
+      roleId: currentActor.id_rol,
+    });
+
+  if (!canChangePassword({ actorId, targetId: userId, permissions })) {
     throw new AppError('No autorizado para cambiar esta contraseña', 403);
   }
 
-  if (!password) {
+  if (!password.trim()) {
     throw new AppError('La nueva contraseña es requerida', 400);
+  }
+
+  const passwordValidation = passwordSchema.safeParse(password);
+  if (!passwordValidation.success) {
+    throw new AppError(passwordValidation.error.issues[0]?.message || 'Contraseña inválida', 400);
   }
 
   const forceNextLoginChange = parseRequirePasswordChange(requirePasswordChange);
@@ -299,6 +317,7 @@ export const remove = async (idParam, { actor } = {}) => {
   const hasHistory =
     history.reportedIncidents > 0 ||
     history.assignedIncidents > 0 ||
+    history.assignedByIncidents > 0 ||
     history.tonerMovements > 0 ||
     history.transferRequests > 0 ||
     history.approvedTransfers > 0 ||
@@ -312,6 +331,7 @@ export const remove = async (idParam, { actor } = {}) => {
         dependencies: [
           { count: history.reportedIncidents, label: 'incidencia(s) reportada(s)' },
           { count: history.assignedIncidents, label: 'incidencia(s) asignada(s)' },
+          { count: history.assignedByIncidents, label: 'asignación(es) de incidencia registrada(s)' },
           { count: history.tonerMovements, label: 'movimiento(s) de tóner' },
           { count: history.transferRequests, label: 'solicitud(es) de traslado' },
           { count: history.approvedTransfers, label: 'traslado(s) revisado(s)' },

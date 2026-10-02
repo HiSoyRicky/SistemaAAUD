@@ -1,8 +1,10 @@
 // inventoryTransferRequests.service.js
 
 import AppError from '../../common/utils/AppError.js';
-import { prisma } from '../../config/prisma.js';
+import { activityContext, prisma } from '../../config/prisma.js';
+import { runWithActivityLoggingSuppressed } from '../../common/services/activityLogger.js';
 import { mapInventoryItem } from '../inventory/inventory.dto.js';
+import { writeInventoryAuditEvent } from '../inventory/services/inventory-audit.service.js';
 
 function parseId(value, fieldName) {
   const parsed = Number(value);
@@ -169,6 +171,42 @@ export const getMine = async (currentUser, query = {}) => {
   };
 };
 
+export async function createPendingTransferRequest({
+  db = prisma,
+  inventoryId,
+  requesterId,
+  snapshot,
+}) {
+  return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "bd_inventory" WHERE id = ${inventoryId} FOR UPDATE`;
+
+    const inventory = await tx.bd_inventory.findUnique({
+      where: { id: inventoryId },
+      select: { id: true },
+    });
+    if (!inventory) throw new AppError('Activo no encontrado', 404);
+
+    const pendingRequest = await tx.inventory_transfer_requests.findFirst({
+      where: { inventory_id: inventoryId, status: 'PENDING' },
+      select: { id: true },
+    });
+    if (pendingRequest) {
+      throw new AppError('Ya existe una solicitud pendiente para este activo', 409);
+    }
+
+    return tx.inventory_transfer_requests.create({
+      data: {
+        inventory_id: inventoryId,
+        requester_id: requesterId,
+        snapshot,
+      },
+      include: {
+        requester: { select: { id: true, nombre_completo: true, username: true } },
+      },
+    });
+  });
+}
+
 export const create = async (payload, currentUser) => {
   const inventoryId = parseId(payload?.inventory_id, 'ID de inventario');
   const snapshot =
@@ -178,37 +216,10 @@ export const create = async (payload, currentUser) => {
     throw new AppError('La información del traslado es obligatoria', 400);
   }
 
-  const inventory = await prisma.bd_inventory.findUnique({
-    where: { id: inventoryId },
-    include: {
-      ...transferInventoryInclude,
-    },
-  });
-
-  if (!inventory) {
-    throw new AppError('Activo no encontrado', 404);
-  }
-
-  const pendingRequest = await prisma.inventory_transfer_requests.findFirst({
-    where: {
-      inventory_id: inventoryId,
-      status: 'PENDING',
-    },
-  });
-
-  if (pendingRequest) {
-    throw new AppError('Ya existe una solicitud pendiente para este activo', 409);
-  }
-
-  const created = await prisma.inventory_transfer_requests.create({
-    data: {
-      inventory_id: inventoryId,
-      requester_id: Number(currentUser?.id),
-      snapshot,
-    },
-    include: {
-      requester: { select: { id: true, nombre_completo: true, username: true } },
-    },
+  const created = await createPendingTransferRequest({
+    inventoryId,
+    requesterId: Number(currentUser?.id),
+    snapshot,
   });
 
   return {
@@ -249,81 +260,126 @@ export const approve = async (idParam, payload, currentUser) => {
   }
 
   const snapshot = request.snapshot || {};
-  const inventory = request.inventory;
   const reviewedAt = new Date();
   const reviewNotes =
     typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
-  const clearAssignedUser = shouldClearAssignedUser(snapshot);
-  const assignedUser = typeof snapshot.userRecibe === 'string' ? snapshot.userRecibe.trim() : '';
-  const nextUser = clearAssignedUser ? null : assignedUser || snapshot.userName || inventory.user;
-  const nextAdministrativeAreaId = resolveSnapshotAdministrativeArea(
-    snapshot,
-    inventory.id_administrative_area
+  const { updatedInventory, updatedRequest } = await runWithActivityLoggingSuppressed(
+    ['bd_inventory', 'inventory_devices', 'inventory_transfer_requests'],
+    () =>
+      prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "bd_inventory" WHERE id = ${request.inventory_id} FOR UPDATE`;
+
+        const inventory = await tx.bd_inventory.findUnique({
+          where: { id: request.inventory_id },
+          include: transferInventoryInclude,
+        });
+
+        if (!inventory) {
+          throw new AppError('Activo no encontrado', 404);
+        }
+
+        const nextAdministrativeAreaId = resolveSnapshotAdministrativeArea(
+          snapshot,
+          inventory.id_administrative_area
+        );
+
+        if (nextAdministrativeAreaId !== null) {
+          const administrativeArea = await tx.inventory_administrative_areas.findUnique({
+            where: { id: nextAdministrativeAreaId },
+            select: { id: true },
+          });
+
+          if (!administrativeArea) {
+            throw new AppError('Área administradora destino no encontrada', 400);
+          }
+        }
+
+        const claimedRequest = await tx.inventory_transfer_requests.updateMany({
+          where: { id: request.id, status: 'PENDING' },
+          data: {
+            status: 'APPROVED',
+            approver_id: currentUser?.id ?? null,
+            review_notes: reviewNotes,
+            reviewed_at: reviewedAt,
+          },
+        });
+
+        if (claimedRequest.count !== 1) {
+          throw new AppError('La solicitud ya fue procesada', 409);
+        }
+
+        const clearAssignedUser = shouldClearAssignedUser(snapshot);
+        const assignedUser =
+          typeof snapshot.userRecibe === 'string' ? snapshot.userRecibe.trim() : '';
+        const nextUser = clearAssignedUser
+          ? null
+          : assignedUser || snapshot.userName || inventory.user;
+
+        const nextInventory = await tx.bd_inventory.update({
+          where: { id: request.inventory_id },
+          data: {
+            id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
+            id_department: snapshot.department_destino_id ?? inventory.id_department,
+            id_administrative_area: nextAdministrativeAreaId,
+            user: nextUser,
+            transferdate: new Date(),
+            observation: snapshot.observation ?? inventory.observation,
+            updated_by: currentUser?.id ?? null,
+          },
+          include: transferInventoryInclude,
+        });
+
+        const nextRequest = await tx.inventory_transfer_requests.findUnique({
+          where: { id: request.id },
+          include: {
+            requester: { select: { id: true, nombre_completo: true, username: true } },
+            approver: { select: { id: true, nombre_completo: true, username: true } },
+          },
+        });
+
+        await writeInventoryAuditEvent(tx, {
+          action: 'UPDATE',
+          oldRecord: inventory,
+          newRecord: nextInventory,
+          userId: currentUser?.id,
+          source: 'inventory_transfer_requests.approve',
+          metadata: {
+            transfer_snapshot: snapshot,
+            transfer_request_id: request.id,
+            transfer_requester_id: request.requester_id,
+            transfer_requester_name:
+              request.requester?.nombre_completo || request.requester?.username || null,
+          },
+        });
+
+        const context = activityContext.getStore();
+        await tx.activity_logs.create({
+          data: {
+            entity_type: 'INVENTORY_TRANSFER_REQUESTS',
+            entity_id: request.id,
+            action: 'UPDATE',
+            old_values: {
+              status: request.status,
+              approver_id: request.approver_id,
+              review_notes: request.review_notes,
+              reviewed_at: request.reviewed_at,
+            },
+            new_values: {
+              status: nextRequest.status,
+              approver_id: nextRequest.approver_id,
+              review_notes: nextRequest.review_notes,
+              reviewed_at: nextRequest.reviewed_at,
+            },
+            user_id: currentUser?.id ?? null,
+            ip_address: context?.ipAddress ?? null,
+            user_agent: context?.userAgent ?? null,
+            source: 'inventory_transfer_requests.approve',
+          },
+        });
+
+        return { updatedInventory: nextInventory, updatedRequest: nextRequest };
+      })
   );
-
-  if (nextAdministrativeAreaId !== null) {
-    const administrativeArea = await prisma.inventory_administrative_areas.findUnique({
-      where: { id: nextAdministrativeAreaId },
-      select: { id: true },
-    });
-
-    if (!administrativeArea) {
-      throw new AppError('Área administradora destino no encontrada', 400);
-    }
-  }
-
-  const { updatedInventory, updatedRequest } = await prisma.$transaction(async (tx) => {
-    const nextInventory = await tx.bd_inventory.update({
-      where: { id: request.inventory_id },
-      data: {
-        id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
-        id_department: snapshot.department_destino_id ?? inventory.id_department,
-        id_administrative_area: nextAdministrativeAreaId,
-        user: nextUser,
-        transferdate: new Date(),
-        observation: snapshot.observation ?? inventory.observation,
-        updated_by: currentUser?.id ?? null,
-      },
-      include: {
-        ...transferInventoryInclude,
-      },
-    });
-
-    const nextRequest = await tx.inventory_transfer_requests.update({
-      where: { id: request.id },
-      data: {
-        status: 'APPROVED',
-        approver_id: currentUser?.id ?? null,
-        review_notes: reviewNotes,
-        reviewed_at: reviewedAt,
-      },
-      include: {
-        requester: { select: { id: true, nombre_completo: true, username: true } },
-        approver: { select: { id: true, nombre_completo: true, username: true } },
-      },
-    });
-
-    await tx.activity_logs.create({
-      data: {
-        entity_type: 'BD_INVENTORY',
-        entity_id: request.inventory_id,
-        action: 'UPDATE',
-        old_values: inventory,
-        new_values: {
-          ...nextInventory,
-          transfer_snapshot: snapshot,
-          transfer_request_id: request.id,
-          transfer_requester_id: request.requester_id,
-          transfer_requester_name:
-            request.requester?.nombre_completo || request.requester?.username || null,
-        },
-        user_id: currentUser?.id ?? null,
-        source: 'inventory_transfer_requests.approve',
-      },
-    });
-
-    return { updatedInventory: nextInventory, updatedRequest: nextRequest };
-  });
 
   return {
     success: true,

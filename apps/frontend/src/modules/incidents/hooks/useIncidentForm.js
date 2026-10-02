@@ -34,7 +34,7 @@ const normalizeTonerColor = (color) => {
   return 'DESCONOCIDO';
 };
 
-export function useIncidentForm({ loggedUserId, onSubmit }) {
+export function useIncidentForm({ onSubmit }) {
   const [showModal, setShowModal] = useState(false);
   const [incidentId, setIncidentId] = useState(null);
   const [selectedUbication, setSelectedUbication] = useState('');
@@ -151,7 +151,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
       }
     };
 
-    loadCategories();
+    void loadCategories();
     return () => {
       ignore = true;
     };
@@ -275,7 +275,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
       }
     };
 
-    loadTonerOptions();
+    void loadTonerOptions();
 
     return () => {
       ignore = true;
@@ -446,11 +446,7 @@ export function useIncidentForm({ loggedUserId, onSubmit }) {
     try {
       const payload = {
         ...data,
-        id_user: Number(loggedUserId),
         email: data.email || null,
-        status: 'Pendiente',
-        solution: '',
-        solution_date: null,
       };
 
       const response = await onSubmit(payload);

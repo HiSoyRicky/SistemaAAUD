@@ -540,6 +540,7 @@ export const create = async (payload, currentUser) => {
 
   try {
     const created = await repository.createWithTechnology({
+      userId,
       inventoryData: buildGeneralInventoryData({
         tag,
         location,

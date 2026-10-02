@@ -11,6 +11,7 @@ const ADMIN_PANEL_PERMISSIONS = [
   'permissions.read',
   'warehouse_items.read',
   'inventory.read',
+  'inventory_transfers.read_all',
   'ubications.read',
   'departments.read',
   'devices.read',

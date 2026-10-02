@@ -2,7 +2,10 @@
 
 import bcrypt from 'bcrypt';
 import AppError from '../../common/utils/AppError.js';
+import { getResolvedUserPermissionCodes } from '../../common/rbac/permissions.service.js';
 import { getIncidentByToken } from '../../common/utils/token.js';
+import { canAccessIncidentRoom, canReadAllIncidents } from './incidentAccess.js';
+import { publishIncidentEvent } from './incidentEventPublisher.js';
 import { createIncident } from './incidentService.js';
 import { updateIncident } from './incidentUpdateService.js';
 import {
@@ -29,16 +32,23 @@ function parsePositiveInt(value, fieldName) {
   return parsed;
 }
 
-export const getAll = async () => {
-  const incidents = await repository.findAll();
+export const getAll = async (currentUser) => {
+  const permissions = await getResolvedUserPermissionCodes(currentUser);
+  const technicianId = canReadAllIncidents(permissions) ? null : Number(currentUser?.id);
+  const incidents = await repository.findAll({ technicianId });
   return incidents.map(mapIncidentListItem);
 };
 
-export const getById = async (idParam) => {
+export const getById = async (idParam, currentUser) => {
   const id = parseIncidentId(idParam);
   const incident = await repository.findById(id);
 
   if (!incident) {
+    throw new AppError('Incidencia no encontrada', 404);
+  }
+
+  const permissions = await getResolvedUserPermissionCodes(currentUser);
+  if (!canAccessIncidentRoom({ permissions, userId: currentUser?.id, incident })) {
     throw new AppError('Incidencia no encontrada', 404);
   }
 
@@ -112,7 +122,14 @@ export const remove = async ({ idParam, password, currentUser, io }) => {
   }
 
   if (io) {
-    io.emit('incidentDeleted', { id });
+    void publishIncidentEvent(io, {
+      event: 'incidentDeleted',
+      incidentId: id,
+      payload: { id },
+      managerOnly: true,
+    }).catch((error) => {
+      console.error('Error emitiendo eliminación segura de incidencia:', error);
+    });
   }
 
   return mapDeleteIncidentResponse();

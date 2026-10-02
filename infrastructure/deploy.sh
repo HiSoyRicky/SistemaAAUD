@@ -100,7 +100,10 @@ npm run build -w apps/frontend
 
 log "Actualizando archivos del frontend..."
 mkdir -p "$WEB_ROOT"
-rsync -a --delete apps/frontend/dist/ "$WEB_ROOT/"
+rsync -a --delete \
+  --exclude='/uploads/***' \
+  --exclude='/fotos_personal/***' \
+  apps/frontend/dist/ "$WEB_ROOT/"
 
 # ── Backend ───────────────────────────────────────────────────────────────────
 

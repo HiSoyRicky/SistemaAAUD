@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { onIncidentUpdated } from '../../../services/socket/incidentsSocket';
-import { connectSocket, disconnectSocket, socket } from '../../../services/socket/socketClient';
+import { connectSocket, disconnectSocket } from '../../../services/socket/socketClient';
 import api from '../../../shared/api/apiClient';
 import { formatDateToDDMMYYYY } from '../../../shared/utils/formatDate';
 
@@ -24,7 +24,8 @@ function IncidentDetails() {
   };
 
   useEffect(() => {
-    connectSocket();
+    const privateSocketToken = id ? localStorage.getItem('token') : null;
+    if (privateSocketToken) connectSocket(privateSocketToken);
 
     const fetchData = async () => {
       try {
@@ -49,25 +50,19 @@ function IncidentDetails() {
       }
     };
 
-    fetchData();
+    void fetchData();
 
-    socket.on('connect', () => {
-      console.log('Socket conectado en IncidentDetails');
-      if (id) socket.emit('joinIncidentRoom', id);
-      else if (token) socket.emit('joinIncidentRoomByToken', token);
-    });
-
-    onIncidentUpdated((updatedIncident) => {
-      if (
-        (id && updatedIncident.id === Number.parseInt(id)) ||
-        (token && updatedIncident.token === token)
-      ) {
-        setIncident(updatedIncident);
-      }
-    });
+    const offUpdated = privateSocketToken
+      ? onIncidentUpdated((updatedIncident) => {
+          if (Number(updatedIncident.id_incident) === Number(id)) {
+            setIncident(updatedIncident);
+          }
+        })
+      : null;
 
     return () => {
-      disconnectSocket();
+      offUpdated?.();
+      if (privateSocketToken) disconnectSocket();
     };
   }, [id, token]);
 

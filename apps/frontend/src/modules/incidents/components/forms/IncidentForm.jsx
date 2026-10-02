@@ -4,10 +4,8 @@ import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
 import useAuth from '../../../../shared/hooks/useAuth';
 import { useIncidentForm } from '../../hooks/useIncidentForm';
 
-function IncidentForm({ loggedUserId: propLoggedUserId, onSubmit }) {
-  const { loggedUserId: authLoggedUserId, logout } = useAuth();
-
-  const loggedUserId = propLoggedUserId ?? authLoggedUserId;
+function IncidentForm({ onSubmit }) {
+  const { logout } = useAuth();
 
   const {
     register,
@@ -30,7 +28,7 @@ function IncidentForm({ loggedUserId: propLoggedUserId, onSubmit }) {
     selectedDepartment,
     newIncident,
     handleUbiDepChange,
-  } = useIncidentForm({ loggedUserId, onSubmit });
+  } = useIncidentForm({ onSubmit });
 
   const descriptionPlaceholder = isTonerCategory
     ? 'Se auto-completa al elegir color; puedes agregar más detalle si lo deseas.'

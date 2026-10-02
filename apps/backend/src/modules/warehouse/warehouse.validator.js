@@ -8,6 +8,12 @@ import {
 } from '../../common/utils/zodValidation.js';
 import { MOVEMENT_TYPES } from './warehouse.service.js';
 
+const idempotencyKeySchema = z
+  .string()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i, {
+    error: 'Clave de operación inválida',
+  });
+
 const idParamsSchema = z.object({
   id: zRequiredInt('ID inválido', { min: 1 }),
 });
@@ -45,6 +51,7 @@ const updateItemBodySchema = z.object({
 });
 
 const createMovementBodySchema = z.object({
+  idempotency_key: idempotencyKeySchema,
   item_id: zRequiredInt('Insumo inválido', { min: 1 }),
   ubication_id: zOptionalInt('Ubicación inválida', { min: 1, nullable: true }),
   department_id: zOptionalInt('Departamento inválido', {
@@ -68,9 +75,12 @@ const createMovementBodySchema = z.object({
 });
 
 const createBatchOutBodySchema = z.object({
+  idempotency_key: idempotencyKeySchema,
   ubication_id: zRequiredInt('Ubicación inválida', { min: 1 }),
   department_id: zRequiredInt('Departamento inválido', { min: 1 }),
   receiver_name: zRequiredString('El receptor es requerido'),
+  reference: zOptionalNullableString('La referencia debe ser texto'),
+  observation: zOptionalNullableString('La observación debe ser texto'),
   items: z
     .array(
       z.object({
@@ -82,6 +92,9 @@ const createBatchOutBodySchema = z.object({
 });
 
 const createBatchInBodySchema = z.object({
+  idempotency_key: idempotencyKeySchema,
+  reference: zOptionalNullableString('La referencia debe ser texto'),
+  observation: zOptionalNullableString('La observación debe ser texto'),
   items: z
     .array(
       z.object({

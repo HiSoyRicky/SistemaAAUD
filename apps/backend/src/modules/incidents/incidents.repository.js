@@ -14,11 +14,15 @@ const listSelect = {
   id_status: true,
   creation_date: true,
   assigned_at: true,
+  assigned_by: true,
   solution_date: true,
   solution: true,
   id_technician: true,
   categories: {
     select: { name: true },
+  },
+  users_bd_incidents_id_assigned_byTousers: {
+    select: { nombre_completo: true },
   },
   ubications: {
     select: { name: true },
@@ -44,6 +48,7 @@ const detailSelect = {
   solution_date: true,
   id_status: true,
   id_technician: true,
+  assigned_by: true,
   ubications: { select: { name: true } },
   departments: { select: { name: true } },
   categories: { select: { name: true } },
@@ -53,19 +58,73 @@ const detailSelect = {
       email: true,
     },
   },
+  users_bd_incidents_id_assigned_byTousers: {
+    select: { nombre_completo: true },
+  },
 };
 
-export const findAll = async () => {
-  return prisma.bd_incidents.findMany({
+const OPTIONAL_INCIDENT_COLUMNS = [
+  {
+    column: 'assigned_by',
+    fields: ['assigned_by', 'users_bd_incidents_id_assigned_byTousers'],
+  },
+];
+
+function missingOptionalIncidentColumn(error) {
+  const missingColumn = String(error?.meta?.column || error?.message || '').toLowerCase();
+  if (error?.code !== 'P2022') return null;
+  return OPTIONAL_INCIDENT_COLUMNS.find(({ column }) => missingColumn.includes(column)) || null;
+}
+
+export async function queryIncidentsWithAssignmentFallback(query, queryRunner) {
+  let compatibleQuery = query;
+
+  try {
+    for (let attempts = 0; attempts <= OPTIONAL_INCIDENT_COLUMNS.length; attempts += 1) {
+      try {
+        return await queryRunner(compatibleQuery);
+      } catch (error) {
+        const missingColumn = missingOptionalIncidentColumn(error);
+        if (!missingColumn) throw error;
+
+        compatibleQuery = { ...compatibleQuery, select: { ...compatibleQuery.select } };
+        missingColumn.fields.forEach((field) => delete compatibleQuery.select[field]);
+      }
+    }
+  } catch (error) {
+    throw error;
+  }
+
+  throw new Error('No se pudo consultar el historial compatible de incidencias');
+}
+
+export async function hasIncidentAssigneeColumn(db = prisma) {
+  const rows = await db.$queryRaw`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'bd_incidents'
+        AND column_name = 'assigned_by'
+    ) AS exists
+  `;
+  return Boolean(rows[0]?.exists);
+}
+
+export const findAll = async ({ technicianId } = {}) => {
+  const query = {
+    where: technicianId ? { id_technician: Number(technicianId) } : undefined,
     select: listSelect,
-  });
+  };
+  return queryIncidentsWithAssignmentFallback(query, (args) => prisma.bd_incidents.findMany(args));
 };
 
 export const findById = async (id) => {
-  return prisma.bd_incidents.findUnique({
+  const query = {
     where: { id: Number(id) },
     select: detailSelect,
-  });
+  };
+  return queryIncidentsWithAssignmentFallback(query, (args) => prisma.bd_incidents.findUnique(args));
 };
 
 export const findUserPasswordById = async (id) => {

@@ -242,14 +242,14 @@ function IncidentTable({
                             ((userType === 'consultor' && incident.id_status === 1) ||
                               (userType === 'admin' &&
                                 (incident.id_status === 1 || incident.id_status === 2))) && (
-                            <ActionButton
-                              type={'assign'}
-                              title={
-                                incident.id_status === 1 ? 'Asignar técnico' : 'Reasignar técnico'
-                              }
-                              onClick={() => onAssign(incident.id_incident)}
-                            />
-                          )}
+                              <ActionButton
+                                type={'assign'}
+                                title={
+                                  incident.id_status === 1 ? 'Asignar técnico' : 'Reasignar técnico'
+                                }
+                                onClick={() => onAssign(incident.id_incident)}
+                              />
+                            )}
 
                           {/* Botón Resolver */}
                           {userType === 'tecnico' && incident.id_status !== 3 && (
@@ -294,6 +294,9 @@ function IncidentTable({
         isOpen={showDetailModal}
         incident={selectedIncident}
         onClose={() => setShowDetailModal(false)}
+        canAssignIncidents={canAssignIncidents}
+        userType={userType}
+        onAssign={onAssign}
       />
     </div>
   );

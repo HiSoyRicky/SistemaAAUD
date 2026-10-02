@@ -3,13 +3,13 @@
 import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './incidents.service.js';
 
-export const getAll = catchAsync(async (_req, res) => {
-  const data = await service.getAll();
+export const getAll = catchAsync(async (req, res) => {
+  const data = await service.getAll(req.user);
   res.json(data);
 });
 
 export const getById = catchAsync(async (req, res) => {
-  const data = await service.getById(req.params.id);
+  const data = await service.getById(req.params.id, req.user);
   res.json(data);
 });
 

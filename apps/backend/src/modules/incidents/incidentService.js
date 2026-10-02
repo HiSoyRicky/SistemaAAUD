@@ -3,9 +3,10 @@
 import AppError from '../../common/utils/AppError.js';
 import { getClientIp } from '../../common/utils/clientInfo.js';
 import { prisma } from '../../config/prisma.js';
+import { appendPrinterIpsToIncidentDescription, getReporterIncidentDescription } from './incidentDescription.js';
 import { scheduleIncidentCreatedNotification } from './incidentNotificationService.js';
 
-const statusMap = { Pendiente: 1, 'En proceso': 2, Resuelto: 3 };
+const PUBLIC_INCIDENT_USER_ID = 2;
 
 function normalizeCategoryName(value) {
   return String(value || '')
@@ -40,20 +41,6 @@ const incidentSelect = {
     select: { nombre_completo: true },
   },
 };
-
-function parseSolutionDate(solutionDateInput) {
-  if (!solutionDateInput) {
-    return null;
-  }
-
-  const solutionDate = new Date(solutionDateInput);
-
-  if (Number.isNaN(solutionDate.getTime())) {
-    throw new AppError('Fecha de solución inválida', 400);
-  }
-
-  return solutionDate;
-}
 
 function parseOptionalPositiveInt(value) {
   if (value === undefined || value === null || value === '') {
@@ -109,8 +96,48 @@ async function resolveTonerRequestContext({ categoryName, payload, tx }) {
   };
 }
 
-function buildCreateData(payload, clientIp) {
-  const userIdNum = Number(payload.id_user);
+export async function resolveTonerPrinterIps({ categoryName, payload, tx }) {
+  if (!normalizeCategoryName(categoryName).includes('toner')) return [];
+
+  const printerModelId = parseOptionalPositiveInt(payload.id_printer_model);
+  const tonerId = parseOptionalPositiveInt(payload.id_toner);
+  if (!printerModelId || !tonerId) return [];
+
+  const locationFilter = {
+    inventory: {
+      is: {
+        id_ubication: Number(payload.id_ubication),
+        id_department: Number(payload.id_department),
+      },
+    },
+  };
+  const printer = await tx.models.findFirst({
+    where: {
+      id: printerModelId,
+      devices: { name: 'Impresora' },
+      toners: { some: { id: tonerId } },
+      inventory_devices: { some: locationFilter },
+    },
+    select: {
+      inventory_devices: {
+        where: locationFilter,
+        select: { ip: true },
+      },
+    },
+  });
+
+  if (!printer) return [];
+  return [
+    ...new Set(
+      (printer.inventory_devices || [])
+        .map((device) => String(device.ip || '').trim())
+        .filter(Boolean)
+    ),
+  ];
+}
+
+export function buildCreateData(payload, clientIp) {
+  const userIdNum = PUBLIC_INCIDENT_USER_ID;
   const ubicationIdNum = Number(payload.id_ubication);
   const departmentIdNum = Number(payload.id_department);
   const categoryIdNum = Number(payload.id_category);
@@ -135,12 +162,27 @@ function buildCreateData(payload, clientIp) {
     description: payload.description,
     id_category: categoryIdNum,
     other_category_detail: payload.other_category_detail || null,
-    id_status: statusMap[payload.status] || 1,
+    id_status: 1,
     creation_date: new Date(),
-    solution_date: parseSolutionDate(payload.solution_date),
-    solution: payload.solution || '',
+    solution_date: null,
+    solution: '',
     client_ip: clientIp,
   };
+}
+
+export async function validateIncidentLocation(tx, { departmentId, ubicationId }) {
+  const department = await tx.departments.findUnique({
+    where: { id: Number(departmentId) },
+    select: { id: true, id_ubication: true },
+  });
+
+  if (!department || Number(department.id_ubication) !== Number(ubicationId)) {
+    throw new AppError('El departamento no pertenece a la ubicación seleccionada', 400);
+  }
+}
+
+export async function createIncidentRecord(tx, data) {
+  return tx.bd_incidents.create({ data, select: { id: true } });
 }
 
 function formatTicket(ticketNumber) {
@@ -156,7 +198,7 @@ function mapIncidentResponse(incident) {
     ubication_name: incident.ubications?.name,
     department_name: incident.departments?.name,
     category_name: incident.categories?.name,
-    description: incident.description,
+    description: getReporterIncidentDescription(incident.description),
     id_status: incident.id_status,
     creation_date: incident.creation_date,
     solution_date: incident.solution_date,
@@ -171,6 +213,19 @@ async function createIncident({ payload, req, io }) {
 
   const { newIncident, tonerRequestContext } = await prisma
     .$transaction(async (tx) => {
+      const actor = await tx.users.findUnique({
+        where: { id: PUBLIC_INCIDENT_USER_ID },
+        select: { id: true, active: true },
+      });
+      if (!actor?.active) {
+        throw new AppError('El usuario genérico de incidencias (ID 2) no existe o está inactivo', 503);
+      }
+
+      await validateIncidentLocation(tx, {
+        departmentId: createData.id_department,
+        ubicationId: createData.id_ubication,
+      });
+
       const category = await tx.categories.findUnique({
         where: { id: createData.id_category },
         select: { id: true, name: true },
@@ -186,19 +241,17 @@ async function createIncident({ payload, req, io }) {
         tx,
       });
 
-      const last = await tx.bd_incidents.findFirst({
-        orderBy: { ticket_number: 'desc' },
-        select: { ticket_number: true },
+      const printerIps = await resolveTonerPrinterIps({
+        categoryName: category.name,
+        payload,
+        tx,
       });
+      createData.description = appendPrinterIpsToIncidentDescription(
+        createData.description,
+        printerIps
+      );
 
-      const nextTicket = (last?.ticket_number || 0) + 1;
-
-      const created = await tx.bd_incidents.create({
-        data: {
-          ...createData,
-          ticket_number: nextTicket,
-        },
-      });
+      const created = await createIncidentRecord(tx, createData);
 
       const createdIncident = await tx.bd_incidents.findUnique({
         where: { id: created.id },

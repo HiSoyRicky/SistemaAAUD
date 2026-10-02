@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { prisma } from '../../config/prisma.js';
+import { publishIncidentEvent } from '../../modules/incidents/incidentEventPublisher.js';
 import sendMail from './mailer.js';
 
 dotenv.config();
@@ -89,10 +90,16 @@ function notifyIncidentUpdate(idIncidencia, updatedIncident) {
     return;
   }
 
-  ioInstance.to(`incident_${idIncidencia}`).emit('incidentUpdated', {
-    ...updatedIncident,
-    technician_full_name:
-      updatedIncident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
+  void publishIncidentEvent(ioInstance, {
+    event: 'incidentUpdated',
+    incidentId: idIncidencia,
+    payload: {
+      ...updatedIncident,
+      technician_full_name:
+        updatedIncident.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
+    },
+  }).catch((error) => {
+    console.error('Error emitiendo actualización segura de incidencia:', error);
   });
 }
 

@@ -21,6 +21,7 @@ model bd_incidents {
   id_status                               Int
   id_technician                           Int?
   assigned_at                             DateTime?
+  assigned_by                             Int?
   solution_date                           DateTime?
   solution                                String            @db.VarChar(255)
   client_ip                               String?           @db.VarChar(50)
@@ -31,6 +32,9 @@ model bd_incidents {
   ubications                              ubications        @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_ubications")
   users_bd_incidents_id_userTousers       users             @relation("bd_incidents_id_userTousers", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users")
   users_bd_incidents_id_technicianTousers users?            @relation("bd_incidents_id_technicianTousers", fields: [id_technician], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users1")
+  users_bd_incidents_id_assigned_byTousers users?           @relation("bd_incidents_id_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_bd_incidents_assigned_by_users")
+
+  @@index([assigned_by], map: "bd_incidents_assigned_by_idx")
   toner_movements                         toner_movements[] @relation("IncidentTonerMovements")
 }
 
@@ -318,6 +322,7 @@ model users {
   activityLogs                                   activity_logs[]
   bd_incidents_bd_incidents_id_userTousers       bd_incidents[]                @relation("bd_incidents_id_userTousers")
   bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]                @relation("bd_incidents_id_technicianTousers")
+  bd_incidents_bd_incidents_id_assigned_byTousers bd_incidents[]               @relation("bd_incidents_id_assigned_byTousers")
   toner_movements                                toner_movements[]             @relation("UserTonerMovements")
   warehouse_movements                            WarehouseMovement[]           @relation("UserWarehouseMovements")
   inventory_transfer_requests_requested          inventory_transfer_requests[] @relation("InventoryTransferRequester")
@@ -418,6 +423,7 @@ model WarehouseStock {
 
 model WarehouseMovement {
   id             Int                   @id @default(autoincrement())
+  idempotency_key String?              @unique @db.VarChar(100)
   item_id        Int
   quantity       Int
   movement_type  WarehouseMovementType
@@ -461,6 +467,8 @@ model activity_logs {
   @@index([entity_type, entity_id])
   @@index([user_id])
   @@index([created_at])
+  @@index([entity_type, entity_id, created_at(sort: Desc), id(sort: Desc)], map: "activity_logs_history_asset_idx")
+  @@index([entity_type, created_at(sort: Desc), id(sort: Desc)], map: "activity_logs_history_general_idx")
 }
 
 enum TonerMovementType {

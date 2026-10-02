@@ -2,6 +2,7 @@
 
 import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
+import { prisma } from './prisma.js';
 import { env } from './env.js';
 
 export function initSocket(server) {
@@ -11,7 +12,7 @@ export function initSocket(server) {
     },
   });
 
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
 
     if (!token) {
@@ -20,26 +21,24 @@ export function initSocket(server) {
 
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET);
+      const userId = Number(decoded.id);
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return next(new Error('Token inválido'));
+      }
 
-      socket.user = {
-        id: decoded.id,
-        role: decoded.role,
-      };
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+        select: { id: true, id_rol: true, active: true },
+      });
+
+      if (!user?.active) return next(new Error('Usuario inactivo o no válido'));
+
+      socket.user = { id: user.id };
 
       next();
     } catch {
       next(new Error('Token inválido'));
     }
-  });
-
-  io.on('connection', (socket) => {
-    const userId = socket.user.id;
-
-    socket.join(`user_${userId}`);
-
-    socket.on('joinIncidentRoom', (id) => {
-      socket.join(`incident_${id}`);
-    });
   });
 
   return io;

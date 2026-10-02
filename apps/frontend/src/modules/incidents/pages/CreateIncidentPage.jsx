@@ -16,7 +16,7 @@ function CreateIncidentPage() {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <IncidentForm loggedUserId={2} onSubmit={handleCreateIncident} />
+            <IncidentForm onSubmit={handleCreateIncident} />
           </div>
         </div>
       </main>

@@ -42,6 +42,26 @@ function parseOptionalPositiveInt(value, fieldName = 'ID') {
   return parsePositiveInt(value, fieldName);
 }
 
+export function parseIdempotencyKey(value) {
+  const key = String(value || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(key)) {
+    throw new AppError('Clave de operación inválida', 400);
+  }
+  return key;
+}
+
+export function parseBatchMovementMetadata(payload = {}) {
+  const reference = normalizeOptionalText(payload.reference);
+  const observation = normalizeOptionalText(payload.observation);
+  if (reference?.length > 120) {
+    throw new AppError('La referencia no puede exceder 120 caracteres', 400);
+  }
+  if (observation?.length > 255) {
+    throw new AppError('La observación no puede exceder 255 caracteres', 400);
+  }
+  return { reference, observation };
+}
+
 function parsePagination(query = {}) {
   const page = Number(query.page) || DEFAULT_PAGE;
   const requestedLimit = Number(query.limit) || DEFAULT_LIMIT;
@@ -142,17 +162,34 @@ function buildStockWhere(query = {}) {
   return where;
 }
 
-function buildMovementWhere(query = {}) {
+function parseMovementDateFilter(value, fieldName, isEnd = false) {
+  const dateText = normalizeOptionalText(value);
+  if (!dateText) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+    throw new AppError(`${fieldName} debe tener formato AAAA-MM-DD`, 400);
+  }
+
+  const date = new Date(`${dateText}T${isEnd ? '23:59:59.999' : '00:00:00.000'}Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== dateText) {
+    throw new AppError(`${fieldName} no es válida`, 400);
+  }
+  return date;
+}
+
+export function buildMovementWhere(query = {}) {
   const itemId = parseOptionalPositiveInt(query.item_id, 'Insumo');
   const ubicationId = parseOptionalPositiveInt(query.ubication_id, 'Ubicación');
   const departmentId = parseOptionalPositiveInt(query.department_id, 'Departamento');
   const movementType = normalizeOptionalText(query.movement_type)?.toUpperCase();
   const search = normalizeOptionalText(query.search);
-  const from = normalizeOptionalText(query.from);
-  const to = normalizeOptionalText(query.to);
+  const from = parseMovementDateFilter(query.from, 'Fecha inicial');
+  const to = parseMovementDateFilter(query.to, 'Fecha final', true);
 
   if (movementType && !MOVEMENT_TYPES.includes(movementType)) {
     throw new AppError('Tipo de movimiento inválido', 400);
+  }
+  if (from && to && from > to) {
+    throw new AppError('La fecha inicial no puede ser mayor que la final', 400);
   }
 
   const where = {
@@ -162,8 +199,8 @@ function buildMovementWhere(query = {}) {
     ...(movementType && { movement_type: movementType }),
     ...((from || to) && {
       created_at: {
-        ...(from && { gte: new Date(`${from}T00:00:00.000Z`) }),
-        ...(to && { lte: new Date(`${to}T23:59:59.999Z`) }),
+        ...(from && { gte: from }),
+        ...(to && { lte: to }),
       },
     }),
   };
@@ -257,6 +294,7 @@ export const listMovements = async (query = {}) => {
 };
 
 export const createMovement = async ({ payload, currentUser }) => {
+  const idempotencyKey = parseIdempotencyKey(payload.idempotency_key);
   const itemId = parsePositiveInt(payload.item_id, 'Insumo');
   const quantity = parsePositiveInt(payload.quantity, 'Cantidad');
   const movementType = normalizeRequiredText(payload.movement_type, 'El tipo de movimiento').toUpperCase();
@@ -323,12 +361,15 @@ export const createMovement = async ({ payload, currentUser }) => {
     reference,
     observation,
     createdBy,
+    idempotencyKey,
   });
 
   return dto.mapMovement(movement);
 };
 
 export const createBatchOut = async ({ payload, currentUser }) => {
+  const idempotencyKey = parseIdempotencyKey(payload.idempotency_key);
+  const { reference, observation } = parseBatchMovementMetadata(payload);
   const ubicationId = parsePositiveInt(payload.ubication_id, 'Ubicación');
   const departmentId = parsePositiveInt(payload.department_id, 'Departamento');
   const receiverName = normalizeRequiredText(payload.receiver_name, 'El receptor');
@@ -345,10 +386,23 @@ export const createBatchOut = async ({ payload, currentUser }) => {
   const ubication = await repository.findUbicationById(ubicationId);
   const department = await repository.findDepartmentById(departmentId);
   if (!ubication || !department) throw new AppError('Ubicación o departamento inválido', 400);
-  return (await repository.createBatchOutWithStock({ items, ubicationId, departmentId, receiverName, createdBy: parseOptionalPositiveInt(currentUser?.id, 'Usuario') })).map(dto.mapMovement);
+  return (
+    await repository.createBatchOutWithStock({
+      items,
+      ubicationId,
+      departmentId,
+      receiverName,
+      reference,
+      observation,
+      createdBy: parseOptionalPositiveInt(currentUser?.id, 'Usuario'),
+      idempotencyKey,
+    })
+  ).map(dto.mapMovement);
 };
 
 export const createBatchIn = async ({ payload, currentUser }) => {
+  const idempotencyKey = parseIdempotencyKey(payload.idempotency_key);
+  const { reference, observation } = parseBatchMovementMetadata(payload);
   const lines = Array.isArray(payload.items) ? payload.items : [];
   if (!lines.length) throw new AppError('Debe agregar al menos un insumo', 400);
   const items = lines.map((line) => ({
@@ -370,7 +424,10 @@ export const createBatchIn = async ({ payload, currentUser }) => {
     ubicationId: warehouseDepartment.id_ubication,
     departmentId: warehouseDepartment.id,
     receiverName,
+    reference,
+    observation,
     createdBy: parseOptionalPositiveInt(currentUser?.id, 'Usuario'),
+    idempotencyKey,
   })).map(dto.mapMovement);
 };
 

@@ -7,6 +7,20 @@ import {
   zRequiredString,
 } from '../../common/utils/zodValidation.js';
 
+export const passwordSchema = zRequiredString('La contraseña es requerida')
+  .refine((value) => String(value).length >= 8, {
+    message: 'La contraseña debe tener al menos 8 caracteres',
+  })
+  .refine((value) => /[A-Z]/.test(String(value)), {
+    message: 'La contraseña debe incluir al menos una mayúscula',
+  })
+  .refine((value) => /[a-z]/.test(String(value)), {
+    message: 'La contraseña debe incluir al menos una minúscula',
+  })
+  .refine((value) => /\d/.test(String(value)), {
+    message: 'La contraseña debe incluir al menos un número',
+  });
+
 const registerSchema = z.object({
   username: zRequiredString('El usuario es requerido').refine(
     (value) => {
@@ -15,19 +29,7 @@ const registerSchema = z.object({
     },
     { message: 'El usuario debe tener entre 3 y 30 caracteres' }
   ),
-  password: zRequiredString('La contraseña es requerida')
-    .refine((value) => String(value).length >= 8, {
-      message: 'La contraseña debe tener al menos 8 caracteres',
-    })
-    .refine((value) => /[A-Z]/.test(String(value)), {
-      message: 'La contraseña debe incluir al menos una mayúscula',
-    })
-    .refine((value) => /[a-z]/.test(String(value)), {
-      message: 'La contraseña debe incluir al menos una minúscula',
-    })
-    .refine((value) => /\d/.test(String(value)), {
-      message: 'La contraseña debe incluir al menos un número',
-    }),
+  password: passwordSchema,
   nombre_completo: zRequiredString('El nombre completo es requerido').refine(
     (value) => {
       const len = String(value).trim().length;

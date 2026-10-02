@@ -3,7 +3,6 @@
 import {
   formatHistoryDate,
   normalizeComparableValue,
-  normalizeText,
   parseMovementObject,
   parseNullableId,
   parseOptionalDate,
@@ -25,6 +24,7 @@ import AppError from '../../../common/utils/AppError.js';
 export const getHistory = async (query) => {
   const { page, limit } = parsePagination(query);
   const search = String(query?.search || '').trim();
+  const actor = String(query?.actor || '').trim();
   const action =
     String(query?.action || '')
       .trim()
@@ -36,6 +36,9 @@ export const getHistory = async (query) => {
   }
   if (Number.isNaN(inventoryId)) {
     throw new AppError('ID de inventario inválido', 400);
+  }
+  if (search.length > 200 || actor.length > 100) {
+    throw new AppError('El filtro de búsqueda excede el límite permitido', 400);
   }
 
   const from = parseOptionalDate(query?.from, 'Fecha inicial');
@@ -53,7 +56,17 @@ export const getHistory = async (query) => {
     throw new AppError('La fecha inicial no puede ser mayor que la final', 400);
   }
 
-  const logs = await repository.findInventoryMovementLogs({ action, from, to, inventoryId });
+  const result = await repository.findInventoryMovementLogs({
+    action,
+    from,
+    to,
+    inventoryId,
+    actor,
+    search,
+    page,
+    limit,
+  });
+  const logs = result.data;
 
   const ubicationIds = new Set();
   const departmentIds = new Set();
@@ -167,41 +180,6 @@ export const getHistory = async (query) => {
     })
   );
 
-  const groupedByInventory = new Map();
-
-  for (const item of mapped) {
-    const key = item.inventory_id;
-    if (!groupedByInventory.has(key)) {
-      groupedByInventory.set(key, []);
-    }
-    groupedByInventory.get(key).push(item);
-  }
-
-  groupedByInventory.forEach((group) => {
-    group.sort((a, b) => (toTimestamp(b.moved_at) || 0) - (toTimestamp(a.moved_at) || 0));
-
-    for (let index = 0; index < group.length; index += 1) {
-      const current = group[index];
-      const older = group[index + 1];
-
-      if (!older) {
-        current.time_in_previous_location_ms = null;
-        continue;
-      }
-
-      const currentTs = toTimestamp(current.moved_at);
-      const olderTs = toTimestamp(older.moved_at);
-
-      if (currentTs === null || olderTs === null) {
-        current.time_in_previous_location_ms = null;
-        continue;
-      }
-
-      const delta = currentTs - olderTs;
-      current.time_in_previous_location_ms = delta > 0 ? delta : null;
-    }
-  });
-
   const inventoryIds = [...new Set(mapped.map((item) => item.inventory_id).filter(Boolean))];
   const currentInventory = await repository.findCurrentInventoryByIds(inventoryIds);
   const currentByInventoryId = new Map(
@@ -234,64 +212,11 @@ export const getHistory = async (query) => {
     item.current_active = currentByInventoryId.get(item.inventory_id) || null;
   }
 
-  const normalizedSearch = normalizeText(search);
-
-  const filtered = normalizedSearch
-    ? mapped.filter((item) => {
-        const searchableText = buildSearchText([
-          item.tag,
-          item.serie,
-          item.action,
-          item.moved_by?.name,
-          item.previous_user,
-          item.new_user,
-          item.previous_ubication,
-          item.new_ubication,
-          item.previous_department,
-          item.new_department,
-          item.previous_status,
-          item.new_status,
-          item.previous_device,
-          item.new_device,
-          item.previous_brand,
-          item.new_brand,
-          item.previous_model,
-          item.new_model,
-          item.device_name,
-          item.brand_name,
-          item.model_name,
-          item.previous_ip,
-          item.new_ip,
-          item.previous_observation,
-          item.new_observation,
-          item.changed_fields
-            ?.map((change) => `${change.field} ${change.from || ''} ${change.to || ''}`)
-            .join(' '),
-          item.current_active?.ubication,
-          item.current_active?.department,
-          item.current_active?.status,
-          item.current_active?.device,
-          item.current_active?.brand,
-          item.current_active?.model,
-          item.inventory_id,
-          item.id,
-        ]);
-
-        return searchableText.includes(normalizedSearch);
-      })
-    : mapped;
-
-  const total = filtered.length;
-  const totalPages = Math.max(Math.ceil(total / limit), 1);
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * limit;
-  const data = filtered.slice(start, start + limit);
-
   return {
-    data,
-    total,
-    page: safePage,
-    totalPages,
+    data: mapped,
+    total: result.total,
+    page: result.page,
+    totalPages: result.totalPages,
   };
 };
 
@@ -375,10 +300,6 @@ function buildChangedDetails(oldValues, newValues, maps) {
   });
 
   return result;
-}
-
-function buildSearchText(parts) {
-  return normalizeText(parts.filter(Boolean).join(' '));
 }
 
 function resolveHistoryIds(oldValues, newValues) {
@@ -529,12 +450,20 @@ export function buildHistoryItem({
     administrativeAreasMap,
     classificationRulesMap,
   });
+  const currentTimestamp = toTimestamp(log.created_at);
+  const previousTimestamp = toTimestamp(log.previous_movement_at);
+  const timeInPreviousLocation =
+    currentTimestamp !== null && previousTimestamp !== null
+      ? currentTimestamp - previousTimestamp
+      : null;
 
   return {
     id: log.id,
     inventory_id: log.entity_id,
     action: log.action,
     moved_at: log.created_at,
+    time_in_previous_location_ms:
+      timeInPreviousLocation > 0 ? timeInPreviousLocation : null,
     moved_by: resolveMovedBy(
       log,
       shouldUseTransferRequester,
@@ -571,7 +500,6 @@ export function buildHistoryItem({
     changed_fields: changedDetails,
     transfer_request_id: parseNullableId(newValues.transfer_request_id),
     transfer_snapshot: Object.keys(transferSnapshot).length > 0 ? transferSnapshot : null,
-    time_in_previous_location_ms: null,
     current_active: null,
   };
 }

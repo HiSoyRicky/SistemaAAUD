@@ -6,11 +6,13 @@ import {
 } from '../../common/rbac/permissions.service.js';
 import AppError from '../../common/utils/AppError.js';
 import { prisma } from '../../config/prisma.js';
+import * as repository from './incidents.repository.js';
 import { scheduleIncidentUpdatedNotification } from './incidentUpdateNotificationService.js';
+import { splitPrinterIpDescription } from './incidentDescription.js';
 
 const statusMap = { Pendiente: 1, Asignado: 2, Resuelto: 3 };
 
-const updatedIncidentSelect = {
+export const updatedIncidentSelect = {
   id: true,
   ticket_number: true,
   id_user: true,
@@ -48,8 +50,18 @@ function parseIncidentId(idParam) {
   return id;
 }
 
-function parseRequestedStatus(status) {
-  return statusMap[status] || undefined;
+function parseRequestedStatus(payload) {
+  const namedStatus = payload.status === undefined ? undefined : statusMap[payload.status];
+  const legacyStatus = payload.id_status === undefined ? undefined : Number(payload.id_status);
+
+  if (payload.status !== undefined && namedStatus === undefined) {
+    throw new AppError('Estado inválido', 400);
+  }
+  if (namedStatus !== undefined && legacyStatus !== undefined && namedStatus !== legacyStatus) {
+    throw new AppError('Los estados indicados no coinciden', 400);
+  }
+
+  return namedStatus ?? legacyStatus;
 }
 
 function normalizeRole(value) {
@@ -85,6 +97,7 @@ function validateResolutionPayload(requestedStatusId, solution) {
 }
 
 function mapUpdatedIncident(updated) {
+  const { description, printerIps } = splitPrinterIpDescription(updated.description);
   return {
     id_incident: updated.id,
     ticket_number: updated.ticket_number,
@@ -93,7 +106,8 @@ function mapUpdatedIncident(updated) {
     reporter_email: updated.email,
     ubication_name: updated.ubications?.name || null,
     department_name: updated.departments?.name || null,
-    description: updated.description,
+    description,
+    printer_ip_links: printerIps,
     id_category: updated.id_category,
     other_category_detail: updated.other_category_detail,
     id_status: updated.id_status,
@@ -102,11 +116,21 @@ function mapUpdatedIncident(updated) {
     solution_date: updated.solution_date,
     solution: updated.solution,
     id_technician: updated.id_technician,
+    assigned_by: updated.assigned_by,
+    assigned_by_name:
+      updated.users_bd_incidents_id_assigned_byTousers?.nombre_completo || null,
     technician_full_name: updated.users_bd_incidents_id_technicianTousers?.nombre_completo || null,
   };
 }
 
-async function buildUpdateData({ tx, payload, previousIncident, currentUser, requestedStatusId }) {
+async function buildUpdateData({
+  tx,
+  payload,
+  previousIncident,
+  currentUser,
+  requestedStatusId,
+  canStoreAssignmentActor,
+}) {
   const data = {};
   const grantedPermissions = await getResolvedUserPermissionCodes(currentUser);
   const canUpdate = hasPermissionCode({
@@ -117,12 +141,21 @@ async function buildUpdateData({ tx, payload, previousIncident, currentUser, req
     grantedCodes: grantedPermissions,
     requiredCode: 'incidents.assign',
   });
+  if (!canAssign && Number(previousIncident.id_technician) !== Number(currentUser?.id)) {
+    throw new AppError('Incidencia no encontrada', 404);
+  }
   const hasAssignment = payload.id_technician !== undefined;
-  const hasOtherChanges = ['description', 'category', 'solution', 'status', 'solution_date'].some(
-    (field) => payload[field] !== undefined
-  );
+  const hasOtherChanges = [
+    'description',
+    'category',
+    'id_category',
+    'solution',
+    'status',
+    'solution_date',
+  ].some((field) => payload[field] !== undefined);
+  const hasStatusAliasOnly = !hasAssignment && payload.id_status !== undefined;
 
-  if ((!hasAssignment || hasOtherChanges) && !canUpdate) {
+  if ((!hasAssignment || hasOtherChanges || hasStatusAliasOnly) && !canUpdate) {
     throw new AppError('No tiene permiso para editar incidencias', 403);
   }
 
@@ -134,8 +167,14 @@ async function buildUpdateData({ tx, payload, previousIncident, currentUser, req
     data.description = payload.description;
   }
 
-  if (payload.category !== undefined) {
-    data.id_category = payload.category;
+  const requestedCategory = payload.category ?? payload.id_category;
+  if (requestedCategory !== undefined) {
+    const category = await tx.categories.findUnique({
+      where: { id: Number(requestedCategory) },
+      select: { id: true },
+    });
+    if (!category) throw new AppError('Categoría inválida', 400);
+    data.id_category = Number(requestedCategory);
   }
 
   if (payload.solution !== undefined) {
@@ -164,10 +203,11 @@ async function buildUpdateData({ tx, payload, previousIncident, currentUser, req
     }
 
     data.id_technician = Number(payload.id_technician);
+    if (canStoreAssignmentActor) data.assigned_by = Number(currentUser.id);
+    data.assigned_at = new Date();
 
     if (previousIncident.id_status === 1) {
       data.id_status = 2;
-      data.assigned_at = new Date();
     }
   }
 
@@ -217,7 +257,7 @@ async function updateIncident({ idParam, payload, currentUser, io }) {
   }
 
   const incidentId = parseIncidentId(idParam);
-  const requestedStatusId = parseRequestedStatus(payload.status);
+  const requestedStatusId = parseRequestedStatus(payload);
   validateResolutionPayload(requestedStatusId, payload.solution);
 
   const { updatedIncident, previousIncident } = await prisma.$transaction(async (tx) => {
@@ -240,6 +280,8 @@ async function updateIncident({ idParam, payload, currentUser, io }) {
       previousIncident,
       currentUser,
       requestedStatusId,
+      canStoreAssignmentActor:
+        payload.id_technician !== undefined && (await repository.hasIncidentAssigneeColumn(tx)),
     });
 
     await applyIncidentUpdate({
@@ -258,11 +300,14 @@ async function updateIncident({ idParam, payload, currentUser, io }) {
     return { updatedIncident, previousIncident };
   });
 
-  const mappedIncident = mapUpdatedIncident(updatedIncident);
-
-  if (io) {
-    io.emit('incidentUpdated', mappedIncident);
+  if (payload.id_technician !== undefined) {
+    const assignment = await repository.findById(incidentId);
+    updatedIncident.assigned_by = assignment?.assigned_by ?? null;
+    updatedIncident.users_bd_incidents_id_assigned_byTousers =
+      assignment?.users_bd_incidents_id_assigned_byTousers ?? null;
   }
+
+  const mappedIncident = mapUpdatedIncident(updatedIncident);
 
   scheduleIncidentUpdatedNotification({
     incidentId,

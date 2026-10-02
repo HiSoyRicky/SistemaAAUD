@@ -194,13 +194,17 @@ function WarehousePage({ historyOnly = false }) {
           { item_id: Number(movementForm.item_id), quantity: Number(movementForm.quantity) },
         ];
         await Warehouse.createBatchOut({
+          idempotency_key: globalThis.crypto.randomUUID(),
           ubication_id: Number(movementForm.ubication_id),
           department_id: Number(movementForm.department_id),
           receiver_name: movementForm.receiver_name,
+          reference: movementForm.reference || null,
+          observation: movementForm.observation || null,
           items,
         });
       } else {
         await Warehouse.createMovement({
+          idempotency_key: globalThis.crypto.randomUUID(),
           ...movementForm,
           item_id: Number(movementForm.item_id),
           quantity: Number(movementForm.quantity),

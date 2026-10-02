@@ -10,6 +10,7 @@ import { logger } from './common/logger.js';
 import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
 import { initSocket } from './config/socket.js';
+import { synchronizeIncidentTicketNumberSequence } from './modules/incidents/ticketSequence.js';
 
 const server = createServer(app);
 
@@ -17,6 +18,8 @@ async function startServer() {
   try {
     await prisma.$connect();
     logger.info('Conexión a base de datos establecida');
+    await synchronizeIncidentTicketNumberSequence(prisma);
+    logger.info('Secuencia de tickets de incidencias sincronizada');
 
     const io = initSocket(server);
     app.set('io', io);

@@ -1,10 +1,12 @@
 // InventoryDetailModal.jsx
 
 import { useEffect, useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import {
   formatDateOnlyToDDMMYYYY,
   formatDateToDDMMYYYY,
 } from '../../../../../shared/utils/formatDate';
+import Pagination from '../../../../../shared/components/ui/Pagination';
 import { Inventory } from '../../services/inventory.api';
 
 function textOrDash(value) {
@@ -44,6 +46,11 @@ function classificationText(value) {
 function InventoryDetailModal({ isOpen, onClose, item }) {
   const [historyRows, setHistoryRows] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const [historyRetry, setHistoryRetry] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -51,33 +58,48 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
     async function loadHistoryByDevice() {
       if (!isOpen || !item?.id) {
         setHistoryRows([]);
+        setHistoryError('');
+        setHistoryPage(1);
+        setHistoryTotalPages(1);
+        setHistoryTotal(0);
         return;
       }
 
       try {
         setLoadingHistory(true);
+        setHistoryError('');
         const response = await Inventory.fetchMovementHistory({
           inventoryId: item.id,
-          page: 1,
-          limit: 100,
+          page: historyPage,
+          limit: 10,
         });
 
         if (!active) return;
         setHistoryRows(Array.isArray(response?.data) ? response.data : []);
+        setHistoryPage(Math.max(Number(response?.page) || 1, 1));
+        setHistoryTotalPages(Math.max(Number(response?.totalPages) || 1, 1));
+        setHistoryTotal(Number(response?.total) || 0);
       } catch (error) {
         console.error('Error cargando historial del equipo:', error);
-        if (active) setHistoryRows([]);
+        if (active) {
+          setHistoryRows([]);
+          setHistoryTotalPages(1);
+          setHistoryTotal(0);
+          setHistoryError(
+            error.response?.data?.message || 'No fue posible cargar el historial del equipo.'
+          );
+        }
       } finally {
         if (active) setLoadingHistory(false);
       }
     }
 
-    loadHistoryByDevice();
+    void loadHistoryByDevice();
 
     return () => {
       active = false;
     };
-  }, [isOpen, item?.id]);
+  }, [isOpen, item?.id, historyPage, historyRetry]);
 
   const locationHistory = useMemo(() => {
     return historyRows.filter((row) => {
@@ -189,10 +211,30 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
                   </tr>
                 )}
 
-                {!loadingHistory && locationHistory.length === 0 && (
+                {!loadingHistory && historyError && (
+                  <tr>
+                    <td className="px-2 py-3 text-center border text-red-600" colSpan={8}>
+                      <div className="flex flex-col items-center gap-2">
+                        <span role="alert">{historyError}</span>
+                        <button
+                          type="button"
+                          onClick={() => setHistoryRetry((retry) => retry + 1)}
+                          className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900"
+                        >
+                          <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                          Reintentar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!loadingHistory && !historyError && locationHistory.length === 0 && (
                   <tr>
                     <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
-                      Sin historial de cambios para este equipo.
+                      {historyTotal === 0
+                        ? 'Sin historial de cambios para este equipo.'
+                        : 'Sin cambios relevantes en esta página.'}
                     </td>
                   </tr>
                 )}
@@ -238,6 +280,13 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
               </tbody>
             </table>
           </div>
+          {!loadingHistory && !historyError && historyTotalPages > 1 && (
+            <Pagination
+              currentPage={historyPage}
+              totalPages={historyTotalPages}
+              onPageChange={setHistoryPage}
+            />
+          )}
         </div>
 
         <div className="flex justify-end mt-6">

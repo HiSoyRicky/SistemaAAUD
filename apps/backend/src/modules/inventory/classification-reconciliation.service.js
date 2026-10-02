@@ -1,4 +1,5 @@
 import AppError from '../../common/utils/AppError.js';
+import { runWithActivityLoggingSuppressed } from '../../common/services/activityLogger.js';
 import * as repository from './inventory.repository.js';
 import { resolveClassificationRule } from './services/inventory-classification.service.js';
 
@@ -209,28 +210,30 @@ export const runReconcile = async (options = {}) => {
     const actionable = plans.filter(({ plan }) => !plan.conflict && plan.rule && (plan.ruleChanged || plan.areaChanged));
 
     try {
-      await transaction(async (tx) => {
-        for (const { inventory, plan } of actionable) {
-          const oldValues = {
-            asset_classification_rule_id: inventory.asset_classification_rule_id,
-            id_administrative_area: inventory.id_administrative_area,
-          };
-          const newValues = {
-            asset_classification_rule_id: plan.nextRuleId,
-            id_administrative_area: plan.nextAreaId,
-          };
-          await updateInventory(inventory.id, newValues, tx);
-          await createAudit(tx, {
-            entity_type: 'BD_INVENTORY',
-            entity_id: inventory.id,
-            action: 'UPDATE',
-            old_values: oldValues,
-            new_values: { ...newValues, source: 'classification-reconciliation' },
-            user_id: currentUser?.id ?? null,
-            source: 'inventory.classification-reconciliation',
-          });
-        }
-      });
+      await runWithActivityLoggingSuppressed(['bd_inventory'], () =>
+        transaction(async (tx) => {
+          for (const { inventory, plan } of actionable) {
+            const oldValues = {
+              asset_classification_rule_id: inventory.asset_classification_rule_id,
+              id_administrative_area: inventory.id_administrative_area,
+            };
+            const newValues = {
+              asset_classification_rule_id: plan.nextRuleId,
+              id_administrative_area: plan.nextAreaId,
+            };
+            await updateInventory(inventory.id, newValues, tx);
+            await createAudit(tx, {
+              entity_type: 'BD_INVENTORY',
+              entity_id: inventory.id,
+              action: 'UPDATE',
+              old_values: oldValues,
+              new_values: { ...newValues, source: 'classification-reconciliation' },
+              user_id: currentUser?.id ?? null,
+              source: 'inventory.classification-reconciliation',
+            });
+          }
+        })
+      );
     } catch (error) {
       summary.errors += 1;
       summary.errorDetails.push({

@@ -584,6 +584,8 @@ export const update = async (idParam, payload, currentUser) => {
       id,
       inventoryData: updateData,
       technologyData,
+      expectedInventory: existing,
+      userId,
       updateTechnology:
         technologyUpdateMode === 'TECHNOLOGY' ||
         (technologyUpdateMode === 'LEGACY' && hasTechnologyUpdate(payload)),

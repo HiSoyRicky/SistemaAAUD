@@ -1,6 +1,6 @@
 // useIncidentsPage.js
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { onIncidentCreated, onIncidentUpdated } from '../../../services/socket/incidentsSocket';
 import { connectSocket, disconnectSocket, socket } from '../../../services/socket/socketClient';
 import { exportIncidentsToExcel } from '../../../shared/utils/exportExcel';
@@ -22,8 +22,6 @@ export default function useIncidentsPage({
   const [incidentToEdit, setIncidentToEdit] = useState(null);
   const [notification, setNotification] = useState({ message: '', type: '' });
 
-  const joinedRoomsRef = useRef(new Set());
-
   const [search, setSearch] = useState('');
 
   const showNotification = useCallback((msg, type) => {
@@ -40,18 +38,6 @@ export default function useIncidentsPage({
     );
   }, []);
 
-  const joinRoom = useCallback((incidentId) => {
-    if (!incidentId) return;
-    if (joinedRoomsRef.current.has(incidentId)) return;
-    joinedRoomsRef.current.add(incidentId);
-    socket.emit('joinIncidentRoom', incidentId);
-  }, []);
-
-  const leaveAllRooms = useCallback(() => {
-    joinedRoomsRef.current.forEach((id) => socket.emit('leaveIncidentRoom', id));
-    joinedRoomsRef.current.clear();
-  }, []);
-
   const fetchIncidents = useCallback(async () => {
     try {
       let fetched = await Incidents.fetchAll();
@@ -63,13 +49,12 @@ export default function useIncidentsPage({
       }
 
       setIncidents(fetched);
-      fetched.forEach((inc) => joinRoom(inc.id_incident));
     } catch (error) {
       console.error('Error al cargar incidencias:', error);
       showNotification('Error al cargar incidencias: ' + error.message, 'error');
       setIncidents([]);
     }
-  }, [userType, loggedUserId, showNotification, joinRoom]);
+  }, [userType, loggedUserId, showNotification]);
 
   const fetchTechnicians = useCallback(async () => {
     try {
@@ -94,8 +79,6 @@ export default function useIncidentsPage({
 
     const handleSocketConnect = () => {
       console.log('Socket conectado:', socket.id);
-
-      joinedRoomsRef.current.forEach((id) => socket.emit('joinIncidentRoom', id));
 
       if (canReadIncidents) {
         fetchIncidents();
@@ -134,7 +117,6 @@ export default function useIncidentsPage({
         );
       });
 
-      joinRoom(newIncident.id_incident);
     });
 
     const offUpdated = onIncidentUpdated((updated) => {
@@ -180,7 +162,6 @@ export default function useIncidentsPage({
       socket.off('reconnect', handleReconnect);
       offCreated?.();
       offUpdated?.();
-      leaveAllRooms();
       if (canReadIncidents) {
         disconnectSocket();
       }
@@ -190,8 +171,6 @@ export default function useIncidentsPage({
     fetchIncidents,
     fetchTechnicians,
     showNotification,
-    joinRoom,
-    leaveAllRooms,
     canAssignIncidents,
   ]);
 
@@ -202,8 +181,6 @@ export default function useIncidentsPage({
 
         const incidentToCreate = {
           ...newIncidentData,
-          username: loggedUserName,
-          status: newIncidentData.status || 'Pendiente',
           id_category: categoryId,
           id_device: newIncidentData.id_device ? Number.parseInt(newIncidentData.id_device) : null,
           id_ubication: newIncidentData.id_ubication
@@ -222,7 +199,6 @@ export default function useIncidentsPage({
         };
 
         const created = await Incidents.create(incidentToCreate);
-        joinRoom(created.id_incident || created.id);
         return created;
       } catch (error) {
         console.error('Error al reportar incidencia:', error);
@@ -233,7 +209,7 @@ export default function useIncidentsPage({
         throw error;
       }
     },
-    [loggedUserName, showNotification, joinRoom]
+    [loggedUserName, showNotification]
   );
 
   const handleOpenAssignModal = useCallback((id_incident) => {

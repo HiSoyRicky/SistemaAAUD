@@ -151,6 +151,8 @@ function formatHistoryDate(value) {
 }
 
 function toTimestamp(value) {
+  if (value === null || value === undefined || value === '') return null;
+
   const date = value instanceof Date ? value : new Date(value);
   const time = date.getTime();
   return Number.isNaN(time) ? null : time;

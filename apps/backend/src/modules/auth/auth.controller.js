@@ -12,12 +12,9 @@ function handleAuthError(res, error, fallbackMessage) {
 }
 
 export const register = async (req, res) => {
-  try {
-    const data = await service.register(req.body);
-    return res.status(201).json(data);
-  } catch (error) {
-    return handleAuthError(res, error, 'Error al registrar');
-  }
+  return res.status(403).json({
+    error: 'El registro público está deshabilitado. Solicite la creación de su cuenta a un administrador.',
+  });
 };
 
 export const login = async (req, res) => {

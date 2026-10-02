@@ -7,6 +7,7 @@ import { formatDateTime, formatDateToDDMMYYYY } from '@/shared/utils/formatDate'
 import { CheckCircle2, Printer, RefreshCw, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
+import useAuth from '../../../../shared/hooks/useAuth';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todas' },
@@ -56,6 +57,8 @@ function buildPreviewDevice(request) {
 
 export default function TransferRequestsManager() {
   const { addNotification } = useNotifications();
+  const { hasPermission } = useAuth();
+  const canReview = hasPermission('inventory_transfers.review');
   const [requests, setRequests] = useState([]);
   const [status, setStatus] = useState('PENDING');
   const [loading, setLoading] = useState(true);
@@ -89,7 +92,7 @@ export default function TransferRequestsManager() {
   };
 
   useEffect(() => {
-    loadRequests();
+    void loadRequests();
   }, [status]);
 
   const pendingCount = useMemo(
@@ -268,7 +271,7 @@ export default function TransferRequestsManager() {
                           Imprimir
                         </button>
 
-                        {request.status === 'PENDING' && (
+                        {canReview && request.status === 'PENDING' && (
                           <button
                             type="button"
                             onClick={() => openReview(request)}
@@ -280,7 +283,7 @@ export default function TransferRequestsManager() {
                           </button>
                         )}
 
-                        {request.status !== 'PENDING' && (
+                        {canReview && request.status !== 'PENDING' && (
                           <button
                             type="button"
                             onClick={() => openReview(request)}

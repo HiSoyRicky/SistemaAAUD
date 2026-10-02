@@ -2,6 +2,11 @@
 
 import sendMail from '../../common/utils/mailer.js';
 import { generarTokenIncidencia } from '../../common/utils/token.js';
+import { publishIncidentEvent } from './incidentEventPublisher.js';
+import {
+  getReporterIncidentDescription,
+  splitPrinterIpDescription,
+} from './incidentDescription.js';
 import { getActiveEmails } from '../notificationRecipients/notificationRecipients.service.js';
 import {
   buildInternalIncidentEmail,
@@ -31,6 +36,10 @@ function getPublicViewUrl(incident) {
 async function notifyIncidentCreated({ incident, response, io, tonerRequestContext }) {
   const formattedTicket = response.ticket_number;
   const publicViewUrl = getPublicViewUrl(incident);
+  const reporterIncident = {
+    ...incident,
+    description: getReporterIncidentDescription(incident.description),
+  };
 
   try {
     const internalRecipients = await getInternalRecipients();
@@ -53,7 +62,7 @@ async function notifyIncidentCreated({ incident, response, io, tonerRequestConte
         to: incident.email,
         subject: `🕒 Confirmación de reporte de incidencia (#${formattedTicket})`,
         html: buildReporterIncidentEmail({
-          incident,
+          incident: reporterIncident,
           formattedTicket,
           publicViewUrl,
         }),
@@ -64,7 +73,7 @@ async function notifyIncidentCreated({ incident, response, io, tonerRequestConte
           to: incident.email,
           subject: `⚠️ Solicitud de tóner sin existencias (#${formattedTicket})`,
           html: buildReporterOutOfStockTonerEmail({
-            incident,
+              incident: reporterIncident,
             formattedTicket,
             publicViewUrl,
             tonerRequestContext,
@@ -77,7 +86,13 @@ async function notifyIncidentCreated({ incident, response, io, tonerRequestConte
   }
 
   if (io) {
-    io.emit('incidentCreated', response);
+    const { printerIps } = splitPrinterIpDescription(incident.description);
+    await publishIncidentEvent(io, {
+      event: 'incidentCreated',
+      incidentId: incident.id,
+      payload: { ...response, printer_ip_links: printerIps },
+      managerOnly: true,
+    });
   }
 }
 

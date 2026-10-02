@@ -2,6 +2,7 @@
 
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../config/prisma.js';
+import { getReporterIncidentDescription } from '../../modules/incidents/incidentDescription.js';
 
 const secretKey = process.env.JWT_SECRET;
 
@@ -55,7 +56,7 @@ async function getIncidentByToken(token) {
       ubication_name: incident.ubications?.name || null,
       department_name: incident.departments?.name || null,
       category_name: incident.categories?.name || null,
-      description: incident.description,
+      description: getReporterIncidentDescription(incident.description),
       other_category_detail: incident.other_category_detail,
       creation_date: incident.creation_date,
       solution: incident.solution,

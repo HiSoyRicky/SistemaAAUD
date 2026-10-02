@@ -23,6 +23,7 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
   const [items, setItems] = useState([]);
   const [lines, setLines] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -31,6 +32,7 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
     setSearch('');
     setItems([]);
     setLines([]);
+    setIdempotencyKey(globalThis.crypto.randomUUID());
   }, [open]);
 
   useEffect(() => {
@@ -131,13 +133,19 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
       setSaving(true);
       if (isOutgoing) {
         await Warehouse.createBatchOut({
+          idempotency_key: idempotencyKey,
           ubication_id: Number(form.ubication_id),
           department_id: Number(form.department_id),
           receiver_name: form.receiver_name.trim(),
+          reference: form.reference.trim() || null,
+          observation: form.observation.trim() || null,
           items: finalLines.map(({ item_id, quantity }) => ({ item_id: Number(item_id), quantity })),
         });
       } else if (form.movement_type === 'IN') {
         await Warehouse.createBatchIn({
+          idempotency_key: idempotencyKey,
+          reference: form.reference.trim() || null,
+          observation: form.observation.trim() || null,
           items: finalLines.map(({ item_id, quantity }) => ({ item_id: Number(item_id), quantity })),
         });
       } else {
@@ -146,6 +154,7 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
           return;
         }
         await Warehouse.createMovement({
+          idempotency_key: idempotencyKey,
           item_id: Number(finalLines[0].item_id),
           quantity: finalLines[0].quantity,
           movement_type: form.movement_type,
@@ -203,6 +212,28 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
               {isBatchMovement && <button type="button" onClick={addLine} className="inline-flex h-10 items-center gap-2 rounded-md border border-blue-200 px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50"><Plus size={16} />Agregar otro insumo</button>}
               {lines.length > 0 && <div className="space-y-2 rounded-lg border border-slate-200 p-3"><p className="text-sm font-bold text-slate-800">Artículos del despacho</p>{lines.map((line) => <div key={line.item_id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0"><span>{line.item?.name} · {line.quantity} {line.item?.unit}</span><button type="button" title="Quitar" onClick={() => setLines((current) => current.filter((item) => item.item_id !== line.item_id))} className="text-red-600"><Trash2 size={16} /></button></div>)}</div>}
               {isOutgoing ? <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Persona que retira<input required value={form.receiver_name} onChange={(event) => updateForm({ receiver_name: event.target.value })} placeholder="Nombre de quien retira" className="h-11 rounded-md border border-slate-300 px-3 font-normal" /></label> : form.movement_type === 'ADJUSTMENT' ? <div className="grid gap-4 md:grid-cols-2"><label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Motivo del ajuste<input required value={form.reference} onChange={(event) => updateForm({ reference: event.target.value })} className="h-11 rounded-md border border-slate-300 px-3 font-normal" /></label><label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Observación<input value={form.observation} onChange={(event) => updateForm({ observation: event.target.value })} className="h-11 rounded-md border border-slate-300 px-3 font-normal" /></label></div> : <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Recibido por<input readOnly value={loggedUserName || ''} className="h-11 rounded-md border border-slate-300 bg-slate-100 px-3" /></label>}
+              {form.movement_type !== 'ADJUSTMENT' && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+                    Referencia (opcional)
+                    <input
+                      value={form.reference}
+                      onChange={(event) => updateForm({ reference: event.target.value })}
+                      maxLength={120}
+                      className="h-11 rounded-md border border-slate-300 px-3 font-normal"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
+                    Observación (opcional)
+                    <input
+                      value={form.observation}
+                      onChange={(event) => updateForm({ observation: event.target.value })}
+                      maxLength={255}
+                      className="h-11 rounded-md border border-slate-300 px-3 font-normal"
+                    />
+                  </label>
+                </div>
+              )}
               <div className="flex justify-between gap-2"><button type="button" onClick={() => setStep(1)} className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold"><ArrowLeft size={16} />Atrás</button><button type="button" onClick={goToConfirm} className="h-10 rounded-md bg-blue-600 px-5 text-sm font-semibold text-white">Revisar y confirmar</button></div>
             </div>
           ) : (
@@ -223,6 +254,12 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
                   </>
                 ) : (
                   <p><strong>Recibido por:</strong> {loggedUserName || '-'}</p>
+                )}
+                {form.movement_type !== 'ADJUSTMENT' && form.reference.trim() && (
+                  <p><strong>Referencia:</strong> {form.reference.trim()}</p>
+                )}
+                {form.movement_type !== 'ADJUSTMENT' && form.observation.trim() && (
+                  <p><strong>Observación:</strong> {form.observation.trim()}</p>
                 )}
               </div>
               <div className="space-y-2 rounded-lg border border-slate-200 p-4">

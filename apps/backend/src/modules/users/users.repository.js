@@ -119,6 +119,7 @@ export const countUserHistory = async (id) => {
     approvedTransfers,
     activityLogs,
     userPermissions,
+    assignedByColumn,
   ] = await Promise.all([
     prisma.bd_incidents.count({
       where: { id_user: id },
@@ -147,11 +148,25 @@ export const countUserHistory = async (id) => {
     prisma.user_permissions.count({
       where: { id_user: id },
     }),
+
+    prisma.$queryRaw`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'bd_incidents'
+          AND column_name = 'assigned_by'
+      ) AS exists
+    `,
   ]);
+  const assignedByIncidents = assignedByColumn?.[0]?.exists
+    ? await prisma.bd_incidents.count({ where: { assigned_by: id } })
+    : 0;
 
   return {
     reportedIncidents,
     assignedIncidents,
+    assignedByIncidents,
     tonerMovements,
     transferRequests,
     approvedTransfers,

@@ -67,3 +67,37 @@ test('tolera un activo sin inventory_devices en el estado actual', () => {
   assert.equal(item.previous_ip, null);
   assert.equal(item.new_ip, null);
 });
+
+test('el primer movimiento no calcula duración desde la época Unix', () => {
+  const item = buildHistoryItem({
+    log: {
+      id: 4,
+      entity_id: 13,
+      action: 'UPDATE',
+      created_at: '2026-10-02T17:18:00.000Z',
+      previous_movement_at: null,
+    },
+    oldValues: {},
+    newValues: { tag: 'A-13' },
+    ...maps,
+  });
+
+  assert.equal(item.time_in_previous_location_ms, null);
+});
+
+test('calcula la duración positiva hasta el movimiento inmediatamente anterior', () => {
+  const item = buildHistoryItem({
+    log: {
+      id: 5,
+      entity_id: 13,
+      action: 'UPDATE',
+      created_at: '2026-10-02T17:18:00.000Z',
+      previous_movement_at: '2026-10-01T17:18:00.000Z',
+    },
+    oldValues: {},
+    newValues: { tag: 'A-13' },
+    ...maps,
+  });
+
+  assert.equal(item.time_in_previous_location_ms, 24 * 60 * 60 * 1000);
+});

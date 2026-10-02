@@ -12,6 +12,7 @@ import {
   zRequiredInt,
   zRequiredString,
 } from '../../common/utils/zodValidation.js';
+import { passwordSchema } from '../auth/auth.validator.js';
 
 const userIdParamsSchema = z.object({
   id: zRequiredInt('ID de usuario inválido', { min: 1 }),
@@ -46,8 +47,9 @@ const updateUserBodySchema = z.object({
 });
 
 const updatePasswordBodySchema = z.object({
-  newPassword: zRequiredString('La nueva contraseña es requerida'),
-});
+  newPassword: passwordSchema,
+  requirePasswordChange: z.boolean().optional(),
+}).strict();
 
 const searchUsersQuerySchema = z.object({
   q: zOptionalString('Parámetro de búsqueda inválido'),

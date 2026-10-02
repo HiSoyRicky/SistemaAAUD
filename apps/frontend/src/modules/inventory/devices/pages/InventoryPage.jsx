@@ -128,7 +128,8 @@ function InventoryPage() {
     locations: 0,
   });
 
-  const canTrackPendingTransfers = ['tecnico', 'consultor'].includes(userType);
+  const canTrackPendingTransfers = hasPermission('inventory_transfers.read_own');
+  const canCreateTransfers = hasPermission('inventory_transfers.create');
 
   const loadPendingTransfers = useCallback(async () => {
     if (!canTrackPendingTransfers) {
@@ -201,7 +202,7 @@ function InventoryPage() {
   };
 
   useEffect(() => {
-    loadDevices(search);
+    void loadDevices(search);
   }, [search, inventoryPage, inventoryLimit, inventoryFilters]);
 
   useEffect(() => {
@@ -220,7 +221,7 @@ function InventoryPage() {
   }, []);
 
   useEffect(() => {
-    loadPendingTransfers();
+    void loadPendingTransfers();
   }, [loadPendingTransfers]);
 
   const handleToggleColumn = (columnKey) => {
@@ -268,7 +269,7 @@ function InventoryPage() {
         console.error('Error cargando departamentos:', error);
       }
     };
-    fetchDepartments();
+    void fetchDepartments();
   }, []);
 
   useEffect(() => {
@@ -301,7 +302,7 @@ function InventoryPage() {
       }
     };
 
-    fetchFilterOptions();
+    void fetchFilterOptions();
   }, [
     inventoryFilters.ubication_name,
     inventoryFilters.department_name,
@@ -484,6 +485,7 @@ function InventoryPage() {
 
       <PrintWizardModal
         open={printModalOpen}
+        allowTransfer={canCreateTransfers}
         device={deviceToPrint}
         departments={departments}
         administrativeAreas={administrativeAreas}

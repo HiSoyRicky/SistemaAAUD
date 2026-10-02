@@ -1,6 +1,7 @@
 // incidentUpdateNotificationService.js
 
 import sendMail from '../../common/utils/mailer.js';
+import { publishIncidentEvent } from './incidentEventPublisher.js';
 import { generarTokenIncidencia } from '../../common/utils/token.js';
 import {
   buildAssignmentIncidentEmail,
@@ -57,7 +58,6 @@ async function sendReporterResolvedMail({ incident, reporterEmail, reporterName 
 }
 
 async function notifyIncidentUpdated({
-  incidentId,
   mappedIncident,
   updatedIncident,
   previousIncident,
@@ -68,11 +68,11 @@ async function notifyIncidentUpdated({
 }) {
   // Notificar primero a los clientes
   if (io) {
-    if (updatedIncident.id_technician) {
-      io.to(`user_${updatedIncident.id_technician}`).emit('incidentUpdated', mappedIncident);
-    }
-
-    io.to(`incident_${incidentId}`).emit('incidentUpdated', mappedIncident);
+    await publishIncidentEvent(io, {
+      event: 'incidentUpdated',
+      incidentId: updatedIncident.id,
+      payload: mappedIncident,
+    });
   }
 
   const shouldNotifyTechnician =

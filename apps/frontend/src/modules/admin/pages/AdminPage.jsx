@@ -49,7 +49,7 @@ export default function AdminPage() {
       path: 'transfers',
       label: 'Traslados',
       icon: <GitBranch className="w-5 h-5" />,
-      permission: 'inventory.read',
+      permission: 'inventory_transfers.read_all',
     },
     {
       path: 'ubications',

@@ -4,6 +4,20 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 export const activityContext = new AsyncLocalStorage();
 
+export function runWithActivityLoggingSuppressed(models, callback) {
+  const current = activityContext.getStore() || {};
+  const suppressedModels = new Set([
+    ...(current.suppressedModels || []),
+    ...models,
+  ]);
+
+  return activityContext.run({ ...current, suppressedModels }, callback);
+}
+
+export function isActivityLoggingSuppressed(model, context = activityContext.getStore()) {
+  return context?.suppressedModels?.has(model) ?? false;
+}
+
 const ACTIONS = {
   create: 'CREATE',
   createMany: 'CREATE',
@@ -150,6 +164,10 @@ export function getPrismaWithActivityLogger(prisma) {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           if (!model || model === 'activity_logs') {
+            return query(args);
+          }
+
+          if (isActivityLoggingSuppressed(model)) {
             return query(args);
           }
 

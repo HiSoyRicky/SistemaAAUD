@@ -32,6 +32,7 @@ export default function PrintWizardModal({
   departments = [],
   administrativeAreas = [],
   authData,
+  allowTransfer = true,
   onClose,
   onPrint,
 }) {
@@ -42,10 +43,10 @@ export default function PrintWizardModal({
 
   useEffect(() => {
     if (!open) return;
-    setDocType('transfer');
+    setDocType(allowTransfer ? 'transfer' : 'delete');
     setStep(1);
     setLocalDevice(device ? { ...device } : null);
-  }, [open, device]);
+  }, [allowTransfer, open, device]);
 
   // Cerrar con ESC
   useEffect(() => {
@@ -197,14 +198,16 @@ export default function PrintWizardModal({
             {/* Paso 1: tipo */}
             {step === 1 && (
               <div className="grid gap-3 md:grid-cols-2">
-                <DocTypeCard
-                  title="Traslado"
-                  desc="Genera documento de traslado y define destino y rol del técnico."
-                  icon="🔄"
-                  active={docType === 'transfer'}
-                  variant="blue"
-                  onClick={() => setDocType('transfer')}
-                />
+                {allowTransfer && (
+                  <DocTypeCard
+                    title="Traslado"
+                    desc="Genera documento de traslado y define destino y rol del técnico."
+                    icon="🔄"
+                    active={docType === 'transfer'}
+                    variant="blue"
+                    onClick={() => setDocType('transfer')}
+                  />
+                )}
                 <DocTypeCard
                   title="Descarte"
                   desc="Genera documento de descarte del equipo seleccionado."

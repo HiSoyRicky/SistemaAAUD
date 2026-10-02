@@ -16,6 +16,13 @@ const TONER_COLOR_ORDER = {
   TRI_COLOR: 5,
 };
 
+import { splitPrinterIpDescription } from './incidentDescription.js';
+
+function mapDescriptionAndPrinterIps(value) {
+  const { description, printerIps } = splitPrinterIpDescription(value);
+  return { description, printer_ip_links: printerIps };
+}
+
 export const mapIncidentListItem = (incident) => ({
   id_incident: incident.id,
   ticket_number: incident.ticket_number,
@@ -24,12 +31,16 @@ export const mapIncidentListItem = (incident) => ({
   reporter_email: incident.email,
   ubication_name: incident.ubications?.name || null,
   department_name: incident.departments?.name || null,
-  description: incident.description,
+  category_name: incident.categories?.name || null,
+  ...mapDescriptionAndPrinterIps(incident.description),
   id_category: incident.id_category,
   other_category_detail: incident.other_category_detail,
   id_status: incident.id_status,
   creation_date: incident.creation_date,
   assigned_at: incident.assigned_at,
+  assigned_by: incident.assigned_by,
+  assigned_by_name:
+    incident.users_bd_incidents_id_assigned_byTousers?.nombre_completo || null,
   solution_date: incident.solution_date,
   solution: incident.solution,
   id_technician: incident.id_technician,
@@ -44,10 +55,13 @@ export const mapIncidentDetail = (incident) => ({
   ubication_name: incident.ubications?.name || null,
   department_name: incident.departments?.name || null,
   category_name: incident.categories?.name || null,
-  description: incident.description,
+  ...mapDescriptionAndPrinterIps(incident.description),
   other_category_detail: incident.other_category_detail,
   creation_date: incident.creation_date,
   assigned_at: incident.assigned_at,
+  assigned_by: incident.assigned_by,
+  assigned_by_name:
+    incident.users_bd_incidents_id_assigned_byTousers?.nombre_completo || null,
   solution: incident.solution,
   solution_date: incident.solution_date,
   id_status: incident.id_status,

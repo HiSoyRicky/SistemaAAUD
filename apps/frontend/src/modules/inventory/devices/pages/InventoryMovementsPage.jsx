@@ -253,6 +253,8 @@ export default function InventoryMovementsPage() {
   const [rows, setRows] = useState([]);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [actorInput, setActorInput] = useState('');
+  const [actor, setActor] = useState('');
   const [action, setAction] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -289,6 +291,7 @@ export default function InventoryMovementsPage() {
         page: currentPage,
         limit: 10,
         search,
+        actor,
         action,
         from,
         to,
@@ -308,8 +311,8 @@ export default function InventoryMovementsPage() {
   };
 
   useEffect(() => {
-    loadHistory();
-  }, [currentPage, search, action, from, to]);
+    void loadHistory();
+  }, [currentPage, search, actor, action, from, to]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -323,8 +326,13 @@ export default function InventoryMovementsPage() {
   }, [searchInput]);
 
   useEffect(() => {
+    const timeoutId = setTimeout(() => setActor(actorInput.trim()), 400);
+    return () => clearTimeout(timeoutId);
+  }, [actorInput]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [search, action, from, to]);
+  }, [search, actor, action, from, to]);
 
   useEffect(() => {
     if (!pendingPrint || !previewRow || !previewDevice) return;
@@ -364,8 +372,17 @@ export default function InventoryMovementsPage() {
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Buscar por marbete, serie, usuario, ubicación, depto..."
+          placeholder="Buscar en los datos registrados del movimiento..."
           className="px-3 py-2 text-sm border rounded md:col-span-2 xl:col-span-3"
+        />
+
+        <input
+          type="text"
+          value={actorInput}
+          onChange={(e) => setActorInput(e.target.value)}
+          placeholder="Filtrar por actor"
+          aria-label="Filtrar historial por actor"
+          className="px-3 py-2 text-sm border rounded"
         />
 
         <select
@@ -401,6 +418,8 @@ export default function InventoryMovementsPage() {
           onClick={() => {
             setSearchInput('');
             setSearch('');
+            setActorInput('');
+            setActor('');
             setAction('');
             setFrom('');
             setTo('');
