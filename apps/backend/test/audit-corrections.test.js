@@ -25,7 +25,11 @@ import { synchronizeIncidentTicketNumberSequence } from '../src/modules/incident
 import { canChangePassword } from '../src/modules/users/users.service.js';
 import { passwordSchema } from '../src/modules/auth/auth.validator.js';
 import { createPendingTransferRequest } from '../src/modules/inventoryTransferRequests/inventoryTransferRequests.service.js';
-import { resolveRoleDefaultPermissionCodes } from '../src/common/rbac/permissions.catalog.js';
+import {
+  resolveRoleDefaultPermissionCodes,
+  splitPermissionCode,
+} from '../src/common/rbac/permissions.catalog.js';
+import { hasPermissionCode } from '../src/common/rbac/permissions.service.js';
 import { getClientIp } from '../src/common/utils/clientInfo.js';
 import { incidentCreateLimiter } from '../src/modules/incidents/incidents.routes.js';
 import { validateCreateIncident } from '../src/modules/incidents/incidents.validator.js';
@@ -416,6 +420,25 @@ test('los permisos por defecto conservan solicitudes actuales y no dan revisión
   assert.ok(consultant.includes('inventory_transfers.read_own'));
   assert.equal(technician.includes('inventory_transfers.review'), false);
   assert.deepEqual(resolveRoleDefaultPermissionCodes('Encargado personalizado'), []);
+});
+
+test('admin.panel.read es independiente de permisos normales y el comodín lo concede al administrador', () => {
+  const technician = resolveRoleDefaultPermissionCodes('Técnico');
+  const administrator = resolveRoleDefaultPermissionCodes('Administrador');
+
+  assert.deepEqual(splitPermissionCode('admin.panel.read'), {
+    module: 'admin.panel',
+    action: 'read',
+  });
+  assert.equal(technician.includes('admin.panel.read'), false);
+  assert.equal(
+    hasPermissionCode({ grantedCodes: technician, requiredCode: 'admin.panel.read' }),
+    false
+  );
+  assert.equal(
+    hasPermissionCode({ grantedCodes: administrator, requiredCode: 'admin.panel.read' }),
+    true
+  );
 });
 
 test('el cambio de contraseña ajena requiere permiso vigente específico', () => {

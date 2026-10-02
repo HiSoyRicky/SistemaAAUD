@@ -1,6 +1,7 @@
 // permissions.catalog.js
 
 const PERMISSIONS_CATALOG = [
+  { module: 'admin.panel', action: 'read' },
   { module: 'incidents', action: 'read' },
   { module: 'incidents', action: 'create' },
   { module: 'incidents', action: 'update' },
@@ -90,15 +91,15 @@ export const normalizePermissionCode = (code) =>
 
 export const splitPermissionCode = (code) => {
   const normalized = normalizePermissionCode(code);
-  const chunks = normalized.split('.');
+  const separatorIndex = normalized.lastIndexOf('.');
 
-  if (chunks.length !== 2 || !chunks[0] || !chunks[1]) {
+  if (separatorIndex <= 0 || separatorIndex === normalized.length - 1) {
     throw new Error(`Código de permiso inválido: ${code}`);
   }
 
   return {
-    module: chunks[0],
-    action: chunks[1],
+    module: normalized.slice(0, separatorIndex),
+    action: normalized.slice(separatorIndex + 1),
   };
 };
 

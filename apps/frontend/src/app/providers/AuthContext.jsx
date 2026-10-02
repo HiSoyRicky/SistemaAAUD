@@ -60,7 +60,13 @@ function hasPermissionCode(requiredPermission, grantedPermissions = []) {
     return true;
   }
 
-  const [module, action] = required.split('.');
+  const separatorIndex = required.lastIndexOf('.');
+  if (separatorIndex <= 0 || separatorIndex === required.length - 1) {
+    return false;
+  }
+
+  const module = required.slice(0, separatorIndex);
+  const action = required.slice(separatorIndex + 1);
   if (!module || !action) {
     return false;
   }

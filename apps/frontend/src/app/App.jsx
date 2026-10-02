@@ -331,10 +331,12 @@ function App() {
             <PrivateRoute
               allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
             >
-              <PermissionRoute permission="users.read">
-                <PrivateLayout>
-                  <ActivityLogsPage />
-                </PrivateLayout>
+              <PermissionRoute permission="admin.panel.read">
+                <PermissionRoute permission="users.read">
+                  <PrivateLayout>
+                    <ActivityLogsPage />
+                  </PrivateLayout>
+                </PermissionRoute>
               </PermissionRoute>
             </PrivateRoute>
           }

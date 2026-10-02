@@ -54,6 +54,7 @@ export const getNavigation = (userType, hasPermission = () => true) => {
     {
       label: 'Administración',
       icon: Users,
+      permission: 'admin.panel.read',
       children: [
         {
           label: 'Actividad',
@@ -65,22 +66,7 @@ export const getNavigation = (userType, hasPermission = () => true) => {
           label: 'Panel principal',
           path: '/admin',
           icon: UserSquare,
-          permission: [
-            'users.read',
-            'roles.read',
-            'permissions.read',
-            'warehouse_items.read',
-            'warehouse_items.create',
-            'inventory.read',
-            'ubications.read',
-            'departments.read',
-            'devices.read',
-            'inventory_classification_rules.read',
-            'brands.read',
-            'models.read',
-            'toners.read',
-            'notification_settings.read',
-          ],
+          permission: 'admin.panel.read',
         },
       ],
     },
