@@ -148,11 +148,7 @@ BEGIN
 END
 $$;
 
--- Paso 3: Copiar datos en TRANSACCIÓN ATÓMICA
-BEGIN TRANSACTION;
-
--- 3a: Copiar bd_inventory -> inventory_items
--- Usar ROW_NUMBER() para asignar IDs de form determinística
+-- Paso 3a: Copiar bd_inventory -> inventory_items
 INSERT INTO "inventory_items" (
   "tag", "description", "id_ubication", "id_department", "user",
   "id_status", "id_condition", "id_administrative_area",
@@ -164,36 +160,33 @@ SELECT
   bdi.tag, bdi.description, bdi.id_ubication, bdi.id_department, bdi.user,
   bdi.id_status, bdi.id_condition, bdi.id_administrative_area,
   NULL::INTEGER, NULL::INTEGER, bdi.asset_classification_rule_id,
-  bdi.created_by, bdi.created_at, bdi.updated_at, bdi.updated_by,
+  bdi.created_by, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, bdi.updated_by,
   bdi.transferdate, bdi.observation
 FROM "bd_inventory" bdi
 ORDER BY bdi.id ASC;
 
--- 3b: Copiar inventory_devices -> inventory_item_devices
--- Correlacionar por INNER JOIN en bd_inventory.tag e inventory_items.tag (debe ser 1:1)
+-- Paso 3b: Copiar inventory_devices -> inventory_item_devices
 INSERT INTO "inventory_item_devices" (
   "item_id", "id_device", "id_brand", "id_model", "serie", "ip", "created_at", "updated_at"
 )
 SELECT
-  ii.id,  -- Nuevo ID de inventory_items
+  ii.id,
   id_dev.id_device,
   id_dev.id_brand,
   id_dev.id_model,
-  bdi.serie,  -- De bd_inventory (legacy)
+  bdi.serie,
   id_dev.ip,
   id_dev.created_at,
   id_dev.updated_at
 FROM "inventory_devices" id_dev
 INNER JOIN "bd_inventory" bdi ON id_dev.id_inventory = bdi.id
-INNER JOIN "inventory_items" ii ON ii.tag = bdi.tag  -- Correlación por tag
+INNER JOIN "inventory_items" ii ON ii.tag = bdi.tag
 WHERE NOT EXISTS (
   SELECT 1 FROM "inventory_item_devices" iid WHERE iid.item_id = ii.id
 )
-ON CONFLICT ("item_id") DO NOTHING;  -- Idempotencia
+ON CONFLICT ("item_id") DO NOTHING;
 
-COMMIT;
-
--- Paso 4: Validación post-migration (SIN transacción)
+-- Paso 4: Validación post-migration
 DO $$
 DECLARE
   v_inventory_count INTEGER;
@@ -217,7 +210,6 @@ BEGIN
   RAISE NOTICE 'Post-migration: % items SIN devices (esperado: % de bd_inventory)',
     v_orphaned_count, v_bd_count - v_devices_count;
 
-  -- Validar que los counts coinciden
   IF v_inventory_count != v_bd_count THEN
     RAISE WARNING 'MISMATCH: inventory_items (%) != bd_inventory (%)',
       v_inventory_count, v_bd_count;
@@ -227,7 +219,7 @@ BEGIN
 END
 $$;
 
--- Paso 5: Agregar remaining FK constraints post-validación
+-- Paso 5: Agregar remaining FK constraints
 ALTER TABLE "inventory_items"
   ADD CONSTRAINT "inventory_items_ubication_fkey"
   FOREIGN KEY ("id_ubication") REFERENCES "ubications"("id") ON DELETE RESTRICT;
@@ -247,5 +239,3 @@ ALTER TABLE "inventory_items"
 ALTER TABLE "inventory_items"
   ADD CONSTRAINT "inventory_items_asset_classification_rule_fkey"
   FOREIGN KEY ("asset_classification_rule_id") REFERENCES "inventory_asset_classification_rules"("id") ON DELETE RESTRICT;
-
--- Fin de migración
