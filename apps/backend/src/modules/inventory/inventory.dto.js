@@ -13,7 +13,7 @@ const legacyFallbackWarnings = new Set();
 export const mapInventoryItem = (item) => {
   const statusName = item.status?.name || null;
   const isDiscarded = normalizeText(statusName) === 'DESCARTADO';
-  const technology = item.inventory_devices;
+  const technology = item.device_details || item.inventory_devices;
 
   if (!technology && !legacyFallbackWarnings.has(item.id)) {
     legacyFallbackWarnings.add(item.id);
@@ -33,7 +33,7 @@ export const mapInventoryItem = (item) => {
   const deviceExtension = technology
     ? {
         id: technology.id,
-        id_inventory: technology.id_inventory,
+        item_id: technology.item_id || technology.id_inventory,
         id_device: technology.id_device,
         id_brand: technology.id_brand,
         id_model: technology.id_model,

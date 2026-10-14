@@ -18,16 +18,16 @@ const includeRelations = {
       extension: true,
     },
   },
-  devices: { select: { id: true, name: true } },
-  brands: { select: { id: true, name: true } },
-  models: { select: { id: true, name: true } },
-  inventory_devices: {
+  device_details: {
     include: {
       device: { select: { id: true, name: true } },
       brand: { select: { id: true, name: true } },
       model: { select: { id: true, name: true } },
     },
   },
+  vehicle_details: true,
+  property_details: true,
+  real_estate_details: true,
   departments: { select: { id: true, name: true } },
   ubications: { select: { id: true, name: true } },
   status: { select: { id: true, name: true } },
@@ -331,7 +331,7 @@ function buildInventorySearchWhere(search, filters = {}) {
 }
 
 export const findAll = async (search, filters = {}) => {
-  return prisma.bd_inventory.findMany({
+  return prisma.inventory_items.findMany({
     where: buildInventorySearchWhere(search, filters),
     include: includeRelations,
     orderBy: { id: 'asc' },
@@ -359,44 +359,44 @@ export const findInventoryFilterOptions = async (filters = {}) => {
     statusRows,
     userRows,
   ] = await Promise.all([
-    prisma.bd_inventory.findMany({
+    prisma.inventory_items.findMany({
       where: withAnd(buildWhereExcluding('ubication'), { id_ubication: { not: null } }),
       distinct: ['id_ubication'],
       select: { id_ubication: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_items.findMany({
       where: withAnd(buildWhereExcluding('department'), { id_department: { not: null } }),
       distinct: ['id_department'],
       select: { id_department: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_items.findMany({
       where: withAnd(buildWhereExcluding('administrative_area'), {
         id_administrative_area: { not: null },
       }),
       distinct: ['id_administrative_area'],
       select: { id_administrative_area: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_item_devices.findMany({
       where: buildWhereExcluding('device'),
       distinct: ['id_device'],
       select: { id_device: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_item_devices.findMany({
       where: buildWhereExcluding('brand'),
       distinct: ['id_brand'],
       select: { id_brand: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_item_devices.findMany({
       where: buildWhereExcluding('model'),
       distinct: ['id_model'],
       select: { id_model: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_items.findMany({
       where: buildWhereExcluding('status'),
       distinct: ['id_status'],
       select: { id_status: true },
     }),
-    prisma.bd_inventory.findMany({
+    prisma.inventory_items.findMany({
       where: withAnd(buildWhereExcluding('user'), { user: { not: null } }),
       distinct: ['user'],
       select: { user: true },
@@ -461,7 +461,7 @@ export const findInventoryFilterOptions = async (filters = {}) => {
 // pagina actual cuando el listado usa paginacion en el servidor).
 export const findInventoryStats = async ({ search, filters }) => {
   const where = buildInventorySearchWhere(search, filters);
-  const rows = await prisma.bd_inventory.findMany({
+  const rows = await prisma.inventory_items.findMany({
     where,
     select: {
       status: { select: { name: true } },
@@ -489,21 +489,21 @@ export const findInventoryStats = async ({ search, filters }) => {
 export const findPage = async ({ search, filters, skip, take }) => {
   const where = buildInventorySearchWhere(search, filters);
   const [data, total] = await prisma.$transaction([
-    prisma.bd_inventory.findMany({
+    prisma.inventory_items.findMany({
       where,
       include: includeRelations,
       orderBy: { id: 'asc' },
       skip,
       take,
     }),
-    prisma.bd_inventory.count({ where }),
+    prisma.inventory_items.count({ where }),
   ]);
 
   return { data, total };
 };
 
 export const findById = async (id) => {
-  return prisma.bd_inventory.findUnique({
+  return prisma.inventory_items.findUnique({
     where: { id: Number(id) },
     include: includeRelations,
   });
@@ -810,22 +810,22 @@ export const areInventoryLocationFieldsNullable = async () => {
 export const withTransaction = async (callback) => prisma.$transaction(callback);
 
 export const createWithTechnology = async ({ inventoryData, technologyData, userId }) => {
-  return runWithActivityLoggingSuppressed(['bd_inventory', 'inventory_devices'], () =>
+  return runWithActivityLoggingSuppressed(['inventory_items', 'inventory_item_devices'], () =>
     prisma.$transaction(async (tx) => {
-      const inventory = await tx.bd_inventory.create({
+      const inventory = await tx.inventory_items.create({
         data: inventoryData,
       });
 
       if (technologyData) {
-        await tx.inventory_devices.create({
+        await tx.inventory_item_devices.create({
           data: {
             ...technologyData,
-            id_inventory: inventory.id,
+            item_id: inventory.id,
           },
         });
       }
 
-      const created = await tx.bd_inventory.findUnique({
+      const created = await tx.inventory_items.findUnique({
         where: { id: inventory.id },
         include: includeRelations,
       });
@@ -849,11 +849,11 @@ export const updateWithTechnology = async ({
   expectedInventory,
   userId,
 }) => {
-  return runWithActivityLoggingSuppressed(['bd_inventory', 'inventory_devices'], () =>
+  return runWithActivityLoggingSuppressed(['inventory_items', 'inventory_item_devices'], () =>
     prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "bd_inventory" WHERE id = ${Number(id)} FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "inventory_items" WHERE id = ${Number(id)} FOR UPDATE`;
 
-      const current = await tx.bd_inventory.findUnique({
+      const current = await tx.inventory_items.findUnique({
         where: { id: Number(id) },
         include: includeRelations,
       });
@@ -882,35 +882,35 @@ export const updateWithTechnology = async ({
         technologyData &&
         ['id_device', 'id_brand', 'id_model', 'ip'].some(
           (field) =>
-            JSON.stringify(current.inventory_devices?.[field] ?? current[field] ?? null) !==
+            JSON.stringify(current.device_details?.[field] ?? current[field] ?? null) !==
             JSON.stringify(technologyData[field] ?? null)
         );
 
       if (Object.keys(changedInventoryData).length || technologyChanged) {
-        await tx.bd_inventory.update({
+        await tx.inventory_items.update({
           where: { id: Number(id) },
           data: { ...changedInventoryData, updated_by: userId ?? null },
         });
       }
 
       if (updateTechnology && technologyData) {
-        await tx.inventory_devices.upsert({
-          where: { id_inventory: Number(id) },
+        await tx.inventory_item_devices.upsert({
+          where: { item_id: Number(id) },
           create: {
             ...technologyData,
-            id_inventory: Number(id),
+            item_id: Number(id),
           },
           update: technologyData,
         });
       }
 
       if (updateTechnology === false && technologyData === null) {
-        await tx.inventory_devices.deleteMany({
-          where: { id_inventory: Number(id) },
+        await tx.inventory_item_devices.deleteMany({
+          where: { item_id: Number(id) },
         });
       }
 
-      const updated = await tx.bd_inventory.findUnique({
+      const updated = await tx.inventory_items.findUnique({
         where: { id: Number(id) },
         include: includeRelations,
       });
