@@ -8,34 +8,34 @@ datasource db {
 }
 
 model bd_incidents {
-  id                                      Int               @id(map: "pk_incidents") @default(autoincrement())
-  id_user                                 Int
-  reporter_name                           String            @db.VarChar(35)
-  email                                   String?           @db.VarChar(50)
-  id_ubication                            Int
-  id_department                           Int
-  description                             String            @db.VarChar(255)
-  id_category                             Int
-  other_category_detail                   String?           @db.VarChar(50)
-  creation_date                           DateTime
-  id_status                               Int
-  id_technician                           Int?
-  assigned_at                             DateTime?
-  assigned_by                             Int?
-  solution_date                           DateTime?
-  solution                                String            @db.VarChar(255)
-  client_ip                               String?           @db.VarChar(50)
-  ticket_number                           Int               @unique(map: "bd_incidents_ticket_unique") @default(autoincrement())
-  categories                              categories        @relation(fields: [id_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_categories")
-  departments                             departments       @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_departments")
-  status                                  status            @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_status")
-  ubications                              ubications        @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_ubications")
-  users_bd_incidents_id_userTousers       users             @relation("bd_incidents_id_userTousers", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users")
-  users_bd_incidents_id_technicianTousers users?            @relation("bd_incidents_id_technicianTousers", fields: [id_technician], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users1")
-  users_bd_incidents_id_assigned_byTousers users?           @relation("bd_incidents_id_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_bd_incidents_assigned_by_users")
+  id                                       Int               @id(map: "pk_incidents") @default(autoincrement())
+  id_user                                  Int
+  reporter_name                            String            @db.VarChar(35)
+  email                                    String?           @db.VarChar(50)
+  id_ubication                             Int
+  id_department                            Int
+  description                              String            @db.VarChar(255)
+  id_category                              Int
+  other_category_detail                    String?           @db.VarChar(50)
+  creation_date                            DateTime
+  id_status                                Int
+  id_technician                            Int?
+  assigned_at                              DateTime?
+  assigned_by                              Int?
+  solution_date                            DateTime?
+  solution                                 String            @db.VarChar(255)
+  client_ip                                String?           @db.VarChar(50)
+  ticket_number                            Int               @unique(map: "bd_incidents_ticket_unique") @default(autoincrement())
+  categories                               categories        @relation(fields: [id_category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_categories")
+  departments                              departments       @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_departments")
+  status                                   status            @relation(fields: [id_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_status")
+  ubications                               ubications        @relation(fields: [id_ubication], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_ubications")
+  users_bd_incidents_id_userTousers        users             @relation("bd_incidents_id_userTousers", fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users")
+  users_bd_incidents_id_technicianTousers  users?            @relation("bd_incidents_id_technicianTousers", fields: [id_technician], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_incidents_users1")
+  users_bd_incidents_id_assigned_byTousers users?            @relation("bd_incidents_id_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_bd_incidents_assigned_by_users")
+  toner_movements                          toner_movements[] @relation("IncidentTonerMovements")
 
   @@index([assigned_by], map: "bd_incidents_assigned_by_idx")
-  toner_movements                         toner_movements[] @relation("IncidentTonerMovements")
 }
 
 model incident_notification_recipients {
@@ -165,7 +165,8 @@ model inventory_asset_classification_rules {
   administrative_area inventory_administrative_areas? @relation(fields: [administrative_area_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
   extension           inventory_asset_extensions?     @relation(fields: [extension_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
-  inventories bd_inventory[]
+  inventories    bd_inventory[]
+  inventoryItems inventory_items[]
 
   @@index([device_id, active])
   @@index([asset_type_id, extension_id, administrative_area_id, active])
@@ -175,9 +176,10 @@ model inventory_asset_classification_rules {
 }
 
 model inventory_conditions {
-  id          Int            @id @default(autoincrement())
-  name        String         @unique @db.VarChar(50)
-  inventories bd_inventory[]
+  id             Int               @id @default(autoincrement())
+  name           String            @unique @db.VarChar(50)
+  inventories    bd_inventory[]
+  inventoryItems inventory_items[]
 }
 
 model inventory_administrative_areas {
@@ -187,6 +189,7 @@ model inventory_administrative_areas {
   inventories bd_inventory[]
 
   classification_rules inventory_asset_classification_rules[]
+  inventoryItems       inventory_items[]
 }
 
 model inventory_product_catalog {
@@ -236,11 +239,12 @@ model inventory_devices {
 }
 
 model brands {
-  id                Int                 @id(map: "pk_brands") @default(autoincrement())
-  name              String              @unique @db.VarChar(50)
-  bd_inventory      bd_inventory[]
-  models            models[]
-  inventory_devices inventory_devices[]
+  id                   Int                      @id(map: "pk_brands") @default(autoincrement())
+  name                 String                   @unique @db.VarChar(50)
+  bd_inventory         bd_inventory[]
+  models               models[]
+  inventory_devices    inventory_devices[]
+  inventoryItemDevices inventory_item_devices[]
 }
 
 model categories {
@@ -259,6 +263,7 @@ model departments {
   toner_movements     toner_movements[]   @relation("DepartmentTonerMovements")
   warehouse_movements WarehouseMovement[]
   users               users[]
+  inventoryItems      inventory_items[]
 }
 
 model devices {
@@ -268,18 +273,20 @@ model devices {
   models               models[]
   inventory_devices    inventory_devices[]
   classification_rules inventory_asset_classification_rules[]
+  inventoryItemDevices inventory_item_devices[]
 }
 
 model models {
-  id                Int                 @id(map: "pk_models") @default(autoincrement())
-  name              String              @db.VarChar(50)
-  id_brand          Int
-  id_device         Int
-  bd_inventory      bd_inventory[]
-  brands            brands              @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_brands")
-  devices           devices             @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
-  toners            toners[]
-  inventory_devices inventory_devices[]
+  id                   Int                      @id(map: "pk_models") @default(autoincrement())
+  name                 String                   @db.VarChar(50)
+  id_brand             Int
+  id_device            Int
+  bd_inventory         bd_inventory[]
+  brands               brands                   @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_brands")
+  devices              devices                  @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
+  toners               toners[]
+  inventory_devices    inventory_devices[]
+  inventoryItemDevices inventory_item_devices[]
 }
 
 model roles {
@@ -290,10 +297,11 @@ model roles {
 }
 
 model status {
-  id           Int            @id(map: "pk_status") @default(autoincrement())
-  name         String         @db.VarChar(50)
-  bd_incidents bd_incidents[]
-  bd_inventory bd_inventory[]
+  id             Int               @id(map: "pk_status") @default(autoincrement())
+  name           String            @db.VarChar(50)
+  bd_incidents   bd_incidents[]
+  bd_inventory   bd_inventory[]
+  inventoryItems inventory_items[]
 }
 
 model ubications {
@@ -306,31 +314,32 @@ model ubications {
   warehouse_stock     WarehouseStock[]
   warehouse_movements WarehouseMovement[] @relation("UbicationWarehouseMovements")
   users               users[]
+  inventoryItems      inventory_items[]
 }
 
 model users {
-  id                                             Int                           @id(map: "pk_users") @default(autoincrement())
-  nombre_completo                                String                        @db.VarChar(50)
-  username                                       String                        @db.VarChar(50)
-  password                                       String?                       @db.VarChar(255)
-  email                                          String?                       @db.VarChar(50)
-  id_rol                                         Int
-  active                                         Boolean                       @default(false)
-  id_department                                  Int?
-  id_ubication                                   Int?
-  must_change_password                           Boolean                       @default(false)
-  activityLogs                                   activity_logs[]
-  bd_incidents_bd_incidents_id_userTousers       bd_incidents[]                @relation("bd_incidents_id_userTousers")
-  bd_incidents_bd_incidents_id_technicianTousers bd_incidents[]                @relation("bd_incidents_id_technicianTousers")
-  bd_incidents_bd_incidents_id_assigned_byTousers bd_incidents[]               @relation("bd_incidents_id_assigned_byTousers")
-  toner_movements                                toner_movements[]             @relation("UserTonerMovements")
-  warehouse_movements                            WarehouseMovement[]           @relation("UserWarehouseMovements")
-  inventory_transfer_requests_requested          inventory_transfer_requests[] @relation("InventoryTransferRequester")
-  inventory_transfer_requests_reviewed           inventory_transfer_requests[] @relation("InventoryTransferApprover")
-  departments                                    departments?                  @relation(fields: [id_department], references: [id], map: "fk_users_departments")
-  roles                                          roles                         @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
-  user_permissions                               user_permissions[]
-  ubications                                     ubications?                   @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
+  id                                              Int                           @id(map: "pk_users") @default(autoincrement())
+  nombre_completo                                 String                        @db.VarChar(50)
+  username                                        String                        @db.VarChar(50)
+  password                                        String?                       @db.VarChar(255)
+  email                                           String?                       @db.VarChar(50)
+  id_rol                                          Int
+  active                                          Boolean                       @default(false)
+  id_department                                   Int?
+  id_ubication                                    Int?
+  must_change_password                            Boolean                       @default(false)
+  activityLogs                                    activity_logs[]
+  bd_incidents_bd_incidents_id_userTousers        bd_incidents[]                @relation("bd_incidents_id_userTousers")
+  bd_incidents_bd_incidents_id_technicianTousers  bd_incidents[]                @relation("bd_incidents_id_technicianTousers")
+  bd_incidents_bd_incidents_id_assigned_byTousers bd_incidents[]                @relation("bd_incidents_id_assigned_byTousers")
+  toner_movements                                 toner_movements[]             @relation("UserTonerMovements")
+  warehouse_movements                             WarehouseMovement[]           @relation("UserWarehouseMovements")
+  inventory_transfer_requests_requested           inventory_transfer_requests[] @relation("InventoryTransferRequester")
+  inventory_transfer_requests_reviewed            inventory_transfer_requests[] @relation("InventoryTransferApprover")
+  departments                                     departments?                  @relation(fields: [id_department], references: [id], map: "fk_users_departments")
+  roles                                           roles                         @relation(fields: [id_rol], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+  user_permissions                                user_permissions[]
+  ubications                                      ubications?                   @relation(fields: [id_ubication], references: [id], map: "fk_users_ubications")
 
   @@unique([nombre_completo, username, email], map: "name_users_unique")
 }
@@ -422,20 +431,20 @@ model WarehouseStock {
 }
 
 model WarehouseMovement {
-  id             Int                   @id @default(autoincrement())
-  idempotency_key String?              @unique @db.VarChar(100)
-  item_id        Int
-  quantity       Int
-  movement_type  WarehouseMovementType
-  previous_stock Int
-  new_stock      Int
-  ubication_id   Int
-  department_id  Int?
-  receiver_name  String?               @db.VarChar(100)
-  reference      String?               @db.VarChar(120)
-  observation    String?               @db.VarChar(255)
-  created_by     Int?
-  created_at     DateTime              @default(now()) @db.Timestamptz(6)
+  id              Int                   @id @default(autoincrement())
+  idempotency_key String?               @unique @db.VarChar(100)
+  item_id         Int
+  quantity        Int
+  movement_type   WarehouseMovementType
+  previous_stock  Int
+  new_stock       Int
+  ubication_id    Int
+  department_id   Int?
+  receiver_name   String?               @db.VarChar(100)
+  reference       String?               @db.VarChar(120)
+  observation     String?               @db.VarChar(255)
+  created_by      Int?
+  created_at      DateTime              @default(now()) @db.Timestamptz(6)
 
   item       WarehouseItem @relation(fields: [item_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
   ubication  ubications    @relation("UbicationWarehouseMovements", fields: [ubication_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -525,9 +534,11 @@ model inventory_transfer_requests {
   requested_at DateTime                       @default(now()) @db.Timestamptz(6)
   reviewed_at  DateTime?                      @db.Timestamptz(6)
 
-  inventory bd_inventory @relation(fields: [inventory_id], references: [id], onDelete: Cascade, map: "fk_inventory_transfer_requests_inventory")
-  requester users        @relation("InventoryTransferRequester", fields: [requester_id], references: [id], onDelete: Restrict, map: "fk_inventory_transfer_requests_requester")
-  approver  users?       @relation("InventoryTransferApprover", fields: [approver_id], references: [id], onDelete: SetNull, map: "fk_inventory_transfer_requests_approver")
+  inventory         bd_inventory     @relation(fields: [inventory_id], references: [id], onDelete: Cascade, map: "fk_inventory_transfer_requests_inventory")
+  requester         users            @relation("InventoryTransferRequester", fields: [requester_id], references: [id], onDelete: Restrict, map: "fk_inventory_transfer_requests_requester")
+  approver          users?           @relation("InventoryTransferApprover", fields: [approver_id], references: [id], onDelete: SetNull, map: "fk_inventory_transfer_requests_approver")
+  inventoryItems    inventory_items? @relation(fields: [inventory_itemsId], references: [id])
+  inventory_itemsId Int?
 
   @@index([status, requested_at])
   @@index([inventory_id])
@@ -564,4 +575,127 @@ model user_permissions {
   permission permissions @relation(fields: [id_permission], references: [id])
 
   @@id([id_user, id_permission])
+}
+
+// CENTRALIZACIÓN DE INVENTARIO - Fase I (2026-10-14)
+// Tabla central para todos los tipos de bienes patrimoniales
+model inventory_items {
+  id Int @id @default(autoincrement())
+
+  // Datos comunes a todos los bienes
+  tag                    String  @db.VarChar(50)
+  description            String? @db.VarChar(255)
+  id_ubication           Int?
+  id_department          Int?
+  user                   String? @db.VarChar(50)
+  id_status              Int
+  id_condition           Int?
+  id_administrative_area Int?
+
+  // Clasificación patrimonial
+  asset_type_id                Int?
+  extension_id                 Int?
+  asset_classification_rule_id Int?
+
+  // Auditoría
+  created_by   Int?
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @updatedAt @db.Timestamptz(6)
+  updated_by   Int?
+  transferdate DateTime? @db.Date
+  observation  String?   @db.VarChar(255)
+
+  // Relaciones
+  ubications          ubications?                           @relation(fields: [id_ubication], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  departments         departments?                          @relation(fields: [id_department], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  status              status                                @relation(fields: [id_status], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  condition           inventory_conditions?                 @relation(fields: [id_condition], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  administrative_area inventory_administrative_areas?       @relation(fields: [id_administrative_area], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  classification_rule inventory_asset_classification_rules? @relation(fields: [asset_classification_rule_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // Extensiones especializadas (1:1)
+  device_details      inventory_item_devices?
+  vehicle_details     inventory_item_vehicles?
+  property_details    inventory_item_properties?
+  real_estate_details inventory_item_real_estate?
+
+  // Transferencias
+  transfer_requests inventory_transfer_requests[]
+
+  @@index([tag])
+  @@index([id_status])
+  @@index([id_administrative_area])
+  @@index([id_ubication])
+  @@index([id_department])
+  @@map("inventory_items")
+}
+
+// Extensión 1:1 para equipos IT (reemplaza concepto de inventory_devices)
+model inventory_item_devices {
+  id         Int      @id @default(autoincrement())
+  item_id    Int      @unique
+  id_device  Int
+  id_brand   Int
+  id_model   Int
+  serie      String   @db.VarChar(50)
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  item   inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  device devices         @relation(fields: [id_device], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  brand  brands          @relation(fields: [id_brand], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  model  models          @relation(fields: [id_model], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@index([id_device])
+  @@index([id_brand])
+  @@index([id_model])
+  @@map("inventory_item_devices")
+}
+
+// Extensión 1:1 para vehículos (ready para Fase II)
+model inventory_item_vehicles {
+  id           Int      @id @default(autoincrement())
+  item_id      Int      @unique
+  plate        String?  @db.VarChar(20)
+  chassis      String?  @db.VarChar(50)
+  engine       String?  @db.VarChar(50)
+  vehicle_type String?  @db.VarChar(50)
+  fuel_type    String?  @db.VarChar(30)
+  mileage      Int?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  item inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@map("inventory_item_vehicles")
+}
+
+// Extensión 1:1 para bienes muebles (mobiliario, aires, herramientas - ready para Fase II)
+model inventory_item_properties {
+  id         Int      @id @default(autoincrement())
+  item_id    Int      @unique
+  material   String?  @db.VarChar(100)
+  dimensions String?  @db.VarChar(150)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  item inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@map("inventory_item_properties")
+}
+
+// Extensión 1:1 para bienes inmuebles (terrenos, edificios - ready para Fase II)
+model inventory_item_real_estate {
+  id           Int      @id @default(autoincrement())
+  item_id      Int      @unique
+  address      String?  @db.VarChar(255)
+  area_m2      Decimal? @db.Decimal(10, 2)
+  location_geo String?  @db.VarChar(255)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  item inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@map("inventory_item_real_estate")
 }
