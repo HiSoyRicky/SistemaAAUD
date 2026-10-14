@@ -2,7 +2,7 @@
 
 Este archivo es el plan maestro vivo del sistema AAUD. Debe mantenerse como fuente principal de referencia para saber que se quiere, que existe, que ya se hizo y que falta.
 
-Actualizado: 2026-10-01.
+Actualizado: 2026-10-14 (centralización de inventario en progreso).
 
 ## Datos funcionales recolectados
 
@@ -39,6 +39,59 @@ El sistema debe separar tres mundos que hoy conviven:
 - Pantalla frontend `/almacen` con catálogo básico, existencias, entradas/salidas/ajustes y movimientos recientes.
 - Usuarios asignados al departamento Almacén reciben el alcance de sus módulos desde backend; las acciones siguen separadas por permisos.
 - La vista `/inventario/equipos` puede consultarse como bienes institucionales globales por usuarios con `inventory.read` o `warehouse_stock.read`.
+
+**CENTRALIZACIÓN DE INVENTARIO: INICIADA (2026-10-14)**
+
+**Estado del análisis previo:**
+- Revisión completa del schema.prisma: `bd_inventory` requiere obligatoriamente campos tecnológicos (id_device, id_brand, id_model, serie).
+- Los equipos IT (1,972 registros observados) están en `bd_inventory` con extensión `inventory_devices`.
+- Los consumibles están en `warehouse_items`, separado y con modelo de stock/movimientos propio.
+- Los tipos/extensiones/clasificaciones existen como catálogos pero no se usan para bienes no tecnológicos.
+- Falta modelo centralizado que permita a Bienes Patrimoniales buscar en UN SOLO LUGAR: equipos IT, mesas, sillas, vehículos, terrenos, etc.
+
+**Necesidad institucional:** Bienes Patrimoniales requiere inventario centralizado donde pueda buscar/filtrar/reportar TODO (maquinaria, mobiliario, vehículos, terrenos, equipos IT, etc.) sin navegar múltiples módulos.
+
+**Arquitectura propuesta (INICIO 2026-10-14):**
+1. Crear tabla `inventory_items` como punto central de todos los bienes patrimoniales (reemplaza `bd_inventory` en contexto de centralización).
+2. `inventory_items` almacena: tag, descripción, ubicación, departamento, persona responsable, estado, condición, área administrativa.
+3. Crear extensiones especializadas por tipo:
+   - `inventory_item_devices` (reemplaza `inventory_devices`): campos IT (device, marca, modelo, serie, IP).
+   - `inventory_item_vehicles` (nueva): placa, chasis, motor, combustible, odómetro, etc.
+   - `inventory_item_properties` (nueva): para mobiliario, aires, herramientas, etc.
+   - `inventory_item_real_estate` (nueva): para terrenos, edificios, etc.
+4. Mantener `warehouse_items` separado (consumibles: papel, agua, llantas, toners, etc.).
+5. Clasificación unificada: `inventory_items` usa asset_type/extension/classification igual que hoy en `bd_inventory`.
+6. Historial unificado: `activity_logs` cubre todo con `entity_type=INVENTORY_ITEM`.
+
+**Fases de implementación (2026-10-14+):**
+- **Fase I: Diseño y migración de esquema** (esta semana).
+  - Crear `inventory_items`, extensiones especializadas en Prisma.
+  - Migración aditiva: copiar datos de `bd_inventory` a `inventory_items` + `inventory_item_devices`.
+  - Mantener `bd_inventory` como vista/legacy hasta validar.
+  
+- **Fase II: Adaptar backend** (próxima semana).
+  - API `/api/inventory` lee de `inventory_items` + extensiones.
+  - Servicios y repositorios actualizados.
+  - Permisos RBAC: `inventory.read/create/update` aplican a todos los tipos.
+  
+- **Fase III: Interfaz unificada en frontend** (2-3 semanas).
+  - Página `/inventario/bienes` muestra búsqueda/filtrado centralizado.
+  - Formulario dinámico por tipo de bien seleccionado.
+  - Mantener `/inventario/equipos` como vista legacy de equipos IT solamente.
+
+- **Fase IV: Validación y rollback** (después de Fase III).
+  - Pruebas en PostgreSQL aislado.
+  - Aprobación institucional de datos migrados.
+  - Fallback a `bd_inventory` si es necesario.
+
+- **Fase V: Eliminar legacy** (release posterior).
+  - Deprecar `bd_inventory`, retirar en version siguiente.
+
+**Bloqueadores conocidos:**
+- OBS-001, OBS-004 (seguridad/infraestructura) aún pendientes pero no bloquean esta Fase I.
+- Validación de 1,972 registros IT previo a Fase IV (dry-run).
+
+
 
 **AUDITORIA DE HISTORIAL DE EQUIPOS: EN PROGRESO (2026-10-01)**
 
