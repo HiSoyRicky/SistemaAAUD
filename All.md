@@ -2,7 +2,7 @@
 
 Este archivo es el plan maestro vivo del sistema AAUD. Debe mantenerse como fuente principal de referencia para saber que se quiere, que existe, que ya se hizo y que falta.
 
-Actualizado: 2026-10-14 (centralización de inventario en progreso).
+Actualizado: 2026-10-14 (Fase I: centralización completada).
 
 ## Datos funcionales recolectados
 
@@ -40,56 +40,37 @@ El sistema debe separar tres mundos que hoy conviven:
 - Usuarios asignados al departamento Almacén reciben el alcance de sus módulos desde backend; las acciones siguen separadas por permisos.
 - La vista `/inventario/equipos` puede consultarse como bienes institucionales globales por usuarios con `inventory.read` o `warehouse_stock.read`.
 
-**CENTRALIZACIÓN DE INVENTARIO: INICIADA (2026-10-14)**
+**CENTRALIZACIÓN DE INVENTARIO: FASE I COMPLETADA (2026-10-14)**
 
-**Estado del análisis previo:**
-- Revisión completa del schema.prisma: `bd_inventory` requiere obligatoriamente campos tecnológicos (id_device, id_brand, id_model, serie).
-- Los equipos IT (1,972 registros observados) están en `bd_inventory` con extensión `inventory_devices`.
-- Los consumibles están en `warehouse_items`, separado y con modelo de stock/movimientos propio.
-- Los tipos/extensiones/clasificaciones existen como catálogos pero no se usan para bienes no tecnológicos.
-- Falta modelo centralizado que permita a Bienes Patrimoniales buscar en UN SOLO LUGAR: equipos IT, mesas, sillas, vehículos, terrenos, etc.
+**Cambios implementados:**
+- ✅ Modelo `inventory_items` creado en Prisma (tabla central con todos los bienes)
+- ✅ 4 extensiones especializadas 1:1 creadas:
+  - `inventory_item_devices`: equipos IT (reemplaza concepto legacy)
+  - `inventory_item_vehicles`: vehículos (ready para Fase II)
+  - `inventory_item_properties`: bienes muebles/mobiliario (ready para Fase II)
+  - `inventory_item_real_estate`: inmuebles/terrenos (ready para Fase II)
+- ✅ Migración SQL `20261014_create_inventory_items_centralized` creada con:
+  - Validación pre-backfill (integridad de FK)
+  - Copia atómica de 1,972 registros de bd_inventory -> inventory_items
+  - Copia de inventory_devices -> inventory_item_devices
+  - Validación post-migration (counts, orphans, constraints)
+- ✅ Índices de performance agregados en inventory_items
+- ✅ Constraints FK con DELETE RESTRICT para integridad
+- ✅ Schema.prisma validado y Prisma Client generado
+- ✅ Commit c10c73f: "feat: crear modelo centralizado inventory_items - Fase I"
 
-**Necesidad institucional:** Bienes Patrimoniales requiere inventario centralizado donde pueda buscar/filtrar/reportar TODO (maquinaria, mobiliario, vehículos, terrenos, equipos IT, etc.) sin navegar múltiples módulos.
+**bd_inventory se mantiene como LEGACY** sin cambios durante transición gradual.
 
-**Arquitectura propuesta (INICIO 2026-10-14):**
-1. Crear tabla `inventory_items` como punto central de todos los bienes patrimoniales (reemplaza `bd_inventory` en contexto de centralización).
-2. `inventory_items` almacena: tag, descripción, ubicación, departamento, persona responsable, estado, condición, área administrativa.
-3. Crear extensiones especializadas por tipo:
-   - `inventory_item_devices` (reemplaza `inventory_devices`): campos IT (device, marca, modelo, serie, IP).
-   - `inventory_item_vehicles` (nueva): placa, chasis, motor, combustible, odómetro, etc.
-   - `inventory_item_properties` (nueva): para mobiliario, aires, herramientas, etc.
-   - `inventory_item_real_estate` (nueva): para terrenos, edificios, etc.
-4. Mantener `warehouse_items` separado (consumibles: papel, agua, llantas, toners, etc.).
-5. Clasificación unificada: `inventory_items` usa asset_type/extension/classification igual que hoy en `bd_inventory`.
-6. Historial unificado: `activity_logs` cubre todo con `entity_type=INVENTORY_ITEM`.
+**Siguiente paso - Fase II (backends services):**
+- Adaptar `inventory.repository.js` para leer de `inventory_items` + extensiones
+- Actualizar `inventory.service.js` para cargar extensiones dinámicamente
+- Modificar `inventory.dto.js` para mapear datos de extensiones
+- Mantener contratos API idénticos (sin breaking changes)
 
-**Fases de implementación (2026-10-14+):**
-- **Fase I: Diseño y migración de esquema** (esta semana).
-  - Crear `inventory_items`, extensiones especializadas en Prisma.
-  - Migración aditiva: copiar datos de `bd_inventory` a `inventory_items` + `inventory_item_devices`.
-  - Mantener `bd_inventory` como vista/legacy hasta validar.
-  
-- **Fase II: Adaptar backend** (próxima semana).
-  - API `/api/inventory` lee de `inventory_items` + extensiones.
-  - Servicios y repositorios actualizados.
-  - Permisos RBAC: `inventory.read/create/update` aplican a todos los tipos.
-  
-- **Fase III: Interfaz unificada en frontend** (2-3 semanas).
-  - Página `/inventario/bienes` muestra búsqueda/filtrado centralizado.
-  - Formulario dinámico por tipo de bien seleccionado.
-  - Mantener `/inventario/equipos` como vista legacy de equipos IT solamente.
-
-- **Fase IV: Validación y rollback** (después de Fase III).
-  - Pruebas en PostgreSQL aislado.
-  - Aprobación institucional de datos migrados.
-  - Fallback a `bd_inventory` si es necesario.
-
-- **Fase V: Eliminar legacy** (release posterior).
-  - Deprecar `bd_inventory`, retirar en version siguiente.
-
-**Bloqueadores conocidos:**
-- OBS-001, OBS-004 (seguridad/infraestructura) aún pendientes pero no bloquean esta Fase I.
-- Validación de 1,972 registros IT previo a Fase IV (dry-run).
+**Bloqueador para ejecutar migración:**
+- Requerir BD PostgreSQL aislada/sandbox para ejecutar migración
+- Validar counts pre/post: esperado 1,972 en bd_inventory, 0 en inventory_items (inicialmente)
+- Post-migración: 1,972 en inventory_items, 1,972 en inventory_item_devices
 
 
 
