@@ -4,7 +4,7 @@
 
 export const MODULE_LANDING_ROUTES = [
   { path: '/incidencias', permissions: ['incidents.read', 'incidents.create'] },
-  { path: '/inventario/equipos', permissions: ['inventory.read', 'warehouse_stock.read'] },
+  { path: '/inventario/equipos', permissions: ['inventory.read'] },
   { path: '/almacen', permissions: ['warehouse_stock.read'] },
   { path: '/inventario/toners', permissions: ['toners.read'] },
   {
