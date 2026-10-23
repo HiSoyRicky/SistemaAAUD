@@ -3,7 +3,7 @@ import { Incidents } from '../services/incidents.api';
 
 function CreateIncidentPage() {
   const handleCreateIncident = async (payload) => {
-    return Incidents.create(payload);
+    return Incidents.create(payload, { isPublic: true });
   };
 
   return (

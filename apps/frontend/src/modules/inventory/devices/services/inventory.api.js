@@ -21,8 +21,12 @@ const Inventory = {
     api.get('/api/inventory/administrative-areas').then((res) => res.data),
   fetchAssetTypes: () => api.get('/api/inventory/asset-types').then((res) => res.data),
   fetchAssetExtensions: () => api.get('/api/inventory/asset-extensions').then((res) => res.data),
+  fetchVehicleCatalog: () => api.get('/api/inventory/vehicle-catalog').then((res) => res.data),
   fetchClassificationRules: () =>
-    api.get('/api/inventory/classification-rules').then((res) => res.data),
+    api
+      .get('/api/inventory/classification-rules', { params: { limit: 200 } })
+      .then((res) => (Array.isArray(res.data) ? res.data : res.data.data || [])),
+  fetchClassifications: () => api.get('/api/inventory/classifications').then((res) => res.data),
   resolveClassificationRule: (context) =>
     api.post('/api/inventory/classification-rules/resolve', context).then((res) => res.data),
   createTransferRequest: (data) =>

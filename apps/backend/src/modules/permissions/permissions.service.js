@@ -23,11 +23,12 @@ function parseRoleId(idParam) {
 }
 
 function isAdministratorRoleName(name) {
-  return String(name || '')
+  const normalized = String(name || '')
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') === 'administrador';
+    .replace(/[\u0300-\u036f]/g, '');
+  return normalized === 'administrador' || normalized === 'admin';
 }
 
 function mapPermissions(permissions = []) {

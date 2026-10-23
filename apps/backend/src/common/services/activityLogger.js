@@ -135,8 +135,11 @@ async function fetchOldValues({ prisma, model, operation, args }) {
     return null;
   }
 
-  const shouldFetchSingle =
-    operation === 'update' || operation === 'delete' || operation === 'upsert';
+  if (operation === 'upsert') {
+    return repository.findUnique({ where: args?.where });
+  }
+
+  const shouldFetchSingle = operation === 'update' || operation === 'delete';
   const shouldFetchMany = operation === 'updateMany' || operation === 'deleteMany';
 
   if (shouldFetchSingle) {

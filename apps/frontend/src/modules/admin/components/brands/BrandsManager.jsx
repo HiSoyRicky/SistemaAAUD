@@ -8,8 +8,10 @@ import BrandsTable from './BrandsTable';
 export default function BrandsManager() {
   const [brands, setBrands] = useState([]);
   const [newBrand, setNewBrand] = useState('');
+  const [newBrandType, setNewBrandType] = useState('TECHNOLOGY');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
+  const [editingType, setEditingType] = useState('TECHNOLOGY');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const API_URL = `/api/brands`;
@@ -49,8 +51,10 @@ export default function BrandsManager() {
     try {
       await api.post(`${API_URL}`, {
         name: newBrand,
+        catalog_type: newBrandType,
       });
       setNewBrand('');
+      setNewBrandType('TECHNOLOGY');
       fetchBrands();
       showSuccess('Marca agregada correctamente');
     } catch (err) {
@@ -60,18 +64,20 @@ export default function BrandsManager() {
   };
 
   //  Iniciar edición
-  const editBrand = (id, name) => {
+  const editBrand = (id, name, type) => {
     setEditingId(id);
     setEditingName(name);
+    setEditingType(type || 'TECHNOLOGY');
   };
 
   //  Guardar edición
   const saveBrand = async (id) => {
     if (!editingName.trim()) return;
     try {
-      await api.put(`${API_URL}/${id}`, { name: editingName });
+      await api.put(`${API_URL}/${id}`, { name: editingName, catalog_type: editingType });
       setEditingId(null);
       setEditingName('');
+      setEditingType('TECHNOLOGY');
       fetchBrands();
       showSuccess('Marca actualizada correctamente');
     } catch (err) {
@@ -145,10 +151,14 @@ export default function BrandsManager() {
         editBrand={editBrand}
         addBrand={addBrand}
         newBrand={newBrand}
+        newBrandType={newBrandType}
+        setNewBrandType={setNewBrandType}
         saveBrand={saveBrand}
         deleteBrand={deleteBrand}
         editingId={editingId}
         editingName={editingName}
+        editingType={editingType}
+        setEditingType={setEditingType}
         setNewBrand={setNewBrand}
         setEditingName={setEditingName}
         currentPage={currentPage}

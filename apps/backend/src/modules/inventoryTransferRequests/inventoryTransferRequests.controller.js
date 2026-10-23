@@ -4,7 +4,7 @@ import catchAsync from '../../common/utils/catchAsync.js';
 import * as service from './inventoryTransferRequests.service.js';
 
 export const getAll = catchAsync(async (req, res) => {
-  const data = await service.getAll(req.query);
+  const data = await service.getAll(req.user, req.query);
   res.json(data);
 });
 

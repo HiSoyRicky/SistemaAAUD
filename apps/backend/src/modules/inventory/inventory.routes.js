@@ -7,6 +7,7 @@ import requirePermission, {
 import * as controller from './inventory.controller.js';
 import { validateCreateInventory, validateUpdateInventory } from './inventory.validator.js';
 import * as classificationRulesController from './classification-rules.controller.js';
+import * as vehicleCatalogController from './vehicle-catalog.controller.js';
 import {
   validateClassificationRuleId,
   validateCreateClassificationRule,
@@ -20,18 +21,20 @@ const router = express.Router();
 router.get('/', requirePermission('inventory.read'), controller.getAll);
 router.get('/filter-options', requirePermission('inventory.read'), controller.getFilterOptions);
 router.get('/administrative-areas', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), controller.getAdministrativeAreas);
+router.get('/vehicle-catalog', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), vehicleCatalogController.getAll);
+router.post('/vehicle-catalog', requirePermission('inventory_classification_rules.create'), vehicleCatalogController.create);
+router.put('/vehicle-catalog/:id', requirePermission('inventory_classification_rules.update'), vehicleCatalogController.update);
 router.get('/asset-types', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getAssetTypes);
 router.get('/asset-extensions', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getAssetExtensions);
 router.get('/classifications', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getClassifications);
 router.post('/classification-rules/resolve', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), validateResolveClassificationRule, classificationRulesController.resolve);
-router.post('/classification-rules/reconcile/dry-run', requireAnyPermission('inventory_classification_rules.read', 'inventory.update'), classificationRulesController.reconciliationDryRun);
-router.post('/classification-rules/reconcile', requireAnyPermission('inventory_classification_rules.reconcile', 'inventory.update'), classificationRulesController.reconciliation);
 router.get(
   '/classification-rules',
   requireAnyPermission('inventory.read', 'inventory_classification_rules.read'),
   controller.getClassificationRules
 );
 router.get('/classification-rules/manage', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), validateListClassificationRules, classificationRulesController.list);
+router.get('/classification-rules/device-profiles', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getDeviceAssetTypeProfiles);
 router.get('/classification-rules/:id', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), validateClassificationRuleId, classificationRulesController.getById);
 router.post('/classification-rules', requireAnyPermission('inventory_classification_rules.create', 'inventory.update'), validateCreateClassificationRule, classificationRulesController.create);
 router.put('/classification-rules/:id', requireAnyPermission('inventory_classification_rules.update', 'inventory.update'), validateUpdateClassificationRule, classificationRulesController.update);

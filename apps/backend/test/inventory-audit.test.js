@@ -16,7 +16,7 @@ const inventoryRecord = {
   id_model: 3,
   ip: '10.0.0.21',
   password: 'must not be audited',
-  inventory_devices: {
+  device_details: {
     id_device: 4,
     id_brand: 5,
     id_model: 6,
@@ -88,7 +88,7 @@ test('compara solo el estado de negocio y detecta cambios tecnológicos', () => 
   assert.equal(
     sameInventoryAuditState(inventoryRecord, {
       ...inventoryRecord,
-      inventory_devices: { ...inventoryRecord.inventory_devices, ip: '10.0.0.23' },
+      device_details: { ...inventoryRecord.device_details, ip: '10.0.0.23' },
     }),
     false
   );

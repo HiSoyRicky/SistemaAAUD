@@ -1,6 +1,6 @@
 // models.validator.js
 
-import { validateZod, z, zRequiredInt, zRequiredString } from '../../common/utils/zodValidation.js';
+import { validateZod, z, zOptionalInt, zRequiredInt, zRequiredString } from '../../common/utils/zodValidation.js';
 
 const modelIdParamsSchema = z.object({
   id: zRequiredInt('ID inválido', { min: 1 }),
@@ -9,7 +9,7 @@ const modelIdParamsSchema = z.object({
 const modelBodySchema = z.object({
   name: zRequiredString('El nombre es obligatorio'),
   id_brand: zRequiredInt('El id_brand debe ser un entero'),
-  id_device: zRequiredInt('El id_device debe ser un entero'),
+  id_device: zOptionalInt('El id_device debe ser un entero', { nullable: true, allowEmptyString: true, min: 1 }),
 });
 
 const validateCreateModel = validateZod({ body: modelBodySchema });

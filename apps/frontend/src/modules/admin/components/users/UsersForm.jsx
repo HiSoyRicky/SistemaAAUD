@@ -2,7 +2,7 @@
 
 import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
 
-export default function UserForm({ form, setForm, roles, handleSubmit, onDelete, onCancel }) {
+export default function UserForm({ form, setForm, roles, handleSubmit, onDelete, onCancel, canSave }) {
   return (
     <form
       onSubmit={handleSubmit}
@@ -118,7 +118,7 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onDelete,
         </button>
       </div>
 
-      {form.id && (
+      {form.id && onDelete && (
         <div className="col-span-2">
           <button
             type="button"
@@ -132,12 +132,12 @@ export default function UserForm({ form, setForm, roles, handleSubmit, onDelete,
 
       {/* Botones */}
       <div className="flex justify-end gap-4 mt-6 md:col-span-2">
-        <button
+        {canSave && <button
           type="submit"
           className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-800 transition"
         >
           {form.id ? 'Actualizar Usuario' : 'Crear Usuario'}
-        </button>
+        </button>}
         <button
           type="button"
           onClick={onCancel}

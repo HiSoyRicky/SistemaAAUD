@@ -26,13 +26,36 @@ export function toInventoryAuditSnapshot(record) {
   const snapshot = Object.fromEntries(
     SNAPSHOT_FIELDS.map((field) => [field, record[field] ?? null])
   );
-  const technology = record.inventory_devices;
+  const technology = record.device_details;
 
   if (technology) {
     snapshot.id_device = technology.id_device;
     snapshot.id_brand = technology.id_brand;
     snapshot.id_model = technology.id_model;
     snapshot.ip = technology.ip ?? null;
+  }
+
+  if (record.vehicle_details) {
+    snapshot.vehicle_details = {
+      make: record.vehicle_details.make ?? null,
+      model: record.vehicle_details.model ?? null,
+      model_year: record.vehicle_details.model_year ?? null,
+      plate: record.vehicle_details.plate ?? null,
+      chassis: record.vehicle_details.chassis ?? null,
+      engine: record.vehicle_details.engine ?? null,
+      vehicle_type: record.vehicle_details.vehicle_type ?? null,
+      fuel_type: record.vehicle_details.fuel_type ?? null,
+      mileage: record.vehicle_details.mileage ?? null,
+    };
+  }
+
+  if (record.real_estate_details) {
+    snapshot.real_estate_details = {
+      cadastral_number: record.real_estate_details.cadastral_number ?? null,
+      address: record.real_estate_details.address ?? null,
+      area_m2: record.real_estate_details.area_m2?.toString() ?? null,
+      location_geo: record.real_estate_details.location_geo ?? null,
+    };
   }
 
   if (snapshot.transferdate instanceof Date) {

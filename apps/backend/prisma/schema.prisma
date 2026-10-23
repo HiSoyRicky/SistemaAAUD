@@ -70,8 +70,9 @@ model bd_inventory {
   asset_classification_rule_id Int?
 
   transfer_requests inventory_transfer_requests[]
+  legacy_inventory_map legacy_inventory_map?
 
-  brands              brands                          @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
+  brands             brands                          @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_brands")
   departments         departments?                    @relation(fields: [id_department], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_departments")
   devices             devices                         @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_devices")
   models              models                          @relation(fields: [id_model], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bd_inventory_models")
@@ -94,6 +95,7 @@ model inventory_asset_types {
   updated_at  DateTime @updatedAt @db.Timestamptz(6)
 
   classification_rules inventory_asset_classification_rules[]
+  inventory_items      inventory_items[]
 }
 
 model inventory_asset_extensions {
@@ -106,6 +108,7 @@ model inventory_asset_extensions {
   updated_at  DateTime @updatedAt @db.Timestamptz(6)
 
   classification_rules inventory_asset_classification_rules[]
+  inventory_items      inventory_items[]
 }
 
 model inventory_asset_classifications {
@@ -149,7 +152,7 @@ model inventory_asset_classification_mappings {
 
 model inventory_asset_classification_rules {
   id                     Int      @id @default(autoincrement())
-  device_id              Int?
+  device_id              Int?     @unique
   classification_id      Int
   asset_type_id          Int
   extension_id           Int?
@@ -240,11 +243,15 @@ model inventory_devices {
 
 model brands {
   id                   Int                      @id(map: "pk_brands") @default(autoincrement())
-  name                 String                   @unique @db.VarChar(50)
+  name                 String                   @db.VarChar(50)
+  catalog_type         String                   @default("TECHNOLOGY") @db.VarChar(20)
   bd_inventory         bd_inventory[]
   models               models[]
   inventory_devices    inventory_devices[]
   inventoryItemDevices inventory_item_devices[]
+  vehicle_catalog_entries inventory_vehicle_catalog[]
+
+  @@unique([name, catalog_type], map: "brands_name_catalog_type_key")
 }
 
 model categories {
@@ -280,13 +287,14 @@ model models {
   id                   Int                      @id(map: "pk_models") @default(autoincrement())
   name                 String                   @db.VarChar(50)
   id_brand             Int
-  id_device            Int
+  id_device            Int?
   bd_inventory         bd_inventory[]
   brands               brands                   @relation(fields: [id_brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_brands")
-  devices              devices                  @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
+  devices              devices?                 @relation(fields: [id_device], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_models_devices")
   toners               toners[]
   inventory_devices    inventory_devices[]
   inventoryItemDevices inventory_item_devices[]
+  vehicle_catalog_entries inventory_vehicle_catalog[]
 }
 
 model roles {
@@ -525,7 +533,8 @@ enum InventoryTransferRequestStatus {
 
 model inventory_transfer_requests {
   id           Int                            @id @default(autoincrement())
-  inventory_id Int
+  item_id      Int
+  inventory_id Int?
   requester_id Int
   approver_id  Int?
   status       InventoryTransferRequestStatus @default(PENDING)
@@ -534,13 +543,13 @@ model inventory_transfer_requests {
   requested_at DateTime                       @default(now()) @db.Timestamptz(6)
   reviewed_at  DateTime?                      @db.Timestamptz(6)
 
-  inventory         bd_inventory     @relation(fields: [inventory_id], references: [id], onDelete: Cascade, map: "fk_inventory_transfer_requests_inventory")
+  item              inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_inventory_transfer_requests_item")
+  inventory         bd_inventory?   @relation(fields: [inventory_id], references: [id], onDelete: Cascade, map: "fk_inventory_transfer_requests_inventory")
   requester         users            @relation("InventoryTransferRequester", fields: [requester_id], references: [id], onDelete: Restrict, map: "fk_inventory_transfer_requests_requester")
   approver          users?           @relation("InventoryTransferApprover", fields: [approver_id], references: [id], onDelete: SetNull, map: "fk_inventory_transfer_requests_approver")
-  inventoryItems    inventory_items? @relation(fields: [inventory_itemsId], references: [id])
-  inventory_itemsId Int?
 
   @@index([status, requested_at])
+  @@index([item_id, status])
   @@index([inventory_id])
   @@map("inventory_transfer_requests")
 }
@@ -611,23 +620,36 @@ model inventory_items {
   status              status                                @relation(fields: [id_status], references: [id], onDelete: Restrict, onUpdate: NoAction)
   condition           inventory_conditions?                 @relation(fields: [id_condition], references: [id], onDelete: Restrict, onUpdate: NoAction)
   administrative_area inventory_administrative_areas?       @relation(fields: [id_administrative_area], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  classification_rule inventory_asset_classification_rules? @relation(fields: [asset_classification_rule_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  asset_classification_rule inventory_asset_classification_rules? @relation(fields: [asset_classification_rule_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "inventory_items_asset_classification_rule_fkey")
+  asset_type                inventory_asset_types?               @relation(fields: [asset_type_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "inventory_items_asset_type_fkey")
+  extension                 inventory_asset_extensions?          @relation(fields: [extension_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "inventory_items_extension_fkey")
 
   // Extensiones especializadas (1:1)
   device_details      inventory_item_devices?
   vehicle_details     inventory_item_vehicles?
   property_details    inventory_item_properties?
   real_estate_details inventory_item_real_estate?
-
-  // Transferencias
-  transfer_requests inventory_transfer_requests[]
-
   @@index([tag])
   @@index([id_status])
   @@index([id_administrative_area])
   @@index([id_ubication])
   @@index([id_department])
+  @@index([asset_type_id])
+  @@index([extension_id])
+  legacy_inventory_map legacy_inventory_map?
+  transfer_requests    inventory_transfer_requests[]
+
   @@map("inventory_items")
+}
+
+model legacy_inventory_map {
+  bd_inventory_id Int @id
+  item_id         Int @unique
+
+  bd_inventory    bd_inventory    @relation(fields: [bd_inventory_id], references: [id], onDelete: Restrict, map: "legacy_inventory_map_bd_inventory_fkey", onUpdate: NoAction)
+  inventory_items inventory_items @relation(fields: [item_id], references: [id], onDelete: Restrict, map: "legacy_inventory_map_item_fkey", onUpdate: NoAction)
+
+  @@map("legacy_inventory_map")
 }
 
 // Extensión 1:1 para equipos IT (reemplaza concepto de inventory_devices)
@@ -635,17 +657,17 @@ model inventory_item_devices {
   id         Int      @id @default(autoincrement())
   item_id    Int      @unique
   id_device  Int
-  id_brand   Int
-  id_model   Int
-  serie      String   @db.VarChar(50)
+  id_brand   Int?
+  id_model   Int?
+  serie      String?  @db.VarChar(50)
   ip         String?  @db.VarChar(45)
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @updatedAt @db.Timestamptz(6)
 
   item   inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
   device devices         @relation(fields: [id_device], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  brand  brands          @relation(fields: [id_brand], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  model  models          @relation(fields: [id_model], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  brand  brands?         @relation(fields: [id_brand], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  model  models?         @relation(fields: [id_model], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([id_device])
   @@index([id_brand])
@@ -657,6 +679,9 @@ model inventory_item_devices {
 model inventory_item_vehicles {
   id           Int      @id @default(autoincrement())
   item_id      Int      @unique
+  make         String?  @db.VarChar(80)
+  model        String?  @db.VarChar(100)
+  model_year   Int?
   plate        String?  @db.VarChar(20)
   chassis      String?  @db.VarChar(50)
   engine       String?  @db.VarChar(50)
@@ -669,6 +694,24 @@ model inventory_item_vehicles {
   item inventory_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
 
   @@map("inventory_item_vehicles")
+}
+
+model inventory_vehicle_catalog {
+  id            Int      @id @default(autoincrement())
+  id_brand      Int
+  id_model      Int
+  model_year    Int
+  vehicle_type  String   @db.VarChar(50)
+  fuel_type     String   @db.VarChar(30)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+
+  brand brands @relation(fields: [id_brand], references: [id], onDelete: Restrict)
+  model models @relation(fields: [id_model], references: [id], onDelete: Restrict)
+
+  @@unique([id_model, model_year, vehicle_type, fuel_type])
+  @@index([id_brand, id_model])
+  @@map("inventory_vehicle_catalog")
 }
 
 // Extensión 1:1 para bienes muebles (mobiliario, aires, herramientas - ready para Fase II)
@@ -689,6 +732,7 @@ model inventory_item_properties {
 model inventory_item_real_estate {
   id           Int      @id @default(autoincrement())
   item_id      Int      @unique
+  cadastral_number String? @db.VarChar(80)
   address      String?  @db.VarChar(255)
   area_m2      Decimal? @db.Decimal(10, 2)
   location_geo String?  @db.VarChar(255)

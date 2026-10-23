@@ -19,9 +19,10 @@ import {
 } from '../constants/inventory.constants.js';
 
 import * as repository from '../inventory.repository.js';
+import { assertInventoryItemInScope } from './inventory-scope.service.js';
 import AppError from '../../../common/utils/AppError.js';
 
-export const getHistory = async (query) => {
+export const getHistory = async (query, scope = {}) => {
   const { page, limit } = parsePagination(query);
   const search = String(query?.search || '').trim();
   const actor = String(query?.actor || '').trim();
@@ -56,6 +57,11 @@ export const getHistory = async (query) => {
     throw new AppError('La fecha inicial no puede ser mayor que la final', 400);
   }
 
+  if (scope.technologyOnly && inventoryId) {
+    const item = await repository.findById(inventoryId);
+    assertInventoryItemInScope(item, scope);
+  }
+
   const result = await repository.findInventoryMovementLogs({
     action,
     from,
@@ -65,6 +71,7 @@ export const getHistory = async (query) => {
     search,
     page,
     limit,
+    technologyOnly: Boolean(scope.technologyOnly),
   });
   const logs = result.data;
 

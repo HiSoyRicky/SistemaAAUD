@@ -11,6 +11,7 @@ import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
 import { initSocket } from './config/socket.js';
 import { synchronizeIncidentTicketNumberSequence } from './modules/incidents/ticketSequence.js';
+import { syncInventoryClassification } from './modules/inventory/classification-sync.service.js';
 
 const server = createServer(app);
 
@@ -20,6 +21,8 @@ async function startServer() {
     logger.info('Conexión a base de datos establecida');
     await synchronizeIncidentTicketNumberSequence(prisma);
     logger.info('Secuencia de tickets de incidencias sincronizada');
+    const classificationSync = await prisma.$transaction((tx) => syncInventoryClassification({ db: tx }), { timeout: 120000 });
+    logger.info(classificationSync, 'Clasificación patrimonial sincronizada');
 
     const io = initSocket(server);
     app.set('io', io);

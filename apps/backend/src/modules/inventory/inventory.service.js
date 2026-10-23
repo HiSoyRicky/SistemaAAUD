@@ -4,9 +4,10 @@ import AppError from '../../common/utils/AppError.js';
 import { mapCreateInventoryResponse, mapInventoryResponse } from './inventory.dto.js';
 import * as repository from './inventory.repository.js';
 import {
+  isTechnologyRule,
   resolveClassificationRule,
-  validateExtensionCompatibility,
 } from './services/inventory-classification.service.js';
+import { resolveInventoryScope } from './services/inventory-scope.service.js';
 
 import {
   isDiscardedStatus,
@@ -15,7 +16,7 @@ import {
   parseTransferDate,
 } from '../inventory/utils/inventory.parsers.js';
 
-export const getAll = async (query) => {
+export const getAll = async (query, scope = {}) => {
   const rawSearch = typeof query?.search === 'string' ? query.search.trim() : '';
   const search = rawSearch || undefined;
   const filters = {
@@ -40,8 +41,8 @@ export const getAll = async (query) => {
   if (query?.page !== undefined || query?.limit !== undefined) {
     const pagination = resolveInventoryPagination(query);
     const [result, stats] = await Promise.all([
-      repository.findPage({ search, filters, ...pagination }),
-      repository.findInventoryStats({ search, filters }),
+      repository.findPage({ search, filters, scope, ...pagination }),
+      repository.findInventoryStats({ search, filters, scope }),
     ]);
 
     return {
@@ -55,14 +56,14 @@ export const getAll = async (query) => {
     };
   }
 
-  const inventory = await repository.findAll(search, filters);
+  const inventory = await repository.findAll(search, filters, scope);
   return mapInventoryResponse(inventory);
 };
 
 export const getAdministrativeAreas = async () => repository.findAdministrativeAreas();
 
-export const getInventoryFilterOptions = async (filters = {}) =>
-  repository.findInventoryFilterOptions(filters);
+export const getInventoryFilterOptions = async (filters = {}, scope = {}, search) =>
+  repository.findInventoryFilterOptions(filters, scope, search);
 
 export const getClassificationRules = async (options = {}) => {
   const findActiveRules = options.findActiveRules ?? repository.findActiveAssetClassificationRules;
@@ -132,63 +133,6 @@ export function resolveInventoryPagination(query = {}) {
   };
 }
 
-const GENERIC_TECHNOLOGY_FALLBACK = {
-  deviceId: 12,
-  brandId: 19,
-  modelId: 93,
-};
-
-function hasTechnologyPayload({ id_device, id_brand, id_model }) {
-  return [id_device, id_brand, id_model].some(
-    (value) => value !== undefined && value !== null && value !== ''
-  );
-}
-
-function validateCreateRequiredFields({ tag, serie, id_status }) {
-  if (!tag || !serie || !id_status) {
-    throw new AppError('Faltan campos obligatorios', 400);
-  }
-}
-
-function normalizeHolderName(value) {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  const normalized = String(value).trim();
-  return normalized || null;
-}
-
-function resolveTechnologyIds(payload) {
-  const hasTechnology = hasTechnologyPayload(payload);
-
-  if (!hasTechnology) {
-    return {
-      idDevice: GENERIC_TECHNOLOGY_FALLBACK.deviceId,
-      idBrand: GENERIC_TECHNOLOGY_FALLBACK.brandId,
-      idModel: GENERIC_TECHNOLOGY_FALLBACK.modelId,
-      hasTechnology: false,
-    };
-  }
-
-  const missingTechnologyFields = [
-    ['id_device', payload.id_device],
-    ['id_brand', payload.id_brand],
-    ['id_model', payload.id_model],
-  ].filter(([, value]) => value === undefined || value === null || value === '');
-
-  if (missingTechnologyFields.length > 0) {
-    throw new AppError('Si indica tecnología debe completar equipo, marca y modelo', 400);
-  }
-
-  return {
-    idDevice: Number(payload.id_device),
-    idBrand: Number(payload.id_brand),
-    idModel: Number(payload.id_model),
-    hasTechnology: true,
-  };
-}
-
 function validateCreateIds(ids) {
   if (Object.values(ids).some((value) => Number.isNaN(value))) {
     throw new AppError('Los IDs deben ser números enteros válidos', 400);
@@ -202,36 +146,35 @@ async function validateCreateReferences({
   idStatus,
   idCondition,
   idAdministrativeArea,
-  assetTypeId,
-  extensionId,
-  hasTechnology,
 }) {
-  const [deviceExists, brandExists, modelExists, statusExists, conditionExists, areaExists, assetTypeExists, extensionExists] =
+  const [deviceExists, brandExists, modelExists, statusExists, conditionExists, areaExists] =
     await Promise.all([
-      repository.findDeviceById(idDevice),
-      repository.findBrandById(idBrand),
-      repository.findModelById(idModel),
+      idDevice === null ? null : repository.findDeviceById(idDevice),
+      idBrand === null ? null : repository.findBrandById(idBrand),
+      idModel === null ? null : repository.findModelById(idModel),
       repository.findStatusById(idStatus),
       idCondition === null ? null : repository.findConditionById(idCondition),
       idAdministrativeArea === null ? null : repository.findAdministrativeAreaById(idAdministrativeArea),
-      assetTypeId === null ? null : repository.findAssetTypeById(assetTypeId),
-      extensionId === null ? null : repository.findAssetExtensionById(extensionId),
     ]);
 
-  if (hasTechnology) {
-    if (!deviceExists) {
-      throw new AppError('El dispositivo especificado no existe', 400);
-    }
+  if (idDevice !== null && !deviceExists) {
+    throw new AppError('El dispositivo especificado no existe', 400);
+  }
 
-    if (!brandExists) {
-      throw new AppError('La marca especificada no existe', 400);
-    }
+  if (idBrand !== null && !brandExists) {
+    throw new AppError('La marca especificada no existe', 400);
+  }
 
+  if (idModel !== null) {
     if (!modelExists) {
       throw new AppError('El modelo especificado no existe', 400);
     }
 
-    if (modelExists.id_brand !== idBrand || modelExists.id_device !== idDevice) {
+    if (
+      idBrand === null ||
+      modelExists.id_brand !== idBrand ||
+      modelExists.id_device !== idDevice
+    ) {
       throw new AppError('El modelo no corresponde a la marca y dispositivo seleccionados', 400);
     }
   }
@@ -248,88 +191,12 @@ async function validateCreateReferences({
     throw new AppError('El área administradora especificada no existe', 400);
   }
 
-  if (assetTypeId !== null && (!assetTypeExists || !assetTypeExists.active)) {
-    throw new AppError('El tipo general de activo no existe o está inactivo', 400);
-  }
-
-  if (extensionId !== null && (!extensionExists || !extensionExists.active)) {
-    throw new AppError('La extensión técnica no existe o está inactiva', 400);
-  }
-
   return statusExists;
 }
 
-export const resolveOptionalTechnologyClassification = async (
-  ruleId,
-  {
-    resolveRule = resolveClassificationRule,
-    findDevicesExtension = repository.findAssetClassificationExtensionByCode,
-  } = {}
-) => {
-  if (ruleId === null || ruleId === undefined) {
-    return null;
-  }
-
-  const rule = await resolveRule(ruleId);
-  const devicesExtension = await findDevicesExtension('DEVICES');
-
-  if (!devicesExtension) {
-    throw new AppError('La extensión tecnológica DEVICES no está configurada', 500);
-  }
-
-  if (!devicesExtension.active) {
-    throw new AppError('La extensión tecnológica DEVICES está inactiva', 400);
-  }
-
-  return validateExtensionCompatibility({
-    rule,
-    extensionId: devicesExtension.id,
-  });
-};
-
-export const resolveCreationMode = async (
-  ruleId,
-  options = {},
-) => {
-  if (ruleId === null || ruleId === undefined) {
-    return { mode: 'LEGACY', rule: null };
-  }
-
-  const rule = await resolveOptionalTechnologyClassification(ruleId, options);
-  return { mode: 'TECHNOLOGY', rule };
-};
-
-export const resolveInventoryClassification = async ({
-  ruleId = null,
-  deviceId = null,
-  assetTypeId = null,
-  extensionId = null,
-  administrativeAreaId = null,
-}) => {
-  if (ruleId !== null && ruleId !== undefined) {
-    const selectedRule = await resolveClassificationRule(ruleId);
-    const resolvedRule = await resolveClassificationRule({
-      deviceId: deviceId ?? selectedRule.device_id ?? null,
-      assetTypeId: assetTypeId ?? selectedRule.asset_type_id ?? null,
-      extensionId: extensionId ?? selectedRule.extension_id ?? null,
-      administrativeAreaId:
-        administrativeAreaId ?? selectedRule.administrative_area_id ?? null,
-    });
-
-    if (!resolvedRule || resolvedRule.id !== selectedRule.id) {
-      throw new AppError('La regla de clasificación no corresponde al contexto enviado', 400);
-    }
-
-    return resolvedRule;
-  }
-
-  return resolveClassificationRule({
-    deviceId,
-    assetTypeId,
-    extensionId,
-    administrativeAreaId,
-  });
-};
+function normalizeHolderName(user) {
+  return typeof user === 'string' ? user.trim() || null : null;
+}
 
 function buildGeneralInventoryData({
   tag,
@@ -337,11 +204,9 @@ function buildGeneralInventoryData({
   user,
   description,
   ids,
-  serie,
-  ip,
   transferDate,
   observation,
-  classificationRule,
+  rule,
   userId,
 }) {
   return {
@@ -350,32 +215,76 @@ function buildGeneralInventoryData({
     id_department: location.idDepartment,
     user: normalizeHolderName(user),
     description: description || null,
-    id_device: ids.idDevice,
-    id_brand: ids.idBrand,
-    id_model: ids.idModel,
-    serie,
-    ip: ip || null,
     id_status: ids.idStatus,
     transferdate: transferDate,
     observation: observation || null,
     id_condition: ids.idCondition,
     id_administrative_area: ids.idAdministrativeArea,
-    asset_classification_rule_id: classificationRule?.id ?? null,
+    asset_type_id: rule?.asset_type_id ?? ids.idAssetType,
+    extension_id: rule?.extension_id ?? ids.idExtension,
+    asset_classification_rule_id: rule?.id ?? null,
     created_by: userId,
     created_at: new Date(),
   };
 }
 
-function buildTechnologyExtensionData({ idDevice, idBrand, idModel, ip, hasTechnology = true }) {
-  if (!hasTechnology) {
-    return null;
-  }
-
+function buildTechnologyExtensionData({ idDevice, idBrand, idModel, serie, ip }) {
   return {
     id_device: idDevice,
     id_brand: idBrand,
     id_model: idModel,
+    serie,
     ip: ip || null,
+  };
+}
+
+function normalizeVehicleData(payload, catalogEntry) {
+  const modelYear = catalogEntry.model_year;
+  const mileage = parseOptionalNonNegativeInt(payload.vehicle_mileage);
+  if (Number.isNaN(modelYear) || (modelYear !== null && modelYear < 1886) || modelYear > 2200) {
+    throw new AppError('El año del modelo del vehículo no es válido', 400);
+  }
+  if (Number.isNaN(mileage)) throw new AppError('El kilometraje no es válido', 400);
+  return {
+    make: catalogEntry.brand.name,
+    model: catalogEntry.model.name,
+    model_year: modelYear,
+    plate: payload.vehicle_plate?.trim() || null,
+    engine: payload.vehicle_engine?.trim() || null,
+    chassis: payload.vehicle_chassis?.trim() || null,
+    vehicle_type: catalogEntry.vehicle_type,
+    fuel_type: catalogEntry.fuel_type,
+    mileage,
+  };
+}
+
+function parseOptionalNonNegativeInt(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : Number.NaN;
+}
+
+function normalizeRealEstateData(payload) {
+  const inputArea = payload.real_estate_area_m2?.trim();
+  const hectares = inputArea?.match(/^(\d+(?:[.,]\d+)?)\s*has?\s*\+\s*(\d+(?:[.,]\d+)?)\s*m(?:2|²)$/i);
+  const areaValue = hectares
+    ? (Number(hectares[1].replace(',', '.')) * 10000 + Number(hectares[2].replace(',', '.'))).toFixed(2)
+    : inputArea;
+  if (areaValue && !/^\d{1,8}(\.\d{1,2})?$/.test(areaValue)) {
+    throw new AppError('El área del terreno debe ser un número positivo con hasta 2 decimales', 400);
+  }
+  return {
+    cadastral_number: payload.cadastral_number?.trim() || null,
+    address: payload.real_estate_address?.trim() || null,
+    area_m2: areaValue || null,
+    location_geo: payload.real_estate_location_geo?.trim() || null,
+  };
+}
+
+function normalizePropertyData(payload) {
+  return {
+    material: payload.property_material?.trim() || null,
+    dimensions: payload.property_dimensions?.trim() || null,
   };
 }
 
@@ -442,6 +351,7 @@ function resolveCreateTransferDate(transferdate) {
 }
 
 function handleCreateError(error) {
+  if (error instanceof AppError) return error;
   if (error.code === 'P2003') {
     return new AppError('ID de referencia inválido (FK no existe)', 400);
   }
@@ -479,53 +389,103 @@ export const create = async (payload, currentUser) => {
     observation,
     description,
     id_condition,
-    id_administrative_area,
-    asset_classification_rule_id,
     asset_type_id,
-    extension_id,
+    classification_rule_id,
   } = payload;
 
-  validateCreateRequiredFields({
-    tag,
-    serie,
-    id_status,
-  });
+  const idDevice = parseOptionalPositiveInt(id_device);
+  const selectedRuleId = parseOptionalPositiveInt(classification_rule_id);
+  const selectedAssetTypeId = parseOptionalPositiveInt(asset_type_id);
+  if (Number.isNaN(idDevice) || Number.isNaN(selectedRuleId) || Number.isNaN(selectedAssetTypeId)) {
+    throw new AppError('La selección del tipo de bien o clasificación no es válida', 400);
+  }
+  if (idDevice === null && selectedRuleId === null) {
+    throw new AppError('Seleccione primero el tipo y la clasificación del bien', 400);
+  }
 
-  const technologyChoice = resolveTechnologyIds({
-    id_device,
-    id_brand,
-    id_model,
-  });
+  const rule = selectedRuleId !== null
+    ? await resolveClassificationRule(selectedRuleId)
+    : await resolveClassificationRule({ deviceId: idDevice });
+  const selectedExtensionId = parseOptionalPositiveInt(payload.extension_id);
+  if (Number.isNaN(selectedExtensionId)) throw new AppError('La extensión seleccionada no es válida', 400);
+  const [selectedAssetType, selectedExtension] = await Promise.all([
+    selectedAssetTypeId === null ? null : repository.findAssetTypeById(selectedAssetTypeId),
+    selectedExtensionId === null ? null : repository.findAssetExtensionById(selectedExtensionId),
+  ]);
+  if (selectedAssetTypeId !== null && (!selectedAssetType || !selectedAssetType.active)) {
+    throw new AppError('El tipo de bien seleccionado no existe o está inactivo', 400);
+  }
+  if (selectedExtensionId !== null && (!selectedExtension?.active || !selectedAssetType?.active)) {
+    throw new AppError('La extensión seleccionada no existe o está inactiva', 400);
+  }
+  if (selectedAssetTypeId !== null && rule && rule.asset_type_id !== selectedAssetTypeId) {
+    throw new AppError('La clasificación no corresponde al tipo de bien seleccionado', 400);
+  }
+  if (selectedExtensionId !== null && rule && rule.extension_id !== selectedExtensionId) {
+    throw new AppError('La extensión no corresponde a la clasificación seleccionada', 400);
+  }
+  if (idDevice !== null && rule?.device_id != null && rule.device_id !== idDevice) {
+    throw new AppError('La clasificación seleccionada no corresponde al bien elegido', 400);
+  }
+  if (!rule && idDevice === null) {
+    throw new AppError('No hay una regla activa para la clasificación seleccionada', 400);
+  }
+  if (!rule && selectedAssetType && selectedAssetType.code !== 'TECHNOLOGY') {
+    throw new AppError('Este tipo de bien requiere una regla de clasificación activa', 400);
+  }
+  if (
+    !rule && selectedAssetType &&
+    (selectedExtension?.code !== 'DEVICES' || !selectedExtension.active)
+  ) {
+    throw new AppError('Los equipos sin regla individual deben pertenecer a la extensión tecnológica', 400);
+  }
+  if (!rule && selectedExtension && selectedExtension.code !== 'DEVICES') {
+    throw new AppError('La extensión seleccionada requiere una regla de clasificación activa', 400);
+  }
+  const isTechnology = rule ? isTechnologyRule(rule) : true;
+  const selectedTypeCode = rule?.asset_type?.code || selectedAssetType?.code;
+  const selectedExtensionCode = rule?.extension?.code || selectedExtension?.code;
+  const isVehicle = selectedExtensionCode === 'VEHICLES';
+  const isRealEstate = ['120401', '120402'].some((prefix) =>
+    rule?.classification?.code_new?.startsWith(prefix)
+  );
+  const isProperty = selectedTypeCode === 'PROPERTY' && !isRealEstate;
+  if (selectedAssetType && rule && selectedTypeCode !== selectedAssetType.code) {
+    throw new AppError('El tipo seleccionado no corresponde a la regla del bien', 400);
+  }
+  const vehicleCatalogId = isVehicle ? parseRequiredPositiveInt(payload.vehicle_catalog_id) : null;
+  const vehicleCatalogEntry = isVehicle ? await repository.findVehicleCatalogById(vehicleCatalogId) : null;
+  if (isVehicle && !vehicleCatalogEntry) {
+    throw new AppError('Seleccione una configuración de vehículo del catálogo', 400);
+  }
+
+  if (!isTechnology && (await resolveInventoryScope(currentUser)).technologyOnly) {
+    throw new AppError('Solo puedes dar de alta bienes tecnológicos', 403, 'INVENTORY_OUT_OF_SCOPE');
+  }
+
+  const normalizedSerie = typeof serie === 'string' ? serie.trim() : '';
+  if (isTechnology && !normalizedSerie) {
+    throw new AppError('El campo serie es obligatorio', 400);
+  }
 
   const ids = {
     idUbication: parseOptionalPositiveInt(id_ubication),
     idDepartment: parseOptionalPositiveInt(id_department),
-    idDevice: technologyChoice.idDevice,
-    idBrand: technologyChoice.idBrand,
-    idModel: technologyChoice.idModel,
+    idDevice,
+    idBrand: parseOptionalPositiveInt(id_brand),
+    idModel: parseOptionalPositiveInt(id_model),
     idStatus: parseRequiredPositiveInt(id_status),
     idCondition: parseOptionalPositiveInt(id_condition),
-    idAdministrativeArea: parseOptionalPositiveInt(id_administrative_area),
-    assetClassificationRuleId: parseOptionalPositiveInt(asset_classification_rule_id),
-    assetTypeId: parseOptionalPositiveInt(asset_type_id),
-    extensionId: parseOptionalPositiveInt(extension_id),
-    hasTechnology: technologyChoice.hasTechnology,
+    idAdministrativeArea:
+      rule?.administrative_area_id ?? parseOptionalPositiveInt(payload.id_administrative_area),
+    idAssetType: selectedAssetTypeId,
+    idExtension: selectedExtensionId,
   };
 
   validateCreateIds(ids);
 
-  const classificationRule = await resolveInventoryClassification({
-    ruleId: ids.assetClassificationRuleId,
-    deviceId: ids.hasTechnology ? ids.idDevice : null,
-    assetTypeId: ids.assetTypeId,
-    extensionId: ids.extensionId,
-    administrativeAreaId: ids.idAdministrativeArea,
-  });
-
-  const mode = classificationRule ? 'TECHNOLOGY' : 'LEGACY';
-
-  if (mode !== 'LEGACY' && !classificationRule) {
-    throw new AppError('La clasificación del activo no pudo resolverse', 400);
+  if (isTechnology && (idDevice === null || ids.idBrand === null || ids.idModel === null)) {
+    throw new AppError('Un bien tecnológico requiere marca y modelo', 400);
   }
 
   const statusExists = await validateCreateReferences(ids);
@@ -547,20 +507,23 @@ export const create = async (payload, currentUser) => {
         user,
         description,
         ids,
-        serie,
-        ip,
         transferDate: transferDateObj,
         observation,
-        classificationRule,
+        rule,
         userId,
       }),
-      technologyData: buildTechnologyExtensionData({
-        idDevice: ids.idDevice,
-        idBrand: ids.idBrand,
-        idModel: ids.idModel,
-        ip,
-        hasTechnology: ids.hasTechnology,
-      }),
+      technologyData: idDevice === null
+        ? null
+        : buildTechnologyExtensionData({
+            idDevice,
+            idBrand: ids.idBrand,
+            idModel: ids.idModel,
+            serie: normalizedSerie || null,
+            ip,
+          }),
+      vehicleData: isVehicle ? normalizeVehicleData(payload, vehicleCatalogEntry) : null,
+      realEstateData: isRealEstate ? normalizeRealEstateData(payload) : null,
+      propertyData: isProperty ? normalizePropertyData(payload) : null,
     });
 
     return mapCreateInventoryResponse(created);

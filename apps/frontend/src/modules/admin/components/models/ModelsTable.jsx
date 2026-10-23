@@ -25,12 +25,13 @@ export default function ModelsTable({
   editingDevice,
   setEditingDevice,
   deleteModel,
+  catalogType = 'TECHNOLOGY',
 }) {
   return (
     <div>
       {/* Agregar */}
       <div className="flex gap-2 mb-4">
-        <select
+        {catalogType === 'TECHNOLOGY' && <select
           value={selectedDevice}
           onChange={(e) => {
             setSelectedDevice(e.target.value);
@@ -44,15 +45,15 @@ export default function ModelsTable({
               {device.name}
             </option>
           ))}
-        </select>
+        </select>}
 
         <select
           value={selectedBrand}
           onChange={(e) => setSelectedBrand(e.target.value === '' ? '' : Number(e.target.value))}
           className="px-2 py-1 border rounded"
-          disabled={!selectedDevice}
+          disabled={catalogType === 'TECHNOLOGY' && !selectedDevice}
         >
-          <option value="">Seleccionar Marca</option>
+            <option value="">Seleccionar Marca</option>
           {brands.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
@@ -68,11 +69,11 @@ export default function ModelsTable({
           className="px-2 py-1 border rounded"
         />
 
-        <button
+          <button
           type="button"
           onClick={addModel}
           className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
-          disabled={!selectedDevice || !selectedBrand || !newModel.trim()}
+          disabled={(catalogType === 'TECHNOLOGY' && !selectedDevice) || !selectedBrand || !newModel.trim()}
         >
           Agregar
         </button>
@@ -85,7 +86,7 @@ export default function ModelsTable({
             <th className="px-3 py-1 text-center border">#</th>
             <th className="px-3 py-1 border">Nombre</th>
             <th className="px-3 py-1 border">Marca</th>
-            <th className="px-3 py-1 border">Dispositivo</th>
+            <th className="px-3 py-1 border">{catalogType === 'VEHICLE' ? 'Tipo de catálogo' : 'Dispositivo'}</th>
             <th className="px-3 py-1 text-center border">Acciones</th>
           </tr>
         </thead>
@@ -142,7 +143,7 @@ export default function ModelsTable({
 
                 <td className="px-3 py-1 border">
                   {editingId === m.id ? (
-                    <select
+                    catalogType === 'TECHNOLOGY' ? <select
                       value={editingDevice ?? ''}
                       onChange={(e) =>
                         setEditingDevice(e.target.value === '' ? '' : Number(e.target.value))
@@ -155,9 +156,9 @@ export default function ModelsTable({
                           {d.name}
                         </option>
                       ))}
-                    </select>
+                    </select> : <span>Vehículo</span>
                   ) : (
-                    (() => {
+                    catalogType === 'VEHICLE' ? 'Vehículo' : (() => {
                       if (deviceId && devices.some((d) => d.id === deviceId)) {
                         return devices.find((d) => d.id === deviceId).name;
                       }

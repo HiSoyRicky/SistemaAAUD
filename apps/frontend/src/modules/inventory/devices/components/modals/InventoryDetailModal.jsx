@@ -1,7 +1,7 @@
 // InventoryDetailModal.jsx
 
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, X, CarFront, Cpu, Building2, MapPin, ShieldCheck, Info } from 'lucide-react';
 import {
   formatDateOnlyToDDMMYYYY,
   formatDateToDDMMYYYY,
@@ -135,58 +135,87 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
 
   if (!isOpen || !item) return null;
 
+  const assetType = String(item.asset_type?.code || item.asset_type?.name || '').toUpperCase();
+  const extensionType = String(item.extension?.type || '').toUpperCase();
+  const isVehicle = Boolean(item.vehicle_details) || assetType.includes('VEHICLE') || assetType.includes('VEHÍCULO') || extensionType.includes('VEHICLE');
+  const isTechnology = !isVehicle && Boolean(
+    item.technology || item.device_details || item.device_name ||
+    extensionType === 'DEVICES' || assetType.includes('DEVICE') || assetType.includes('EQUIPO')
+  );
+  const isRealEstate = Boolean(item.real_estate_details) || assetType.includes('REAL_ESTATE') || assetType.includes('INMUEBLE');
+  const isProperty = Boolean(item.property_details) && !isVehicle && !isRealEstate;
+  const classification = item.classification?.description || item.classification?.code_new;
+  const details = (entries) => entries.filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+  const propertyDetails = isProperty ? details([
+    ['Material', item.property_details.material], ['Dimensiones', item.property_details.dimensions],
+  ]) : [];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Detalle del Activo - {item.tag}</h2>
-          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✖
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-labelledby="asset-detail-title" onClick={(event) => event.stopPropagation()} className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl">
+        <header className="flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.16em] text-blue-600">Detalle del activo</p>
+            <h2 id="asset-detail-title" className="mt-1 text-2xl font-bold text-slate-900">{item.tag || 'Sin marbete'}</h2>
+            <p className="mt-1 text-sm text-slate-500">{item.description || item.device_name || 'Información patrimonial y de asignación'}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Cerrar detalle" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+            <X className="h-5 w-5" />
           </button>
-        </div>
+        </header>
+        <main className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <SectionTitle icon={Info} title="Resumen" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {details([
+                ['Estado', item.status_name], ['Condición', item.condition_name],
+                ['Ubicación', item.ubication_name], ['Departamento', item.department_name],
+                ['Área administradora', item.administrative_area_name], ['Usuario asignado', item.user],
+                ['Fecha de traslado', item.transferdate ? formatDateOnlyToDDMMYYYY(item.transferdate) : null],
+                ...(isTechnology ? [['Serie', item.serie]] : []),
+              ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}
+            </div>
+          </section>
+          {classification && <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <SectionTitle icon={ShieldCheck} title="Clasificación patrimonial" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Detail label="Clasificación" value={classification} />
+              {item.asset_type?.name && <Detail label="Tipo de activo" value={item.asset_type.name} />}
+            </div>
+          </section>}
+          {isVehicle && item.vehicle_details && <section className="rounded-xl border border-blue-100 bg-blue-50/50 p-5">
+            <SectionTitle icon={CarFront} title="Datos del vehículo" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{details([
+              ['Marca', item.vehicle_details.make], ['Modelo', item.vehicle_details.model], ['Año', item.vehicle_details.model_year],
+              ['Placa', item.vehicle_details.plate], ['Motor', item.vehicle_details.engine], ['Chasis', item.vehicle_details.chassis],
+              ['Tipo', item.vehicle_details.vehicle_type], ['Combustible', item.vehicle_details.fuel_type], ['Kilometraje', item.vehicle_details.mileage],
+            ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
+          </section>}
+          {isTechnology && <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <SectionTitle icon={Cpu} title="Datos del equipo" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{details([
+              ['Equipo', item.device_name], ['Marca', item.brand_name], ['Modelo', item.model_name], ['IP', item.ip], ['Serie', item.serie],
+            ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
+          </section>}
+          {isRealEstate && item.real_estate_details && <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <SectionTitle icon={Building2} title="Terreno o inmueble" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{details([
+              ['Número catastral', item.real_estate_details.cadastral_number], ['Dirección', item.real_estate_details.address],
+              ['Área (m²)', item.real_estate_details.area_m2], ['Ubicación geográfica', item.real_estate_details.location_geo],
+            ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
+          </section>}
+          {propertyDetails.length > 0 && <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <SectionTitle icon={Building2} title="Datos del bien" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">{propertyDetails.map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
+          </section>}
+          {item.observation && <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <SectionTitle icon={MapPin} title="Observación" />
+            <p className="mt-3 text-sm leading-6 text-slate-600">{item.observation}</p>
+          </section>}
 
-        <h3 className="mb-2 text-sm font-semibold text-gray-800">Datos generales</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <Detail label="Marbete" value={item.tag} />
-          <Detail label="Descripción" value={item.description} />
-          <Detail label="Serie" value={item.serie} />
-          <Detail label="Ubicación" value={item.ubication_name} />
-          <Detail label="Departamento" value={item.department_name} />
-          <Detail label="Área administradora" value={item.administrative_area_name} />
-          <Detail label="Usuario" value={item.user || 'N/A'} />
-          <Detail label="Estado" value={item.status_name} />
-          <Detail label="Condición" value={item.condition_name} />
-          <Detail
-            label="Fecha de traslado"
-            value={item.transferdate ? formatDateOnlyToDDMMYYYY(item.transferdate) : 'N/A'}
-          />
-        </div>
-
-        <h3 className="mt-6 mb-2 text-sm font-semibold text-gray-800">Clasificación</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <Detail
-            label="Clasificación"
-            value={item.classification?.description || 'Sin clasificación'}
-          />
-          <Detail label="Tipo de activo" value={item.asset_type?.name || 'Sin clasificar'} />
-          <Detail label="Extensión" value={item.extension?.type || 'Sin extensión'} />
-        </div>
-
-        <h3 className="mt-6 mb-2 text-sm font-semibold text-gray-800">Tecnología</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <Detail label="Equipo" value={item.device_name || 'N/A'} />
-          <Detail label="Marca" value={item.brand_name || 'N/A'} />
-          <Detail label="Modelo" value={item.model_name || 'N/A'} />
-          <Detail label="IP" value={item.ip || 'N/A'} />
-        </div>
-
-        <div className="mt-4">
-          <p className="text-sm font-medium">Observación</p>
-          <p className="p-2 mt-1 text-sm bg-gray-100 rounded">{item.observation || 'N/A'}</p>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="mb-2 text-sm font-semibold text-gray-800">Historial del activo</h3>
+        <details className="rounded-xl border border-slate-200 bg-white p-5">
+          <summary className="cursor-pointer list-none"><SectionTitle icon={RefreshCw} title={`Historial de movimientos${historyTotal ? ` (${historyTotal})` : ''}`} /></summary>
+          <div className="mt-4">
 
           <div className="overflow-x-auto border rounded-lg">
             <table className="min-w-full text-xs">
@@ -287,26 +316,33 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
               onPageChange={setHistoryPage}
             />
           )}
-        </div>
-
-        <div className="flex justify-end mt-6">
+          </div>
+        </details>
+        </main>
+        <footer className="flex justify-end border-t border-slate-200 bg-white px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
+            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
           >
             Cerrar
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );
 }
 
+const SectionTitle = ({ icon: Icon, title }) => (
+  <h3 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+    <span className="rounded-lg bg-slate-100 p-2 text-slate-600"><Icon className="h-4 w-4" /></span>{title}
+  </h3>
+);
+
 const Detail = ({ label, value }) => (
-  <div>
-    <p className="font-medium text-gray-600">{label}</p>
-    <p className="text-gray-800">{value || 'N/A'}</p>
+  <div className="rounded-lg bg-slate-50 px-3 py-2.5">
+    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+    <p className="mt-1 break-words text-sm font-medium text-slate-800">{textOrDash(value)}</p>
   </div>
 );
 

@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Monitor,
   Package,
+  PackageCheck,
   Printer,
   Users,
   UserSquare,
@@ -35,6 +36,13 @@ export const getNavigation = (userType, hasPermission = () => true) => {
           path: '/inventario/equipos',
           icon: Monitor,
           permission: 'inventory.read',
+          hiddenFor: 'inventory_assets.manage_all',
+        },
+        {
+          label: 'Bienes patrimoniales',
+          path: '/inventario/bienes',
+          icon: PackageCheck,
+          permission: 'inventory_transfers.review',
         },
         {
           label: 'Tóners',
@@ -84,7 +92,10 @@ export const getNavigation = (userType, hasPermission = () => true) => {
     .map((item) => {
       if (!item.children) return item;
 
-      const filteredChildren = item.children.filter((child) => matchesPermission(child.permission));
+      const filteredChildren = item.children.filter(
+        (child) =>
+          matchesPermission(child.permission) && !(child.hiddenFor && hasPermission(child.hiddenFor))
+      );
 
       if (filteredChildren.length === 0) {
         return null;

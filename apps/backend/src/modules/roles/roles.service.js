@@ -15,7 +15,13 @@ function parseName(value) {
 }
 
 function isAdministratorRole(name) {
-  return String(name || '').trim().toLowerCase() === 'administrador';
+  return ['admin', 'administrador'].includes(
+    String(name || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+  );
 }
 
 function mapRole(role) {

@@ -24,7 +24,7 @@ export default function DevicesTable({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="mb-4 text-xl font-semibold">Gestión de Dispositivos</h2>
+        <h2 className="mb-4 text-xl font-semibold">Gestión de Activos</h2>
       </div>
 
       {successMessage && (
@@ -45,7 +45,7 @@ export default function DevicesTable({
           type="text"
           value={newDevice}
           onChange={(e) => setNewDevice(e.target.value)}
-          placeholder="Nuevo dispositivo"
+          placeholder="Nuevo activo"
           className="px-2 py-1 border rounded"
         />
         <button
@@ -61,7 +61,7 @@ export default function DevicesTable({
       <div className="flex gap-2 mb-4">
         <input
           type="text"
-          placeholder="Buscar equipos..."
+          placeholder="Buscar activo..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 px-2 py-1 border rounded"
@@ -103,19 +103,19 @@ export default function DevicesTable({
                   <>
                     <ActionButton
                       type={'save'}
-                      title="Guardar dispositivo"
+                      title="Guardar activo"
                       onClick={() => saveDevice(d.id)}
                     ></ActionButton>
                     <ActionButton
                       type={'delete'}
-                      title="Eliminar dispositivo"
+                      title="Eliminar activo"
                       onClick={() => deleteDevice(d.id)}
                     />
                   </>
                 ) : (
                   <ActionButton
                     type={'edit'}
-                    title="Editar dispositivo"
+                    title="Editar activo"
                     onClick={() => editDevice(d.id, d.name)}
                   ></ActionButton>
                 )}

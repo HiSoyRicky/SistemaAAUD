@@ -55,6 +55,15 @@ function buildPreviewDevice(request) {
   return request?.snapshot || request?.preview_inventory || null;
 }
 
+function TransferDetail({ label, value, className = '' }) {
+  return (
+    <div className={`min-w-0 ${className}`}>
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="break-words text-sm text-slate-700">{value || '-'}</div>
+    </div>
+  );
+}
+
 export default function TransferRequestsManager() {
   const { addNotification } = useNotifications();
   const { hasPermission } = useAuth();
@@ -99,6 +108,8 @@ export default function TransferRequestsManager() {
     () => requests.filter((item) => item.status === 'PENDING').length,
     [requests]
   );
+  const selectedDevice = buildPreviewDevice(selectedRequest);
+  const currentDevice = selectedRequest?.inventory_snapshot || selectedDevice;
 
   useEffect(() => {
     if (!pendingPrint || !printableRequest || !buildPreviewDevice(printableRequest)) {
@@ -236,12 +247,19 @@ export default function TransferRequestsManager() {
                     <td className="px-3 py-3 align-top">{formatDate(request.requested_at)}</td>
                     <td className="px-3 py-3 align-top">
                       <div className="font-medium text-slate-900">
-                        {request.inventory_snapshot?.tag || request.preview_inventory?.tag || '-'}
-                      </div>
-                      <div className="text-xs text-slate-500">
                         {request.inventory_snapshot?.device_name ||
                           request.preview_inventory?.device_name ||
                           'Equipo'}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        Marbete {request.inventory_snapshot?.tag || request.preview_inventory?.tag || '-'}
+                        {' · '}Serie {request.inventory_snapshot?.serie || request.preview_inventory?.serie || '-'}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {[request.inventory_snapshot?.brand_name || request.preview_inventory?.brand_name,
+                          request.inventory_snapshot?.model_name || request.preview_inventory?.model_name]
+                          .filter(Boolean)
+                          .join(' · ') || 'Marca y modelo no disponibles'}
                       </div>
                     </td>
                     <td className="px-3 py-3 align-top">
@@ -303,7 +321,7 @@ export default function TransferRequestsManager() {
 
       {selectedRequest && buildPreviewDevice(selectedRequest) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
+          <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
               <div>
                 <h2 className="mt-2 text-2xl font-bold text-slate-900">Revisión de traslado</h2>
@@ -332,41 +350,67 @@ export default function TransferRequestsManager() {
             </div>
 
             <div className="flex-1 overflow-auto bg-slate-50 p-6">
-              <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 text-sm md:grid-cols-2">
-                <div>
-                  <div className="font-semibold text-slate-700">Equipo</div>
-                  <div className="text-slate-600">
-                    {buildPreviewDevice(selectedRequest)?.device_name || 'Equipo'}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    Marbete {buildPreviewDevice(selectedRequest)?.tag || '-'}
-                  </div>
+              <section className="rounded-xl border border-slate-200 bg-white p-4">
+                <h3 className="mb-4 text-sm font-semibold text-slate-800">
+                  Identificación del equipo
+                </h3>
+                <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <TransferDetail label="Equipo" value={selectedDevice.device_name} />
+                  <TransferDetail label="Marbete" value={selectedDevice.tag} />
+                  <TransferDetail label="Número de serie" value={selectedDevice.serie} />
+                  <TransferDetail label="Marca" value={selectedDevice.brand_name} />
+                  <TransferDetail label="Modelo" value={selectedDevice.model_name} />
+                  <TransferDetail label="Dirección IP" value={selectedDevice.ip} />
+                  <TransferDetail label="Descripción" value={selectedDevice.description} />
+                  <TransferDetail
+                    label="Clasificación"
+                    value={selectedDevice.classification?.description}
+                  />
+                  <TransferDetail label="Tipo de activo" value={selectedDevice.asset_type?.name} />
+                  <TransferDetail label="Condición" value={currentDevice.condition_name} />
+                  <TransferDetail label="Estado del equipo" value={currentDevice.status_name} />
+                  <TransferDetail label="Usuario actual" value={currentDevice.user} />
+                  <TransferDetail
+                    label="Observación"
+                    value={selectedDevice.observation}
+                    className="sm:col-span-2 lg:col-span-3"
+                  />
                 </div>
-                <div>
-                  <div className="font-semibold text-slate-700">Estado</div>
-                  <div className="text-slate-600">{statusLabel(selectedRequest.status)}</div>
+              </section>
+
+              <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                <h3 className="mb-4 text-sm font-semibold text-slate-800">Datos del traslado</h3>
+                <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                  <TransferDetail label="Ubicación actual" value={currentDevice.ubication_name} />
+                  <TransferDetail label="Departamento actual" value={currentDevice.department_name} />
+                  <TransferDetail
+                    label="Área administradora actual"
+                    value={currentDevice.administrative_area_name}
+                  />
+                  <TransferDetail label="Ubicación de destino" value={selectedDevice.ubication_destino_name} />
+                  <TransferDetail
+                    label="Departamento de destino"
+                    value={selectedDevice.department_destino_name}
+                  />
+                  <TransferDetail
+                    label="Área administradora de destino"
+                    value={
+                      selectedDevice.administrative_area_destino_name ||
+                      selectedDevice.administrative_area_name
+                    }
+                  />
+                  <TransferDetail label="Estado de la solicitud" value={statusLabel(selectedRequest.status)} />
+                  <TransferDetail
+                    label="Solicitó"
+                    value={
+                      selectedRequest.requester?.nombre_completo ||
+                      selectedRequest.requester?.username
+                    }
+                  />
+                  <TransferDetail label="Fecha de solicitud" value={formatDate(selectedRequest.requested_at)} />
+                  <TransferDetail label="Usuario receptor" value={selectedRequest.snapshot?.userRecibe} />
                 </div>
-                <div>
-                  <div className="font-semibold text-slate-700">Destino</div>
-                  <div className="text-slate-600">
-                    {buildPreviewDevice(selectedRequest)?.ubication_destino_name || '-'}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {buildPreviewDevice(selectedRequest)?.department_destino_name || '-'}
-                  </div>
-                </div>
-                <div>
-                  <div className="font-semibold text-slate-700">Solicitó</div>
-                  <div className="text-slate-600">
-                    {selectedRequest.requester?.nombre_completo ||
-                      selectedRequest.requester?.username ||
-                      '-'}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {formatDate(selectedRequest.requested_at)}
-                  </div>
-                </div>
-              </div>
+              </section>
 
               <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
                 <label

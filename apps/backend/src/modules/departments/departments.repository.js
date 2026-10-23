@@ -53,7 +53,7 @@ export const countDependenciesByDepartmentId = async (id) => {
     prisma.bd_incidents.count({
       where: { id_department: departmentId },
     }),
-    prisma.bd_inventory.count({
+    prisma.inventory_items.count({
       where: { id_department: departmentId },
     }),
     prisma.toner_movements.count({

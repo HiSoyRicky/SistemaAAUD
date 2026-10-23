@@ -11,17 +11,20 @@ import {
 } from './inventory.service.js';
 
 import { update as updateInventory } from './services/inventory-update.service.js';
+import { resolveInventoryScope } from './services/inventory-scope.service.js';
 
 import { getHistory as getInventoryHistory } from './services/inventory-history.service.js';
 
 export const getAll = catchAsync(async (req, res) => {
-  const data = await getAllInventory(req.query);
+  const scope = await resolveInventoryScope(req.user);
+  const data = await getAllInventory(req.query, scope);
 
   res.json(data);
 });
 
 export const getHistory = catchAsync(async (req, res) => {
-  const data = await getInventoryHistory(req.query);
+  const scope = await resolveInventoryScope(req.user);
+  const data = await getInventoryHistory(req.query, scope);
 
   res.json(data);
 });
@@ -40,9 +43,13 @@ export const getFilterOptions = catchAsync(async (req, res) => {
     brand: req.query.brand?.trim(),
     model: req.query.model?.trim(),
     status: req.query.status?.trim(),
+    asset_type: req.query.asset_type?.trim(),
   };
+  const search = req.query.search?.trim() || undefined;
 
-  res.json(await getInventoryFilterOptions(filters));
+  const scope = await resolveInventoryScope(req.user);
+
+  res.json(await getInventoryFilterOptions(filters, scope, search));
 });
 
 export const getClassificationRules = catchAsync(async (_req, res) => {

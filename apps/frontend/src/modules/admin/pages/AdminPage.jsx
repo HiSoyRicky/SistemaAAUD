@@ -7,12 +7,13 @@ import {
   Droplet,
   GitBranch,
   Layers,
-  MapPin,
   Mail,
+  MapPin,
   Scale,
   Shield,
   ShieldCheck,
   Tag,
+  Truck,
   Users,
 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
@@ -64,16 +65,16 @@ export default function AdminPage() {
       permission: 'departments.read',
     },
     {
-      path: 'devices',
-      label: 'Equipos',
-      icon: <Cpu className="w-5 h-5" />,
-      permission: 'devices.read',
-    },
-    {
       path: 'classification-rules',
       label: 'Clasificación patrimonial',
       icon: <Scale className="w-5 h-5" />,
       permission: 'inventory_classification_rules.read',
+    },
+    {
+      path: 'devices',
+      label: 'Equipos',
+      icon: <Cpu className="w-5 h-5" />,
+      permission: 'devices.read',
     },
     {
       path: 'brands',
@@ -86,6 +87,12 @@ export default function AdminPage() {
       label: 'Modelos',
       icon: <Layers className="w-5 h-5" />,
       permission: 'models.read',
+    },
+    {
+      path: 'vehicle-catalog',
+      label: 'Vehículos',
+      icon: <Truck className="w-5 h-5" />,
+      permission: 'inventory_classification_rules.read',
     },
     // { path: "statuses", label: "Estados", icon: <Home className="w-5 h-5" /> },
     {

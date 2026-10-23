@@ -37,6 +37,7 @@ import ClassificationRulesManager from '../modules/admin/components/classificati
 import DepartmentsManager from '../modules/admin/components/departments/DepartmentManager';
 import DevicesManager from '../modules/admin/components/devices/DevicesManager';
 import ModelsManager from '../modules/admin/components/models/ModelsManager';
+import VehicleCatalogManager from '../modules/admin/components/vehicleCatalog/VehicleCatalogManager';
 import NotificationRecipientsManager from '../modules/admin/components/notifications/NotificationRecipientsManager';
 import PermissionsManager from '../modules/admin/components/permissions/PermissionsManager';
 import RolesManager from '../modules/admin/components/roles/RolesManager';
@@ -105,6 +106,16 @@ const AnyPermissionRoute = ({ children, permissions }) => {
 
   if (!hasAnyPermission(permissions)) {
     return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const EquiposRoute = ({ children }) => {
+  const { hasPermission } = useAuth();
+
+  if (hasPermission('inventory_assets.manage_all')) {
+    return <Navigate to="/inventario/bienes" replace />;
   }
 
   return children;
@@ -215,8 +226,25 @@ function App() {
               allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
             >
               <AnyPermissionRoute permissions={['inventory.read', 'warehouse_stock.read']}>
+                <EquiposRoute>
+                  <PrivateLayout>
+                    <InventoryPage />
+                  </PrivateLayout>
+                </EquiposRoute>
+              </AnyPermissionRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventario/bienes"
+          element={
+            <PrivateRoute
+              allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
+            >
+              <AnyPermissionRoute permissions={['inventory.read']}>
                 <PrivateLayout>
-                  <InventoryPage />
+                  <InventoryPage scope="bienes" />
                 </PrivateLayout>
               </AnyPermissionRoute>
             </PrivateRoute>
@@ -357,6 +385,7 @@ function App() {
           <Route path="users" element={<UsersManager />} />
           <Route path="ubications" element={<UbicationsManager />} />
           <Route path="models" element={<ModelsManager />} />
+          <Route path="vehicle-catalog" element={<VehicleCatalogManager />} />
           <Route path="brands" element={<BrandsManager />} />
           <Route path="departments" element={<DepartmentsManager />} />
           <Route path="statuses" element={<StatusManager />} />

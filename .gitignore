@@ -4,6 +4,20 @@
 # Environment variables
 .env
 .env.*
+!.env.example
+
+# Local agent and assistant configuration
+AGENTS.md
+.codex/
+.agents/
+.continue/
+
+# Generated local code graph
+graphify-out/
+
+# Local editor configuration can contain machine-specific paths or credentials
+.vscode/
+.idea/
 
 # Logs
 logs
@@ -37,10 +51,6 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
-
-# Editors
-.vscode/
-.idea/
 
 # Project files
 Notas/

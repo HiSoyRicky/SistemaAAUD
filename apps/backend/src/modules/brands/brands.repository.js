@@ -4,7 +4,7 @@ import { prisma } from '../../config/prisma.js';
 
 export const findAll = async () => {
   return prisma.brands.findMany({
-    select: { id: true, name: true },
+    select: { id: true, name: true, catalog_type: true },
     orderBy: { name: 'asc' },
   });
 };
@@ -13,10 +13,11 @@ export const findById = async (id) => {
   return prisma.brands.findUnique({ where: { id: Number(id) } });
 };
 
-export const findByName = async (name, excludeId = null) => {
+export const findByName = async (name, catalog_type, excludeId = null) => {
   return prisma.brands.findFirst({
     where: {
       name,
+      catalog_type,
       ...(excludeId ? { id: { not: Number(excludeId) } } : {}),
     },
   });
@@ -34,7 +35,7 @@ export const updateById = async (id, data) => {
 };
 
 export const countInventoryByBrandId = async (id) => {
-  return prisma.inventory_devices.count({
+  return prisma.inventory_item_devices.count({
     where: { id_brand: Number(id) },
   });
 };

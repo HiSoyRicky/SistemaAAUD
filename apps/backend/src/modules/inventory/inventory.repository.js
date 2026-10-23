@@ -8,14 +8,16 @@ import {
   sameInventoryAuditState,
   writeInventoryAuditEvent,
 } from './services/inventory-audit.service.js';
+import { TECHNOLOGY_SCOPE_WHERE } from './services/inventory-scope.service.js';
 
-const includeRelations = {
+export const includeRelations = {
   asset_classification_rule: {
     include: {
       device: { select: { id: true, name: true } },
       classification: true,
       asset_type: true,
       extension: true,
+      administrative_area: { select: { id: true, name: true } },
     },
   },
   device_details: {
@@ -25,6 +27,8 @@ const includeRelations = {
       model: { select: { id: true, name: true } },
     },
   },
+  asset_type: true,
+  extension: true,
   vehicle_details: true,
   property_details: true,
   real_estate_details: true,
@@ -34,6 +38,79 @@ const includeRelations = {
   condition: { select: { id: true, name: true } },
   administrative_area: { select: { id: true, name: true } },
 };
+
+const inventoryOrderBy = [
+  // El marbete siempre define el orden principal. Mantener el id al final
+  // hace deterministas las páginas cuando todos los datos visibles coinciden.
+  { tag: 'asc' },
+  { asset_type: { name: 'asc' } },
+  { asset_classification_rule: { asset_type: { name: 'asc' } } },
+  { ubications: { name: 'asc' } },
+  { departments: { name: 'asc' } },
+  { administrative_area: { name: 'asc' } },
+  { user: 'asc' },
+  { device_details: { device: { name: 'asc' } } },
+  { device_details: { brand: { name: 'asc' } } },
+  { device_details: { model: { name: 'asc' } } },
+  { device_details: { serie: 'asc' } },
+  { description: 'asc' },
+  { status: { name: 'asc' } },
+  { id: 'asc' },
+];
+
+const compareInventoryText = (left, right) =>
+  String(left ?? '').localeCompare(String(right ?? ''), 'es', {
+    numeric: true,
+    sensitivity: 'base',
+  });
+
+// El marbete siempre manda. Solo para marbetes repetidos se desempata por
+// clasificación, tipo, ubicación y el resto de los datos del inventario.
+const compareInventoryRows = (left, right) => {
+  const tagComparison = compareInventoryText(left.tag, right.tag);
+  if (tagComparison !== 0) return tagComparison;
+
+  const leftHasClassification = Boolean(left.asset_classification_rule?.classification);
+  const rightHasClassification = Boolean(right.asset_classification_rule?.classification);
+  if (leftHasClassification !== rightHasClassification) return leftHasClassification ? -1 : 1;
+
+  const leftType = left.asset_type?.name || left.asset_classification_rule?.asset_type?.name;
+  const rightType = right.asset_type?.name || right.asset_classification_rule?.asset_type?.name;
+  const fields = [
+    [leftType, rightType],
+    [left.ubications?.name, right.ubications?.name],
+    [left.departments?.name, right.departments?.name],
+    [left.administrative_area?.name, right.administrative_area?.name],
+    [left.user, right.user],
+    [left.device_details?.device?.name, right.device_details?.device?.name],
+    [left.device_details?.brand?.name, right.device_details?.brand?.name],
+    [left.device_details?.model?.name, right.device_details?.model?.name],
+    [left.device_details?.serie, right.device_details?.serie],
+    [left.description, right.description],
+    [left.status?.name, right.status?.name],
+  ];
+
+  for (const [leftValue, rightValue] of fields) {
+    const comparison = compareInventoryText(leftValue, rightValue);
+    if (comparison !== 0) return comparison;
+  }
+
+  return left.id - right.id;
+};
+
+export function sortInventoryRows(rows) {
+  return rows.sort(compareInventoryRows);
+}
+
+export function getInventoryPage(rows, skip, take) {
+  return sortInventoryRows(rows).slice(skip, skip + take);
+}
+
+export function collectInventoryAssetTypeIds(rows) {
+  return [...new Set(rows
+    .map((row) => row.asset_classification_rule?.asset_type_id ?? row.asset_type_id)
+    .filter(Number.isInteger))];
+}
 
 export const findAssetClassificationRuleById = async (id) => {
   return prisma.inventory_asset_classification_rules.findUnique({
@@ -94,6 +171,11 @@ export const findActiveAssetClassificationRules = async () => {
   });
 };
 
+export const findVehicleCatalogById = async (id) => prisma.inventory_vehicle_catalog.findUnique({
+  where: { id: Number(id) },
+  include: { brand: { select: { id: true, name: true } }, model: { select: { id: true, name: true, id_brand: true } } },
+});
+
 export const findAssetClassificationRulesByIds = async (ids = []) => {
   if (!ids.length) return [];
 
@@ -125,100 +207,44 @@ export const findAssetsForClassificationPreview = async () => {
   });
 };
 
-export const findAssetClassificationExtensionByCode = async (code) => {
-  return prisma.inventory_asset_extensions.findUnique({
-    where: { code },
-    select: { id: true, code: true, active: true },
-  });
-};
-
-export const findAssetTypeByCode = async (code) =>
-  prisma.inventory_asset_types.findUnique({
-    where: { code },
-    select: { id: true, code: true, active: true },
-  });
-
-export const findInventoryClassificationBatch = async ({ cursorId = null, take = 200 }) =>
-  prisma.bd_inventory.findMany({
-    ...(cursorId !== null && { cursor: { id: cursorId }, skip: 1 }),
-    take,
+export const findItemsForClassificationSync = async ({ deviceIds = null } = {}, db = prisma) =>
+  db.inventory_items.findMany({
+    where: deviceIds === null ? {} : { device_details: { is: { id_device: { in: deviceIds } } } },
+    include: { device_details: true },
     orderBy: { id: 'asc' },
-    select: {
-      id: true,
-      id_device: true,
-      id_administrative_area: true,
-      asset_classification_rule_id: true,
-      inventory_devices: { select: { id: true } },
-      asset_classification_rule: {
-        select: {
-          id: true,
-          asset_type_id: true,
-          extension_id: true,
-          administrative_area_id: true,
-        },
-      },
-    },
-  });
-
-export const updateReconciledInventory = async (id, data, db) =>
-  db.bd_inventory.update({
-    where: { id: Number(id) },
-    data,
-    select: {
-      id: true,
-      asset_classification_rule_id: true,
-      id_administrative_area: true,
-    },
-  });
-
-export const findActiveClassificationCandidates = async ({ deviceId, assetTypeId, extensionId }) =>
-  prisma.inventory_asset_classification_rules.findMany({
-    where: {
-      active: true,
-      extension_id: extensionId,
-      classification: { is: { active: true, is_assignable: true } },
-      asset_type: { is: { active: true } },
-      OR: [
-        { device_id: Number(deviceId) },
-        { device_id: null, asset_type_id: Number(assetTypeId), is_default: true },
-      ],
-    },
-    select: {
-      id: true,
-      device_id: true,
-      asset_type_id: true,
-      extension_id: true,
-      administrative_area_id: true,
-    },
   });
 
 let inventoryLocationNullableCache = null;
 
-function buildInventorySearchWhere(search, filters = {}) {
+const TECHNOLOGY_ONLY_CONDITION = TECHNOLOGY_SCOPE_WHERE;
+
+export function buildInventorySearchWhere(search, filters = {}, scope = {}) {
   const relationNameFilter = (relation, value) =>
     value ? { [relation]: { is: { name: { equals: value, mode: 'insensitive' } } } } : null;
   const filterConditions = [
     filters.tag && { tag: { contains: filters.tag, mode: 'insensitive' } },
-    filters.serie && { serie: { contains: filters.serie, mode: 'insensitive' } },
+    filters.serie && { device_details: { is: { serie: { contains: filters.serie, mode: 'insensitive' } } } },
     filters.description && { description: { contains: filters.description, mode: 'insensitive' } },
     filters.user && { user: { contains: filters.user, mode: 'insensitive' } },
     filters.ip && {
-      inventory_devices: { is: { ip: { contains: filters.ip, mode: 'insensitive' } } },
+      device_details: { is: { ip: { contains: filters.ip, mode: 'insensitive' } } },
     },
     filters.device && {
-      inventory_devices: {
+      device_details: {
         is: { device: { is: { name: { equals: filters.device, mode: 'insensitive' } } } },
       },
     },
     filters.brand && {
-      inventory_devices: {
-        is: { brand: { is: { name: { equals: filters.brand, mode: 'insensitive' } } } },
-      },
+      OR: [
+        { device_details: { is: { brand: { is: { name: { equals: filters.brand, mode: 'insensitive' } } } } } },
+        { vehicle_details: { is: { make: { equals: filters.brand, mode: 'insensitive' } } } },
+      ],
     },
     filters.model && {
-      inventory_devices: {
-        is: { model: { is: { name: { equals: filters.model, mode: 'insensitive' } } } },
-      },
+      OR: [
+        { device_details: { is: { model: { is: { name: { equals: filters.model, mode: 'insensitive' } } } } } },
+        { vehicle_details: { is: { model: { equals: filters.model, mode: 'insensitive' } } } },
+      ],
     },
     relationNameFilter('departments', filters.department),
     relationNameFilter('ubications', filters.ubication),
@@ -235,9 +261,19 @@ function buildInventorySearchWhere(search, filters = {}) {
       },
     },
     filters.asset_type && {
-      asset_classification_rule: {
-        is: { asset_type: { is: { name: { equals: filters.asset_type, mode: 'insensitive' } } } },
-      },
+      OR: [
+        {
+          AND: [
+            { asset_classification_rule_id: null },
+            { asset_type: { is: { name: { equals: filters.asset_type, mode: 'insensitive' } } } },
+          ],
+        },
+        {
+          asset_classification_rule: {
+            is: { asset_type: { is: { name: { equals: filters.asset_type, mode: 'insensitive' } } } },
+          },
+        },
+      ],
     },
     filters.extension && {
       asset_classification_rule: {
@@ -249,7 +285,6 @@ function buildInventorySearchWhere(search, filters = {}) {
   const searchConditions = search
     ? {
         OR: [
-          { serie: { contains: search, mode: 'insensitive' } },
           { tag: { contains: search, mode: 'insensitive' } },
           { description: { contains: search, mode: 'insensitive' } },
           { user: { contains: search, mode: 'insensitive' } },
@@ -292,29 +327,58 @@ function buildInventorySearchWhere(search, filters = {}) {
             },
           },
           {
-            inventory_devices: {
-              is: { ip: { contains: search, mode: 'insensitive' } },
+            device_details: {
+              is: {
+                OR: [
+                  { ip: { contains: search, mode: 'insensitive' } },
+                  { serie: { contains: search, mode: 'insensitive' } },
+                ],
+              },
             },
           },
           { observation: { contains: search, mode: 'insensitive' } },
           {
-            inventory_devices: {
+            device_details: {
               is: {
                 device: { is: { name: { contains: search, mode: 'insensitive' } } },
               },
             },
           },
           {
-            inventory_devices: {
+            device_details: {
               is: {
                 brand: { is: { name: { contains: search, mode: 'insensitive' } } },
               },
             },
           },
           {
-            inventory_devices: {
+            device_details: {
               is: {
                 model: { is: { name: { contains: search, mode: 'insensitive' } } },
+              },
+            },
+          },
+          {
+            vehicle_details: {
+              is: {
+                OR: [
+                  { make: { contains: search, mode: 'insensitive' } },
+                  { model: { contains: search, mode: 'insensitive' } },
+                  { plate: { contains: search, mode: 'insensitive' } },
+                  { engine: { contains: search, mode: 'insensitive' } },
+                  { chassis: { contains: search, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+          {
+            real_estate_details: {
+              is: {
+                OR: [
+                  { cadastral_number: { contains: search, mode: 'insensitive' } },
+                  { address: { contains: search, mode: 'insensitive' } },
+                  { location_geo: { contains: search, mode: 'insensitive' } },
+                ],
               },
             },
           },
@@ -325,26 +389,29 @@ function buildInventorySearchWhere(search, filters = {}) {
       }
     : {};
 
-  return filterConditions.length
-    ? { AND: [searchConditions, ...filterConditions] }
-    : searchConditions;
+  const conditions = scope?.technologyOnly
+    ? [...filterConditions, TECHNOLOGY_ONLY_CONDITION]
+    : filterConditions;
+
+  return conditions.length ? { AND: [searchConditions, ...conditions] } : searchConditions;
 }
 
-export const findAll = async (search, filters = {}) => {
-  return prisma.inventory_items.findMany({
-    where: buildInventorySearchWhere(search, filters),
+export const findAll = async (search, filters = {}, scope = {}) => {
+  const inventory = await prisma.inventory_items.findMany({
+    where: buildInventorySearchWhere(search, filters, scope),
     include: includeRelations,
-    orderBy: { id: 'asc' },
+    orderBy: inventoryOrderBy,
   });
+  return sortInventoryRows(inventory);
 };
 
 // Cada filtro de columna solo debe ofrecer valores que aun existan dado el resto
 // de filtros ya aplicados (filtrado en cascada / "faceted search").
-export const findInventoryFilterOptions = async (filters = {}) => {
+export const findInventoryFilterOptions = async (filters = {}, scope = {}, search) => {
   const buildWhereExcluding = (excludeKey) => {
     const rest = { ...filters };
     delete rest[excludeKey];
-    return buildInventorySearchWhere('', rest);
+    return buildInventorySearchWhere(search, rest, scope);
   };
 
   const withAnd = (where, extra) => ({ AND: [where, extra] });
@@ -358,6 +425,7 @@ export const findInventoryFilterOptions = async (filters = {}) => {
     modelRows,
     statusRows,
     userRows,
+    assetTypeRows,
   ] = await Promise.all([
     prisma.inventory_items.findMany({
       where: withAnd(buildWhereExcluding('ubication'), { id_ubication: { not: null } }),
@@ -377,17 +445,17 @@ export const findInventoryFilterOptions = async (filters = {}) => {
       select: { id_administrative_area: true },
     }),
     prisma.inventory_item_devices.findMany({
-      where: buildWhereExcluding('device'),
+      where: { item: { is: buildWhereExcluding('device') } },
       distinct: ['id_device'],
       select: { id_device: true },
     }),
     prisma.inventory_item_devices.findMany({
-      where: buildWhereExcluding('brand'),
+      where: { item: { is: buildWhereExcluding('brand') }, id_brand: { not: null } },
       distinct: ['id_brand'],
       select: { id_brand: true },
     }),
     prisma.inventory_item_devices.findMany({
-      where: buildWhereExcluding('model'),
+      where: { item: { is: buildWhereExcluding('model') }, id_model: { not: null } },
       distinct: ['id_model'],
       select: { id_model: true },
     }),
@@ -401,10 +469,25 @@ export const findInventoryFilterOptions = async (filters = {}) => {
       distinct: ['user'],
       select: { user: true },
     }),
+    prisma.inventory_items.findMany({
+      where: buildWhereExcluding('asset_type'),
+      select: {
+        asset_type_id: true,
+        asset_classification_rule: { select: { asset_type_id: true } },
+      },
+    }),
   ]);
 
-  const [ubications, departments, administrativeAreas, devices, brands, models, statuses] =
-    await Promise.all([
+  const [
+    ubications,
+    departments,
+    administrativeAreas,
+    devices,
+    brands,
+    models,
+    statuses,
+    assetTypes,
+  ] = await Promise.all([
       prisma.ubications.findMany({
         where: { id: { in: locationRows.map((row) => row.id_ubication) } },
         select: { id: true, name: true },
@@ -440,6 +523,15 @@ export const findInventoryFilterOptions = async (filters = {}) => {
         select: { id: true, name: true },
         orderBy: { name: 'asc' },
       }),
+      prisma.inventory_asset_types.findMany({
+        where: {
+          id: {
+            in: collectInventoryAssetTypeIds(assetTypeRows),
+          },
+        },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
     ]);
 
   return {
@@ -450,6 +542,7 @@ export const findInventoryFilterOptions = async (filters = {}) => {
     brands,
     models,
     statuses,
+    asset_types: assetTypes,
     users: userRows
       .map((row) => row.user)
       .filter(Boolean)
@@ -459,8 +552,8 @@ export const findInventoryFilterOptions = async (filters = {}) => {
 
 // Estadisticas globales para los KPIs del encabezado (no deben limitarse a la
 // pagina actual cuando el listado usa paginacion en el servidor).
-export const findInventoryStats = async ({ search, filters }) => {
-  const where = buildInventorySearchWhere(search, filters);
+export const findInventoryStats = async ({ search, filters, scope }) => {
+  const where = buildInventorySearchWhere(search, filters, scope);
   const rows = await prisma.inventory_items.findMany({
     where,
     select: {
@@ -486,20 +579,17 @@ export const findInventoryStats = async ({ search, filters }) => {
   return { total: rows.length, active, warning, locations: locations.size };
 };
 
-export const findPage = async ({ search, filters, skip, take }) => {
-  const where = buildInventorySearchWhere(search, filters);
+export const findPage = async ({ search, filters, scope, skip, take }) => {
+  const where = buildInventorySearchWhere(search, filters, scope);
   const [data, total] = await prisma.$transaction([
     prisma.inventory_items.findMany({
       where,
       include: includeRelations,
-      orderBy: { id: 'asc' },
-      skip,
-      take,
     }),
     prisma.inventory_items.count({ where }),
   ]);
 
-  return { data, total };
+  return { data: getInventoryPage(data, skip, take), total };
 };
 
 export const findById = async (id) => {
@@ -559,10 +649,30 @@ function escapeLikeTerm(value) {
   return `%${String(value).replace(/[\\%_]/g, (character) => escape + character)}%`;
 }
 
-export function buildInventoryMovementFilters({ action, from, to, inventoryId, actor, search }) {
+export function buildInventoryMovementFilters({
+  action,
+  from,
+  to,
+  inventoryId,
+  actor,
+  search,
+  technologyOnly = false,
+}) {
   const baseConditions = [
     Prisma.sql`al.entity_type IN ('BD_INVENTORY', 'INVENTORY_DEVICES')`,
   ];
+
+  if (technologyOnly) {
+    baseConditions.push(
+      Prisma.sql`al.entity_id IN (
+        SELECT ii.id
+        FROM inventory_items ii
+        LEFT JOIN inventory_asset_classification_rules r ON r.id = ii.asset_classification_rule_id
+        LEFT JOIN inventory_asset_extensions e ON e.id = r.extension_id
+        WHERE ii.asset_classification_rule_id IS NULL OR e.code = 'DEVICES'
+      )`
+    );
+  }
 
   if (inventoryId) baseConditions.push(Prisma.sql`al.entity_id = ${inventoryId}`);
   if (action) baseConditions.push(Prisma.sql`al.action = ${action}::"ActivityAction"`);
@@ -643,6 +753,7 @@ export const findInventoryMovementLogs = async ({
   search,
   page,
   limit,
+  technologyOnly,
 }) => {
   const filters = buildInventoryMovementFilters({
     action,
@@ -651,6 +762,7 @@ export const findInventoryMovementLogs = async ({
     inventoryId,
     actor,
     search,
+    technologyOnly,
   });
 
   return prisma.$transaction(
@@ -809,9 +921,10 @@ export const areInventoryLocationFieldsNullable = async () => {
 
 export const withTransaction = async (callback) => prisma.$transaction(callback);
 
-export const createWithTechnology = async ({ inventoryData, technologyData, userId }) => {
-  return runWithActivityLoggingSuppressed(['inventory_items', 'inventory_item_devices'], () =>
-    prisma.$transaction(async (tx) => {
+export const createWithTechnology = async ({ inventoryData, technologyData, vehicleData, realEstateData, propertyData, userId }) => {
+  return runWithActivityLoggingSuppressed(
+    ['inventory_items', 'inventory_item_devices', 'inventory_item_vehicles', 'inventory_item_properties', 'inventory_item_real_estate'],
+    () => prisma.$transaction(async (tx) => {
       const inventory = await tx.inventory_items.create({
         data: inventoryData,
       });
@@ -822,6 +935,24 @@ export const createWithTechnology = async ({ inventoryData, technologyData, user
             ...technologyData,
             item_id: inventory.id,
           },
+        });
+      }
+
+      if (vehicleData) {
+        await tx.inventory_item_vehicles.create({
+          data: { ...vehicleData, item_id: inventory.id },
+        });
+      }
+
+      if (realEstateData) {
+        await tx.inventory_item_real_estate.create({
+          data: { ...realEstateData, item_id: inventory.id },
+        });
+      }
+
+      if (propertyData) {
+        await tx.inventory_item_properties.create({
+          data: { ...propertyData, item_id: inventory.id },
         });
       }
 
@@ -845,12 +976,16 @@ export const updateWithTechnology = async ({
   id,
   inventoryData,
   technologyData,
+  vehicleData,
+  realEstateData,
+  propertyData,
   updateTechnology = true,
   expectedInventory,
   userId,
 }) => {
-  return runWithActivityLoggingSuppressed(['inventory_items', 'inventory_item_devices'], () =>
-    prisma.$transaction(async (tx) => {
+  return runWithActivityLoggingSuppressed(
+    ['inventory_items', 'inventory_item_devices', 'inventory_item_vehicles', 'inventory_item_real_estate'],
+    () => prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "inventory_items" WHERE id = ${Number(id)} FOR UPDATE`;
 
       const current = await tx.inventory_items.findUnique({
@@ -886,14 +1021,14 @@ export const updateWithTechnology = async ({
             JSON.stringify(technologyData[field] ?? null)
         );
 
-      if (Object.keys(changedInventoryData).length || technologyChanged) {
+      if (Object.keys(changedInventoryData).length || technologyChanged || vehicleData || realEstateData || propertyData) {
         await tx.inventory_items.update({
           where: { id: Number(id) },
           data: { ...changedInventoryData, updated_by: userId ?? null },
         });
       }
 
-      if (updateTechnology && technologyData) {
+      if (technologyData) {
         await tx.inventory_item_devices.upsert({
           where: { item_id: Number(id) },
           create: {
@@ -902,11 +1037,33 @@ export const updateWithTechnology = async ({
           },
           update: technologyData,
         });
-      }
-
-      if (updateTechnology === false && technologyData === null) {
+      } else if (updateTechnology) {
         await tx.inventory_item_devices.deleteMany({
           where: { item_id: Number(id) },
+        });
+      }
+
+      if (vehicleData) {
+        await tx.inventory_item_vehicles.upsert({
+          where: { item_id: Number(id) },
+          create: { ...vehicleData, item_id: Number(id) },
+          update: vehicleData,
+        });
+      }
+
+      if (realEstateData) {
+        await tx.inventory_item_real_estate.upsert({
+          where: { item_id: Number(id) },
+          create: { ...realEstateData, item_id: Number(id) },
+          update: realEstateData,
+        });
+      }
+
+      if (propertyData) {
+        await tx.inventory_item_properties.upsert({
+          where: { item_id: Number(id) },
+          create: { ...propertyData, item_id: Number(id) },
+          update: propertyData,
         });
       }
 

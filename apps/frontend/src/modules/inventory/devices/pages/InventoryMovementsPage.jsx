@@ -275,10 +275,6 @@ export default function InventoryMovementsPage() {
     },
   });
 
-  const summary = useMemo(() => {
-    return `${total} movimiento${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`;
-  }, [total]);
-
   const previewDevice = useMemo(() => {
     if (!previewRow) return null;
     return buildTransferPreviewDevice(previewRow);
@@ -355,7 +351,6 @@ export default function InventoryMovementsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Historial de equipos</h1>
-          <p className="text-sm text-slate-500">{summary}</p>
         </div>
 
         <button

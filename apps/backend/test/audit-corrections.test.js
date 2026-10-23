@@ -1,38 +1,24 @@
-import assert from 'node:assert/strict';
 import express from 'express';
+import assert from 'node:assert/strict';
+import jwt from 'jsonwebtoken';
 import test from 'node:test';
-import { register } from '../src/modules/auth/auth.controller.js';
-import {
-  canAccessIncidentRoom,
-  canReadAllIncidents,
-  canReadIncidentManagerEvents,
-} from '../src/modules/incidents/incidentAccess.js';
-import {
-  createIncidentBodySchema,
-  incidentUpdateBodySchema,
-} from '../src/modules/incidents/incidents.validator.js';
-import {
-  buildCreateData,
-  createIncidentRecord,
-  resolveTonerPrinterIps,
-  validateIncidentLocation,
-} from '../src/modules/incidents/incidentService.js';
-import {
-  appendPrinterIpsToIncidentDescription,
-  getReporterIncidentDescription,
-} from '../src/modules/incidents/incidentDescription.js';
-import { synchronizeIncidentTicketNumberSequence } from '../src/modules/incidents/ticketSequence.js';
-import { canChangePassword } from '../src/modules/users/users.service.js';
-import { passwordSchema } from '../src/modules/auth/auth.validator.js';
-import { createPendingTransferRequest } from '../src/modules/inventoryTransferRequests/inventoryTransferRequests.service.js';
 import {
   resolveRoleDefaultPermissionCodes,
   splitPermissionCode,
 } from '../src/common/rbac/permissions.catalog.js';
 import { hasPermissionCode } from '../src/common/rbac/permissions.service.js';
 import { getClientIp } from '../src/common/utils/clientInfo.js';
-import { incidentCreateLimiter } from '../src/modules/incidents/incidents.routes.js';
-import { validateCreateIncident } from '../src/modules/incidents/incidents.validator.js';
+import { register } from '../src/modules/auth/auth.controller.js';
+import { passwordSchema } from '../src/modules/auth/auth.validator.js';
+import {
+  canAccessIncidentRoom,
+  canReadAllIncidents,
+  canReadIncidentManagerEvents,
+} from '../src/modules/incidents/incidentAccess.js';
+import {
+  appendPrinterIpsToIncidentDescription,
+  getReporterIncidentDescription,
+} from '../src/modules/incidents/incidentDescription.js';
 import {
   mapIncidentListItem,
   mapTonerRequestOptions,
@@ -41,7 +27,26 @@ import {
   hasIncidentAssigneeColumn,
   queryIncidentsWithAssignmentFallback,
 } from '../src/modules/incidents/incidents.repository.js';
+import { publicIncidentCreateLimiter } from '../src/modules/incidents/incidents.routes.js';
+import { registerIncidentCreationRoutes } from '../src/modules/incidents/incidentCreation.routes.js';
+import ubicationsRouter from '../src/modules/ubications/ubications.routes.js';
+import departmentsRouter from '../src/modules/departments/departments.routes.js';
+import incidentsRouter from '../src/modules/incidents/incidents.routes.js';
+import {
+  createIncidentBodySchema,
+  incidentUpdateBodySchema,
+  validateCreateIncident,
+} from '../src/modules/incidents/incidents.validator.js';
+import {
+  buildCreateData,
+  createIncidentRecord,
+  resolveTonerPrinterIps,
+  validateIncidentLocation,
+} from '../src/modules/incidents/incidentService.js';
 import { updatedIncidentSelect } from '../src/modules/incidents/incidentUpdateService.js';
+import { synchronizeIncidentTicketNumberSequence } from '../src/modules/incidents/ticketSequence.js';
+import { createPendingTransferRequest } from '../src/modules/inventoryTransferRequests/inventoryTransferRequests.service.js';
+import { canChangePassword } from '../src/modules/users/users.service.js';
 
 test('el registro público permanece deshabilitado sin invocar persistencia', async () => {
   let statusCode;
@@ -101,13 +106,13 @@ test('la actualización valida estado, categoría y compatibilidad del alias id_
   assert.equal(incidentUpdateBodySchema.safeParse({ status: 'Cerrada' }).success, false);
   assert.equal(incidentUpdateBodySchema.safeParse({ id_status: 2 }).success, true);
   assert.equal(incidentUpdateBodySchema.safeParse({ id_category: '4' }).success, true);
-  assert.equal(incidentUpdateBodySchema.safeParse({ description: 'válido', extra: true }).success, false);
-  assert.equal(incidentUpdateBodySchema.safeParse({ id_technician: null }).success, false);
-  assert.equal(incidentUpdateBodySchema.safeParse({}).success, false);
   assert.equal(
-    incidentUpdateBodySchema.safeParse({ category: 4, id_category: 5 }).success,
+    incidentUpdateBodySchema.safeParse({ description: 'válido', extra: true }).success,
     false
   );
+  assert.equal(incidentUpdateBodySchema.safeParse({ id_technician: null }).success, false);
+  assert.equal(incidentUpdateBodySchema.safeParse({}).success, false);
+  assert.equal(incidentUpdateBodySchema.safeParse({ category: 4, id_category: 5 }).success, false);
   assert.equal(
     incidentUpdateBodySchema.safeParse({ description: `${'x'.repeat(256)}` }).success,
     false
@@ -121,10 +126,9 @@ test('la creación de incidencia rechaza departamento fuera de ubicación', asyn
     },
   };
 
-  await assert.rejects(
-    validateIncidentLocation(tx, { departmentId: 5, ubicationId: 2 }),
-    { statusCode: 400 }
-  );
+  await assert.rejects(validateIncidentLocation(tx, { departmentId: 5, ubicationId: 2 }), {
+    statusCode: 400,
+  });
   await validateIncidentLocation(tx, { departmentId: 5, ubicationId: 9 });
 });
 
@@ -338,55 +342,117 @@ test('el IP registrado usa el IP resuelto por Express y no un X-Forwarded-For ar
   );
 });
 
-test('el límite ignora formularios inválidos y bloquea el segundo envío válido por IP', async () => {
-  const app = express();
-  app.use(express.json());
-  app.post('/incidents', validateCreateIncident, incidentCreateLimiter, (_req, res) => {
-    res.status(201).json({ success: true });
+test('la ruta pública valida el formulario y la ruta autenticada exige token y permiso', async () => {
+  const router = express.Router();
+  const routes = registerIncidentCreationRoutes(router, {
+    authenticatedLimiter: (_req, _res, next) => next(),
+    publicLimiter: (_req, _res, next) => next(),
   });
-  app.use((error, _req, res, _next) => {
-    res.status(error.statusCode || 500).json({ error: error.message });
-  });
+  const publicHandlers = routes.stack.find((layer) => layer.route?.path === '/public')
+    .route.stack.map(({ handle }) => handle);
+  const privateHandlers = routes.stack.find((layer) => layer.route?.path === '/')
+    .route.stack.map(({ handle }) => handle);
 
-  const server = app.listen(0, '127.0.0.1');
-  await new Promise((resolve) => server.once('listening', resolve));
+  assert.equal(publicHandlers.length, 3);
+  assert.equal(privateHandlers.length, 6);
+  assert.equal(createIncidentBodySchema.safeParse({}).success, false);
 
+  const unauthenticatedResponse = { statusCode: null, status(code) { this.statusCode = code; return this; }, json() {} };
+  let unauthenticatedNextCalled = false;
+  privateHandlers[0]({ headers: {} }, unauthenticatedResponse, () => { unauthenticatedNextCalled = true; });
+  assert.equal(unauthenticatedResponse.statusCode, 401);
+  assert.equal(unauthenticatedNextCalled, false);
+
+  const secret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = 'incident-route-test-secret';
   try {
-    const url = `http://127.0.0.1:${server.address().port}/incidents`;
-    const first = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    const validPayload = {
-      reporter_name: 'Reportante de prueba',
-      id_ubication: 1,
-      id_department: 2,
-      id_category: 3,
-      description: 'Incidencia de prueba',
-    };
-    const firstValid = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(validPayload),
-    });
-    const secondValid = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(validPayload),
-    });
-
-    const firstBody = await first.text();
-    assert.equal(first.status, 400, firstBody);
-    assert.equal(firstValid.status, 201);
-    assert.equal(secondValid.status, 429);
-    assert.ok(Number(secondValid.headers.get('retry-after')) > 0);
-  } finally {
-    server.closeAllConnections();
-    await new Promise((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve()))
+    const token = jwt.sign({ id: 7, role: 'custom', permissions: [] }, process.env.JWT_SECRET);
+    const response = { statusCode: null, status(code) { this.statusCode = code; return this; }, json() {} };
+    let permissionNextCalled = false;
+    await privateHandlers[0]({ headers: { authorization: `Bearer ${token}` } }, response, () => {});
+    privateHandlers[1]({ user: { id: 7, mustChangePassword: false } }, response, () => {});
+    await privateHandlers[2](
+      { user: { id: 7, roleId: 99, permissionsLoaded: true, permissions: [] } },
+      response,
+      () => { permissionNextCalled = true; }
     );
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(permissionNextCalled, false);
+
+    let permittedNextCalled = false;
+    await privateHandlers[2](
+      { user: { id: 7, roleId: 99, permissionsLoaded: true, permissions: ['incidents.create'] } },
+      { status() { return this; }, json() {} },
+      () => { permittedNextCalled = true; }
+    );
+    assert.equal(permittedNextCalled, true);
+  } finally {
+    if (secret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = secret;
   }
+});
+
+test('el rate limit público permite tres solicitudes válidas por IP y rechaza la cuarta', async () => {
+  const run = (ip) => new Promise((resolve, reject) => {
+    const req = {
+      ip,
+      method: 'POST',
+      originalUrl: '/incidents/public',
+      headers: {},
+      socket: { remoteAddress: ip },
+      app: { get: () => false },
+    };
+    const headers = {};
+    const res = {
+      statusCode: 200,
+      set(name, value) { headers[name.toLowerCase()] = value; return this; },
+      setHeader(name, value) { headers[name.toLowerCase()] = value; },
+      getHeader(name) { return headers[name.toLowerCase()]; },
+      send(body) { resolve({ status: this.statusCode, headers, body }); },
+      status(code) { this.statusCode = code; return this; },
+      json(body) { resolve({ status: this.statusCode, headers, body }); },
+      end() { resolve({ status: this.statusCode, headers }); },
+    };
+    publicIncidentCreateLimiter(req, res, (error) => error ? reject(error) : resolve({ status: res.statusCode, headers }));
+  });
+
+  const results = [];
+  for (let index = 0; index < 4; index += 1) {
+    results.push(await run('192.0.2.10'));
+  }
+  assert.deepEqual(results.map(({ status }) => status), [200, 200, 200, 429]);
+});
+
+test('los catálogos de ubicación y departamento son públicos solo para lectura', () => {
+  for (const router of [ubicationsRouter, departmentsRouter]) {
+    const readRoute = router.stack.find((layer) => layer.route?.path === '/' && layer.route.methods.get);
+    const writeRoute = router.stack.find((layer) => layer.route?.path === '/' && layer.route.methods.post);
+
+    assert.ok(readRoute);
+    assert.equal(readRoute.route.stack.length, 1);
+    assert.ok(writeRoute);
+    assert.ok(writeRoute.route.stack.length > 1);
+  }
+
+  const updateUbicationRoute = ubicationsRouter.stack.find(
+    (layer) => layer.route?.path === '/:id' && layer.route.methods.put
+  );
+  const updateDepartmentRoute = departmentsRouter.stack.find(
+    (layer) => layer.route?.path === '/:id' && layer.route.methods.put
+  );
+  assert.ok(updateUbicationRoute.route.stack.length > 1);
+  assert.ok(updateDepartmentRoute.route.stack.length > 1);
+});
+
+test('las opciones de tóner son públicas y mantienen el límite antes del controlador', () => {
+  const route = incidentsRouter.stack.find(
+    (layer) => layer.route?.path === '/toner-options' && layer.route.methods.get
+  );
+
+  assert.ok(route);
+  assert.equal(route.route.stack.length, 2);
+  assert.notEqual(route.route.stack[0].handle, route.route.stack[1].handle);
 });
 
 test('la secuencia de tickets se sincroniza bajo bloqueo antes de generar el siguiente valor', async () => {
@@ -407,7 +473,10 @@ test('la secuencia de tickets se sincroniza bajo bloqueo antes de generar el sig
   assert.match(calls[0][1], /LOCK TABLE "bd_incidents" IN SHARE ROW EXCLUSIVE MODE/);
   assert.match(calls[1][1], /setval\(/);
   assert.match(calls[1][1], /pg_sequence_last_value/);
-  assert.deepEqual(calls.map(([name]) => name), ['lock', 'sync']);
+  assert.deepEqual(
+    calls.map(([name]) => name),
+    ['lock', 'sync']
+  );
 });
 
 test('los permisos por defecto conservan solicitudes actuales y no dan revisión a roles personalizados', () => {
@@ -462,13 +531,13 @@ test('el cambio de contraseña aplica la política de registro y el flag es bool
 test('la creación de traslado bloquea el activo antes de revisar solicitudes pendientes', async () => {
   const calls = [];
   const tx = {
-    async $queryRaw(_strings, inventoryId) {
-      calls.push(['lock', inventoryId]);
+    async $queryRaw(_strings, itemId) {
+      calls.push(['lock', itemId]);
     },
-    bd_inventory: {
+    inventory_items: {
       async findUnique() {
-        calls.push(['inventory']);
-        return { id: 15 };
+        calls.push(['item']);
+        return { id: 15, device_details: null };
       },
     },
     inventory_transfer_requests: {
@@ -477,7 +546,7 @@ test('la creación de traslado bloquea el activo antes de revisar solicitudes pe
         return null;
       },
       async create({ data }) {
-        calls.push(['create', data.inventory_id]);
+        calls.push(['create', data.item_id]);
         return { id: 22, ...data };
       },
     },
@@ -486,20 +555,23 @@ test('la creación de traslado bloquea el activo antes de revisar solicitudes pe
 
   const request = await createPendingTransferRequest({
     db,
-    inventoryId: 15,
+    itemId: 15,
     requesterId: 4,
     snapshot: { tag: 'AAUD-15' },
   });
 
-  assert.deepEqual(calls.map(([name]) => name), ['lock', 'inventory', 'pending', 'create']);
-  assert.equal(request.inventory_id, 15);
+  assert.deepEqual(
+    calls.map(([name]) => name),
+    ['lock', 'item', 'pending', 'create']
+  );
+  assert.equal(request.item_id, 15);
 });
 
 test('una solicitud pendiente existente devuelve conflicto sin insertar otra', async () => {
   let createCalled = false;
   const tx = {
     async $queryRaw() {},
-    bd_inventory: { findUnique: async () => ({ id: 15 }) },
+    inventory_items: { findUnique: async () => ({ id: 15, device_details: null }) },
     inventory_transfer_requests: {
       findFirst: async () => ({ id: 22 }),
       create: async () => {
@@ -512,7 +584,7 @@ test('una solicitud pendiente existente devuelve conflicto sin insertar otra', a
   await assert.rejects(
     createPendingTransferRequest({
       db,
-      inventoryId: 15,
+      itemId: 15,
       requesterId: 4,
       snapshot: {},
     }),

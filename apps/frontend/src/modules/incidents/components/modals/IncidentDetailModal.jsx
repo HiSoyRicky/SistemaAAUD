@@ -45,11 +45,6 @@ export default function IncidentDetailModal({
 
   const details = [
     {
-      label: 'Técnico asignado',
-      value: incident.technician_full_name || 'Sin asignar',
-      icon: 'wrench',
-    },
-    {
       label: 'Categoría',
       value: incident.category_name || 'Sin categoría',
       icon: 'layers',
@@ -60,6 +55,19 @@ export default function IncidentDetailModal({
       icon: 'calendar',
     },
     {
+      label: 'Asignado por',
+      value:
+        incident.assigned_by_name || (incident.assigned_at ? 'No registrado' : 'Aún sin asignar'),
+      icon: 'user',
+      muted: !incident.assigned_by_name,
+    },
+    {
+      label: 'Técnico asignado',
+      value: incident.technician_full_name || 'Aún sin asignar',
+      icon: 'wrench',
+      muted: !incident.technician_full_name,
+    },
+    {
       label: 'Fecha de asignación',
       value: incident.assigned_at
         ? formatDateTimeLocal(incident.assigned_at)
@@ -68,16 +76,10 @@ export default function IncidentDetailModal({
       muted: !incident.assigned_at,
     },
     {
-      label: 'Asignado por',
-      value: incident.assigned_by_name || (incident.assigned_at ? 'No registrado' : '—'),
-      icon: 'user',
-      muted: !incident.assigned_by_name,
-    },
-    {
       label: 'Fecha de solución',
       value: incident.solution_date
         ? formatDateTimeLocal(incident.solution_date)
-        : 'Pendiente de resolución',
+        : 'Pendiente de solución',
       icon: 'calendar-check',
       muted: !incident.solution_date,
     },
@@ -354,7 +356,7 @@ export default function IncidentDetailModal({
                   <div>
                     <p className="text-sm font-medium text-slate-600">Sin solución registrada</p>
                     <p className="mt-1 text-xs text-slate-400">
-                      La resolución todavía no ha sido documentada.
+                      La solución todavía no ha sido documentada.
                     </p>
                   </div>
                 </div>

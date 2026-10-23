@@ -20,9 +20,15 @@ import {
 } from '../constants/inventory.constants.js';
 
 import { mapUpdateInventoryResponse } from '../inventory.dto.js';
-import { resolveClassificationRule } from './inventory-classification.service.js';
+import { isTechnologyRule, resolveClassificationRule } from './inventory-classification.service.js';
 
 import * as repository from '../inventory.repository.js';
+import {
+  assertInventoryItemInScope,
+  resolveInventoryScope,
+} from './inventory-scope.service.js';
+
+const TECHNOLOGY_UPDATE_FIELDS = ['id_device', 'id_brand', 'id_model', 'serie', 'ip'];
 
 async function assertInventoryUpdatePermissions(payload, currentUser) {
   const grantedCodes = await getResolvedUserPermissionCodes(currentUser);
@@ -72,9 +78,6 @@ function parseUpdateIds(payload) {
     id_status,
     id_condition,
     id_administrative_area,
-    asset_classification_rule_id,
-    asset_type_id,
-    extension_id,
   } = payload;
 
   const ids = {
@@ -86,9 +89,6 @@ function parseUpdateIds(payload) {
     parsedStatus: parseOptionalPositiveInt(id_status),
     parsedCondition: parseOptionalPositiveInt(id_condition),
     parsedAdministrativeArea: parseOptionalPositiveInt(id_administrative_area),
-    parsedAssetClassificationRule: parseOptionalPositiveInt(asset_classification_rule_id),
-    parsedAssetType: parseOptionalPositiveInt(asset_type_id),
-    parsedExtension: parseOptionalPositiveInt(extension_id),
   };
 
   const validations = [
@@ -100,13 +100,6 @@ function parseUpdateIds(payload) {
     ['id_status', ids.parsedStatus, 'Estado inválido'],
     ['id_condition', ids.parsedCondition, 'Condición física inválida'],
     ['id_administrative_area', ids.parsedAdministrativeArea, 'Área administradora inválida'],
-    ['asset_type_id', ids.parsedAssetType, 'Tipo general de activo inválido'],
-    ['extension_id', ids.parsedExtension, 'Extensión técnica inválida'],
-    [
-      'asset_classification_rule_id',
-      ids.parsedAssetClassificationRule,
-      'La regla de clasificación es inválida',
-    ],
   ];
 
   for (const [field, value, message] of validations) {
@@ -127,50 +120,6 @@ async function validateUpdateReference({ provided, id, finder, message }) {
 
   if (!result) {
     throw new AppError(message, 400);
-  }
-}
-
-async function validateClassificationRuleUpdate(payload, ids, existing) {
-  if (payload.asset_classification_rule_id === undefined) {
-    return;
-  }
-
-  const nextRuleId = ids.parsedAssetClassificationRule;
-
-  if (payload.asset_classification_rule_id === null || payload.asset_classification_rule_id === '') {
-    return;
-  }
-
-  if (nextRuleId === null) {
-    return;
-  }
-
-  const rule = await repository.findAssetClassificationRuleById(nextRuleId);
-
-  if (!rule) {
-    throw new AppError('La regla de clasificación seleccionada no existe', 400);
-  }
-
-  const currentRuleId = existing.asset_classification_rule?.id ?? null;
-  const currentRule = currentRuleId ? await repository.findAssetClassificationRuleById(currentRuleId) : null;
-
-  const ruleToValidate = currentRuleId === nextRuleId ? currentRule ?? rule : rule;
-
-  await resolveClassificationRule(nextRuleId);
-
-  if (ruleToValidate?.extension_id !== undefined && ruleToValidate?.extension_id !== null) {
-    const extension = await repository.findAssetClassificationExtensionByCode('DEVICES');
-    const technologyRule = await resolveClassificationRule(nextRuleId);
-
-    if (extension && technologyRule.extension_id === extension.id) {
-      const shouldKeepTechnologyConsistency =
-        existing.inventory_devices ||
-        (payload.id_device !== undefined || payload.id_brand !== undefined || payload.id_model !== undefined || payload.ip !== undefined);
-
-      if (shouldKeepTechnologyConsistency) {
-        await validateTechnologyUpdateConsistency(existing, payload, ids);
-      }
-    }
   }
 }
 
@@ -222,75 +171,127 @@ async function validateUpdateReferences(payload, ids) {
       finder: repository.findAdministrativeAreaById,
       message: 'El área administradora proporcionada no existe',
     }),
-    validateUpdateReference({
-      provided: payload.asset_classification_rule_id,
-      id: ids.parsedAssetClassificationRule,
-      finder: repository.findAssetClassificationRuleById,
-      message: 'La regla de clasificación seleccionada no existe',
-    }),
-    validateUpdateReference({
-      provided: payload.asset_type_id,
-      id: ids.parsedAssetType,
-      finder: repository.findAssetTypeById,
-      message: 'El tipo general de activo proporcionado no existe',
-    }),
-    validateUpdateReference({
-      provided: payload.extension_id,
-      id: ids.parsedExtension,
-      finder: repository.findAssetExtensionById,
-      message: 'La extensión proporcionada no existe',
-    }),
   ]);
 }
 
-async function resolveContextRuleForUpdate(payload, ids, existing) {
-  const currentRule = existing.asset_classification_rule;
-  const currentContext = {
-    deviceId: existing.id_device,
-    assetTypeId: currentRule?.asset_type_id ?? null,
-    extensionId: currentRule?.extension_id ?? null,
-    administrativeAreaId: existing.id_administrative_area,
-  };
-  const nextContext = {
-    deviceId: payload.id_device !== undefined ? ids.parsedDevice : currentContext.deviceId,
-    assetTypeId: payload.asset_type_id !== undefined ? ids.parsedAssetType : currentContext.assetTypeId,
-    extensionId: payload.extension_id !== undefined ? ids.parsedExtension : currentContext.extensionId,
-    administrativeAreaId:
-      payload.id_administrative_area !== undefined
-        ? ids.parsedAdministrativeArea
-        : currentContext.administrativeAreaId,
-  };
-  const contextChanged = Object.keys(nextContext).some(
-    (key) => nextContext[key] !== currentContext[key]
-  );
-
-  if (!contextChanged && payload.asset_classification_rule_id === undefined) {
-    return undefined;
-  }
-
-  return resolveClassificationRule({
-    ...nextContext,
-  });
+function currentDeviceId(existing) {
+  return existing.device_details?.id_device ?? existing.asset_classification_rule?.device_id ?? null;
 }
 
-async function validateTechnologyUpdateConsistency(existing, payload, ids) {
-  const technology = existing.inventory_devices;
-  const effectiveDevice =
-    payload.id_device !== undefined ? ids.parsedDevice : technology?.id_device ?? existing.id_device;
-  const effectiveBrand =
-    payload.id_brand !== undefined ? ids.parsedBrand : technology?.id_brand ?? existing.id_brand;
-  const effectiveModel =
-    payload.id_model !== undefined ? ids.parsedModel : technology?.id_model ?? existing.id_model;
+function normalizeOptionalText(value) {
+  return typeof value === 'string' ? value.trim() || null : null;
+}
 
-  if (![effectiveDevice, effectiveBrand, effectiveModel].every(Number.isInteger)) {
+function parseOptionalNonNegativeInt(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : Number.NaN;
+}
+
+function resolveEffectiveTechnology(existing, payload, ids) {
+  const technology = existing.device_details;
+
+  return {
+    id_device: ids.parsedDevice ?? currentDeviceId(existing),
+    id_brand: payload.id_brand !== undefined ? ids.parsedBrand : technology?.id_brand ?? null,
+    id_model: payload.id_model !== undefined ? ids.parsedModel : technology?.id_model ?? null,
+    serie:
+      payload.serie !== undefined
+        ? normalizeOptionalText(payload.serie)
+        : technology?.serie ?? null,
+    ip: payload.ip !== undefined ? normalizeOptionalText(payload.ip) : technology?.ip ?? null,
+  };
+}
+
+function hasTechnicalValues(technology) {
+  return [technology.id_brand, technology.id_model, technology.serie, technology.ip].some(
+    (value) => value !== null && value !== undefined
+  );
+}
+
+function vehicleUpdateData(existing, payload, catalogEntry) {
+  const current = existing.vehicle_details || {};
+  const mileage = payload.vehicle_mileage === undefined
+    ? current.mileage ?? null
+    : parseOptionalNonNegativeInt(payload.vehicle_mileage);
+  if (Number.isNaN(mileage)) throw new AppError('El kilometraje no es válido', 400);
+  const text = (key, existingValue) =>
+    payload[key] === undefined ? existingValue ?? null : normalizeOptionalText(payload[key]);
+  return {
+    make: catalogEntry?.brand.name ?? current.make ?? null,
+    model: catalogEntry?.model.name ?? current.model ?? null,
+    model_year: catalogEntry?.model_year ?? current.model_year ?? null,
+    plate: text('vehicle_plate', current.plate),
+    engine: text('vehicle_engine', current.engine),
+    chassis: text('vehicle_chassis', current.chassis),
+    vehicle_type: catalogEntry?.vehicle_type ?? current.vehicle_type ?? null,
+    fuel_type: catalogEntry?.fuel_type ?? current.fuel_type ?? null,
+    mileage,
+  };
+}
+
+function realEstateUpdateData(existing, payload) {
+  const current = existing.real_estate_details || {};
+  const area = payload.real_estate_area_m2 === undefined
+    ? current.area_m2 == null ? null : String(current.area_m2)
+    : normalizeOptionalText(payload.real_estate_area_m2);
+  if (area && !/^\d{1,8}(\.\d{1,2})?$/.test(area)) {
+    throw new AppError('El área del terreno debe ser un número positivo con hasta 2 decimales', 400);
+  }
+  const text = (key, existingValue) =>
+    payload[key] === undefined ? existingValue ?? null : normalizeOptionalText(payload[key]);
+  return {
+    cadastral_number: text('cadastral_number', current.cadastral_number),
+    address: text('real_estate_address', current.address),
+    area_m2: area,
+    location_geo: text('real_estate_location_geo', current.location_geo),
+  };
+}
+
+function propertyUpdateData(existing, payload) {
+  const current = existing.property_details || {};
+  const text = (key, existingValue) =>
+    payload[key] === undefined ? existingValue ?? null : normalizeOptionalText(payload[key]);
+  return {
+    material: text('property_material', current.material),
+    dimensions: text('property_dimensions', current.dimensions),
+  };
+}
+
+async function validateTechnologyUpdate(technology) {
+  if (![technology.id_device, technology.id_brand, technology.id_model].every(Number.isInteger)) {
     throw new AppError('El activo debe conservar un dispositivo, marca y modelo válidos', 400);
   }
 
-  const model = await repository.findModelById(effectiveModel);
+  if (!technology.serie) {
+    throw new AppError('El campo serie es obligatorio', 400);
+  }
 
-  if (!model || model.id_brand !== effectiveBrand || model.id_device !== effectiveDevice) {
+  await validateModelBelongsTo(technology);
+}
+
+async function validateOptionalTechnology(technology) {
+  if (technology.id_model === null) {
+    return;
+  }
+
+  if (technology.id_brand === null) {
+    throw new AppError('El modelo requiere una marca', 400);
+  }
+
+  await validateModelBelongsTo(technology);
+}
+
+async function validateModelBelongsTo(technology) {
+  const model = await repository.findModelById(technology.id_model);
+
+  if (!model || model.id_brand !== technology.id_brand || model.id_device !== technology.id_device) {
     throw new AppError('El modelo no corresponde a la marca y dispositivo seleccionados', 400);
   }
+}
+
+function hasTechnologyUpdate(payload) {
+  return TECHNOLOGY_UPDATE_FIELDS.some((field) => payload[field] !== undefined);
 }
 
 async function resolveUpdateLocation(existing, payload, ids) {
@@ -389,7 +390,6 @@ function applyLocationUpdate(updateData, payload, location, ids, existing) {
 function applySimpleUpdateFields(updateData, payload, ids) {
   const fields = [
     ['tag', payload.tag],
-    ['serie', payload.serie],
     ['id_status', ids.parsedStatus],
     ['user', payload.user],
     ['observation', payload.observation],
@@ -404,50 +404,6 @@ function applySimpleUpdateFields(updateData, payload, ids) {
     }
   }
 }
-
-function hasTechnologyUpdate(payload) {
-  return ['id_device', 'id_brand', 'id_model', 'ip'].some(
-    (field) => payload[field] !== undefined
-  );
-}
-
-export const resolveTechnologyUpdateMode = async (
-  existing,
-  context = {},
-  {
-    resolveRule = resolveClassificationRule,
-    findDevicesExtension = repository.findAssetClassificationExtensionByCode,
-  } = {}
-) => {
-  if (context.resolveRule || context.findDevicesExtension) {
-    ({ resolveRule = resolveClassificationRule, findDevicesExtension = repository.findAssetClassificationExtensionByCode } = context);
-    context = {};
-  }
-
-  if (!existing.asset_classification_rule) {
-    return 'LEGACY';
-  }
-
-  const rule = await resolveRule(existing.asset_classification_rule.id);
-  const devicesExtension = await findDevicesExtension('DEVICES');
-
-  if (!devicesExtension) {
-    throw new AppError('La extensión tecnológica DEVICES no está configurada', 500);
-  }
-
-  if (!devicesExtension.active) {
-    throw new AppError('La extensión tecnológica DEVICES está inactiva', 400);
-  }
-
-  const effectiveExtensionId =
-    context.extensionId !== undefined
-      ? context.extensionId
-      : existing.inventory_devices
-        ? devicesExtension.id
-        : rule.extension_id;
-
-  return effectiveExtensionId === devicesExtension.id ? 'TECHNOLOGY' : 'GENERAL';
-};
 
 function applyTransferDateUpdate(updateData, transferdate) {
   if (transferdate === undefined) {
@@ -471,14 +427,6 @@ function buildInventoryUpdateData({ payload, ids, location, userId, existing }) 
   applyLocationUpdate(updateData, payload, location, ids, existing);
 
   applySimpleUpdateFields(updateData, payload, ids);
-
-  if (payload.asset_classification_rule_id !== undefined) {
-    if (payload.asset_classification_rule_id === null || payload.asset_classification_rule_id === '') {
-      updateData.asset_classification_rule_id = null;
-    } else {
-      updateData.asset_classification_rule_id = Number(payload.asset_classification_rule_id);
-    }
-  }
 
   applyTransferDateUpdate(updateData, payload.transferdate);
 
@@ -521,32 +469,53 @@ export const update = async (idParam, payload, currentUser) => {
     throw new AppError('Equipo no encontrado', 404);
   }
 
+  const scope = await resolveInventoryScope(currentUser);
+  assertInventoryItemInScope(existing, scope);
   await assertInventoryUpdatePermissions(payload, currentUser);
 
   const userId = currentUser?.id;
 
+  const selectedRuleId = parseOptionalPositiveInt(payload.classification_rule_id);
+  if (Number.isNaN(selectedRuleId)) {
+    throw new AppError('La clasificación seleccionada no es válida', 400);
+  }
+  const selectedRule = selectedRuleId ? await resolveClassificationRule(selectedRuleId) : null;
+
   const ids = parseUpdateIds(payload);
 
   await validateUpdateReferences(payload, ids);
-  await validateClassificationRuleUpdate(payload, ids, existing);
-  const resolvedContextRule = await resolveContextRuleForUpdate(payload, ids, existing);
-  const technologyUpdateMode = await resolveTechnologyUpdateMode(existing, {
-    extensionId:
-      payload.extension_id !== undefined ? ids.parsedExtension : undefined,
-  });
 
-  const technology = existing.inventory_devices;
-  const shouldValidateTechnology =
-    technologyUpdateMode === 'TECHNOLOGY' ||
-    (technologyUpdateMode === 'LEGACY' && (hasTechnologyUpdate(payload) || technology));
+  const deviceChanged =
+    payload.id_device !== undefined && ids.parsedDevice !== currentDeviceId(existing);
 
-  if (shouldValidateTechnology) {
-    await validateTechnologyUpdateConsistency(existing, payload, ids);
-  } else if (hasTechnologyUpdate(payload)) {
-    throw new AppError(
-      'Los campos tecnológicos no están permitidos para esta extensión patrimonial',
-      400
-    );
+  if (deviceChanged && !Number.isInteger(ids.parsedDevice)) {
+    throw new AppError('Debe seleccionar el bien', 400);
+  }
+
+  const nextRule = deviceChanged
+    ? await resolveClassificationRule({ deviceId: ids.parsedDevice })
+    : null;
+  const effectiveRule = deviceChanged
+    ? nextRule
+    : selectedRule || existing.asset_classification_rule;
+
+  const isTechnology = effectiveRule
+    ? isTechnologyRule(effectiveRule)
+    : deviceChanged ||
+      Boolean(existing.device_details) ||
+      ['id_brand', 'id_model', 'ip'].some((field) => payload[field] !== undefined);
+
+  if (scope?.technologyOnly && !isTechnology) {
+    throw new AppError('Solo puedes administrar bienes tecnológicos', 403, 'INVENTORY_OUT_OF_SCOPE');
+  }
+
+  const technology = resolveEffectiveTechnology(existing, payload, ids);
+  const technologyTouched = deviceChanged || isTechnology || hasTechnicalValues(technology);
+
+  if (isTechnology) {
+    await validateTechnologyUpdate(technology);
+  } else {
+    await validateOptionalTechnology(technology);
   }
 
   const location = await resolveUpdateLocation(existing, payload, ids);
@@ -559,36 +528,58 @@ export const update = async (idParam, payload, currentUser) => {
     existing,
   });
 
-  if (resolvedContextRule !== undefined) {
-    updateData.asset_classification_rule_id = resolvedContextRule?.id ?? null;
+  if (deviceChanged) {
+    updateData.asset_classification_rule_id = nextRule?.id ?? null;
+
+    if (nextRule?.administrative_area_id != null && payload.id_administrative_area === undefined) {
+      updateData.id_administrative_area = nextRule.administrative_area_id;
+    }
+  } else if (selectedRule) {
+    updateData.asset_classification_rule_id = selectedRule.id;
+    updateData.asset_type_id = selectedRule.asset_type_id;
+    updateData.extension_id = selectedRule.extension_id;
+    if (selectedRule.administrative_area_id != null && payload.id_administrative_area === undefined) {
+      updateData.id_administrative_area = selectedRule.administrative_area_id;
+    }
   }
 
-  if (Object.keys(updateData).length === 1 && !hasTechnologyUpdate(payload)) {
+  const updateTechnology = technologyTouched || Boolean(existing.device_details);
+  const isVehicle = effectiveRule?.extension?.code === 'VEHICLES';
+  const isLandOrBuilding = ['120401', '120402'].some((prefix) =>
+    effectiveRule?.classification?.code_new?.startsWith(prefix)
+  );
+  const isProperty = effectiveRule?.asset_type?.code === 'PROPERTY' && !isLandOrBuilding;
+  const vehicleCatalogEntry = isVehicle && payload.vehicle_catalog_id !== undefined
+    ? await repository.findVehicleCatalogById(payload.vehicle_catalog_id)
+    : null;
+  if (isVehicle && payload.vehicle_catalog_id !== undefined && !vehicleCatalogEntry) {
+    throw new AppError('Seleccione una configuración de vehículo válida', 400);
+  }
+  const vehicleData = isVehicle ? vehicleUpdateData(existing, payload, vehicleCatalogEntry) : null;
+  const realEstateData = isLandOrBuilding ? realEstateUpdateData(existing, payload) : null;
+  const propertyData = isProperty ? propertyUpdateData(existing, payload) : null;
+
+  if (
+    Object.keys(updateData).length === 1 &&
+    !(updateTechnology && hasTechnologyUpdate(payload)) &&
+    !vehicleData &&
+    !realEstateData &&
+    !propertyData
+  ) {
     throw new AppError('No hay campos para actualizar', 400);
   }
 
   try {
-    const technologyData = {
-      id_device:
-        payload.id_device !== undefined
-          ? ids.parsedDevice
-          : technology?.id_device ?? existing.id_device,
-      id_brand:
-        payload.id_brand !== undefined ? ids.parsedBrand : technology?.id_brand ?? existing.id_brand,
-      id_model:
-        payload.id_model !== undefined ? ids.parsedModel : technology?.id_model ?? existing.id_model,
-      ip: payload.ip !== undefined ? payload.ip : technology?.ip ?? existing.ip,
-    };
-
     const updated = await repository.updateWithTechnology({
       id,
       inventoryData: updateData,
-      technologyData,
+      technologyData: technologyTouched ? technology : null,
+      vehicleData,
+      realEstateData,
+      propertyData,
       expectedInventory: existing,
       userId,
-      updateTechnology:
-        technologyUpdateMode === 'TECHNOLOGY' ||
-        (technologyUpdateMode === 'LEGACY' && hasTechnologyUpdate(payload)),
+      updateTechnology,
     });
 
     return mapUpdateInventoryResponse(updated);

@@ -1,12 +1,18 @@
 // UsersManager.jsx
 
 import { useCallback, useEffect, useState } from 'react';
+import useAuth from '../../../../shared/hooks/useAuth';
 import Pagination from '../../../../shared/components/ui/Pagination';
 import { Users } from '../../../inventory/devices/services/inventory.api';
 import UserForm from './UsersForm';
 import UsersTable from './UsersTable';
 
 export default function UsersManager() {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission('users.create');
+  const canUpdate = hasPermission('users.update');
+  const canDelete = hasPermission('users.delete');
+  const canUpdatePassword = hasPermission('users.update_password');
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [form, setForm] = useState({
@@ -109,6 +115,7 @@ export default function UsersManager() {
   };
 
   const handleResetPassword = async (user) => {
+    if (!canUpdatePassword) return;
     const genericPassword = prompt(
       `Contraseña genérica temporal para ${user.username}:`,
       'aaud.123456'
@@ -146,7 +153,7 @@ export default function UsersManager() {
   };
 
   const handleDelete = async () => {
-    if (!form.id) return;
+    if (!canDelete || !form.id) return;
 
     const confirmDelete = window.confirm(
       `¿Desea eliminar definitivamente a ${form.nombre_completo}?`
@@ -196,7 +203,8 @@ export default function UsersManager() {
           setForm={setForm}
           roles={roles}
           handleSubmit={handleSubmit}
-          onDelete={handleDelete}
+          onDelete={canDelete ? handleDelete : undefined}
+          canSave={editing ? canUpdate : canCreate}
           onCancel={handleCancel}
         />
       )}
@@ -208,6 +216,9 @@ export default function UsersManager() {
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         handleResetPassword={handleResetPassword}
+        canCreate={canCreate}
+        canUpdate={canUpdate}
+        canUpdatePassword={canUpdatePassword}
         setShowForm={setShowForm}
         showForm={showForm}
         setSearch={setSearch}

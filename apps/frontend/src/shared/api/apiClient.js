@@ -21,6 +21,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => res,
   (error) => {
+    if (error.config?.skipSessionExpiryRedirect) {
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 403 &&
       error.response?.data?.code === 'PASSWORD_CHANGE_REQUIRED'
@@ -28,7 +32,7 @@ api.interceptors.response.use(
       window.location.href = '/cambiar-contraseña';
     }
 
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
       if (handlingUnauthorized) {
         return Promise.reject(error);
       }

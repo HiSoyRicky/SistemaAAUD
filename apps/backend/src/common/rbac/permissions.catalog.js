@@ -15,7 +15,7 @@ const PERMISSIONS_CATALOG = [
   { module: 'inventory', action: 'update_assignee' },
   { module: 'inventory', action: 'update_condition' },
   { module: 'inventory', action: 'update_administrative_area' },
-  { module: 'inventory', action: 'delete' },
+  { module: 'inventory_assets', action: 'manage_all' },
   { module: 'inventory_transfers', action: 'read_own' },
   { module: 'inventory_transfers', action: 'create' },
   { module: 'inventory_transfers', action: 'read_all' },
@@ -24,7 +24,6 @@ const PERMISSIONS_CATALOG = [
   { module: 'inventory_classification_rules', action: 'create' },
   { module: 'inventory_classification_rules', action: 'update' },
   { module: 'inventory_classification_rules', action: 'delete' },
-  { module: 'inventory_classification_rules', action: 'reconcile' },
   { module: 'toners', action: 'read' },
   { module: 'toners', action: 'create' },
   { module: 'toners', action: 'update' },
@@ -65,15 +64,14 @@ const PERMISSIONS_CATALOG = [
   { module: 'ubications', action: 'read' },
   { module: 'ubications', action: 'create' },
   { module: 'ubications', action: 'update' },
-  { module: 'ubications', action: 'delete' },
   { module: 'status', action: 'read' },
   { module: 'status', action: 'create' },
   { module: 'status', action: 'update' },
-  { module: 'status', action: 'delete' },
   { module: 'permissions', action: 'read' },
   { module: 'permissions', action: 'assign' },
   { module: 'notification_settings', action: 'read' },
   { module: 'notification_settings', action: 'create' },
+  { module: 'notification_settings', action: 'update' },
   { module: 'notification_settings', action: 'delete' },
 ];
 
@@ -155,7 +153,7 @@ const ROLE_DEFAULT_PERMISSION_CODES = {
 export const resolveRoleDefaultPermissionCodes = (roleName) => {
   const normalized = normalizeRoleName(roleName);
 
-  if (normalized.includes('admin')) {
+  if (normalized === 'admin' || normalized === 'administrador') {
     return ROLE_DEFAULT_PERMISSION_CODES.admin;
   }
 

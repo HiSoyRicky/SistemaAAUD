@@ -34,19 +34,21 @@ export const HISTORY_FIELD_LABELS = {
   id_model: 'Modelo',
   id_condition: 'Condición física',
   id_administrative_area: 'Área administradora',
+  classification_rule_id: 'Clasificación patrimonial',
   ip: 'IP',
   observation: 'Observación',
   transferdate: 'Fecha de traslado',
 };
 export const INVENTORY_FIELD_PERMISSIONS = {
+  classification_rule_id: 'inventory.update',
   id_ubication: 'inventory.update_location',
   id_department: 'inventory.update_department',
   user: 'inventory.update_assignee',
   id_condition: 'inventory.update_condition',
   id_administrative_area: 'inventory.update_administrative_area',
-  asset_classification_rule_id: 'inventory.update',
 };
 export const INVENTORY_FIELD_LABELS = {
+  classification_rule_id: 'Clasificación patrimonial',
   id_ubication: 'Ubicación',
   id_department: 'Departamento',
   user: 'Persona tenedora',
@@ -69,5 +71,5 @@ export const INVENTORY_UPDATE_FIELDS = new Set([
   'description',
   'id_condition',
   'id_administrative_area',
-  'asset_classification_rule_id',
+  'classification_rule_id',
 ]);

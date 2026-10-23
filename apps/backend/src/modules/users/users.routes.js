@@ -46,7 +46,13 @@ router.put(
   controller.update
 );
 
-router.put('/:id/password', validator.validateUpdatePassword, controller.updatePassword);
+router.put(
+  '/:id/password',
+  requirePasswordChange,
+  requirePermission('users.update_password'),
+  validator.validateUpdatePassword,
+  controller.updatePassword
+);
 
 router.delete(
   '/:id',

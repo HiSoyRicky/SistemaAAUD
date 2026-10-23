@@ -13,6 +13,7 @@ export default function ModelsManager() {
   const [newModel, setNewModel] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedDevice, setSelectedDevice] = useState('');
+  const [catalogType, setCatalogType] = useState('TECHNOLOGY');
 
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -25,6 +26,8 @@ export default function ModelsManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [search, setSearch] = useState('');
+
+  const availableBrands = brands.filter((brand) => (brand.catalog_type || 'TECHNOLOGY') === catalogType);
 
   const API_URL = `/api/models`;
 
@@ -64,12 +67,12 @@ export default function ModelsManager() {
 
   //  Agregar nuevo modelo
   const addModel = async () => {
-    if (!newModel.trim() || !selectedBrand || !selectedDevice) return;
+    if (!newModel.trim() || !selectedBrand || (catalogType === 'TECHNOLOGY' && !selectedDevice)) return;
     try {
       await api.post(`/api/models`, {
         name: newModel,
         id_brand: Number(selectedBrand),
-        id_device: Number(selectedDevice),
+        id_device: catalogType === 'VEHICLE' ? null : Number(selectedDevice),
       });
       setNewModel('');
       setSelectedBrand('');
@@ -88,6 +91,8 @@ export default function ModelsManager() {
 
   // Iniciar edición
   const editModel = (model) => {
+    const brand = brands.find((item) => item.id === model.id_brand);
+    setCatalogType(brand?.catalog_type || 'TECHNOLOGY');
     setEditingId(model.id);
     setEditingName(model.name);
     setEditingBrand(model.brandId || model.brand_id || model.id_brand || '');
@@ -96,12 +101,13 @@ export default function ModelsManager() {
 
   // Guardar edición
   const saveModel = async (id) => {
-    if (!editingName.trim() || !editingBrand) return;
+    const brandType = brands.find((item) => item.id === Number(editingBrand))?.catalog_type || 'TECHNOLOGY';
+    if (!editingName.trim() || !editingBrand || (brandType === 'TECHNOLOGY' && !editingDevice)) return;
     try {
       await api.put(`/api/models/${id}`, {
         name: editingName,
         id_brand: editingBrand,
-        id_device: editingDevice,
+        id_device: brandType === 'VEHICLE' ? null : editingDevice,
       });
       setEditingId(null);
       setEditingName('');
@@ -147,13 +153,14 @@ export default function ModelsManager() {
 
     const brandName = brands.find((b) => b.id === brandId)?.name || '';
     const deviceName = devices.find((d) => d.id === deviceId)?.name || '';
+    const brand = brands.find((item) => item.id === brandId);
 
     const term = search.toLowerCase();
     return (
       m.name.toLowerCase().includes(term) ||
       brandName.toLowerCase().includes(term) ||
       deviceName.toLowerCase().includes(term)
-    );
+    ) && (brand?.catalog_type || 'TECHNOLOGY') === catalogType;
   });
 
   const sortedModels = [...filteredModels].sort((a, b) => a.name.localeCompare(b.name));
@@ -168,6 +175,13 @@ export default function ModelsManager() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Gestión de Modelos</h2>
       </div>
+
+      <label className="block max-w-xs text-sm font-medium">Tipo de catálogo
+        <select value={catalogType} onChange={(event) => { setCatalogType(event.target.value); setSelectedBrand(''); setSelectedDevice(''); }} className="mt-1 w-full rounded border px-2 py-2">
+          <option value="TECHNOLOGY">Equipos tecnológicos</option>
+          <option value="VEHICLE">Vehículos</option>
+        </select>
+      </label>
 
       {successMessage && (
         <div className="p-2 mb-2 text-green-800 bg-green-200 rounded">{successMessage}</div>
@@ -194,7 +208,7 @@ export default function ModelsManager() {
         models={paginatedModels}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
-        brands={brands}
+        brands={availableBrands}
         editingId={editingId}
         editingName={editingName}
         editingBrand={editingBrand}
@@ -213,6 +227,7 @@ export default function ModelsManager() {
         editingDevice={editingDevice}
         setEditingDevice={setEditingDevice}
         devices={devices}
+        catalogType={catalogType}
       />
 
       <Pagination

@@ -4,10 +4,13 @@ import AppError from '../utils/AppError.js';
 import {
   buildPermissionCode,
   normalizePermissionCode,
+  PERMISSION_CODES,
   resolveRoleDefaultPermissionCodes,
   splitPermissionCode,
 } from './permissions.catalog.js';
 import * as repository from './permissions.repository.js';
+
+const permissionCodeSet = new Set(PERMISSION_CODES);
 
 function uniquePermissionCodes(codes = []) {
   const normalized = codes.map((code) => normalizePermissionCode(code)).filter(Boolean);
@@ -18,7 +21,7 @@ function uniquePermissionCodes(codes = []) {
 function mapPairsToCodes(rows = []) {
   return uniquePermissionCodes(
     rows.map(({ module, action }) => buildPermissionCode(module, action))
-  );
+  ).filter((code) => permissionCodeSet.has(code));
 }
 
 function mapUserOverrideRows(rows = []) {
@@ -27,6 +30,7 @@ function mapUserOverrideRows(rows = []) {
 
   rows.forEach((row) => {
     const code = buildPermissionCode(row.module, row.action);
+    if (!permissionCodeSet.has(code)) return;
 
     if (row.allow) {
       grants.push(code);
@@ -45,8 +49,8 @@ function mapUserOverrideRows(rows = []) {
 function applyUserOverrides(baseCodes = [], overrides = {}) {
   const effectiveSet = new Set(uniquePermissionCodes(baseCodes));
 
-  (overrides.grants || []).forEach((code) => effectiveSet.add(code));
-  (overrides.denies || []).forEach((code) => effectiveSet.delete(code));
+  (overrides.grants || []).filter((code) => permissionCodeSet.has(code)).forEach((code) => effectiveSet.add(code));
+  (overrides.denies || []).filter((code) => permissionCodeSet.has(code)).forEach((code) => effectiveSet.delete(code));
 
   return [...effectiveSet].sort((a, b) => a.localeCompare(b));
 }
@@ -154,6 +158,11 @@ export const ensurePermissionsByCodes = async (codes = []) => {
 
   if (!uniqueCodes.length) {
     return [];
+  }
+
+  const invalidCodes = uniqueCodes.filter((code) => !permissionCodeSet.has(code));
+  if (invalidCodes.length) {
+    throw new AppError(`Permisos inválidos: ${invalidCodes.join(', ')}`, 400, 'INVALID_PERMISSIONS');
   }
 
   let pairs = [];

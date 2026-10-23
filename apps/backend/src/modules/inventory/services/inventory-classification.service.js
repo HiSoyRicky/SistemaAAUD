@@ -32,6 +32,14 @@ function assertActiveRule(rule) {
 
 export const validateClassificationRule = (rule) => assertActiveRule(rule);
 
+const TECHNOLOGY_EXTENSION_CODE = 'DEVICES';
+
+// Un bien sin regla se registra como tecnológico hasta que se clasifique.
+export const isTechnologyRule = (rule) =>
+  rule
+    ? rule.asset_type?.code === 'TECHNOLOGY' && rule.extension?.code === TECHNOLOGY_EXTENSION_CODE
+    : true;
+
 async function resolveRuleById(ruleId) {
   const parsedRuleId = Number(ruleId);
 
@@ -62,12 +70,14 @@ export const resolveClassificationRule = async (ruleOrContext, options = {}) => 
     administrativeAreaId = null,
   } = ruleOrContext;
 
-  const candidates = [
-    { deviceId, extensionId, administrativeAreaId },
-    { deviceId, extensionId, administrativeAreaId: null },
-    { deviceId: null, assetTypeId, extensionId, administrativeAreaId },
-    { deviceId: null, assetTypeId, extensionId, administrativeAreaId: null, isDefault: true },
-  ];
+  const candidates =
+    deviceId !== null
+      ? [{ deviceId }]
+      : [
+          { deviceId: null, assetTypeId, extensionId, administrativeAreaId },
+          { deviceId: null, assetTypeId, extensionId, administrativeAreaId: null, isDefault: true },
+        ];
+
 
   for (const candidate of candidates) {
     if (candidate.deviceId === null && !Number.isInteger(Number(candidate.assetTypeId))) {

@@ -15,17 +15,18 @@ export const getAll = async () => {
 
 export const create = async (payload) => {
   const name = String(payload.name || '').trim();
+  const catalog_type = payload.catalog_type === 'VEHICLE' ? 'VEHICLE' : 'TECHNOLOGY';
   if (!name) {
     throw new AppError('Faltan datos requeridos', 400);
   }
 
   try {
-    const existingBrand = await repository.findByName(name);
+    const existingBrand = await repository.findByName(name, catalog_type);
     if (existingBrand) {
       throw new AppError('La marca ya existe', 409);
     }
 
-    const created = await repository.create({ name });
+    const created = await repository.create({ name, catalog_type });
     return mapCreateBrandResponse(created);
   } catch (error) {
     if (error.code === 'P2002') {
@@ -41,6 +42,7 @@ export const create = async (payload) => {
 export const update = async (idParam, payload) => {
   const id = Number(idParam);
   const name = String(payload.name || '').trim();
+  const catalog_type = payload.catalog_type === 'VEHICLE' ? 'VEHICLE' : payload.catalog_type === 'TECHNOLOGY' ? 'TECHNOLOGY' : undefined;
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new AppError('ID inválido', 400);
@@ -54,12 +56,19 @@ export const update = async (idParam, payload) => {
     throw new AppError('Marca no encontrada', 404);
   }
 
-  const duplicateBrand = await repository.findByName(name, id);
+  const nextCatalogType = payload.catalog_type === 'VEHICLE' ? 'VEHICLE' : payload.catalog_type === 'TECHNOLOGY' ? 'TECHNOLOGY' : existingBrand.catalog_type;
+  const duplicateBrand = await repository.findByName(name, nextCatalogType, id);
   if (duplicateBrand) {
     throw new AppError('Ya existe una marca con este nombre', 409);
   }
 
-  const updated = await repository.updateById(id, { name });
+  if (catalog_type && catalog_type !== existingBrand.catalog_type) {
+    const modelsCount = await repository.countModelsByBrandId(id);
+    if (modelsCount > 0) {
+      throw new AppError('No se puede cambiar el tipo de una marca que ya tiene modelos', 409);
+    }
+  }
+  const updated = await repository.updateById(id, { name, ...(catalog_type && { catalog_type }) });
   return mapUpdateBrandResponse(updated);
 };
 

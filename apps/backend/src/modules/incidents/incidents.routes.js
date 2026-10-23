@@ -1,38 +1,49 @@
 // incidents.routes.js
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator, MemoryStore } from 'express-rate-limit';
+import { requireAnyPermission } from '../../common/middleware/requirePermission.js';
 import authMiddleware from '../../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
-import requirePermission, {
-  requireAnyPermission,
-} from '../../common/middleware/requirePermission.js';
+import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './incidents.controller.js';
+import { registerIncidentCreationRoutes } from './incidentCreation.routes.js';
 import {
-  validateCreateIncident,
   validateDeleteIncident,
   validateUpdateIncidentBody,
   validateUpdateIncident,
 } from './incidents.validator.js';
 
 const router = express.Router();
-const incidentCreateLimiter = rateLimit({
+const buildIncidentCreateLimiter = ({ windowMs, limit, message, skipFailedRequests = false }) =>
+  rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipFailedRequests,
+    handler: (req, res) => {
+      const retryAfter = Math.max(
+        1,
+        Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000)
+      );
+      res.set('Retry-After', String(retryAfter));
+      res.status(429).json({ error: message, retryAfter });
+    },
+  });
+
+const incidentCreateLimiter = buildIncidentCreateLimiter({
   windowMs: 3 * 60 * 1000,
   limit: 1,
-  standardHeaders: true,
-  legacyHeaders: false,
   skipFailedRequests: true,
-  handler: (req, res) => {
-    const retryAfter = Math.max(
-      1,
-      Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000)
-    );
-    res.set('Retry-After', String(retryAfter));
-    res.status(429).json({
-      error: 'Ya se registró una incidencia hace poco. Intenta nuevamente en unos minutos.',
-      retryAfter,
-    });
-  },
+  message: 'Ya se registró una incidencia hace poco. Intenta nuevamente en unos minutos.',
+});
+const publicIncidentCreateLimiter = buildIncidentCreateLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 3,
+  message: 'Se alcanzó el límite de reportes. Intenta nuevamente más tarde.',
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  store: new MemoryStore(),
 });
 const tonerOptionsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -41,7 +52,7 @@ const tonerOptionsLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-export { incidentCreateLimiter };
+export { incidentCreateLimiter, publicIncidentCreateLimiter };
 
 router.get(
   '/',
@@ -53,7 +64,12 @@ router.get(
 
 router.get('/public/:token', controller.getPublicByToken);
 
-router.get('/toner-options', tonerOptionsLimiter, controller.getTonerOptions);
+router.get(
+  '/toner-options',
+  // Opciones mínimas para solicitudes públicas de tóner; la consulta valida la ubicación.
+  tonerOptionsLimiter,
+  controller.getTonerOptions
+);
 
 router.get(
   '/:id',
@@ -64,7 +80,10 @@ router.get(
   controller.getById
 );
 
-router.post('/', validateCreateIncident, incidentCreateLimiter, controller.create);
+registerIncidentCreationRoutes(router, {
+  authenticatedLimiter: incidentCreateLimiter,
+  publicLimiter: publicIncidentCreateLimiter,
+});
 
 router.put(
   '/:id',

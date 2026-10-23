@@ -95,7 +95,7 @@ function normalizeRole(value) {
 }
 
 function isAdministratorRoleName(name) {
-  return normalizeRole(name) === 'administrador';
+  return ['admin', 'administrador'].includes(normalizeRole(name));
 }
 
 function parseRequirePasswordChange(value) {

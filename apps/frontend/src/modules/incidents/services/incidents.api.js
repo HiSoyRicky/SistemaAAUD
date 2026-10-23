@@ -7,7 +7,12 @@ const Incidents = {
   fetchAll: () => api.get('/api/incidents').then((res) => res.data),
 
   // Crear incidencia
-  create: (payload) => api.post('/api/incidents', payload).then((res) => res.data),
+  create: (payload, { isPublic = false } = {}) =>
+    api
+      .post(`/api/incidents${isPublic ? '/public' : ''}`, payload, {
+        skipSessionExpiryRedirect: isPublic,
+      })
+      .then((res) => res.data),
 
   // Actualizar incidencia (PUT)
   update: (id, payload) => api.put(`/api/incidents/${id}`, payload).then((res) => res.data),

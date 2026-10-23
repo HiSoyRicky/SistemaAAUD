@@ -1,21 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  isTechnologyRule,
   resolveClassificationRule,
   validateClassificationRule,
   validateExtensionCompatibility,
 } from '../src/modules/inventory/services/inventory-classification.service.js';
-import {
-  getClassificationRules,
-  resolveCreationMode,
-  resolveOptionalTechnologyClassification,
-} from '../src/modules/inventory/inventory.service.js';
+import { getClassificationRules } from '../src/modules/inventory/inventory.service.js';
 import { getCatalogs } from '../src/modules/inventory/classification-rules.service.js';
-import { resolveTechnologyUpdateMode } from '../src/modules/inventory/services/inventory-update.service.js';
-import {
-  runDryRun,
-  runReconcile,
-} from '../src/modules/inventory/classification-reconciliation.service.js';
 import * as inventoryRepository from '../src/modules/inventory/inventory.repository.js';
 import { resolveInventoryPagination } from '../src/modules/inventory/inventory.service.js';
 
@@ -114,190 +106,8 @@ test('obtiene catálogos independientes de las reglas', async () => {
   assert.equal(catalogs.classifications[0].code_new, '12049999');
 });
 
-test('el dry-run reconcilia por lotes y reporta distribución sin modificar datos', async () => {
-  let batches = 0;
-  const result = await runDryRun({
-    batchSize: 1,
-    findType: async () => ({ id: 3, code: 'TECHNOLOGY', active: true }),
-    findExtension: async () => ({ id: 1, code: 'DEVICES', active: true }),
-    findBatch: async ({ cursorId }) => {
-      batches += 1;
-      if (cursorId === null) {
-        return [{ id: 10, id_device: 25, id_administrative_area: null, asset_classification_rule_id: null, inventory_devices: { id: 1 }, asset_classification_rule: null }];
-      }
-      return [];
-    },
-    findCandidates: async () => [{ administrative_area_id: 1 }],
-    resolveRule: async () => ({ id: 9, administrative_area_id: 1 }),
-  });
-
-  assert.equal(batches, 2);
-  assert.equal(result.totalInventories, 1);
-  assert.equal(result.wouldReceiveRule, 1);
-  assert.equal(result.wouldReceiveArea, 1);
-  assert.equal(result.wouldChangeRule, 1);
-  assert.equal(result.wouldChangeArea, 1);
-  assert.deepEqual(result.byRule, { 9: 1 });
-});
-
-test('reconcile reutiliza el plan del resolver y no actualiza inventarios sin cambios', async () => {
-  const updates = [];
-  const audits = [];
-  const contexts = [];
-  const batch = [
-    {
-      id: 1,
-      id_device: 25,
-      id_administrative_area: 1,
-      asset_classification_rule_id: 9,
-      inventory_devices: { id: 1 },
-      asset_classification_rule: null,
-    },
-    {
-      id: 2,
-      id_device: 25,
-      id_administrative_area: null,
-      asset_classification_rule_id: null,
-      inventory_devices: { id: 2 },
-      asset_classification_rule: null,
-    },
-  ];
-  let calls = 0;
-  const result = await runReconcile({
-    findType: async () => ({ id: 3, active: true }),
-    findExtension: async () => ({ id: 1, active: true }),
-    findBatch: async ({ cursorId, take }) => {
-      contexts.push({ cursorId, take });
-      calls += 1;
-      return calls === 1 ? batch : [];
-    },
-    findCandidates: async () => [{ administrative_area_id: 1 }],
-    resolveRule: async (context) => {
-      if (context.administrativeAreaId === 1) return { id: 9, administrative_area_id: 1 };
-      return { id: 12, administrative_area_id: 1 };
-    },
-    transaction: async (callback) => callback({ activity_logs: { create: async ({ data }) => audits.push(data) } }),
-    updateInventory: async (id, data) => updates.push({ id, data }),
-    currentUser: { id: 7 },
-  });
-
-  assert.deepEqual(contexts, [{ cursorId: null, take: 200 }]);
-  assert.deepEqual(updates, [{ id: 2, data: { asset_classification_rule_id: 9, id_administrative_area: 1 } }]);
-  assert.equal(audits[0].user_id, 7);
-  assert.equal(result.updated, 1);
-  assert.equal(result.unchanged, 1);
-  assert.equal(result.ruleChanged, 1);
-  assert.equal(result.areaChanged, 1);
-  assert.equal(result.errors, 0);
-});
-
-test('reconcile es idempotente y conserva el inventario sin regla fuera del alcance', async () => {
-  let updates = 0;
-  let batches = 0;
-  const inventory = {
-    id: 11,
-    id_device: 22,
-    id_administrative_area: 2,
-    asset_classification_rule_id: null,
-    inventory_devices: { id: 11 },
-    asset_classification_rule: null,
-  };
-  const options = {
-    findType: async () => ({ id: 3, active: true }),
-    findExtension: async () => ({ id: 1, active: true }),
-    findBatch: async ({ cursorId }) => {
-      if (cursorId !== null || batches++ > 0) return [];
-      return [inventory];
-    },
-    findCandidates: async () => [{ id: 12, administrative_area_id: 1 }],
-    resolveRule: async ({ administrativeAreaId }) =>
-      administrativeAreaId === 2 ? null : { id: 12, administrative_area_id: 1 },
-    transaction: async (callback) => callback({ activity_logs: { create: async () => {} } }),
-    updateInventory: async () => { updates += 1; },
-  };
-
-  const first = await runReconcile(options);
-  assert.equal(first.withoutRule, 1);
-  assert.equal(first.updated, 0);
-  assert.equal(updates, 0);
-
-  batches = 0;
-  const second = await runReconcile(options);
-  assert.equal(second.withoutRule, 1);
-  assert.equal(second.updated, 0);
-  assert.equal(updates, 0);
-});
-
-test('reconcile informa rollback del lote cuando falla su transacción', async () => {
-  let callbackStarted = false;
-  let rolledBack = false;
-  const result = await runReconcile({
-    findType: async () => ({ id: 3, active: true }),
-    findExtension: async () => ({ id: 1, active: true }),
-    findBatch: async ({ cursorId }) => cursorId === null
-      ? [{ id: 1, id_device: 25, id_administrative_area: 1, asset_classification_rule_id: null, inventory_devices: { id: 1 }, asset_classification_rule: null }]
-      : [],
-    resolveRule: async () => ({ id: 9, administrative_area_id: 1 }),
-    transaction: async (callback) => {
-      callbackStarted = true;
-      try {
-        await callback({ activity_logs: { create: async () => {} } });
-      } finally {
-        rolledBack = true;
-      }
-      throw new Error('fallo transaccional');
-    },
-    updateInventory: async () => {},
-  });
-
-  assert.equal(callbackStarted, true);
-  assert.equal(rolledBack, true);
-  assert.equal(result.errors, 1);
-  assert.equal(result.updated, 0);
-  assert.equal(result.processed, 1);
-});
-
 test('withTransaction existe y acepta un callback transaccional', () => {
   assert.equal(typeof inventoryRepository.withTransaction, 'function');
-});
-
-test('reconcile usa el cliente transaccional y reporta errores de lote', async () => {
-  const updates = [];
-  const audits = [];
-  const failure = new Error('fallo transaccional');
-  failure.name = 'TestTransactionError';
-  failure.code = 'TEST_CODE';
-  const tx = {
-    activity_logs: { create: async ({ data }) => audits.push(data) },
-  };
-  let transactionCalls = 0;
-  const result = await runReconcile({
-    findType: async () => ({ id: 3, active: true }),
-    findExtension: async () => ({ id: 1, active: true }),
-    findBatch: async ({ cursorId }) => cursorId === null
-      ? [
-          { id: 1, id_device: 25, id_administrative_area: 1, asset_classification_rule_id: null, inventory_devices: { id: 1 }, asset_classification_rule: null },
-          { id: 2, id_device: 25, id_administrative_area: 1, asset_classification_rule_id: null, inventory_devices: { id: 2 }, asset_classification_rule: null },
-        ]
-      : [],
-    resolveRule: async () => ({ id: 9, administrative_area_id: 1 }),
-    transaction: async () => {
-      transactionCalls += 1;
-      throw failure;
-    },
-    updateInventory: async (id, data, transactionClient) => {
-      assert.equal(transactionClient, tx);
-      updates.push({ id, data });
-    },
-  });
-
-  assert.equal(transactionCalls, 1);
-  assert.deepEqual(updates, []);
-  assert.equal(audits.length, 0);
-  assert.equal(result.errors, 1);
-  assert.equal(result.errorDetails[0].name, 'TestTransactionError');
-  assert.equal(result.errorDetails[0].code, 'TEST_CODE');
-  assert.equal(result.errorDetails[0].message, 'fallo transaccional');
 });
 
 test('acepta una regla válida', () => {
@@ -346,106 +156,21 @@ test('resuelve reglas por precedencia de device, área y fallback genérico', as
   assert.deepEqual(calls, ['device-area']);
 });
 
-test('usa el fallback genérico default cuando no existe regla específica', async () => {
+test('usa el fallback genérico default cuando no existe regla específica de área', async () => {
   const calls = [];
   const findActiveByScope = async (scope) => {
-    const key = scope.deviceId !== null
-      ? scope.administrativeAreaId === null ? 'device-global' : 'device-area'
-      : scope.administrativeAreaId === null ? 'generic-default' : 'generic-area';
+    const key = scope.administrativeAreaId === null ? 'generic-default' : 'generic-area';
     calls.push(key);
     return key === 'generic-default' ? baseRule : null;
   };
 
   const result = await resolveClassificationRule(
-    { deviceId: 28, assetTypeId: 3, extensionId: 1, administrativeAreaId: 1 },
+    { assetTypeId: 3, extensionId: 1, administrativeAreaId: 1 },
     { findActiveByScope }
   );
 
   assert.equal(result, baseRule);
-  assert.deepEqual(calls, ['device-area', 'device-global', 'generic-area', 'generic-default']);
-});
-
-test('permite creación tecnológica legacy sin regla', async () => {
-  assert.equal(await resolveOptionalTechnologyClassification(null), null);
-});
-
-test('resuelve modo LEGACY sin clasificación', async () => {
-  assert.deepEqual(await resolveCreationMode(null), { mode: 'LEGACY', rule: null });
-});
-
-test('resuelve una regla tecnológica válida con la extensión configurada', async () => {
-  const resolved = await resolveOptionalTechnologyClassification(1, {
-    resolveRule: async () => baseRule,
-    findDevicesExtension: async () => ({ id: 10, code: 'DEVICES', active: true }),
-  });
-
-  assert.equal(resolved, baseRule);
-});
-
-test('resuelve modo TECHNOLOGY con regla DEVICES válida', async () => {
-  const result = await resolveCreationMode(1, {
-    resolveRule: async () => baseRule,
-    findDevicesExtension: async () => ({ id: 10, code: 'DEVICES', active: true }),
-  });
-
-  assert.equal(result.mode, 'TECHNOLOGY');
-  assert.equal(result.rule, baseRule);
-});
-
-test('rechaza una regla cuya extensión no corresponde a tecnología', async () => {
-  await assert.rejects(
-    () =>
-      resolveOptionalTechnologyClassification(1, {
-        resolveRule: async () => ({ ...baseRule, extension_id: 11 }),
-        findDevicesExtension: async () => ({ id: 10, code: 'DEVICES', active: true }),
-      }),
-    /no es compatible/
-  );
-});
-
-test('mantiene modo legacy cuando el activo no tiene clasificación', async () => {
-  assert.equal(await resolveTechnologyUpdateMode({ asset_classification_rule: null }), 'LEGACY');
-});
-
-test('resuelve modo tecnológico usando la extensión configurada', async () => {
-  const mode = await resolveTechnologyUpdateMode(
-    { asset_classification_rule: { id: 4 } },
-    {
-      resolveRule: async () => ({ extension_id: 10 }),
-      findDevicesExtension: async () => ({ id: 10, code: 'DEVICES', active: true }),
-    }
-  );
-
-  assert.equal(mode, 'TECHNOLOGY');
-});
-
-test('resuelve modo general para una extensión distinta de DEVICES', async () => {
-  const mode = await resolveTechnologyUpdateMode(
-    { asset_classification_rule: { id: 3 } },
-    {
-      resolveRule: async () => ({ extension_id: 20 }),
-      findDevicesExtension: async () => ({ id: 10, code: 'DEVICES', active: true }),
-    }
-  );
-
-  assert.equal(mode, 'GENERAL');
-});
-
-test('no usa una regla específica sin extensión para un contexto DEVICES', async () => {
-  const rule = await resolveClassificationRule(
-    { deviceId: 25, assetTypeId: 3, extensionId: 1, administrativeAreaId: 1 },
-    {
-      findActiveByScope: async (scope) => {
-        if (scope.deviceId === 25 && scope.extensionId === 1) return null;
-        if (scope.deviceId === null && scope.administrativeAreaId === 1) {
-          return { ...baseRule, id: 3, extension_id: 1 };
-        }
-        return null;
-      },
-    }
-  );
-
-  assert.equal(rule.id, 3);
+  assert.deepEqual(calls, ['generic-area', 'generic-default']);
 });
 
 test('una regla específica DEVICES sí coincide con el contexto DEVICES', async () => {
@@ -458,21 +183,6 @@ test('una regla específica DEVICES sí coincide con el contexto DEVICES', async
   assert.equal(rule.id, 7);
 });
 
-test('un activo descartado con extensión tecnológica permite conservar sus campos tecnológicos', async () => {
-  const mode = await resolveTechnologyUpdateMode(
-    {
-      asset_classification_rule: { id: 9 },
-      inventory_devices: { id_device: 25 },
-    },
-    { extensionId: 1 },
-    {
-      resolveRule: async () => ({ extension_id: null }),
-      findDevicesExtension: async () => ({ id: 1, code: 'DEVICES', active: true }),
-    }
-  );
-
-  assert.equal(mode, 'TECHNOLOGY');
-});
 
 test('calcula paginación de inventario basada en offset', () => {
   assert.deepEqual(resolveInventoryPagination({ page: 2, limit: 20 }), {
@@ -480,4 +190,26 @@ test('calcula paginación de inventario basada en offset', () => {
     skip: 20,
     take: 20,
   });
+});
+
+test('resuelve la regla de un bien solo por equipo, sin fallback genérico', async () => {
+  const scopes = [];
+  const rule = await resolveClassificationRule(
+    { deviceId: 25, assetTypeId: 3, extensionId: 1, administrativeAreaId: 1 },
+    {
+      findActiveByScope: async (scope) => {
+        scopes.push(scope);
+        return null;
+      },
+    }
+  );
+
+  assert.equal(rule, null);
+  assert.deepEqual(scopes, [{ deviceId: 25 }]);
+});
+
+test('clasifica como tecnológica solo la regla con extensión DEVICES', () => {
+  assert.equal(isTechnologyRule({ extension: { code: 'DEVICES' } }), true);
+  assert.equal(isTechnologyRule({ extension: { code: 'VEHICLES' } }), false);
+  assert.equal(isTechnologyRule(null), true);
 });

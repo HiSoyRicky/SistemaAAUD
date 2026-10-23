@@ -3,13 +3,12 @@
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 
 function isAdministratorRoleName(name) {
-  return (
-    String(name || '')
+  const normalized = String(name || '')
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') === 'administrador'
-  );
+      .replace(/[\u0300-\u036f]/g, '');
+  return normalized === 'administrador' || normalized === 'admin';
 }
 
 export default function UsersTable({
@@ -26,6 +25,9 @@ export default function UsersTable({
   setSearch,
   message,
   messageType,
+  canCreate = false,
+  canUpdate = false,
+  canUpdatePassword = false,
 }) {
   return (
     <div className="space-y-3">
@@ -33,13 +35,13 @@ export default function UsersTable({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Gestión de Usuarios</h2>
 
-        <button
+        {canCreate && <button
           type="button"
           onClick={() => setShowForm(!showForm)}
           className="px-3 py-1.5 text-sm text-white bg-blue-500 rounded-md hover:bg-blue-600"
         >
           {showForm ? 'Ocultar formulario' : 'Crear nuevo usuario'}
-        </button>
+        </button>}
       </div>
 
       {/* Barra de búsqueda */}
@@ -108,17 +110,17 @@ export default function UsersTable({
               </td>
               <td className="p-2 text-center border">{u.active ? 'Sí' : 'No'}</td>
               <td className="flex justify-center gap-1 p-2 border">
-                <ActionButton
+                {canUpdate && <ActionButton
                   type={'edit'}
                   title={isProtected ? 'El usuario Administrador no puede editarse' : 'Editar usuario'}
                   disabled={isProtected}
                   onClick={() => editUser(u)}
-                ></ActionButton>
-                <ActionButton
+                ></ActionButton>}
+                {canUpdatePassword && <ActionButton
                   type={'reset'}
                   title="Restablecer contraseña"
                   onClick={() => handleResetPassword(u)}
-                ></ActionButton>
+                ></ActionButton>}
               </td>
             </tr>
             );

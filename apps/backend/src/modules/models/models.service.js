@@ -20,10 +20,18 @@ export const getPrinters = async () => {
 export const create = async (payload) => {
   const name = String(payload.name || '').trim();
   const id_brand = Number(payload.id_brand);
-  const id_device = Number(payload.id_device);
+  const id_device = payload.id_device === undefined || payload.id_device === null || payload.id_device === ''
+    ? null
+    : Number(payload.id_device);
 
-  if (!name || !id_brand || !id_device) {
+  if (!name || !Number.isInteger(id_brand) || id_brand < 1 || (id_device !== null && (!Number.isInteger(id_device) || id_device < 1))) {
     throw new AppError('Faltan datos requeridos', 400);
+  }
+
+  const brand = await repository.findBrandById(id_brand);
+  if (!brand) throw new AppError('La marca seleccionada no existe', 400);
+  if ((brand.catalog_type === 'VEHICLE' && id_device !== null) || (brand.catalog_type !== 'VEHICLE' && id_device === null)) {
+    throw new AppError(brand.catalog_type === 'VEHICLE' ? 'Las marcas de vehículos no deben asociarse a un dispositivo tecnológico' : 'Seleccione el dispositivo tecnológico del modelo', 400);
   }
 
   try {
@@ -59,7 +67,9 @@ export const update = async (idParam, payload) => {
   const id = Number(idParam);
   const name = String(payload.name || '').trim();
   const id_brand = Number(payload.id_brand);
-  const id_device = Number(payload.id_device);
+  const id_device = payload.id_device === undefined || payload.id_device === null || payload.id_device === ''
+    ? null
+    : Number(payload.id_device);
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new AppError('ID inválido', 400);
@@ -72,6 +82,12 @@ export const update = async (idParam, payload) => {
   const model = await repository.findById(id);
   if (!model) {
     throw new AppError('Modelo no encontrado', 404);
+  }
+
+  const brand = await repository.findBrandById(id_brand);
+  if (!brand) throw new AppError('La marca seleccionada no existe', 400);
+  if ((brand.catalog_type === 'VEHICLE' && id_device !== null) || (brand.catalog_type !== 'VEHICLE' && (!Number.isInteger(id_device) || id_device < 1))) {
+    throw new AppError(brand.catalog_type === 'VEHICLE' ? 'Las marcas de vehículos no deben asociarse a un dispositivo tecnológico' : 'Seleccione el dispositivo tecnológico del modelo', 400);
   }
 
   const updated = await repository.updateById(id, {

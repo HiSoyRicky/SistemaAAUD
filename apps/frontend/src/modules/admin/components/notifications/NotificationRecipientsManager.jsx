@@ -18,6 +18,7 @@ export default function NotificationRecipientsManager() {
   const [saving, setSaving] = useState(false);
 
   const canCreate = hasPermission('notification_settings.create');
+  const canUpdate = hasPermission('notification_settings.update');
   const canDelete = hasPermission('notification_settings.delete');
 
   const loadRecipients = async () => {
@@ -138,7 +139,7 @@ export default function NotificationRecipientsManager() {
                   <button
                     type="button"
                     onClick={() => handleToggleActive(recipient)}
-                    disabled={!canCreate}
+                    disabled={!canUpdate}
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
                       recipient.active
                         ? 'bg-emerald-100 text-emerald-700'

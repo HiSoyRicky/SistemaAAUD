@@ -8,32 +8,22 @@ function normalizeText(value) {
     .trim();
 }
 
-const legacyFallbackWarnings = new Set();
-
 export const mapInventoryItem = (item) => {
   const statusName = item.status?.name || null;
   const isDiscarded = normalizeText(statusName) === 'DESCARTADO';
-  const technology = item.device_details || item.inventory_devices;
+  const technology = item.device_details ?? null;
+  const vehicle = item.vehicle_details ?? null;
+  const realEstate = item.real_estate_details ?? null;
+  const property = item.property_details ?? null;
 
-  if (!technology && !legacyFallbackWarnings.has(item.id)) {
-    legacyFallbackWarnings.add(item.id);
-    console.warn('[inventory] legacy technology fallback', {
-      inventoryId: item.id,
-    });
-  }
-
-  const deviceId = technology?.id_device ?? item.id_device;
-  const brandId = technology?.id_brand ?? item.id_brand;
-  const modelId = technology?.id_model ?? item.id_model;
-  const ip = technology?.ip ?? item.ip;
   const classificationRule = item.asset_classification_rule;
   const classification = classificationRule?.classification || null;
-  const assetType = classificationRule?.asset_type || null;
-  const extensionType = classificationRule?.extension || null;
+  const assetType = classificationRule?.asset_type || item.asset_type || null;
+  const extensionType = classificationRule?.extension || item.extension || null;
   const deviceExtension = technology
     ? {
         id: technology.id,
-        item_id: technology.item_id || technology.id_inventory,
+        item_id: technology.item_id,
         id_device: technology.id_device,
         id_brand: technology.id_brand,
         id_model: technology.id_model,
@@ -56,8 +46,8 @@ export const mapInventoryItem = (item) => {
     id: item.id,
     tag: item.tag,
     user: item.user,
-    serie: item.serie,
-    ip,
+    serie: technology?.serie ?? null,
+    ip: technology?.ip ?? null,
     transferdate: item.transferdate,
     observation: item.observation,
     description: item.description,
@@ -69,12 +59,13 @@ export const mapInventoryItem = (item) => {
     ubication_name: isDiscarded ? null : item.ubications?.name || null,
     id_department: isDiscarded ? null : item.id_department,
     department_name: isDiscarded ? null : item.departments?.name || null,
-    id_device: deviceId,
-    device_name: technology?.device?.name || item.devices?.name || null,
-    id_brand: brandId,
-    brand_name: technology?.brand?.name || item.brands?.name || null,
-    id_model: modelId,
-    model_name: technology?.model?.name || item.models?.name || null,
+    id_device: technology?.id_device ?? classificationRule?.device_id ?? null,
+    device_name: technology?.device?.name ?? classificationRule?.device?.name ?? null,
+    id_brand: technology?.id_brand ?? null,
+    brand_name: technology?.brand?.name ?? vehicle?.make ?? null,
+    id_model: technology?.id_model ?? null,
+    model_name: technology?.model?.name ?? vehicle?.model ?? null,
+    asset_type_name: assetType?.name ?? null,
     id_status: item.id_status,
     status_name: statusName,
     classification: classification
@@ -93,7 +84,7 @@ export const mapInventoryItem = (item) => {
           name: assetType.name,
         }
       : null,
-    extension: classificationRule
+    extension: classificationRule || extensionType
       ? {
           type: extensionType?.code || null,
           extension: extensionType
@@ -104,11 +95,55 @@ export const mapInventoryItem = (item) => {
               }
             : null,
           devices: deviceExtension,
-          vehicles: null,
+          vehicles: vehicle
+            ? {
+                make: vehicle.make,
+                model: vehicle.model,
+                model_year: vehicle.model_year,
+                plate: vehicle.plate,
+                chassis: vehicle.chassis,
+                engine: vehicle.engine,
+                vehicle_type: vehicle.vehicle_type,
+                fuel_type: vehicle.fuel_type,
+                mileage: vehicle.mileage,
+              }
+            : null,
           properties: null,
+          real_estate: realEstate
+            ? {
+                cadastral_number: realEstate.cadastral_number,
+                address: realEstate.address,
+                area_m2: realEstate.area_m2,
+                location_geo: realEstate.location_geo,
+              }
+            : null,
         }
       : null,
     technology: technologyData,
+    vehicle_details: vehicle
+      ? {
+          make: vehicle.make,
+          model: vehicle.model,
+          model_year: vehicle.model_year,
+          plate: vehicle.plate,
+          chassis: vehicle.chassis,
+          engine: vehicle.engine,
+          vehicle_type: vehicle.vehicle_type,
+          fuel_type: vehicle.fuel_type,
+          mileage: vehicle.mileage,
+        }
+      : null,
+    real_estate_details: realEstate
+      ? {
+          cadastral_number: realEstate.cadastral_number,
+          address: realEstate.address,
+          area_m2: realEstate.area_m2,
+          location_geo: realEstate.location_geo,
+        }
+      : null,
+    property_details: property
+      ? { material: property.material, dimensions: property.dimensions }
+      : null,
     classification_rule: classificationRule
       ? {
           id: classificationRule.id,
@@ -138,6 +173,12 @@ export const mapInventoryItem = (item) => {
                 id: classificationRule.extension.id,
                 code: classificationRule.extension.code,
                 name: classificationRule.extension.name,
+              }
+            : null,
+          administrative_area: classificationRule.administrative_area
+            ? {
+                id: classificationRule.administrative_area.id,
+                name: classificationRule.administrative_area.name,
               }
             : null,
         }

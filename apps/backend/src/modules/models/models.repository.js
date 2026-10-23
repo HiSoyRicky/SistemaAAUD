@@ -35,6 +35,8 @@ export const findById = async (id) => {
   });
 };
 
+export const findBrandById = async (id) => prisma.brands.findUnique({ where: { id: Number(id) } });
+
 export const findByNameBrandDevice = async ({ name, id_brand, id_device }) => {
   return prisma.models.findFirst({
     where: {
@@ -57,7 +59,7 @@ export const updateById = async (id, data) => {
 };
 
 export const countInventoryByModelId = async (id) => {
-  return prisma.inventory_devices.count({
+  return prisma.inventory_item_devices.count({
     where: { id_model: Number(id) },
   });
 };

@@ -30,22 +30,19 @@ export const findActiveByScope = async (
 ) => {
   const where = {
     active: true,
-    device_id: deviceId === null ? null : Number(deviceId),
-    ...(deviceId !== null && {
-      administrative_area_id:
-        administrativeAreaId === null ? null : Number(administrativeAreaId),
-      extension_id: extensionId === null ? null : Number(extensionId),
-    }),
     classification: { is: { active: true, is_assignable: true } },
     asset_type: { is: { active: true } },
-    ...(deviceId === null && {
-      asset_type_id: Number(assetTypeId),
-      extension_id: extensionId === null ? null : Number(extensionId),
-      administrative_area_id:
-        administrativeAreaId === null ? null : Number(administrativeAreaId),
-      ...(isDefault !== undefined && { is_default: isDefault }),
-      ...(extensionId !== null && { extension: { is: { active: true } } }),
-    }),
+    ...(deviceId !== null
+      ? { device_id: Number(deviceId) }
+      : {
+          device_id: null,
+          asset_type_id: Number(assetTypeId),
+          extension_id: extensionId === null ? null : Number(extensionId),
+          administrative_area_id:
+            administrativeAreaId === null ? null : Number(administrativeAreaId),
+          ...(isDefault !== undefined && { is_default: isDefault }),
+          ...(extensionId !== null && { extension: { is: { active: true } } }),
+        }),
   };
 
   return db.inventory_asset_classification_rules.findFirst({
@@ -53,6 +50,98 @@ export const findActiveByScope = async (
     include: relationSelect,
     orderBy: { id: 'asc' },
   });
+};
+
+export const findActiveDeviceRules = async (db = prisma) =>
+  db.inventory_asset_classification_rules.findMany({
+    where: {
+      active: true,
+      device_id: { not: null },
+      classification: { is: { active: true, is_assignable: true } },
+      asset_type: { is: { active: true } },
+      OR: [{ extension_id: null }, { extension: { is: { active: true } } }],
+    },
+    select: { id: true, device_id: true, administrative_area_id: true },
+  });
+
+export const findOtherByDevice = async (deviceId, excludeRuleId = null, db = prisma) =>
+  db.inventory_asset_classification_rules.findFirst({
+    where: {
+      device_id: Number(deviceId),
+      ...(excludeRuleId !== null && { id: { not: Number(excludeRuleId) } }),
+    },
+    select: { id: true },
+  });
+
+export const findOtherGenericExactRule = async (
+  { classificationId, assetTypeId, extensionId, administrativeAreaId },
+  excludeRuleId = null,
+  db = prisma
+) =>
+  db.inventory_asset_classification_rules.findFirst({
+    where: {
+      device_id: null,
+      classification_id: Number(classificationId),
+      asset_type_id: Number(assetTypeId),
+      extension_id: extensionId == null ? null : Number(extensionId),
+      administrative_area_id: administrativeAreaId == null ? null : Number(administrativeAreaId),
+      ...(excludeRuleId !== null && { id: { not: Number(excludeRuleId) } }),
+    },
+    select: { id: true },
+  });
+
+export const findDeviceAssetTypeProfiles = async (db = prisma) => {
+  const rows = await db.inventory_item_devices.findMany({
+    select: {
+      id_device: true,
+      item: {
+        select: {
+          asset_classification_rule: {
+            select: { device_id: true, asset_type_id: true },
+          },
+        },
+      },
+    },
+  });
+  const profiles = new Map();
+
+  for (const row of rows) {
+    const rule = row.item?.asset_classification_rule;
+    // Ignora la regla específica del propio equipo: no es evidencia externa
+    // para decidir si esa misma regla está bien configurada.
+    if (!rule || rule.device_id != null) continue;
+    const assetTypeIds = profiles.get(row.id_device) || new Set();
+    assetTypeIds.add(rule.asset_type_id);
+    profiles.set(row.id_device, assetTypeIds);
+  }
+
+  return [...profiles].map(([device_id, asset_type_ids]) => ({
+    device_id,
+    asset_type_ids: [...asset_type_ids],
+  }));
+};
+
+export const findDeviceAssetTypeProfile = async (deviceId, db = prisma) => {
+  const rows = await db.inventory_item_devices.findMany({
+    where: { id_device: Number(deviceId) },
+    select: {
+      item: {
+        select: {
+          asset_classification_rule: {
+            select: { device_id: true, asset_type_id: true },
+          },
+        },
+      },
+    },
+  });
+  return [
+    ...new Set(
+      rows
+        .map((row) => row.item?.asset_classification_rule)
+        .filter((rule) => rule && rule.device_id == null)
+        .map((rule) => rule.asset_type_id)
+    ),
+  ];
 };
 
 export const findMany = async ({ where = {}, skip = 0, take = 100 } = {}, db = prisma) =>
@@ -78,7 +167,7 @@ export const update = async (id, data, db = prisma) =>
   });
 
 export const countInventoryReferences = async (id, db = prisma) =>
-  db.bd_inventory.count({ where: { asset_classification_rule_id: Number(id) } });
+  db.inventory_items.count({ where: { asset_classification_rule_id: Number(id) } });
 
 export const findReferences = async ({ deviceId, classificationId, assetTypeId, extensionId, areaId }, db = prisma) => {
   const [device, classification, assetType, extension, area] = await Promise.all([

@@ -4,7 +4,21 @@ import AppError from '../../common/utils/AppError.js';
 import { activityContext, prisma } from '../../config/prisma.js';
 import { runWithActivityLoggingSuppressed } from '../../common/services/activityLogger.js';
 import { mapInventoryItem } from '../inventory/inventory.dto.js';
+import { includeRelations } from '../inventory/inventory.repository.js';
 import { writeInventoryAuditEvent } from '../inventory/services/inventory-audit.service.js';
+import {
+  assertInventoryItemInScope,
+  resolveInventoryScope,
+  TECHNOLOGY_SCOPE_WHERE,
+} from '../inventory/services/inventory-scope.service.js';
+
+const userSummarySelect = { select: { id: true, nombre_completo: true, username: true } };
+
+const transferInclude = {
+  item: { include: includeRelations },
+  requester: userSummarySelect,
+  approver: userSummarySelect,
+};
 
 function parseId(value, fieldName) {
   const parsed = Number(value);
@@ -48,167 +62,121 @@ function resolveSnapshotAdministrativeArea(snapshot, currentAreaId) {
   return parsed;
 }
 
-const transferInventoryInclude = {
-  asset_classification_rule: {
-    include: {
-      classification: true,
-      asset_type: true,
-      extension: true,
-    },
-  },
-  devices: { select: { id: true, name: true } },
-  brands: { select: { id: true, name: true } },
-  models: { select: { id: true, name: true } },
-  inventory_devices: {
-    include: {
-      device: { select: { id: true, name: true } },
-      brand: { select: { id: true, name: true } },
-      model: { select: { id: true, name: true } },
-    },
-  },
-  departments: { select: { id: true, name: true } },
-  ubications: { select: { id: true, name: true } },
-  administrative_area: { select: { id: true, name: true } },
-  status: { select: { id: true, name: true } },
-};
+function buildScopeWhere(scope) {
+  return scope?.technologyOnly ? { item: { is: TECHNOLOGY_SCOPE_WHERE } } : {};
+}
 
-export function buildPreviewInventory(request, inventory) {
+export function buildPreviewInventory(request, item) {
   const snapshot = request.snapshot || {};
-  const technology = inventory.inventory_devices;
+  const technology = item.device_details;
 
   return mapInventoryItem({
-    ...inventory,
-    ubications: { name: snapshot.ubication_destino_name || inventory.ubications?.name || null },
-    departments: { name: snapshot.department_destino_name || inventory.departments?.name || null },
+    ...item,
+    ubications: { name: snapshot.ubication_destino_name || item.ubications?.name || null },
+    departments: { name: snapshot.department_destino_name || item.departments?.name || null },
     administrative_area: {
-      id: snapshot.administrative_area_destino_id ?? inventory.id_administrative_area ?? null,
+      id: snapshot.administrative_area_destino_id ?? item.id_administrative_area ?? null,
       name:
-        snapshot.administrative_area_destino_name || inventory.administrative_area?.name || null,
+        snapshot.administrative_area_destino_name || item.administrative_area?.name || null,
     },
-    devices: inventory.devices,
-    brands: inventory.brands,
-    models: inventory.models,
-    inventory_devices: inventory.inventory_devices,
-    status: inventory.status,
-    tag: snapshot.tag || inventory.tag,
-    user: snapshot.userRecibe || snapshot.userName || inventory.user,
-    serie: snapshot.serie || inventory.serie,
-    ip: snapshot.ip ?? technology?.ip ?? inventory.ip,
-    transferdate: inventory.transferdate,
-    observation: snapshot.observation || inventory.observation,
-    id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
-    id_department: snapshot.department_destino_id ?? inventory.id_department,
-    id_administrative_area:
-      snapshot.administrative_area_destino_id ?? inventory.id_administrative_area,
-    id_device: technology?.id_device ?? inventory.id_device,
-    id_brand: technology?.id_brand ?? inventory.id_brand,
-    id_model: technology?.id_model ?? inventory.id_model,
-    id_status: inventory.id_status,
+    device_details: technology
+      ? {
+          ...technology,
+          serie: snapshot.serie || technology.serie,
+          ip: snapshot.ip ?? technology.ip,
+        }
+      : null,
+    tag: snapshot.tag || item.tag,
+    user: snapshot.userRecibe || snapshot.userName || item.user,
+    observation: snapshot.observation || item.observation,
+    id_ubication: snapshot.ubication_destino_id ?? item.id_ubication,
+    id_department: snapshot.department_destino_id ?? item.id_department,
+    id_administrative_area: snapshot.administrative_area_destino_id ?? item.id_administrative_area,
   });
 }
 
-export const getAll = async (query = {}) => {
-  const status = normalizeStatus(query.status);
-
-  const where = {
-    ...(status ? { status } : {}),
-  };
-
-  const requests = await prisma.inventory_transfer_requests.findMany({
-    where,
-    orderBy: { requested_at: 'desc' },
-    include: {
-      inventory: {
-        include: {
-                ...transferInventoryInclude,
-        },
-      },
-      requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } },
-    },
-  });
+function serializeTransferRequest(request) {
+  const { item, ...transfer } = request;
 
   return {
-    data: requests.map((request) => ({
-      ...request,
-      inventory_snapshot: request.inventory ? mapInventoryItem(request.inventory) : null,
-      preview_inventory: request.inventory
-        ? buildPreviewInventory(request, request.inventory)
-        : null,
-    })),
+    ...transfer,
+    inventory_snapshot: item ? mapInventoryItem(item) : null,
+    preview_inventory: item ? buildPreviewInventory(request, item) : null,
   };
+}
+
+export const getAll = async (currentUser, query = {}) => {
+  const scope = await resolveInventoryScope(currentUser);
+  const status = normalizeStatus(query.status);
+
+  const requests = await prisma.inventory_transfer_requests.findMany({
+    where: {
+      ...(status ? { status } : {}),
+      ...buildScopeWhere(scope),
+    },
+    orderBy: { requested_at: 'desc' },
+    include: transferInclude,
+  });
+
+  return { data: requests.map(serializeTransferRequest) };
 };
 
 export const getMine = async (currentUser, query = {}) => {
   const requesterId = parseId(currentUser?.id, 'ID de usuario');
+  const scope = await resolveInventoryScope(currentUser);
   const status = normalizeStatus(query.status);
 
   const requests = await prisma.inventory_transfer_requests.findMany({
     where: {
       requester_id: requesterId,
       ...(status ? { status } : {}),
+      ...buildScopeWhere(scope),
     },
     orderBy: { requested_at: 'desc' },
-    include: {
-      inventory: {
-        include: {
-          ...transferInventoryInclude,
-        },
-      },
-      requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } },
-    },
+    include: transferInclude,
   });
 
-  return {
-    data: requests.map((request) => ({
-      ...request,
-      inventory_snapshot: request.inventory ? mapInventoryItem(request.inventory) : null,
-      preview_inventory: request.inventory
-        ? buildPreviewInventory(request, request.inventory)
-        : null,
-    })),
-  };
+  return { data: requests.map(serializeTransferRequest) };
 };
 
 export async function createPendingTransferRequest({
   db = prisma,
-  inventoryId,
+  itemId,
   requesterId,
   snapshot,
+  scope,
 }) {
   return db.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "bd_inventory" WHERE id = ${inventoryId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "inventory_items" WHERE id = ${itemId} FOR UPDATE`;
 
-    const inventory = await tx.bd_inventory.findUnique({
-      where: { id: inventoryId },
-      select: { id: true },
+    const item = await tx.inventory_items.findUnique({
+      where: { id: itemId },
+      include: { device_details: { select: { id: true } } },
     });
-    if (!inventory) throw new AppError('Activo no encontrado', 404);
+    if (!item) throw new AppError('Bien no encontrado', 404);
+    assertInventoryItemInScope(item, scope);
 
     const pendingRequest = await tx.inventory_transfer_requests.findFirst({
-      where: { inventory_id: inventoryId, status: 'PENDING' },
+      where: { item_id: itemId, status: 'PENDING' },
       select: { id: true },
     });
     if (pendingRequest) {
-      throw new AppError('Ya existe una solicitud pendiente para este activo', 409);
+      throw new AppError('Ya existe una solicitud pendiente para este bien', 409);
     }
 
     return tx.inventory_transfer_requests.create({
       data: {
-        inventory_id: inventoryId,
+        item_id: itemId,
         requester_id: requesterId,
         snapshot,
       },
-      include: {
-        requester: { select: { id: true, nombre_completo: true, username: true } },
-      },
+      include: { requester: userSummarySelect },
     });
   });
 }
 
 export const create = async (payload, currentUser) => {
-  const inventoryId = parseId(payload?.inventory_id, 'ID de inventario');
+  const itemId = parseId(payload?.item_id, 'ID de bien');
   const snapshot =
     payload?.snapshot && typeof payload.snapshot === 'object' ? payload.snapshot : null;
 
@@ -216,10 +184,12 @@ export const create = async (payload, currentUser) => {
     throw new AppError('La información del traslado es obligatoria', 400);
   }
 
+  const scope = await resolveInventoryScope(currentUser);
   const created = await createPendingTransferRequest({
-    inventoryId,
-    requesterId: Number(currentUser?.id),
+    itemId,
+    requesterId: parseId(currentUser?.id, 'ID de usuario'),
     snapshot,
+    scope,
   });
 
   return {
@@ -229,31 +199,26 @@ export const create = async (payload, currentUser) => {
   };
 };
 
-async function resolveRequestOrFail(idParam) {
+async function resolveRequestOrFail(idParam, scope) {
   const id = parseId(idParam, 'ID de solicitud');
 
   const request = await prisma.inventory_transfer_requests.findUnique({
     where: { id },
-    include: {
-      inventory: {
-        include: {
-          ...transferInventoryInclude,
-        },
-      },
-      requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } },
-    },
+    include: transferInclude,
   });
 
   if (!request) {
     throw new AppError('Solicitud no encontrada', 404);
   }
 
+  assertInventoryItemInScope(request.item, scope);
+
   return request;
 }
 
 export const approve = async (idParam, payload, currentUser) => {
-  const request = await resolveRequestOrFail(idParam);
+  const scope = await resolveInventoryScope(currentUser);
+  const request = await resolveRequestOrFail(idParam, scope);
 
   if (request.status !== 'PENDING') {
     throw new AppError('La solicitud ya fue procesada', 409);
@@ -263,24 +228,27 @@ export const approve = async (idParam, payload, currentUser) => {
   const reviewedAt = new Date();
   const reviewNotes =
     typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
-  const { updatedInventory, updatedRequest } = await runWithActivityLoggingSuppressed(
-    ['bd_inventory', 'inventory_devices', 'inventory_transfer_requests'],
+
+  const { updatedItem, updatedRequest } = await runWithActivityLoggingSuppressed(
+    ['inventory_items', 'inventory_item_devices', 'inventory_transfer_requests'],
     () =>
       prisma.$transaction(async (tx) => {
-        await tx.$queryRaw`SELECT id FROM "bd_inventory" WHERE id = ${request.inventory_id} FOR UPDATE`;
+        await tx.$queryRaw`SELECT id FROM "inventory_items" WHERE id = ${request.item_id} FOR UPDATE`;
 
-        const inventory = await tx.bd_inventory.findUnique({
-          where: { id: request.inventory_id },
-          include: transferInventoryInclude,
+        const item = await tx.inventory_items.findUnique({
+          where: { id: request.item_id },
+          include: includeRelations,
         });
 
-        if (!inventory) {
-          throw new AppError('Activo no encontrado', 404);
+        if (!item) {
+          throw new AppError('Bien no encontrado', 404);
         }
+
+        assertInventoryItemInScope(item, scope);
 
         const nextAdministrativeAreaId = resolveSnapshotAdministrativeArea(
           snapshot,
-          inventory.id_administrative_area
+          item.id_administrative_area
         );
 
         if (nextAdministrativeAreaId !== null) {
@@ -313,34 +281,34 @@ export const approve = async (idParam, payload, currentUser) => {
           typeof snapshot.userRecibe === 'string' ? snapshot.userRecibe.trim() : '';
         const nextUser = clearAssignedUser
           ? null
-          : assignedUser || snapshot.userName || inventory.user;
+          : assignedUser || snapshot.userName || item.user;
 
-        const nextInventory = await tx.bd_inventory.update({
-          where: { id: request.inventory_id },
+        const nextItem = await tx.inventory_items.update({
+          where: { id: request.item_id },
           data: {
-            id_ubication: snapshot.ubication_destino_id ?? inventory.id_ubication,
-            id_department: snapshot.department_destino_id ?? inventory.id_department,
+            id_ubication: snapshot.ubication_destino_id ?? item.id_ubication,
+            id_department: snapshot.department_destino_id ?? item.id_department,
             id_administrative_area: nextAdministrativeAreaId,
             user: nextUser,
             transferdate: new Date(),
-            observation: snapshot.observation ?? inventory.observation,
+            observation: snapshot.observation ?? item.observation,
             updated_by: currentUser?.id ?? null,
           },
-          include: transferInventoryInclude,
+          include: includeRelations,
         });
 
         const nextRequest = await tx.inventory_transfer_requests.findUnique({
           where: { id: request.id },
           include: {
-            requester: { select: { id: true, nombre_completo: true, username: true } },
-            approver: { select: { id: true, nombre_completo: true, username: true } },
+            requester: userSummarySelect,
+            approver: userSummarySelect,
           },
         });
 
         await writeInventoryAuditEvent(tx, {
           action: 'UPDATE',
-          oldRecord: inventory,
-          newRecord: nextInventory,
+          oldRecord: item,
+          newRecord: nextItem,
           userId: currentUser?.id,
           source: 'inventory_transfer_requests.approve',
           metadata: {
@@ -377,7 +345,7 @@ export const approve = async (idParam, payload, currentUser) => {
           },
         });
 
-        return { updatedInventory: nextInventory, updatedRequest: nextRequest };
+        return { updatedItem: nextItem, updatedRequest: nextRequest };
       })
   );
 
@@ -386,13 +354,14 @@ export const approve = async (idParam, payload, currentUser) => {
     message: 'Traslado aprobado',
     request: {
       ...updatedRequest,
-      preview_inventory: mapInventoryItem(updatedInventory),
+      preview_inventory: mapInventoryItem(updatedItem),
     },
   };
 };
 
 export const reject = async (idParam, payload, currentUser, nextStatus = 'REJECTED') => {
-  const request = await resolveRequestOrFail(idParam);
+  const scope = await resolveInventoryScope(currentUser);
+  const request = await resolveRequestOrFail(idParam, scope);
 
   if (request.status !== 'PENDING') {
     throw new AppError('La solicitud ya fue procesada', 409);
@@ -401,17 +370,25 @@ export const reject = async (idParam, payload, currentUser, nextStatus = 'REJECT
   const reviewNotes =
     typeof payload?.review_notes === 'string' ? payload.review_notes.trim() : null;
 
-  const updatedRequest = await prisma.inventory_transfer_requests.update({
-    where: { id: request.id },
+  const claimedRequest = await prisma.inventory_transfer_requests.updateMany({
+    where: { id: request.id, status: 'PENDING' },
     data: {
       status: nextStatus,
       approver_id: currentUser?.id ?? null,
       review_notes: reviewNotes,
       reviewed_at: new Date(),
     },
+  });
+
+  if (claimedRequest.count !== 1) {
+    throw new AppError('La solicitud ya fue procesada', 409);
+  }
+
+  const updatedRequest = await prisma.inventory_transfer_requests.findUnique({
+    where: { id: request.id },
     include: {
-      requester: { select: { id: true, nombre_completo: true, username: true } },
-      approver: { select: { id: true, nombre_completo: true, username: true } },
+      requester: userSummarySelect,
+      approver: userSummarySelect,
     },
   });
 

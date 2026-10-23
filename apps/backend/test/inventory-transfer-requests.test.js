@@ -17,7 +17,7 @@ const baseInventory = {
   departments: { name: 'Departamento' },
   administrative_area: { id: 1, name: 'TECNOLOGÍA' },
   id_administrative_area: 1,
-  inventory_devices: null,
+  device_details: null,
 };
 
 test('construye preview general sin extensión tecnológica', () => {
@@ -48,9 +48,9 @@ test('conserva clasificación y tecnología opcional en preview', () => {
         asset_type: { id: 9, code: 'TECHNOLOGY', name: 'Tecnología' },
         extension: { id: 10, code: 'DEVICES', name: 'Dispositivos' },
       },
-      inventory_devices: {
+      device_details: {
         id: 11,
-        id_inventory: 7,
+        item_id: 7,
         id_device: 20,
         id_brand: 30,
         id_model: 40,

@@ -9,6 +9,7 @@ import { validateUpdateUbication } from './ubications.validator.js';
 
 const router = express.Router();
 
+// Catálogo de solo lectura requerido por el formulario público de incidencias.
 router.get('/', controller.getAll);
 router.put(
   '/:id',

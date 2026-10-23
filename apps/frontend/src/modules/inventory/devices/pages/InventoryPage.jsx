@@ -41,6 +41,10 @@ const INVENTORY_COLUMNS = [
   { key: 'model_name', label: 'Modelo' },
   { key: 'serie', label: 'Serie' },
   { key: 'ip', label: 'IP' },
+  { key: 'vehicle_model_year', label: 'Año' },
+  { key: 'vehicle_plate', label: 'Placa' },
+  { key: 'vehicle_type', label: 'Tipo de vehículo' },
+  { key: 'vehicle_fuel', label: 'Combustible' },
 ];
 
 const DEFAULT_VISIBLE_COLUMNS = INVENTORY_COLUMNS.reduce((columns, column) => {
@@ -78,7 +82,18 @@ function getTransferSummary(request) {
   };
 }
 
-function InventoryPage() {
+const SELECT_FILTER_KEYS = [
+  'ubication_name',
+  'department_name',
+  'administrative_area_name',
+  'device_name',
+  'brand_name',
+  'model_name',
+  'status_name',
+  'asset_type_name',
+];
+
+function InventoryPage({ scope = 'equipos' }) {
   const navigate = useNavigate();
   const { authData, userType, loggedUserName, loggedUserId, hasPermission } = useAuth();
 
@@ -96,6 +111,7 @@ function InventoryPage() {
     brand_name: '',
     model_name: '',
     status_name: '',
+    asset_type_name: '',
   });
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
@@ -183,6 +199,7 @@ function InventoryPage() {
         brand: inventoryFilters.brand_name,
         model: inventoryFilters.model_name,
         status: inventoryFilters.status_name,
+        asset_type: inventoryFilters.asset_type_name,
       };
       const response = await Inventory.fetchDevices(searchTerm, {
         page: inventoryPage,
@@ -276,6 +293,7 @@ function InventoryPage() {
     const fetchFilterOptions = async () => {
       try {
         const data = await Inventory.fetchFilterOptions({
+          search,
           ubication: inventoryFilters.ubication_name,
           department: inventoryFilters.department_name,
           administrative_area: inventoryFilters.administrative_area_name,
@@ -284,9 +302,10 @@ function InventoryPage() {
           brand: inventoryFilters.brand_name,
           model: inventoryFilters.model_name,
           status: inventoryFilters.status_name,
+          asset_type: inventoryFilters.asset_type_name,
         });
 
-        setFilterOptions({
+        const nextOptions = {
           ubication_name: (data.ubications || []).map((item) => item.name),
           department_name: (data.departments || []).map((item) => item.name),
           administrative_area_name: (data.administrative_areas || []).map((item) => item.name),
@@ -295,8 +314,25 @@ function InventoryPage() {
           brand_name: (data.brands || []).map((item) => item.name),
           model_name: (data.models || []).map((item) => item.name),
           status_name: (data.statuses || []).map((item) => item.name),
-        });
+          asset_type_name: (data.asset_types || []).map((item) => item.name),
+        };
+
+        setFilterOptions(nextOptions);
         setAdministrativeAreas(data.administrative_areas || []);
+
+        const staleKeys = SELECT_FILTER_KEYS.filter(
+          (key) => inventoryFilters[key] && !nextOptions[key].includes(inventoryFilters[key])
+        );
+
+        if (staleKeys.length) {
+          setInventoryFilters((prev) => {
+            const cleared = staleKeys.filter((key) => prev[key] === inventoryFilters[key]);
+
+            return cleared.length
+              ? { ...prev, ...Object.fromEntries(cleared.map((key) => [key, ''])) }
+              : prev;
+          });
+        }
       } catch (error) {
         console.error('Error al obtener opciones de filtro:', error);
       }
@@ -304,6 +340,7 @@ function InventoryPage() {
 
     void fetchFilterOptions();
   }, [
+    search,
     inventoryFilters.ubication_name,
     inventoryFilters.department_name,
     inventoryFilters.administrative_area_name,
@@ -312,6 +349,7 @@ function InventoryPage() {
     inventoryFilters.brand_name,
     inventoryFilters.model_name,
     inventoryFilters.status_name,
+    inventoryFilters.asset_type_name,
   ]);
 
   const editDevice = (device) => {
@@ -390,9 +428,13 @@ function InventoryPage() {
               <Laptop size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-950">Inventario de equipos</h1>
+              <h1 className="text-2xl font-bold text-slate-950">
+                {scope === 'bienes' ? 'Bienes patrimoniales' : 'Inventario de equipos'}
+              </h1>
               <p className="text-sm text-slate-500">
-                Consulta, filtra y gestiona los equipos registrados.
+                {scope === 'bienes'
+                  ? 'Consulta, filtra y traslada los bienes patrimoniales registrados.'
+                  : 'Consulta, filtra y gestiona los equipos registrados.'}
               </p>
             </div>
           </div>
@@ -497,7 +539,7 @@ function InventoryPage() {
 
             if (docType === 'transfer') {
               await Inventory.createTransferRequest({
-                inventory_id: payload.id,
+                item_id: payload.id,
                 snapshot: payload,
                 requester_id: loggedUserId,
               });
@@ -521,7 +563,7 @@ function InventoryPage() {
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">Listado de equipos</h2>
+            <h2 className="text-lg font-bold text-slate-950">Listado de activos</h2>
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-3xl lg:justify-end">
@@ -588,6 +630,7 @@ function InventoryPage() {
 
         <InventoryTable
           inventory={filteredDevices}
+          scope={scope}
           onPrint={(device) => openPrintModal(device)}
           onEdit={editDevice}
           authData={authData}

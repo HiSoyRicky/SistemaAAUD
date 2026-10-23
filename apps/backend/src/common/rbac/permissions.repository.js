@@ -55,7 +55,7 @@ export const findAllPermissions = async () => {
         permission,
       ])
     );
-    const catalogPermissions = PERMISSIONS_CATALOG.map((permission, index) => {
+    return PERMISSIONS_CATALOG.map((permission, index) => {
       const code = `${permission.module}.${permission.action}`.toLowerCase();
       return (
         storedByCode.get(code) || {
@@ -65,15 +65,6 @@ export const findAllPermissions = async () => {
         }
       );
     });
-
-    const catalogCodes = new Set(catalogPermissions.map(({ module, action }) => `${module}.${action}`));
-    const legacyPermissions = storedPermissions.filter(
-      ({ module, action }) => !catalogCodes.has(`${module}.${action}`)
-    );
-
-    return [...catalogPermissions, ...legacyPermissions].sort((a, b) =>
-      `${a.module}.${a.action}`.localeCompare(`${b.module}.${b.action}`)
-    );
   } catch (error) {
     const message = String(error?.message || '').toLowerCase();
     const tableMeta = String(error?.meta?.table || '').toLowerCase();

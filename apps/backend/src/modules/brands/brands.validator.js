@@ -9,6 +9,7 @@ const brandIdParamsSchema = z.object({
 const brandBodySchema = z
   .object({
     name: zRequiredString('El nombre es requerido'),
+    catalog_type: z.enum(['TECHNOLOGY', 'VEHICLE']).optional(),
   })
   .refine(
     (data) => {

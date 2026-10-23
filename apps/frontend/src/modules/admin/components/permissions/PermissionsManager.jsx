@@ -1,6 +1,15 @@
 // PermissionsManager.jsx
 
-import { ChevronDown, ChevronRight, ChevronUp, MapPinned, RotateCcw, Search, ShieldCheck, UserCog, Users } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  MapPinned,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  UserCog,
+  Users,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import useAuth from '../../../../shared/hooks/useAuth';
 import PermissionsApi from '../../services/permissions.api';
@@ -31,8 +40,12 @@ function formatLabel(value) {
 }
 
 const MODULE_LABELS = {
+  'admin.panel': 'Panel de Administración',
   incidents: 'Incidencias',
   inventory: 'Inventario',
+  inventory_assets: 'Bienes patrimoniales',
+  inventory_classification_rules: 'Reglas de clasificación',
+  inventory_transfers: 'Traslados',
   toner_movements: 'Movimientos de tóner',
   toners: 'Tóneres',
   users: 'Usuarios',
@@ -47,6 +60,15 @@ const MODULE_LABELS = {
   warehouse_items: 'Insumos de almacén',
   warehouse_stock: 'Existencias de almacén',
   warehouse_movements: 'Movimientos de almacén',
+  notification_settings: 'Notificaciones',
+};
+
+// Las claves usan el código estable del permiso; lo no configurado conserva las etiquetas genéricas.
+const PERMISSION_LABEL_OVERRIDES = {
+  'admin.panel.read': {
+    label: 'Ver',
+    description: 'Permite acceder al Panel de Administración.',
+  },
 };
 
 const ACTION_DETAILS = {
@@ -77,6 +99,10 @@ function getModuleLabel(moduleName) {
   return MODULE_LABELS[moduleName] || formatLabel(moduleName);
 }
 
+function compareSpanishLabels(left, right) {
+  return left.localeCompare(right, 'es', { sensitivity: 'base' });
+}
+
 function getActionDetail(actionName, moduleName) {
   if (moduleName === 'incidents' && actionName === 'assign') {
     return ['Asignar técnico', 'Permite asignar o reasignar incidencias a técnicos.'];
@@ -88,6 +114,16 @@ function getActionDetail(actionName, moduleName) {
       'Controla esta acción dentro del módulo.',
     ]
   );
+}
+
+function getPermissionLabels(moduleName, actionName) {
+  const [defaultLabel, defaultDescription] = getActionDetail(actionName, moduleName);
+  const override = PERMISSION_LABEL_OVERRIDES[normalizeCode(`${moduleName}.${actionName}`)];
+
+  return {
+    label: override?.label || defaultLabel,
+    description: override?.description || defaultDescription,
+  };
 }
 
 function toSortedArray(setValue) {
@@ -132,7 +168,6 @@ export default function PermissionsManager() {
   const [userDenySet, setUserDenySet] = useState(new Set());
   const [permissionSearch, setPermissionSearch] = useState('');
   const [expandedModules, setExpandedModules] = useState(new Set());
-  const [moduleOrder, setModuleOrder] = useState([]);
 
   const isSelectedRoleProtected = isAdministratorRoleName(selectedRoleName);
   const isSelectedUserProtected = isAdministratorRoleName(selectedUserMeta?.role?.name);
@@ -155,52 +190,29 @@ export default function PermissionsManager() {
         permissions: [...permissions]
           .filter((permission) => {
             if (!term) return true;
-            const haystack = `${module} ${getModuleLabel(module)} ${permission.action} ${getActionDetail(permission.action, module).join(' ')}`.toLowerCase();
+            const { label, description } = getPermissionLabels(module, permission.action);
+            const haystack =
+              `${module} ${getModuleLabel(module)} ${permission.action} ${label} ${description}`.toLowerCase();
             return haystack.includes(term);
           })
-          .sort((a, b) => a.action.localeCompare(b.action)),
+          .sort((a, b) =>
+            compareSpanishLabels(
+              getPermissionLabels(module, a.action).label,
+              getPermissionLabels(module, b.action).label
+            )
+          ),
       }))
       .filter((group) => group.permissions.length)
-      .sort((a, b) => {
-        const aIndex = moduleOrder.indexOf(a.module);
-        const bIndex = moduleOrder.indexOf(b.module);
-        if (aIndex === -1 && bIndex === -1) return getModuleLabel(a.module).localeCompare(getModuleLabel(b.module));
-        if (aIndex === -1) return 1;
-        if (bIndex === -1) return -1;
-        return aIndex - bIndex;
-      });
-  }, [permissionsCatalog, permissionSearch, moduleOrder]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('aaud.permissions.moduleOrder');
-    if (stored) {
-      try { setModuleOrder(JSON.parse(stored)); } catch { setModuleOrder([]); }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (permissionsCatalog.length && !moduleOrder.length) {
-      const modules = [...new Set(permissionsCatalog.map((permission) => permission.module))];
-      setModuleOrder(modules);
-    }
-  }, [permissionsCatalog, moduleOrder.length]);
+      .sort((a, b) =>
+        compareSpanishLabels(getModuleLabel(a.module), getModuleLabel(b.module))
+      );
+  }, [permissionsCatalog, permissionSearch]);
 
   const toggleModule = (module) => {
     setExpandedModules((previous) => {
       const next = new Set(previous);
-      if (next.has(module)) next.delete(module); else next.add(module);
-      return next;
-    });
-  };
-
-  const moveModule = (module, direction) => {
-    setModuleOrder((previous) => {
-      const next = [...previous];
-      const index = next.indexOf(module);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= next.length) return previous;
-      [next[index], next[target]] = [next[target], next[index]];
-      localStorage.setItem('aaud.permissions.moduleOrder', JSON.stringify(next));
+      if (next.has(module)) next.delete(module);
+      else next.add(module);
       return next;
     });
   };
@@ -553,7 +565,11 @@ export default function PermissionsManager() {
               type="button"
               onClick={saveRolePermissions}
               disabled={saving || loadingRole || !selectedRoleId || isSelectedRoleProtected}
-              title={isSelectedRoleProtected ? 'El rol Administrador siempre conserva todos los permisos' : undefined}
+              title={
+                isSelectedRoleProtected
+                  ? 'El rol Administrador siempre conserva todos los permisos'
+                  : undefined
+              }
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? 'Guardando...' : 'Guardar permisos del rol'}
@@ -568,49 +584,78 @@ export default function PermissionsManager() {
 
             {isSelectedRoleProtected && (
               <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                El rol Administrador está protegido: siempre conserva todos los permisos y no puede modificarse.
+                El rol Administrador está protegido: siempre conserva todos los permisos y no puede
+                modificarse.
               </div>
             )}
 
             <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <label className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" /><input value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} placeholder="Buscar permiso, módulo o acción" className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm" /></label>
-              <button type="button" onClick={() => { setModuleOrder([]); localStorage.removeItem('aaud.permissions.moduleOrder'); }} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">Restablecer orden</button>
+              <label className="relative flex-1">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <input
+                  value={permissionSearch}
+                  onChange={(event) => setPermissionSearch(event.target.value)}
+                  placeholder="Buscar permiso, módulo o acción"
+                  className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm"
+                />
+              </label>
             </div>
 
             <div className="space-y-3">
               {groupedPermissions.map((group) => (
                 <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
-                  <div className="flex items-center gap-2"><button type="button" onClick={() => toggleModule(group.module)} className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-800">{expandedModules.has(group.module) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{getModuleLabel(group.module)}<span className="text-xs font-normal text-gray-500">({group.permissions.length})</span></button><button type="button" title="Subir módulo" onClick={() => moveModule(group.module, -1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronUp className="h-4 w-4" /></button><button type="button" title="Bajar módulo" onClick={() => moveModule(group.module, 1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronDown className="h-4 w-4" /></button></div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleModule(group.module)}
+                      className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-800"
+                    >
+                      {expandedModules.has(group.module) ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                      {getModuleLabel(group.module)}
+                      <span className="text-xs font-normal text-gray-500">
+                        ({group.permissions.length})
+                      </span>
+                    </button>
+                  </div>
 
-                  {expandedModules.has(group.module) && <div className="mt-3 space-y-2">
-                    {group.permissions.map((permission) => {
-                      const code = normalizeCode(permission.code);
-                      const checkboxId = `permission-${code}`;
-                      const checked = rolePermissionSet.has(code);
-                      const [actionLabel, actionDescription] = getActionDetail(permission.action, group.module);
+                  {expandedModules.has(group.module) && (
+                    <div className="mt-3 space-y-2">
+                      {group.permissions.map((permission) => {
+                        const code = normalizeCode(permission.code);
+                        const checkboxId = `permission-${code}`;
+                        const checked = rolePermissionSet.has(code);
+                        const { label, description } = getPermissionLabels(
+                          group.module,
+                          permission.action
+                        );
 
-                      return (
-                        <div
-                          key={code}
-                          className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"
-                        >
-                          <label htmlFor={checkboxId} className="flex-1 cursor-pointer">
-                            <span className="block font-medium">{actionLabel}</span>
-                            <span className="block text-xs text-gray-500">{actionDescription}</span>
-                          </label>
+                        return (
+                          <div
+                            key={code}
+                            className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"
+                          >
+                            <label htmlFor={checkboxId} className="flex-1 cursor-pointer">
+                              <span className="block font-medium">{label}</span>
+                              <span className="block text-xs text-gray-500">{description}</span>
+                            </label>
 
-                          <input
-                            id={checkboxId}
-                            type="checkbox"
-                            checked={checked}
-                            disabled={isSelectedRoleProtected}
-                            onChange={() => handleRoleToggle(code)}
-                            className="h-4 w-4"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>}
+                            <input
+                              id={checkboxId}
+                              type="checkbox"
+                              checked={checked}
+                              disabled={isSelectedRoleProtected}
+                              onChange={() => handleRoleToggle(code)}
+                              className="h-4 w-4"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
@@ -742,75 +787,106 @@ export default function PermissionsManager() {
               </span>
             </div>
 
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><label className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" /><input value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} placeholder="Buscar permiso, módulo o acción" className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm" /></label><button type="button" onClick={() => { setModuleOrder([]); localStorage.removeItem('aaud.permissions.moduleOrder'); }} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">Restablecer orden</button></div>
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <label className="relative flex-1">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <input
+                  value={permissionSearch}
+                  onChange={(event) => setPermissionSearch(event.target.value)}
+                  placeholder="Buscar permiso, módulo o acción"
+                  className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm"
+                />
+              </label>
+            </div>
             <div className="space-y-3">
               {groupedPermissions.map((group) => (
                 <article key={group.module} className="rounded-lg border bg-gray-50 p-3">
-                  <div className="flex items-center gap-2"><button type="button" onClick={() => toggleModule(group.module)} className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-800">{expandedModules.has(group.module) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{getModuleLabel(group.module)}<span className="text-xs font-normal text-gray-500">({group.permissions.length})</span></button><button type="button" title="Subir módulo" onClick={() => moveModule(group.module, -1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronUp className="h-4 w-4" /></button><button type="button" title="Bajar módulo" onClick={() => moveModule(group.module, 1)} className="rounded p-1 text-gray-500 hover:bg-white"><ChevronDown className="h-4 w-4" /></button></div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleModule(group.module)}
+                      className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-gray-800"
+                    >
+                      {expandedModules.has(group.module) ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                      {getModuleLabel(group.module)}
+                      <span className="text-xs font-normal text-gray-500">
+                        ({group.permissions.length})
+                      </span>
+                    </button>
+                  </div>
 
-                  {expandedModules.has(group.module) && <div className="mt-3 space-y-2">
-                    {group.permissions.map((permission) => {
-                      const code = normalizeCode(permission.code);
-                      const roleHasPermission = userRolePermissionSet.has(code);
-                      const effectiveHasPermission = liveUserEffectiveSet.has(code);
-                      const [actionLabel, actionDescription] = getActionDetail(permission.action, group.module);
+                  {expandedModules.has(group.module) && (
+                    <div className="mt-3 space-y-2">
+                      {group.permissions.map((permission) => {
+                        const code = normalizeCode(permission.code);
+                        const roleHasPermission = userRolePermissionSet.has(code);
+                        const effectiveHasPermission = liveUserEffectiveSet.has(code);
+                        const { label, description } = getPermissionLabels(
+                          group.module,
+                          permission.action
+                        );
 
-                      let overrideValue = 'inherit';
-                      if (userGrantSet.has(code)) {
-                        overrideValue = 'allow';
-                      } else if (userDenySet.has(code)) {
-                        overrideValue = 'deny';
-                      }
+                        let overrideValue = 'inherit';
+                        if (userGrantSet.has(code)) {
+                          overrideValue = 'allow';
+                        } else if (userDenySet.has(code)) {
+                          overrideValue = 'deny';
+                        }
 
-                      return (
-                        <div
-                          key={code}
-                          className="grid grid-cols-1 gap-2 rounded-md bg-white px-3 py-2 text-sm md:grid-cols-[1.4fr_0.9fr_1fr_0.9fr] md:items-center"
-                        >
-                          <div>
-                            <div className="font-medium">{actionLabel}</div>
-                            <div className="text-xs text-gray-500">{actionDescription}</div>
+                        return (
+                          <div
+                            key={code}
+                            className="grid grid-cols-1 gap-2 rounded-md bg-white px-3 py-2 text-sm md:grid-cols-[1.4fr_0.9fr_1fr_0.9fr] md:items-center"
+                          >
+                            <div>
+                              <div className="font-medium">{label}</div>
+                              <div className="text-xs text-gray-500">{description}</div>
+                            </div>
+
+                            <div>
+                              <span
+                                className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                                  roleHasPermission
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                Rol: {roleHasPermission ? 'Sí' : 'No'}
+                              </span>
+                            </div>
+
+                            <div>
+                              <select
+                                value={overrideValue}
+                                onChange={(event) => updateUserOverride(code, event.target.value)}
+                                className="w-full rounded-md border px-2 py-1 text-xs"
+                              >
+                                <option value="inherit">Heredar</option>
+                                <option value="allow">Permitir</option>
+                                <option value="deny">Denegar</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <span
+                                className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                                  effectiveHasPermission
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                Efectivo: {effectiveHasPermission ? 'Sí' : 'No'}
+                              </span>
+                            </div>
                           </div>
-
-                          <div>
-                            <span
-                              className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                                roleHasPermission
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              Rol: {roleHasPermission ? 'Sí' : 'No'}
-                            </span>
-                          </div>
-
-                          <div>
-                            <select
-                              value={overrideValue}
-                              onChange={(event) => updateUserOverride(code, event.target.value)}
-                              className="w-full rounded-md border px-2 py-1 text-xs"
-                            >
-                              <option value="inherit">Heredar</option>
-                              <option value="allow">Permitir</option>
-                              <option value="deny">Denegar</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <span
-                              className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                                effectiveHasPermission
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              Efectivo: {effectiveHasPermission ? 'Sí' : 'No'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>}
+                        );
+                      })}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

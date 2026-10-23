@@ -5,11 +5,6 @@ import { mapInventoryItem } from '../src/modules/inventory/inventory.dto.js';
 const baseInventory = {
   id: 1,
   tag: 'AAUD-001',
-  serie: 'SERIE-001',
-  id_device: 2,
-  id_brand: 3,
-  id_model: 4,
-  ip: '192.168.1.10',
   id_status: 5,
   status: { name: 'BUEN ESTADO' },
 };
@@ -32,9 +27,10 @@ test('expone clasificación y conserva campos tecnológicos', () => {
       asset_type: { id: 9, code: 'TECHNOLOGY', name: 'Tecnología' },
       extension: { id: 10, code: 'DEVICES', name: 'Dispositivos' },
     },
-    inventory_devices: {
+    device_details: {
       id: 50,
-      id_inventory: 1,
+      item_id: 1,
+      serie: 'SERIE-001',
       id_device: 20,
       id_brand: 30,
       id_model: 40,
@@ -51,13 +47,14 @@ test('expone clasificación y conserva campos tecnológicos', () => {
   assert.equal(item.classification.code_new, '12040320');
   assert.equal(item.asset_type.code, 'TECHNOLOGY');
   assert.equal(item.extension.type, 'DEVICES');
-  assert.equal(item.extension.devices.id_inventory, 1);
+  assert.equal(item.extension.devices.item_id, 1);
   assert.equal(item.extension.vehicles, null);
   assert.equal(item.extension.properties, null);
   assert.equal(item.technology.device.name, 'Laptop');
   assert.equal(item.technology.brand.name, 'Dell');
   assert.equal(item.technology.model.name, 'Latitude');
   assert.equal(item.technology.ip, '10.0.0.20');
+  assert.equal(item.serie, 'SERIE-001');
   assert.equal(item.id_device, 20);
   assert.equal(item.id_brand, 30);
   assert.equal(item.id_model, 40);
@@ -65,11 +62,11 @@ test('expone clasificación y conserva campos tecnológicos', () => {
   assert.equal(item.device_name, 'Laptop');
 });
 
-test('permite DTO legacy sin regla ni inventory_devices', () => {
+test('un bien sin extensión tecnológica no expone campos de equipo', () => {
   const item = mapInventoryItem({
     ...baseInventory,
     asset_classification_rule: null,
-    inventory_devices: null,
+    device_details: null,
   });
 
   assert.equal(item.classification_rule, null);
@@ -77,10 +74,11 @@ test('permite DTO legacy sin regla ni inventory_devices', () => {
   assert.equal(item.asset_type, null);
   assert.equal(item.extension, null);
   assert.equal(item.technology, null);
-  assert.equal(item.id_device, 2);
-  assert.equal(item.id_brand, 3);
-  assert.equal(item.id_model, 4);
-  assert.equal(item.ip, '192.168.1.10');
+  assert.equal(item.serie, null);
+  assert.equal(item.id_device, null);
+  assert.equal(item.id_brand, null);
+  assert.equal(item.id_model, null);
+  assert.equal(item.ip, null);
   assert.equal(item.device_name, null);
 });
 
@@ -102,7 +100,7 @@ test('representa clasificación sin extensión sin romper el DTO', () => {
       asset_type: { id: 13, code: 'OTHER', name: 'Otro' },
       extension: null,
     },
-    inventory_devices: null,
+    device_details: null,
   });
 
   assert.equal(item.classification.code_new, '120403');

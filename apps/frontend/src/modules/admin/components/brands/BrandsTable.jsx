@@ -9,9 +9,13 @@ export default function BrandsTable({
   deleteBrand,
   addBrand,
   newBrand,
+  newBrandType,
+  setNewBrandType,
   setNewBrand,
   editingId,
   editingName,
+  editingType,
+  setEditingType,
   setEditingName,
   currentPage = 1,
   itemsPerPage = 10,
@@ -20,6 +24,10 @@ export default function BrandsTable({
     <div>
       {/* Agregar */}
       <div className="flex gap-2 mb-4">
+        <select value={newBrandType} onChange={(e) => setNewBrandType(e.target.value)} className="px-2 py-1 border rounded">
+          <option value="TECHNOLOGY">Tecnología</option>
+          <option value="VEHICLE">Vehículo</option>
+        </select>
         <input
           type="text"
           value={newBrand}
@@ -42,6 +50,7 @@ export default function BrandsTable({
           <tr>
             <th className="px-3 py-1 text-center border">#</th>
             <th className="px-3 py-1 text-left border">Nombre</th>
+            <th className="px-3 py-1 text-left border">Catálogo</th>
             <th className="px-3 py-1 text-center border">Acciones</th>
           </tr>
         </thead>
@@ -64,6 +73,13 @@ export default function BrandsTable({
                   b.name
                 )}
               </td>
+              <td className="px-3 py-1 border">
+                {editingId === b.id ? (
+                  <select value={editingType} onChange={(e) => setEditingType(e.target.value)} className="w-full px-2 py-1 border rounded">
+                    <option value="TECHNOLOGY">Tecnología</option><option value="VEHICLE">Vehículo</option>
+                  </select>
+                ) : b.catalog_type === 'VEHICLE' ? 'Vehículos' : 'Tecnología'}
+              </td>
               <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                 {editingId === b.id ? (
                   <>
@@ -82,7 +98,7 @@ export default function BrandsTable({
                   <ActionButton
                     type={'edit'}
                     title="Editar marca"
-                    onClick={() => editBrand(b.id, b.name)}
+                    onClick={() => editBrand(b.id, b.name, b.catalog_type)}
                   />
                 )}
               </td>
