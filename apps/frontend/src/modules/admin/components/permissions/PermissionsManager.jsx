@@ -203,9 +203,7 @@ export default function PermissionsManager() {
           ),
       }))
       .filter((group) => group.permissions.length)
-      .sort((a, b) =>
-        compareSpanishLabels(getModuleLabel(a.module), getModuleLabel(b.module))
-      );
+      .sort((a, b) => compareSpanishLabels(getModuleLabel(a.module), getModuleLabel(b.module)));
   }, [permissionsCatalog, permissionSearch]);
 
   const toggleModule = (module) => {
@@ -221,6 +219,23 @@ export default function PermissionsManager() {
     if (!permissionSearch.trim()) return;
     setExpandedModules(new Set(groupedPermissions.map((group) => group.module)));
   }, [permissionSearch, groupedPermissions]);
+
+  const liveUserEffectiveSet = useMemo(() => {
+    const effective = new Set(userRolePermissionSet);
+
+    userGrantSet.forEach((code) => effective.add(code));
+    userDenySet.forEach((code) => effective.delete(code));
+
+    return effective;
+  }, [userRolePermissionSet, userGrantSet, userDenySet]);
+
+  useEffect(() => {
+    const granted = mode === 'role' ? rolePermissionSet : liveUserEffectiveSet;
+    const grantedModules = groupedPermissions
+      .filter((group) => group.permissions.some((permission) => granted.has(permission.code)))
+      .map((group) => group.module);
+    setExpandedModules(new Set(grantedModules));
+  }, [mode, rolePermissionSet, liveUserEffectiveSet, groupedPermissions]);
 
   const filteredUsers = useMemo(() => {
     const term = userSearch.trim().toLowerCase();
@@ -252,15 +267,6 @@ export default function PermissionsManager() {
       setSelectedUserId(Number(filteredUsers[0].id));
     }
   }, [filteredUsers, selectedUserId]);
-
-  const liveUserEffectiveSet = useMemo(() => {
-    const effective = new Set(userRolePermissionSet);
-
-    userGrantSet.forEach((code) => effective.add(code));
-    userDenySet.forEach((code) => effective.delete(code));
-
-    return effective;
-  }, [userRolePermissionSet, userGrantSet, userDenySet]);
 
   useEffect(() => {
     const loadInitialData = async () => {

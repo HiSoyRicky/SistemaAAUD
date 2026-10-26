@@ -4,8 +4,12 @@ import { useEffect, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
 import Pagination from '../../../../shared/components/ui/Pagination';
 import ModelsTable from './ModelsTable';
+import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
+import useAuth from '../../../../shared/hooks/useAuth';
 
 export default function ModelsManager() {
+  const { hasPermission } = useAuth();
+  const canCreateModel = hasPermission('models.create');
   const [models, setModels] = useState([]);
   const [brands, setBrands] = useState([]);
   const [devices, setDevices] = useState([]);
@@ -27,7 +31,7 @@ export default function ModelsManager() {
   const itemsPerPage = 10;
   const [search, setSearch] = useState('');
 
-  const availableBrands = brands.filter((brand) => (brand.catalog_type || 'TECHNOLOGY') === catalogType);
+  const availableBrands = brands;
 
   const API_URL = `/api/models`;
 
@@ -68,18 +72,26 @@ export default function ModelsManager() {
   //  Agregar nuevo modelo
   const addModel = async () => {
     if (!newModel.trim() || !selectedBrand || (catalogType === 'TECHNOLOGY' && !selectedDevice)) return;
+    const duplicate = duplicateModels.find((model) => normalizeCatalogName(model.name) === normalizeCatalogName(newModel));
+    if (duplicate) {
+      setSuccessMessage('');
+      setErrorMessage(`Ya existe un modelo equivalente: ${duplicate.name}`);
+      return;
+    }
     try {
-      await api.post(`/api/models`, {
+      const payload = {
         name: newModel,
         id_brand: Number(selectedBrand),
         id_device: catalogType === 'VEHICLE' ? null : Number(selectedDevice),
-      });
+      };
+      if (canCreateModel) await api.post(`/api/models`, payload);
+      else await api.post('/api/creation-requests', { type: 'MODEL', payload });
       setNewModel('');
       setSelectedBrand('');
       setSelectedDevice('');
-      fetchModels();
+      if (canCreateModel) fetchModels();
       setErrorMessage('');
-      setSuccessMessage('Modelo agregado correctamente');
+      setSuccessMessage(canCreateModel ? 'Modelo agregado correctamente' : 'Solicitud enviada al administrador para revisión');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error al agregar modelo:', err);
@@ -91,8 +103,7 @@ export default function ModelsManager() {
 
   // Iniciar edición
   const editModel = (model) => {
-    const brand = brands.find((item) => item.id === model.id_brand);
-    setCatalogType(brand?.catalog_type || 'TECHNOLOGY');
+    setCatalogType(model.id_device == null ? 'VEHICLE' : 'TECHNOLOGY');
     setEditingId(model.id);
     setEditingName(model.name);
     setEditingBrand(model.brandId || model.brand_id || model.id_brand || '');
@@ -101,13 +112,18 @@ export default function ModelsManager() {
 
   // Guardar edición
   const saveModel = async (id) => {
-    const brandType = brands.find((item) => item.id === Number(editingBrand))?.catalog_type || 'TECHNOLOGY';
-    if (!editingName.trim() || !editingBrand || (brandType === 'TECHNOLOGY' && !editingDevice)) return;
+    if (!editingName.trim() || !editingBrand || (catalogType === 'TECHNOLOGY' && !editingDevice)) return;
+    const duplicate = similarEditingModels.find((model) => normalizeCatalogName(model.name) === normalizeCatalogName(editingName));
+    if (duplicate) {
+      setSuccessMessage('');
+      setErrorMessage(`Ya existe un modelo equivalente: ${duplicate.name}`);
+      return;
+    }
     try {
       await api.put(`/api/models/${id}`, {
         name: editingName,
         id_brand: editingBrand,
-        id_device: brandType === 'VEHICLE' ? null : editingDevice,
+        id_device: catalogType === 'VEHICLE' ? null : editingDevice,
       });
       setEditingId(null);
       setEditingName('');
@@ -153,14 +169,13 @@ export default function ModelsManager() {
 
     const brandName = brands.find((b) => b.id === brandId)?.name || '';
     const deviceName = devices.find((d) => d.id === deviceId)?.name || '';
-    const brand = brands.find((item) => item.id === brandId);
 
-    const term = search.toLowerCase();
+    const term = normalizeCatalogName(search);
     return (
-      m.name.toLowerCase().includes(term) ||
-      brandName.toLowerCase().includes(term) ||
-      deviceName.toLowerCase().includes(term)
-    ) && (brand?.catalog_type || 'TECHNOLOGY') === catalogType;
+      normalizeCatalogName(m.name).includes(term) ||
+      normalizeCatalogName(brandName).includes(term) ||
+      normalizeCatalogName(deviceName).includes(term)
+    ) && (catalogType === 'TECHNOLOGY' ? deviceId != null : deviceId == null);
   });
 
   const sortedModels = [...filteredModels].sort((a, b) => a.name.localeCompare(b.name));
@@ -169,7 +184,37 @@ export default function ModelsManager() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedModels = sortedModels.slice(startIndex, endIndex);
-
+  const normalizedNewModel = normalizeCatalogName(newModel);
+  const duplicateModels = normalizedNewModel
+    ? models.filter((model) =>
+        Number(model.id_brand) === Number(selectedBrand) &&
+        (catalogType === 'VEHICLE'
+          ? model.id_device == null
+          : Number(model.id_device) === Number(selectedDevice)) &&
+        normalizeCatalogName(model.name) === normalizedNewModel
+      )
+    : [];
+  const similarModels = normalizedNewModel
+    ? models
+        .filter((model) => normalizeCatalogName(model.name).includes(normalizedNewModel))
+        .sort((a, b) => {
+          const aMatchesSelection = Number(a.id_brand) === Number(selectedBrand) &&
+            (catalogType === 'VEHICLE' ? a.id_device == null : Number(a.id_device) === Number(selectedDevice));
+          const bMatchesSelection = Number(b.id_brand) === Number(selectedBrand) &&
+            (catalogType === 'VEHICLE' ? b.id_device == null : Number(b.id_device) === Number(selectedDevice));
+          return Number(bMatchesSelection) - Number(aMatchesSelection) || a.name.localeCompare(b.name);
+        })
+    : [];
+  const similarEditingModels = editingName.trim()
+    ? models.filter((model) =>
+        Number(model.id) !== Number(editingId) &&
+        Number(model.id_brand) === Number(editingBrand) &&
+        (catalogType === 'VEHICLE'
+          ? model.id_device == null
+          : Number(model.id_device) === Number(editingDevice)) &&
+        normalizeCatalogName(model.name).includes(normalizeCatalogName(editingName))
+      )
+    : [];
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
@@ -228,6 +273,9 @@ export default function ModelsManager() {
         setEditingDevice={setEditingDevice}
         devices={devices}
         catalogType={catalogType}
+        similarModels={similarModels}
+        similarEditingModels={similarEditingModels}
+        addActionLabel={canCreateModel ? 'Agregar' : 'Solicitar creación'}
       />
 
       <Pagination

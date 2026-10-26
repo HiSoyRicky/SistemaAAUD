@@ -9,25 +9,19 @@ export default function BrandsTable({
   deleteBrand,
   addBrand,
   newBrand,
-  newBrandType,
-  setNewBrandType,
   setNewBrand,
   editingId,
   editingName,
-  editingType,
-  setEditingType,
   setEditingName,
   currentPage = 1,
   itemsPerPage = 10,
+  similarBrands = [],
+  addActionLabel = 'Agregar',
 }) {
   return (
     <div>
       {/* Agregar */}
       <div className="flex gap-2 mb-4">
-        <select value={newBrandType} onChange={(e) => setNewBrandType(e.target.value)} className="px-2 py-1 border rounded">
-          <option value="TECHNOLOGY">Tecnología</option>
-          <option value="VEHICLE">Vehículo</option>
-        </select>
         <input
           type="text"
           value={newBrand}
@@ -40,9 +34,15 @@ export default function BrandsTable({
           onClick={addBrand}
           className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
         >
-          Agregar
+          {addActionLabel}
         </button>
       </div>
+      {similarBrands.length > 0 && (
+        <ul className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm" aria-label="Marcas similares">
+          <li className="mb-1 font-semibold">Marcas similares existentes</li>
+            {similarBrands.slice(0, 8).map((brand) => <li key={brand.id}>{brand.name}</li>)}
+        </ul>
+      )}
 
       {/* Tabla */}
       <table className="w-full text-sm border">
@@ -50,7 +50,6 @@ export default function BrandsTable({
           <tr>
             <th className="px-3 py-1 text-center border">#</th>
             <th className="px-3 py-1 text-left border">Nombre</th>
-            <th className="px-3 py-1 text-left border">Catálogo</th>
             <th className="px-3 py-1 text-center border">Acciones</th>
           </tr>
         </thead>
@@ -73,13 +72,6 @@ export default function BrandsTable({
                   b.name
                 )}
               </td>
-              <td className="px-3 py-1 border">
-                {editingId === b.id ? (
-                  <select value={editingType} onChange={(e) => setEditingType(e.target.value)} className="w-full px-2 py-1 border rounded">
-                    <option value="TECHNOLOGY">Tecnología</option><option value="VEHICLE">Vehículo</option>
-                  </select>
-                ) : b.catalog_type === 'VEHICLE' ? 'Vehículos' : 'Tecnología'}
-              </td>
               <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                 {editingId === b.id ? (
                   <>
@@ -98,7 +90,7 @@ export default function BrandsTable({
                   <ActionButton
                     type={'edit'}
                     title="Editar marca"
-                    onClick={() => editBrand(b.id, b.name, b.catalog_type)}
+                    onClick={() => editBrand(b.id, b.name)}
                   />
                 )}
               </td>

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ClipboardList,
   Download,
+  Eye,
   History,
   Plus,
   RefreshCw,
@@ -14,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Pagination from '../../../shared/components/ui/Pagination';
+import Modal from '../../../shared/components/ui/Modal';
 import useAuth from '../../../shared/hooks/useAuth';
 import {
   exportWarehouseMovementsToExcel,
@@ -51,6 +53,7 @@ function WarehousePage({ historyOnly = false }) {
   const [historySearch, setHistorySearch] = useState('');
   const [stockPage, setStockPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
+  const [selectedMovement, setSelectedMovement] = useState(null);
   const [stockMeta, setStockMeta] = useState({ total: 0, totalPages: 1 });
   const [historyMeta, setHistoryMeta] = useState({ total: 0, totalPages: 1 });
   const [movementTypeFilter, setMovementTypeFilter] = useState('');
@@ -58,11 +61,6 @@ function WarehousePage({ historyOnly = false }) {
   const [historyTo, setHistoryTo] = useState('');
   const [historyUbication, setHistoryUbication] = useState('');
   const [historyDepartment, setHistoryDepartment] = useState('');
-  const [movementSummary, setMovementSummary] = useState({
-    IN: { quantity: 0 },
-    OUT: { quantity: 0 },
-    ADJUSTMENT: { quantity: 0 },
-  });
   const [dispatchLines, setDispatchLines] = useState([]);
 
   const canCreateMovement = hasPermission('warehouse_movements.create');
@@ -106,13 +104,9 @@ function WarehousePage({ historyOnly = false }) {
         total: movementData?.total || 0,
         totalPages: movementData?.totalPages || 1,
       });
-      setMovementSummary(
-        movementData?.summary || {
-          IN: { quantity: 0 },
-          OUT: { quantity: 0 },
-          ADJUSTMENT: { quantity: 0 },
-        }
-      );
+      if (movementData && historyPage > movementData.totalPages) {
+        setHistoryPage(movementData.totalPages || 1);
+      }
       setUbications(Array.isArray(ubicationData) ? ubicationData : []);
       setDepartments(Array.isArray(departmentData) ? departmentData : []);
     } catch (error) {
@@ -259,15 +253,16 @@ function WarehousePage({ historyOnly = false }) {
 
   const exportMovements = async () => {
     try {
+      const groups = await fetchAllPages(Warehouse.fetchMovements, {
+        search: historySearch,
+        movement_type: movementTypeFilter,
+        ubication_id: historyUbication || undefined,
+        department_id: historyDepartment || undefined,
+        from: historyFrom,
+        to: historyTo,
+      });
       await exportWarehouseMovementsToExcel(
-        await fetchAllPages(Warehouse.fetchMovements, {
-          search: historySearch,
-          movement_type: movementTypeFilter,
-          ubication_id: historyUbication || undefined,
-          department_id: historyDepartment || undefined,
-          from: historyFrom,
-          to: historyTo,
-        })
+        groups.flatMap((movement) => movement.group_items || [movement])
       );
     } catch (error) {
       toast.error('No se pudieron exportar los movimientos');
@@ -555,7 +550,7 @@ function WarehousePage({ historyOnly = false }) {
               <input
                 value={stockSearch}
                 onChange={(event) => setStockSearch(event.target.value)}
-                placeholder="Buscar insumo, código o ubicación"
+                placeholder="Buscar insumo por nombre o código"
                 className="h-9 min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
               />
               <button
@@ -609,9 +604,6 @@ function WarehousePage({ historyOnly = false }) {
             totalPages={stockMeta.totalPages}
             onPageChange={setStockPage}
           />
-          <p className="px-5 pb-4 text-xs text-slate-500">
-            {stockMeta.total} existencias encontradas
-          </p>
         </section>
       )}
 
@@ -623,8 +615,8 @@ function WarehousePage({ historyOnly = false }) {
               <input
                 value={historySearch}
                 onChange={(event) => setHistorySearch(event.target.value)}
-                placeholder="Buscar movimiento, código o persona"
-                className="h-9 w-56 min-w-[220px] rounded-md border border-slate-300 px-3 text-sm"
+                placeholder="Buscar por nombre, código o persona"
+                className="h-9 w-56 min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
               />
               <select
                 value={movementTypeFilter}
@@ -661,8 +653,7 @@ function WarehousePage({ historyOnly = false }) {
                 </option>
                 {departments
                   .filter(
-                    (department) =>
-                      Number(department.id_ubication) === Number(historyUbication)
+                    (department) => Number(department.id_ubication) === Number(historyUbication)
                   )
                   .sort((a, b) => a.name.localeCompare(b.name, 'es'))
                   .map((department) => (
@@ -700,21 +691,6 @@ function WarehousePage({ historyOnly = false }) {
                 Exportar
               </button>
             </div>
-
-          </div>
-          <div className="flex flex-wrap gap-2 border-b border-slate-200 px-5 py-3 text-xs">
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
-              Entradas: {movementSummary.IN?.quantity || 0}
-            </span>
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
-              Salidas: {movementSummary.OUT?.quantity || 0}
-            </span>
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700">
-              Ajustes: {movementSummary.ADJUSTMENT?.quantity || 0}
-            </span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-              Movimientos: {historyMeta.total}
-            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -728,6 +704,7 @@ function WarehousePage({ historyOnly = false }) {
                   <th className="px-5 py-3">Departamento</th>
                   <th className="px-5 py-3">Quién recibió / retiró</th>
                   <th className="px-5 py-3">Despachado por</th>
+                  <th className="px-5 py-3">Detalle</th>
                 </tr>
               </thead>
               <tbody>
@@ -735,22 +712,52 @@ function WarehousePage({ historyOnly = false }) {
                   <tr key={movement.id} className="border-t border-slate-100">
                     <td className="px-5 py-3">{formatDateTime(movement.created_at)}</td>
                     <td className="px-5 py-3">
-                      <div className="font-medium text-slate-700">{movement.item?.name || '-'}</div>
-                      <div className="mt-1 text-xs text-slate-400">
-                        Código: {movement.item?.code || 'Sin código'}
-                      </div>
+                      {movement.group_items?.length > 1 ? (
+                        <details className="group min-w-[240px] rounded-lg border border-blue-100 bg-blue-50/50">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-blue-900 [&::-webkit-details-marker]:hidden">
+                            <span>
+                              <span className="block font-semibold">Salida agrupada</span>
+                              <span className="text-xs text-blue-700">{movement.group_items.length} insumos · Ver detalle</span>
+                            </span>
+                            <span aria-hidden="true" className="text-lg transition-transform group-open:rotate-180">⌄</span>
+                          </summary>
+                          <ul className="divide-y divide-blue-100 border-t border-blue-100 bg-white px-3">
+                            {movement.group_items.map((line) => (
+                              <li key={line.id} className="flex items-start justify-between gap-3 py-2.5">
+                                <span className="min-w-0">
+                                  <span className="block font-medium text-slate-700">{line.item?.name || '-'}</span>
+                                  <span className="block text-xs text-slate-500">Código: {line.item?.code || 'Sin código'}</span>
+                                </span>
+                                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.quantity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      ) : (
+                        <div>
+                          <div className="font-medium text-slate-700">{movement.item?.name || '-'}</div>
+                          <div className="mt-1 text-xs text-slate-500">Código: {movement.item?.code || 'Sin código'}</div>
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       {{ IN: 'Entrada', OUT: 'Salida', ADJUSTMENT: 'Ajuste' }[
                         movement.movement_type
                       ] || movement.movement_type}
                     </td>
-                    <td className="px-5 py-3">{movement.quantity}</td>
+                    <td className="px-5 py-3">
+                      {movement.group_items?.length > 1 ? `${movement.group_items.length} insumos` : movement.quantity}
+                    </td>
                     <td className="px-5 py-3">{movement.ubication?.name || '-'}</td>
                     <td className="px-5 py-3">{movement.department?.name || '-'}</td>
                     <td className="px-5 py-3">{movement.receiver_name || '-'}</td>
                     <td className="px-5 py-3">
                       {movement.user?.nombre_completo || movement.user?.username || '-'}
+                    </td>
+                    <td className="px-5 py-3">
+                      <button type="button" onClick={() => setSelectedMovement(movement)} aria-label="Ver detalle del movimiento" title="Ver detalle" className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
+                        <Eye size={19} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -762,6 +769,37 @@ function WarehousePage({ historyOnly = false }) {
             totalPages={historyMeta.totalPages}
             onPageChange={setHistoryPage}
           />
+          <Modal open={Boolean(selectedMovement)} onClose={() => setSelectedMovement(null)} title="Detalle del movimiento" size="2xl" constrainToViewport>
+            {selectedMovement && (
+              <div className="space-y-5 text-sm text-slate-700">
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    ['Fecha', formatDateTime(selectedMovement.created_at)],
+                    ['Tipo', { IN: 'Entrada', OUT: 'Salida', ADJUSTMENT: 'Ajuste' }[selectedMovement.movement_type] || selectedMovement.movement_type],
+                    ['Ubicación', selectedMovement.ubication?.name],
+                    ['Departamento', selectedMovement.department?.name],
+                    ['Quién recibió / retiró', selectedMovement.receiver_name],
+                    ['Despachado por', selectedMovement.user?.nombre_completo || selectedMovement.user?.username],
+                    ['Referencia', selectedMovement.reference],
+                  ].map(([label, value]) => (
+                    <div key={label}><dt className="text-xs font-semibold uppercase text-slate-500">{label}</dt><dd className="mt-1 break-words">{value || '—'}</dd></div>
+                  ))}
+                </dl>
+                <div>
+                  <h3 className="mb-2 font-semibold text-slate-900">Insumos</h3>
+                  <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200">
+                    {(selectedMovement.group_items || [selectedMovement]).map((line) => (
+                      <li key={line.id} className="flex justify-between gap-4 px-4 py-3">
+                        <div className="min-w-0"><p className="font-medium text-slate-900">{line.item?.name || 'Insumo'}</p><p className="mt-1 text-xs text-slate-500">Código: {line.item?.code || 'Sin código'}</p>{line.observation && line.observation !== selectedMovement.observation && <p className="mt-2 whitespace-pre-wrap break-words">Observación: {line.observation}</p>}</div>
+                        <span className="shrink-0 font-semibold">{line.quantity} {line.item?.unit || ''}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-4"><h3 className="font-semibold text-slate-900">Observación</h3><p className="mt-1 whitespace-pre-wrap break-words">{selectedMovement.observation || 'Sin observación'}</p></div>
+              </div>
+            )}
+          </Modal>
         </section>
       )}
     </div>

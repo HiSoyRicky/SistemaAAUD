@@ -1,150 +1,105 @@
-// UserForm.jsx
-
+import { useId } from 'react';
+import { AtSign, Building2, KeyRound, Mail, MapPin, ShieldCheck, UserRound, UserRoundCheck } from 'lucide-react';
 import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
 
-export default function UserForm({ form, setForm, roles, handleSubmit, onDelete, onCancel, canSave }) {
+const inputClass = 'h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100';
+const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-700';
+
+function Section({ icon: Icon, title, description, children }) {
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grid grid-cols-1 gap-6 p-8 mb-8 bg-white border border-gray-200 shadow-lg rounded-2xl md:grid-cols-2"
-    >
-      {/* Nombre */}
-      <div>
-        <label htmlFor="nombre_completo" className="block mb-2 text-sm font-semibold text-gray-700">
-          Nombre completo
-        </label>
-        <input
-          type="text"
-          value={form.nombre_completo}
-          onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })}
-          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          required
-        />
-      </div>
-
-      {/* Usuario */}
-      <div>
-        <label htmlFor="username" className="block mb-2 text-sm font-semibold text-gray-700">
-          Usuario
-        </label>
-        <input
-          type="text"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          required
-        />
-      </div>
-
-      {!form.id && (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm ring-1 ring-slate-200">
+          <Icon size={18} aria-hidden="true" />
+        </span>
         <div>
-          <label htmlFor="password" className="block mb-2 text-sm font-semibold text-gray-700">
-            Contraseña inicial
-          </label>
-          <input
-            type="password"
-            value={form.password || ''}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
+          <h3 className="font-semibold text-slate-900">{title}</h3>
+          {description && <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>}
         </div>
-      )}
+      </div>
+      <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">{children}</div>
+    </section>
+  );
+}
 
-      {/* Ubicación + Departamento (filtrado) */}
-      <div className="md:col-span-2">
-        <UbiDepSelector
-          mode="inventory"
-          id_ubication={form.id_ubication}
-          id_department={form.id_department}
-          errors={{}}
-          onChange={({ id_ubication, id_department }) => {
-            setForm((prev) => ({
-              ...prev,
-              id_ubication,
-              id_department,
-            }));
-          }}
-        />
+function Field({ label, htmlFor, icon: Icon, children, hint, className = '' }) {
+  return (
+    <div className={className}>
+      <label htmlFor={htmlFor} className={labelClass}>{label}</label>
+      <div className="relative">
+        {Icon && <Icon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />}
+        {children}
+      </div>
+      {hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}
+    </div>
+  );
+}
+
+export default function UserForm({ form, setForm, roles, handleSubmit, onDelete, onCancel, canSave }) {
+  const id = useId();
+  const editing = Boolean(form.id);
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+          <UserRound size={21} aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-slate-900">{editing ? form.nombre_completo || form.username : 'Nuevo usuario'}</p>
+          <p className="mt-0.5 text-sm text-slate-600">{editing ? `Cuenta: ${form.username}` : 'Completa la información para registrar una cuenta.'}</p>
+        </div>
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${form.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${form.active ? 'bg-emerald-600' : 'bg-slate-500'}`} />
+          {form.active ? 'Activo' : 'Inactivo'}
+        </span>
       </div>
 
-      {/* Correo */}
-      <div>
-        <label htmlFor="email" className="block mb-2 text-sm font-semibold text-gray-700">
-          Correo electrónico
-        </label>
-        <input
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
+      <Section icon={UserRound} title="Información de la cuenta" description="Datos que identifican al usuario dentro del sistema.">
+        <Field label="Nombre completo" htmlFor={`${id}-nombre`} icon={UserRound}>
+          <input id={`${id}-nombre`} type="text" autoComplete="name" value={form.nombre_completo} onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })} className={`${inputClass} pl-10`} placeholder="Nombre y apellido" required />
+        </Field>
+        <Field label="Nombre de usuario" htmlFor={`${id}-username`} icon={AtSign}>
+          <input id={`${id}-username`} type="text" autoComplete="username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className={`${inputClass} pl-10`} placeholder="usuario" required />
+        </Field>
+        <Field label="Correo electrónico" htmlFor={`${id}-email`} icon={Mail} hint="Opcional. Se utiliza para notificaciones de la cuenta.">
+          <input id={`${id}-email`} type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={`${inputClass} pl-10`} placeholder="usuario@aaud.gob.pa" />
+        </Field>
+        {!editing && (
+          <Field label="Contraseña inicial" htmlFor={`${id}-password`} icon={KeyRound} hint="El usuario podrá cambiarla después de ingresar.">
+            <input id={`${id}-password`} type="password" autoComplete="new-password" value={form.password || ''} onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${inputClass} pl-10`} placeholder="Contraseña segura" required />
+          </Field>
+        )}
+      </Section>
 
-      {/* Rol */}
-      <div>
-        <label htmlFor="id_rol" className="block mb-2 text-sm font-semibold text-gray-700">
-          Rol
-        </label>
-        <select
-          value={form.id_rol}
-          onChange={(e) => setForm({ ...form, id_rol: Number.parseInt(e.target.value) })}
-          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {roles.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Activo con Toggle Switch */}
-      <label htmlFor="active" className="block mb-2 text-sm font-semibold text-gray-700">
-        Activo
-      </label>
-      <div className="flex items-center col-span-2 gap-3 mt-6 md:mt-0">
-        <span className="font-medium">Activo</span>
-        <button
-          type="button"
-          onClick={() => setForm({ ...form, active: !form.active })}
-          className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors
-                ${form.active ? 'bg-green-500' : 'bg-gray-300'}`}
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform
-                        ${form.active ? 'translate-x-3' : 'translate-x-0'}`}
-          />
-        </button>
-      </div>
-
-      {form.id && onDelete && (
-        <div className="col-span-2">
-          <button
-            type="button"
-            onClick={onDelete}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold shadow hover:from-red-700 hover:to-red-800 transition"
-          >
-            Eliminar Usuario
+      <Section icon={Building2} title="Asignación institucional" description="Define el rol y la ubicación organizativa del usuario.">
+        <Field label="Rol del sistema" htmlFor={`${id}-role`} icon={ShieldCheck}>
+          <select id={`${id}-role`} value={form.id_rol} onChange={(e) => setForm({ ...form, id_rol: Number.parseInt(e.target.value, 10) })} className={`${inputClass} pl-10`} required>
+            <option value="" disabled>Selecciona un rol</option>
+            {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+          </select>
+        </Field>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${form.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}><UserRoundCheck size={18} aria-hidden="true" /></span>
+            <div><p className="text-sm font-semibold text-slate-800">Acceso a la cuenta</p><p className="text-xs text-slate-500">{form.active ? 'El usuario puede ingresar al sistema.' : 'El acceso del usuario está desactivado.'}</p></div>
+          </div>
+          <button type="button" role="switch" aria-checked={Boolean(form.active)} aria-label="Activar cuenta" onClick={() => setForm({ ...form, active: !form.active })} className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-4 focus:ring-blue-100 ${form.active ? 'bg-emerald-600' : 'bg-slate-300'}`}>
+            <span className={`mt-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${form.active ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </button>
         </div>
-      )}
+        <div className="md:col-span-2">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><MapPin size={16} className="text-slate-500" aria-hidden="true" />Ubicación y departamento</div>
+          <UbiDepSelector mode="inventory" compact id_ubication={form.id_ubication} id_department={form.id_department} errors={{}} onChange={({ id_ubication, id_department }) => setForm((prev) => ({ ...prev, id_ubication, id_department }))} />
+        </div>
+      </Section>
 
-      {/* Botones */}
-      <div className="flex justify-end gap-4 mt-6 md:col-span-2">
-        {canSave && <button
-          type="submit"
-          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-800 transition"
-        >
-          {form.id ? 'Actualizar Usuario' : 'Crear Usuario'}
-        </button>}
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-5 py-2.5 rounded-xl bg-gray-200 text-gray-700 font-semibold shadow hover:bg-gray-300 transition"
-        >
-          Cancelar
-        </button>
+      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>{editing && onDelete && <button type="button" onClick={onDelete} className="w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 sm:w-auto">Eliminar usuario</button>}</div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <button type="button" onClick={onCancel} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancelar</button>
+          {canSave && <button type="submit" className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200">{editing ? 'Guardar cambios' : 'Crear usuario'}</button>}
+        </div>
       </div>
     </form>
   );

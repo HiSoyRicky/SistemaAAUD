@@ -1,6 +1,7 @@
 // ResolveIncidentModal.jsx
 
 import { useEffect, useState } from 'react';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 
 function getStatusUI(status) {
   switch (status) {
@@ -229,7 +230,8 @@ function SolutionForm({
 
 function ConfirmResolveModal({ solutionText, isSubmitting, onCancel, onConfirm }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+    <ModalLayer>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-md">
       <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
         <h4 className="mb-3 text-lg font-extrabold text-slate-900">Confirmar resolución</h4>
 
@@ -265,6 +267,7 @@ function ConfirmResolveModal({ solutionText, isSubmitting, onCancel, onConfirm }
         </div>
       </div>
     </div>
+    </ModalLayer>
   );
 }
 
@@ -398,7 +401,8 @@ function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3">
+    <ModalLayer>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 backdrop-blur-md">
       <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
         <IncidentHeader
           incident={incident}
@@ -436,6 +440,7 @@ function ResolveIncidentModal({ id_incident, onClose, onConfirm }) {
         />
       )}
     </div>
+    </ModalLayer>
   );
 }
 

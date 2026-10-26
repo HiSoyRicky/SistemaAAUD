@@ -43,6 +43,8 @@ const Inventory = {
     api
       .post(`/api/inventory-transfer-requests/${id}/request-correction`, data)
       .then((res) => res.data),
+  requestCreation: (type, payload) =>
+    api.post('/api/creation-requests', { type, payload }).then((res) => res.data),
 };
 
 // --- Usuarios ---

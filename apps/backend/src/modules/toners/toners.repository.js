@@ -1,6 +1,7 @@
 // toner.repository.js
 
 import { prisma } from '../../config/prisma.js';
+import normalizeCatalogName from '../../common/utils/normalizeCatalogName.js';
 
 const tonerListSelect = {
   id: true,
@@ -41,6 +42,18 @@ export const findPrinterModelById = async (id) => {
   return prisma.models.findUnique({
     where: { id: Number(id) },
   });
+};
+
+export const findDuplicate = async ({ toner_model, color, id_printer_model, excludeId = null }) => {
+  const rows = await prisma.toners.findMany({
+    where: {
+      id_printer_model: Number(id_printer_model),
+      color,
+      ...(excludeId ? { id: { not: Number(excludeId) } } : {}),
+    },
+    select: { id: true, toner_model: true },
+  });
+  return rows.find((row) => normalizeCatalogName(row.toner_model) === normalizeCatalogName(toner_model)) || null;
 };
 
 export const createWithStock = async ({ toner_model, color, id_printer_model, min_stock }) => {

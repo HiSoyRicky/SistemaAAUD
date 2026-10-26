@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma.js';
 import AppError from '../../common/utils/AppError.js';
 import catchAsync from '../../common/utils/catchAsync.js';
+import normalizeCatalogName from '../../common/utils/normalizeCatalogName.js';
 
 const include = { brand: { select: { id: true, name: true } }, model: { select: { id: true, name: true, id_brand: true } } };
 
@@ -23,7 +24,7 @@ async function normalize(payload) {
     prisma.brands.findUnique({ where: { id: id_brand } }),
     prisma.models.findUnique({ where: { id: id_model } }),
   ]);
-  if (!brand || !model || model.id_brand !== id_brand) {
+  if (!brand || !model || model.id_brand !== id_brand || model.id_device !== null) {
     throw new AppError('El modelo no pertenece a la marca seleccionada', 400);
   }
   return { id_brand, id_model, model_year, vehicle_type, fuel_type };
@@ -50,7 +51,14 @@ export const getAll = catchAsync(async (_req, res) => {
 
 export const create = catchAsync(async (req, res) => {
   const data = await normalize(req.body);
-  const duplicate = await prisma.inventory_vehicle_catalog.findFirst({ where: data, select: { id: true } });
+  const candidates = await prisma.inventory_vehicle_catalog.findMany({
+    where: { id_brand: data.id_brand, id_model: data.id_model, model_year: data.model_year },
+    select: { id: true, vehicle_type: true, fuel_type: true },
+  });
+  const duplicate = candidates.find((entry) =>
+    normalizeCatalogName(entry.vehicle_type) === normalizeCatalogName(data.vehicle_type) &&
+    normalizeCatalogName(entry.fuel_type) === normalizeCatalogName(data.fuel_type)
+  );
   if (duplicate) throw new AppError('Esta combinación ya existe en el catálogo de vehículos', 409);
   const entry = await prisma.inventory_vehicle_catalog.create({ data, include });
   res.status(201).json(entry);
@@ -60,7 +68,14 @@ export const update = catchAsync(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) throw new AppError('ID inválido', 400);
   const data = await normalize(req.body);
-  const duplicate = await prisma.inventory_vehicle_catalog.findFirst({ where: { ...data, id: { not: id } }, select: { id: true } });
+  const candidates = await prisma.inventory_vehicle_catalog.findMany({
+    where: { id_brand: data.id_brand, id_model: data.id_model, model_year: data.model_year, id: { not: id } },
+    select: { id: true, vehicle_type: true, fuel_type: true },
+  });
+  const duplicate = candidates.find((entry) =>
+    normalizeCatalogName(entry.vehicle_type) === normalizeCatalogName(data.vehicle_type) &&
+    normalizeCatalogName(entry.fuel_type) === normalizeCatalogName(data.fuel_type)
+  );
   if (duplicate) throw new AppError('Esta combinación ya existe en el catálogo de vehículos', 409);
   const entry = await prisma.inventory_vehicle_catalog.update({ where: { id }, data, include });
   res.json(entry);

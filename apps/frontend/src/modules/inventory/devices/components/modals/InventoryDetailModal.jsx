@@ -1,12 +1,13 @@
 // InventoryDetailModal.jsx
 
-import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, X, CarFront, Cpu, Building2, MapPin, ShieldCheck, Info } from 'lucide-react';
+import { Building2, CarFront, Cpu, Info, MapPin, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import ModalLayer from '../../../../../shared/components/ui/ModalLayer';
+import Pagination from '../../../../../shared/components/ui/Pagination';
 import {
   formatDateOnlyToDDMMYYYY,
   formatDateToDDMMYYYY,
 } from '../../../../../shared/utils/formatDate';
-import Pagination from '../../../../../shared/components/ui/Pagination';
 import { Inventory } from '../../services/inventory.api';
 
 function textOrDash(value) {
@@ -101,65 +102,80 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
     };
   }, [isOpen, item?.id, historyPage, historyRetry]);
 
-  const locationHistory = useMemo(() => {
-    return historyRows.filter((row) => {
-      const hasUserChange = textOrDash(row.previous_user) !== textOrDash(row.new_user);
-      const hasUbicationChange =
-        textOrDash(row.previous_ubication) !== textOrDash(row.new_ubication);
-      const hasDepartmentChange =
-        textOrDash(row.previous_department) !== textOrDash(row.new_department);
-      const hasAdministrativeAreaChange =
-        textOrDash(row.previous_administrative_area) !== textOrDash(row.new_administrative_area);
-      const hasClassificationChange =
-        classificationText(row.previous_classification_rule) !==
-        classificationText(row.new_classification_rule);
-      const hasTechnologyChange = [
-        ['previous_device', 'new_device'],
-        ['previous_brand', 'new_brand'],
-        ['previous_model', 'new_model'],
-        ['previous_ip', 'new_ip'],
-      ].some(([from, to]) => textOrDash(row[from]) !== textOrDash(row[to]));
-      const isCreate = String(row.action || '').toUpperCase() === 'CREATE';
-
-      return (
-        isCreate ||
-        hasUserChange ||
-        hasUbicationChange ||
-        hasDepartmentChange ||
-        hasAdministrativeAreaChange ||
-        hasClassificationChange ||
-        hasTechnologyChange
-      );
-    });
-  }, [historyRows]);
+  // The API paginates first; filtering here caused empty pages despite activity existing.
+  const locationHistory = historyRows;
 
   if (!isOpen || !item) return null;
 
   const assetType = String(item.asset_type?.code || item.asset_type?.name || '').toUpperCase();
   const extensionType = String(item.extension?.type || '').toUpperCase();
-  const isVehicle = Boolean(item.vehicle_details) || assetType.includes('VEHICLE') || assetType.includes('VEHÍCULO') || extensionType.includes('VEHICLE');
-  const isTechnology = !isVehicle && Boolean(
-    item.technology || item.device_details || item.device_name ||
-    extensionType === 'DEVICES' || assetType.includes('DEVICE') || assetType.includes('EQUIPO')
-  );
-  const isRealEstate = Boolean(item.real_estate_details) || assetType.includes('REAL_ESTATE') || assetType.includes('INMUEBLE');
+  const isVehicle =
+    Boolean(item.vehicle_details) ||
+    assetType.includes('VEHICLE') ||
+    assetType.includes('VEHÍCULO') ||
+    extensionType.includes('VEHICLE');
+  const isTechnology =
+    !isVehicle &&
+    Boolean(
+      item.technology ||
+      item.device_details ||
+      item.device_name ||
+      extensionType === 'DEVICES' ||
+      assetType.includes('DEVICE') ||
+      assetType.includes('EQUIPO')
+    );
+  const isRealEstate =
+    Boolean(item.real_estate_details) ||
+    assetType.includes('REAL_ESTATE') ||
+    assetType.includes('INMUEBLE');
   const isProperty = Boolean(item.property_details) && !isVehicle && !isRealEstate;
+  const assetManagementType = isTechnology
+    ? 'Tecnología'
+    : isVehicle
+      ? 'Bienes patrimoniales · Vehículo'
+      : 'Bienes patrimoniales';
   const classification = item.classification?.description || item.classification?.code_new;
-  const details = (entries) => entries.filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
-  const propertyDetails = isProperty ? details([
-    ['Material', item.property_details.material], ['Dimensiones', item.property_details.dimensions],
-  ]) : [];
+  const details = (entries) =>
+    entries.filter(
+      ([, value]) => value !== null && value !== undefined && String(value).trim() !== ''
+    );
+  const propertyDetails = isProperty
+    ? details([
+        ['Material', item.property_details.material],
+        ['Dimensiones', item.property_details.dimensions],
+      ])
+    : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-labelledby="asset-detail-title" onClick={(event) => event.stopPropagation()} className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl">
+    <ModalLayer>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-md"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-detail-title"
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl"
+      >
         <header className="flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.16em] text-blue-600">Detalle del activo</p>
-            <h2 id="asset-detail-title" className="mt-1 text-2xl font-bold text-slate-900">{item.tag || 'Sin marbete'}</h2>
-            <p className="mt-1 text-sm text-slate-500">{item.description || item.device_name || 'Información patrimonial y de asignación'}</p>
+            <p className="text-xs font-semibold uppercase tracking-[.16em] text-blue-600">
+              Detalle del activo
+            </p>
+            <h2 id="asset-detail-title" className="mt-1 text-2xl font-bold text-slate-900">
+              {item.tag || 'Sin marbete'}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {item.description || item.device_name || 'Información patrimonial y de asignación'}
+            </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar detalle" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar detalle"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          >
             <X className="h-5 w-5" />
           </button>
         </header>
@@ -168,156 +184,217 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
             <SectionTitle icon={Info} title="Resumen" />
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {details([
-                ['Estado', item.status_name], ['Condición', item.condition_name],
-                ['Ubicación', item.ubication_name], ['Departamento', item.department_name],
-                ['Área administradora', item.administrative_area_name], ['Usuario asignado', item.user],
-                ['Fecha de traslado', item.transferdate ? formatDateOnlyToDDMMYYYY(item.transferdate) : null],
-                ...(isTechnology ? [['Serie', item.serie]] : []),
-              ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}
+                ['Estado', item.status_name],
+                ['Condición', item.condition_name],
+                ['Ubicación', item.ubication_name],
+                ['Departamento', item.department_name],
+
+                ['Usuario asignado', item.user],
+                [
+                  'Fecha de traslado',
+                  item.transferdate ? formatDateOnlyToDDMMYYYY(item.transferdate) : null,
+                ],
+                ...(isTechnology ? [] : []),
+              ]).map(([label, value]) => (
+                <Detail key={label} label={label} value={value} />
+              ))}
             </div>
           </section>
-          {classification && <section className="rounded-xl border border-slate-200 bg-white p-5">
-            <SectionTitle icon={ShieldCheck} title="Clasificación patrimonial" />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Detail label="Clasificación" value={classification} />
-              {item.asset_type?.name && <Detail label="Tipo de activo" value={item.asset_type.name} />}
-            </div>
-          </section>}
-          {isVehicle && item.vehicle_details && <section className="rounded-xl border border-blue-100 bg-blue-50/50 p-5">
-            <SectionTitle icon={CarFront} title="Datos del vehículo" />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{details([
-              ['Marca', item.vehicle_details.make], ['Modelo', item.vehicle_details.model], ['Año', item.vehicle_details.model_year],
-              ['Placa', item.vehicle_details.plate], ['Motor', item.vehicle_details.engine], ['Chasis', item.vehicle_details.chassis],
-              ['Tipo', item.vehicle_details.vehicle_type], ['Combustible', item.vehicle_details.fuel_type], ['Kilometraje', item.vehicle_details.mileage],
-            ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
-          </section>}
-          {isTechnology && <section className="rounded-xl border border-slate-200 bg-white p-5">
-            <SectionTitle icon={Cpu} title="Datos del equipo" />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{details([
-              ['Equipo', item.device_name], ['Marca', item.brand_name], ['Modelo', item.model_name], ['IP', item.ip], ['Serie', item.serie],
-            ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
-          </section>}
-          {isRealEstate && item.real_estate_details && <section className="rounded-xl border border-slate-200 bg-white p-5">
-            <SectionTitle icon={Building2} title="Terreno o inmueble" />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{details([
-              ['Número catastral', item.real_estate_details.cadastral_number], ['Dirección', item.real_estate_details.address],
-              ['Área (m²)', item.real_estate_details.area_m2], ['Ubicación geográfica', item.real_estate_details.location_geo],
-            ]).map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
-          </section>}
-          {propertyDetails.length > 0 && <section className="rounded-xl border border-slate-200 bg-white p-5">
-            <SectionTitle icon={Building2} title="Datos del bien" />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">{propertyDetails.map(([label, value]) => <Detail key={label} label={label} value={value} />)}</div>
-          </section>}
-          {item.observation && <section className="rounded-xl border border-slate-200 bg-white p-5">
-            <SectionTitle icon={MapPin} title="Observación" />
-            <p className="mt-3 text-sm leading-6 text-slate-600">{item.observation}</p>
-          </section>}
 
-        <details className="rounded-xl border border-slate-200 bg-white p-5">
-          <summary className="cursor-pointer list-none"><SectionTitle icon={RefreshCw} title={`Historial de movimientos${historyTotal ? ` (${historyTotal})` : ''}`} /></summary>
-          <div className="mt-4">
-
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="min-w-full text-xs">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-2 py-2 border">Fecha</th>
-                  <th className="px-2 py-2 border">Ubicación</th>
-                  <th className="px-2 py-2 border">Departamento</th>
-                  <th className="px-2 py-2 border">Área administradora</th>
-                  <th className="px-2 py-2 border">Usuario</th>
-                  <th className="px-2 py-2 border">Clasificación</th>
-                  <th className="px-2 py-2 border">Tecnología</th>
-                  <th className="px-2 py-2 border">Responsable</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingHistory && (
-                  <tr>
-                    <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
-                      Cargando historial...
-                    </td>
-                  </tr>
-                )}
-
-                {!loadingHistory && historyError && (
-                  <tr>
-                    <td className="px-2 py-3 text-center border text-red-600" colSpan={8}>
-                      <div className="flex flex-col items-center gap-2">
-                        <span role="alert">{historyError}</span>
-                        <button
-                          type="button"
-                          onClick={() => setHistoryRetry((retry) => retry + 1)}
-                          className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900"
-                        >
-                          <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                          Reintentar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-
-                {!loadingHistory && !historyError && locationHistory.length === 0 && (
-                  <tr>
-                    <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
-                      {historyTotal === 0
-                        ? 'Sin historial de cambios para este equipo.'
-                        : 'Sin cambios relevantes en esta página.'}
-                    </td>
-                  </tr>
-                )}
-
-                {!loadingHistory &&
-                  locationHistory.map((row) => (
-                    <tr key={row.id}>
-                      <td className="px-2 py-2 text-center border">
-                        {row.moved_at ? formatDateToDDMMYYYY(row.moved_at, '-') : '-'}
-                      </td>
-                      <td className="px-2 py-2 text-center border">
-                        <TransitionText from={row.previous_ubication} to={row.new_ubication} />
-                      </td>
-                      <td className="px-2 py-2 text-center border">
-                        <TransitionText from={row.previous_department} to={row.new_department} />
-                      </td>
-                      <td className="px-2 py-2 text-center border">
-                        <TransitionText
-                          from={row.previous_administrative_area}
-                          to={row.new_administrative_area}
-                        />
-                      </td>
-                      <td className="px-2 py-2 text-center border">
-                        <TransitionText from={row.previous_user} to={row.new_user} />
-                      </td>
-                      <td className="px-2 py-2 text-center border">
-                        <TransitionText
-                          from={classificationText(row.previous_classification_rule)}
-                          to={classificationText(row.new_classification_rule)}
-                        />
-                      </td>
-                      <td className="px-2 py-2 text-center border">
-                        <div className="flex flex-col gap-1">
-                          <TransitionText from={row.previous_device} to={row.new_device} />
-                          <TransitionText from={row.previous_brand} to={row.new_brand} />
-                          <TransitionText from={row.previous_model} to={row.new_model} />
-                          <TransitionText from={row.previous_ip} to={row.new_ip} />
-                        </div>
-                      </td>
-                      <td className="px-2 py-2 text-center border">{row.moved_by?.name || '-'}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-          {!loadingHistory && !historyError && historyTotalPages > 1 && (
-            <Pagination
-              currentPage={historyPage}
-              totalPages={historyTotalPages}
-              onPageChange={setHistoryPage}
-            />
+          {isVehicle && item.vehicle_details && (
+            <section className="rounded-xl border border-blue-100 bg-blue-50/50 p-5">
+              <SectionTitle icon={CarFront} title="Datos del vehículo" />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {details([
+                  ['Marca', item.vehicle_details.make],
+                  ['Modelo', item.vehicle_details.model],
+                  ['Año', item.vehicle_details.model_year],
+                  ['Placa', item.vehicle_details.plate],
+                  ['Motor', item.vehicle_details.engine],
+                  ['Chasis', item.vehicle_details.chassis],
+                  ['Tipo', item.vehicle_details.vehicle_type],
+                  ['Combustible', item.vehicle_details.fuel_type],
+                  ['Kilometraje', item.vehicle_details.mileage],
+                ]).map(([label, value]) => (
+                  <Detail key={label} label={label} value={value} />
+                ))}
+              </div>
+            </section>
           )}
-          </div>
-        </details>
+          {isTechnology && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <SectionTitle icon={Cpu} title="Datos del activo" />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {details([
+                  ['Equipo', item.device_name],
+                  ['Marca', item.brand_name],
+                  ['Modelo', item.model_name],
+                  ['IP', item.ip],
+                  ['Serie', item.serie],
+                ]).map(([label, value]) => (
+                  <Detail key={label} label={label} value={value} />
+                ))}
+              </div>
+            </section>
+          )}
+          {isRealEstate && item.real_estate_details && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <SectionTitle icon={Building2} title="Terreno o inmueble" />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {details([
+                  ['Número catastral', item.real_estate_details.cadastral_number],
+                  ['Dirección', item.real_estate_details.address],
+                  ['Área (m²)', item.real_estate_details.area_m2],
+                  ['Ubicación geográfica', item.real_estate_details.location_geo],
+                ]).map(([label, value]) => (
+                  <Detail key={label} label={label} value={value} />
+                ))}
+              </div>
+            </section>
+          )}
+          {propertyDetails.length > 0 && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <SectionTitle icon={Building2} title="Datos del bien" />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {propertyDetails.map(([label, value]) => (
+                  <Detail key={label} label={label} value={value} />
+                ))}
+              </div>
+            </section>
+          )}
+          {classification && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <SectionTitle icon={ShieldCheck} title="Clasificación patrimonial" />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Detail label="Área administradora" value={item.administrative_area_name} />
+                {item.asset_type?.name && (
+                  <Detail label="Tipo de activo" value={item.asset_type.name} />
+                )}
+                <Detail label="Clasificación" value={classification} />
+              </div>
+            </section>
+          )}
+          {item.observation && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <SectionTitle icon={MapPin} title="Observación" />
+              <p className="mt-3 text-sm leading-6 text-slate-600">{item.observation}</p>
+            </section>
+          )}
+
+          <details className="rounded-xl border border-slate-200 bg-white p-5">
+            <summary className="cursor-pointer list-none">
+              <SectionTitle
+                icon={RefreshCw}
+                title={`Historial de movimientos${historyTotal ? ` (${historyTotal})` : ''}`}
+              />
+            </summary>
+            <div className="mt-4">
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="min-w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-2 py-2 border">Fecha</th>
+                      <th className="px-2 py-2 border">Ubicación</th>
+                      <th className="px-2 py-2 border">Departamento</th>
+                      <th className="px-2 py-2 border">Área administradora</th>
+                      <th className="px-2 py-2 border">Usuario</th>
+                      <th className="px-2 py-2 border">Clasificación</th>
+                      <th className="px-2 py-2 border">Tecnología</th>
+                      <th className="px-2 py-2 border">Responsable</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingHistory && (
+                      <tr>
+                        <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
+                          Cargando historial...
+                        </td>
+                      </tr>
+                    )}
+
+                    {!loadingHistory && historyError && (
+                      <tr>
+                        <td className="px-2 py-3 text-center border text-red-600" colSpan={8}>
+                          <div className="flex flex-col items-center gap-2">
+                            <span role="alert">{historyError}</span>
+                            <button
+                              type="button"
+                              onClick={() => setHistoryRetry((retry) => retry + 1)}
+                              className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900"
+                            >
+                              <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                              Reintentar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {!loadingHistory && !historyError && locationHistory.length === 0 && (
+                      <tr>
+                        <td className="px-2 py-3 text-center border text-gray-500" colSpan={8}>
+                          {historyTotal === 0
+                            ? 'Sin historial de cambios para este equipo.'
+                            : 'Sin cambios relevantes en esta página.'}
+                        </td>
+                      </tr>
+                    )}
+
+                    {!loadingHistory &&
+                      locationHistory.map((row) => (
+                        <tr key={row.id}>
+                          <td className="px-2 py-2 text-center border">
+                            {row.moved_at ? formatDateToDDMMYYYY(row.moved_at, '-') : '-'}
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            <TransitionText from={row.previous_ubication} to={row.new_ubication} />
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            <TransitionText
+                              from={row.previous_department}
+                              to={row.new_department}
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            <TransitionText
+                              from={row.previous_administrative_area}
+                              to={row.new_administrative_area}
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            <TransitionText from={row.previous_user} to={row.new_user} />
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            <TransitionText
+                              from={classificationText(row.previous_classification_rule)}
+                              to={classificationText(row.new_classification_rule)}
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            <div className="flex flex-col gap-1">
+                              <TransitionText from={row.previous_device} to={row.new_device} />
+                              <TransitionText from={row.previous_brand} to={row.new_brand} />
+                              <TransitionText from={row.previous_model} to={row.new_model} />
+                              <TransitionText from={row.previous_ip} to={row.new_ip} />
+                            </div>
+                          </td>
+                          <td className="px-2 py-2 text-center border">
+                            {row.moved_by?.name || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              {!loadingHistory && !historyError && historyTotalPages > 1 && (
+                <Pagination
+                  currentPage={historyPage}
+                  totalPages={historyTotalPages}
+                  onPageChange={setHistoryPage}
+                />
+              )}
+            </div>
+          </details>
         </main>
         <footer className="flex justify-end border-t border-slate-200 bg-white px-6 py-4">
           <button
@@ -330,12 +407,16 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
         </footer>
       </div>
     </div>
+    </ModalLayer>
   );
 }
 
 const SectionTitle = ({ icon: Icon, title }) => (
   <h3 className="flex items-center gap-2 text-base font-semibold text-slate-800">
-    <span className="rounded-lg bg-slate-100 p-2 text-slate-600"><Icon className="h-4 w-4" /></span>{title}
+    <span className="rounded-lg bg-slate-100 p-2 text-slate-600">
+      <Icon className="h-4 w-4" />
+    </span>
+    {title}
   </h3>
 );
 

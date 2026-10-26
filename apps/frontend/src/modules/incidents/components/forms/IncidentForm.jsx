@@ -1,6 +1,7 @@
 // IncidentForm.jsx
 
 import UbiDepSelector from '../../../../shared/common/UbiDepSelector';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 import useAuth from '../../../../shared/hooks/useAuth';
 import { useIncidentForm } from '../../hooks/useIncidentForm';
 
@@ -265,7 +266,8 @@ function IncidentForm({ onSubmit }) {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <ModalLayer>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
           <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="border-b border-gray-200 px-6 py-4">
               <h2 className="text-center text-lg font-bold text-gray-900">Incidencia registrada</h2>
@@ -317,6 +319,7 @@ function IncidentForm({ onSubmit }) {
             </div>
           </div>
         </div>
+        </ModalLayer>
       )}
     </section>
   );

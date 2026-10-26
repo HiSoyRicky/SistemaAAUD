@@ -11,7 +11,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,30 +26,11 @@ import { exportInventoryToExcel } from '../../../../shared/utils/exportExcel';
 import { formatDateTime, formatDateToDDMMYYYY } from '../../../../shared/utils/formatDate';
 import InventoryFormModal from '../components/forms/InventoryForm';
 import InventoryDetailModal from '../components/modals/InventoryDetailModal';
+import InventoryDuplicatesModal from '../components/modals/InventoryDuplicatesModal';
 import PrintWizardModal from '../components/modals/PrintWizardModal';
 import InventoryTable from '../components/tables/InventoryTable';
 import { Inventory } from '../services/inventory.api';
-
-const INVENTORY_COLUMNS = [
-  { key: 'tag', label: 'Marbete' },
-  { key: 'ubication_name', label: 'Ubicación' },
-  { key: 'department_name', label: 'Departamento' },
-  { key: 'user', label: 'Usuario' },
-  { key: 'device_name', label: 'Equipo' },
-  { key: 'brand_name', label: 'Marca' },
-  { key: 'model_name', label: 'Modelo' },
-  { key: 'serie', label: 'Serie' },
-  { key: 'ip', label: 'IP' },
-  { key: 'vehicle_model_year', label: 'Año' },
-  { key: 'vehicle_plate', label: 'Placa' },
-  { key: 'vehicle_type', label: 'Tipo de vehículo' },
-  { key: 'vehicle_fuel', label: 'Combustible' },
-];
-
-const DEFAULT_VISIBLE_COLUMNS = INVENTORY_COLUMNS.reduce((columns, column) => {
-  columns[column.key] = true;
-  return columns;
-}, {});
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 
 function formatTransferDate(value) {
   return formatDateTime(value, '-');
@@ -98,6 +78,7 @@ function InventoryPage({ scope = 'equipos' }) {
   const { authData, userType, loggedUserName, loggedUserId, hasPermission } = useAuth();
 
   const canCreateInventory = hasPermission('inventory.create');
+  const canRequestInventory = hasPermission('inventory.read');
   const [search, setSearch] = useState('');
   const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryLimit, setInventoryLimit] = useState(20);
@@ -113,8 +94,6 @@ function InventoryPage({ scope = 'equipos' }) {
     status_name: '',
     asset_type_name: '',
   });
-  const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
-  const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [administrativeAreas, setAdministrativeAreas] = useState([]);
   const [filterOptions, setFilterOptions] = useState({});
@@ -122,7 +101,6 @@ function InventoryPage({ scope = 'equipos' }) {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
-  const columnMenuRef = useRef(null);
   const printRef = useRef();
   const { addNotification } = useNotifications();
   const [printType, setPrintType] = useState('transfer');
@@ -134,6 +112,7 @@ function InventoryPage({ scope = 'equipos' }) {
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [pendingTransfers, setPendingTransfers] = useState([]);
   const [pendingTransfersLoading, setPendingTransfersLoading] = useState(false);
   const [showPendingTransfers, setShowPendingTransfers] = useState(false);
@@ -227,38 +206,8 @@ function InventoryPage({ scope = 'equipos' }) {
   }, [search, inventoryFilters]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target)) {
-        setShowColumnMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
     void loadPendingTransfers();
   }, [loadPendingTransfers]);
-
-  const handleToggleColumn = (columnKey) => {
-    setVisibleColumns((prev) => {
-      const visibleCount = Object.values(prev).filter(Boolean).length;
-
-      if (prev[columnKey] && visibleCount === 1) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        [columnKey]: !prev[columnKey],
-      };
-    });
-  };
-
-  const showAllColumns = () => {
-    setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
-  };
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -368,21 +317,32 @@ function InventoryPage({ scope = 'equipos' }) {
       addNotification('Dispositivo actualizado con éxito ✅', 'success');
     } catch (error) {
       console.error('Error al actualizar dispositivo:', error);
-      addNotification('Error al actualizar dispositivo ❌', 'error');
+      addNotification(
+        error.response?.data?.message || 'Error al actualizar dispositivo ❌',
+        'error'
+      );
     }
   };
 
   const handleAddDevice = async (formData) => {
-    if (window.confirm('¿Estás seguro de que deseas agregar este dispositivo?')) {
+    const confirmation = canCreateInventory
+      ? '¿Estás seguro de que deseas agregar este dispositivo?'
+      : '¿Enviar esta propuesta de activo al administrador para revisión?';
+    if (window.confirm(confirmation)) {
       setShowInventoryForm(false);
       try {
+        if (!canCreateInventory) {
+          await Inventory.requestCreation('INVENTORY', formData);
+          toast.success('Solicitud enviada al administrador para revisión');
+          return;
+        }
         const result = await Inventory.addDevice(formData);
         const createdInventory = result?.inventory || result;
         setDevices((currentDevices) => [...currentDevices, createdInventory]);
         toast.success('Dispositivo agregado con éxito');
       } catch (error) {
         console.error('Error al agregar dispositivo:', error);
-        toast.error('Error al agregar dispositivo');
+        toast.error(error.response?.data?.message || 'Error al enviar la solicitud');
       }
     }
   };
@@ -476,14 +436,14 @@ function InventoryPage({ scope = 'equipos' }) {
               </>
             )}
 
-            {canCreateInventory && (
+            {(canCreateInventory || canRequestInventory) && (
               <button
                 type="button"
                 onClick={() => setShowInventoryForm(true)}
                 className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 <Plus size={16} />
-                Nuevo equipo
+                {canCreateInventory ? 'Nuevo equipo' : 'Solicitar alta de activo'}
               </button>
             )}
           </div>
@@ -567,6 +527,21 @@ function InventoryPage({ scope = 'equipos' }) {
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-3xl lg:justify-end">
+            {(inventoryMeta.stats?.duplicateTags?.length > 0 ||
+              inventoryMeta.stats?.duplicateSeries?.length > 0) && (
+              <button
+                type="button"
+                onClick={() => setShowDuplicatesModal(true)}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-800 hover:bg-red-100"
+              >
+                <AlertTriangle size={16} />
+                Revisar duplicados
+                <span className="rounded-full bg-red-700 px-2 py-0.5 text-xs text-white">
+                  {(inventoryMeta.stats.duplicateTags?.length || 0) +
+                    (inventoryMeta.stats.duplicateSeries?.length || 0)}
+                </span>
+              </button>
+            )}
             <div className="relative w-full lg:max-w-xl">
               <Search
                 size={18}
@@ -581,50 +556,6 @@ function InventoryPage({ scope = 'equipos' }) {
               />
             </div>
 
-            <div className="relative" ref={columnMenuRef}>
-              <button
-                type="button"
-                onClick={() => setShowColumnMenu((prev) => !prev)}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
-                aria-expanded={showColumnMenu}
-                aria-haspopup="menu"
-              >
-                <SlidersHorizontal size={16} />
-                Columnas
-              </button>
-
-              {showColumnMenu && (
-                <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-xl">
-                  <div className="mb-2 flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                    <span className="text-sm font-bold text-slate-900">Mostrar columnas</span>
-                    <button
-                      type="button"
-                      onClick={showAllColumns}
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                    >
-                      Todas
-                    </button>
-                  </div>
-
-                  <div className="max-h-72 space-y-1 overflow-y-auto">
-                    {INVENTORY_COLUMNS.map((column) => (
-                      <label
-                        key={column.key}
-                        className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={Boolean(visibleColumns[column.key])}
-                          onChange={() => handleToggleColumn(column.key)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span>{column.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -635,7 +566,6 @@ function InventoryPage({ scope = 'equipos' }) {
           onEdit={editDevice}
           authData={authData}
           search={search}
-          visibleColumns={visibleColumns}
           onSummaryChange={handleSummaryChange}
           serverPagination
           currentPage={inventoryPage}
@@ -670,8 +600,21 @@ function InventoryPage({ scope = 'equipos' }) {
         }}
       />
 
+      <InventoryDuplicatesModal
+        open={showDuplicatesModal}
+        onClose={() => setShowDuplicatesModal(false)}
+        onSearchGroup={(value) => {
+          setSearch(value);
+          setInventoryPage(1);
+          setShowDuplicatesModal(false);
+        }}
+        duplicateTags={inventoryMeta.stats?.duplicateTags || []}
+        duplicateSeries={inventoryMeta.stats?.duplicateSeries || []}
+      />
+
       {showPendingTransfers && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <ModalLayer>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-md">
           <div className="flex w-full max-w-4xl max-h-[88vh] flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
@@ -773,6 +716,7 @@ function InventoryPage({ scope = 'equipos' }) {
             </div>
           </div>
         </div>
+        </ModalLayer>
       )}
 
       {/* Modal para editar equipo */}
@@ -786,13 +730,11 @@ function InventoryPage({ scope = 'equipos' }) {
 
       {/* Modal para agregar nuevo equipo */}
       {showInventoryForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 bg-gray-800 bg-opacity-40">
-          <InventoryFormModal
-            initialData={{}}
-            onCancel={() => setShowInventoryForm(false)}
-            onSubmit={(data) => handleAddDevice(data)}
-          />
-        </div>
+        <InventoryFormModal
+          initialData={{}}
+          onCancel={() => setShowInventoryForm(false)}
+          onSubmit={(data) => handleAddDevice(data)}
+        />
       )}
 
       {selectedDevice && (

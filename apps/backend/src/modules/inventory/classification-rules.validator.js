@@ -24,10 +24,7 @@ const ruleBodySchema = z.object({
     allowEmptyString: true,
     min: 1,
   }),
-  administrative_area_id: zOptionalInt(
-    'El campo administrative_area_id debe ser un número entero',
-    { nullable: true, allowEmptyString: true, min: 1 }
-  ),
+  administrative_area_id: zRequiredInt('El área administrativa es obligatoria', { min: 1 }),
   active: activeSchema,
   is_default: z
     .any()
@@ -51,7 +48,7 @@ const resolveBodySchema = z.object({
   device_id: zOptionalInt('El device_id debe ser un número entero', { nullable: true, allowEmptyString: true, min: 1 }),
   asset_type_id: zOptionalInt('El asset_type_id debe ser un número entero', { nullable: true, allowEmptyString: true, min: 1 }),
   extension_id: zOptionalInt('El extension_id debe ser un número entero', { nullable: true, allowEmptyString: true, min: 1 }),
-  administrative_area_id: zOptionalInt('El administrative_area_id debe ser un número entero', { nullable: true, allowEmptyString: true, min: 1 }),
+  administrative_area_id: zRequiredInt('El área administrativa es obligatoria', { min: 1 }),
 });
 
 export const validateCreateClassificationRule = validateZod({ body: ruleBodySchema });

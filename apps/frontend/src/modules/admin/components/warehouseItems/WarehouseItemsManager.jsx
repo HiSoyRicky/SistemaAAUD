@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import useAuth from '../../../../shared/hooks/useAuth';
 import Pagination from '../../../../shared/components/ui/Pagination';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 import Warehouse from '../../../warehouse/services/warehouse.api';
 
 const UNIT_OPTIONS = [
@@ -187,18 +188,13 @@ export default function WarehouseItemsManager() {
         className="h-10 w-full rounded-md border border-slate-300 px-3"
       />
       {showForm && (
+        <ModalLayer>
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-labelledby="warehouse-item-modal-title"
         >
-          <button
-            type="button"
-            aria-label="Cerrar"
-            onClick={closeForm}
-            className="absolute inset-0 cursor-default"
-          />
           <form
             onSubmit={submit}
             className="relative z-10 w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl"
@@ -297,6 +293,7 @@ export default function WarehouseItemsManager() {
             </div>
           </form>
         </div>
+        </ModalLayer>
       )}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
         <table className="w-full text-left text-sm">

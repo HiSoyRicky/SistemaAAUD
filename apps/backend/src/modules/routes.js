@@ -9,6 +9,7 @@ import {
   authRouter,
   brandsRouter,
   categoriesRouter,
+  creationRequestsRouter,
   departmentsRouter,
   devicesRouter,
   healthRouter,
@@ -49,6 +50,7 @@ router.use(requirePasswordChange);
 router.use('/activity', activityRouter);
 router.use('/inventory', inventoryRouter);
 router.use('/inventory-transfer-requests', inventoryTransferRequestsRouter);
+router.use('/creation-requests', creationRequestsRouter);
 router.use('/toners', tonersRouter);
 router.use('/toner-movements', tonerMovementsRouter);
 router.use('/warehouse', warehouseRouter);

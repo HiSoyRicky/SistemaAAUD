@@ -55,6 +55,11 @@ export const update = async (idParam, payload) => {
     throw new AppError('Dispositivo no encontrado', 404);
   }
 
+  const existingDevice = await repository.findByName(name, id);
+  if (existingDevice) {
+    throw new AppError('El dispositivo ya existe', 409);
+  }
+
   const updated = await repository.updateById(id, { name });
   return mapUpdateDeviceResponse(updated);
 };

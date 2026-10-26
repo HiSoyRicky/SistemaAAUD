@@ -44,6 +44,7 @@ import RolesManager from '../modules/admin/components/roles/RolesManager';
 import StatusManager from '../modules/admin/components/status/StatusManager';
 import TonersManager from '../modules/admin/components/toners/TonersManager';
 import TransferRequestsManager from '../modules/admin/components/transfers/TransferRequestsManager';
+import CreationRequestsManager from '../modules/admin/components/creationRequests/CreationRequestsManager';
 import UbicationsManager from '../modules/admin/components/ubications/UbicationsManager';
 import UsersManager from '../modules/admin/components/users/UsersManager';
 import WarehouseItemsManager from '../modules/admin/components/warehouseItems/WarehouseItemsManager';
@@ -395,6 +396,7 @@ function App() {
           <Route path="roles" element={<RolesManager />} />
           <Route path="notifications" element={<NotificationRecipientsManager />} />
           <Route path="transfers" element={<TransferRequestsManager />} />
+          <Route path="creation-requests" element={<CreationRequestsManager />} />
           <Route
             index
             element={

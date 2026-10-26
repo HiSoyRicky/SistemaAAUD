@@ -403,6 +403,7 @@ function applySimpleUpdateFields(updateData, payload, ids) {
       updateData[field] = field === 'user' && typeof value === 'string' ? value.trim() || null : value;
     }
   }
+
 }
 
 function applyTransferDateUpdate(updateData, transferdate) {
@@ -543,12 +544,26 @@ export const update = async (idParam, payload, currentUser) => {
     }
   }
 
+  if (payload.id_administrative_area !== undefined && !selectedRule && !deviceChanged) {
+    updateData.id_administrative_area = ids.parsedAdministrativeArea;
+  }
+
   const updateTechnology = technologyTouched || Boolean(existing.device_details);
   const isVehicle = effectiveRule?.extension?.code === 'VEHICLES';
-  const isLandOrBuilding = ['120401', '120402'].some((prefix) =>
+  const isLandOrBuilding = ['120401', '120402', '1205'].some((prefix) =>
     effectiveRule?.classification?.code_new?.startsWith(prefix)
   );
   const isProperty = effectiveRule?.asset_type?.code === 'PROPERTY' && !isLandOrBuilding;
+  if (isLandOrBuilding) {
+    const currentArea = existing.real_estate_details?.area_m2 == null ? '' : String(existing.real_estate_details.area_m2);
+    const nextArea = payload.real_estate_area_m2 === undefined ? currentArea : String(payload.real_estate_area_m2 || '').trim();
+    if (nextArea && !/^\d{1,8}(\.\d{1,2})?$/.test(nextArea)) {
+      throw new AppError('El área del terreno debe ser un número positivo con hasta 2 decimales', 400);
+    }
+  }
+  if (payload.vehicle_catalog_id !== undefined && !isVehicle) {
+    throw new AppError('La configuración vehicular no corresponde a este activo', 400);
+  }
   const vehicleCatalogEntry = isVehicle && payload.vehicle_catalog_id !== undefined
     ? await repository.findVehicleCatalogById(payload.vehicle_catalog_id)
     : null;

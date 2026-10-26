@@ -33,7 +33,7 @@ export const findActiveByScope = async (
     classification: { is: { active: true, is_assignable: true } },
     asset_type: { is: { active: true } },
     ...(deviceId !== null
-      ? { device_id: Number(deviceId) }
+      ? { device_id: Number(deviceId), administrative_area_id: { not: null } }
       : {
           device_id: null,
           asset_type_id: Number(assetTypeId),

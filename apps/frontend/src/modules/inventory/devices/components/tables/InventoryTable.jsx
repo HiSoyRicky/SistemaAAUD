@@ -12,7 +12,6 @@ function InventoryTable({
   onEdit,
   onView,
   search,
-  visibleColumns = {},
   onSummaryChange,
   onFilteredDataChange,
   serverPagination = false,
@@ -43,7 +42,20 @@ function InventoryTable({
     'border-x border-slate-100 px-4 py-3 text-center align-middle text-xs font-bold uppercase tracking-wide text-slate-500';
   const filterClass =
     'mt-2 h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-xs font-medium normal-case tracking-normal text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
-  const isColumnVisible = (key) => visibleColumns[key] !== false;
+  const hasDataForColumn = (key) => {
+    const valueFor = (item) => {
+      if (key.startsWith('vehicle_')) {
+        const vehicleKey = key.replace('vehicle_', '');
+        return item.vehicle_details?.[vehicleKey];
+      }
+      return item[key];
+    };
+    return filteredInventory.some((item) => {
+      const value = valueFor(item);
+      return value !== null && value !== undefined && String(value).trim() !== '';
+    });
+  };
+  const isColumnVisible = (key) => hasDataForColumn(key);
 
   React.useEffect(() => {
     setCurrentPage(1);
@@ -209,6 +221,7 @@ function InventoryTable({
   const paginatedItems = serverPagination
     ? filteredInventory
     : filteredInventory.slice(startIndex, endIndex);
+
 
   const getStatusClasses = (statusName) => {
     const status = statusName?.toUpperCase() || '';

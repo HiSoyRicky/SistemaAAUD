@@ -4,14 +4,16 @@ import { useEffect, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
 import Pagination from '../../../../shared/components/ui/Pagination';
 import BrandsTable from './BrandsTable';
+import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
+import useAuth from '../../../../shared/hooks/useAuth';
 
 export default function BrandsManager() {
+  const { hasPermission } = useAuth();
+  const canCreateBrand = hasPermission('brands.create');
   const [brands, setBrands] = useState([]);
   const [newBrand, setNewBrand] = useState('');
-  const [newBrandType, setNewBrandType] = useState('TECHNOLOGY');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [editingType, setEditingType] = useState('TECHNOLOGY');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const API_URL = `/api/brands`;
@@ -49,14 +51,11 @@ export default function BrandsManager() {
   const addBrand = async () => {
     if (!newBrand.trim()) return;
     try {
-      await api.post(`${API_URL}`, {
-        name: newBrand,
-        catalog_type: newBrandType,
-      });
+      if (canCreateBrand) await api.post(`${API_URL}`, { name: newBrand });
+      else await api.post('/api/creation-requests', { type: 'BRAND', payload: { name: newBrand } });
       setNewBrand('');
-      setNewBrandType('TECHNOLOGY');
-      fetchBrands();
-      showSuccess('Marca agregada correctamente');
+      if (canCreateBrand) fetchBrands();
+      showSuccess(canCreateBrand ? 'Marca agregada correctamente' : 'Solicitud enviada al administrador para revisión');
     } catch (err) {
       console.error('Error al agregar marca:', err);
       showError(err.response?.data?.message || 'Error al agregar marca.');
@@ -64,20 +63,18 @@ export default function BrandsManager() {
   };
 
   //  Iniciar edición
-  const editBrand = (id, name, type) => {
+  const editBrand = (id, name) => {
     setEditingId(id);
     setEditingName(name);
-    setEditingType(type || 'TECHNOLOGY');
   };
 
   //  Guardar edición
   const saveBrand = async (id) => {
     if (!editingName.trim()) return;
     try {
-      await api.put(`${API_URL}/${id}`, { name: editingName, catalog_type: editingType });
+      await api.put(`${API_URL}/${id}`, { name: editingName });
       setEditingId(null);
       setEditingName('');
-      setEditingType('TECHNOLOGY');
       fetchBrands();
       showSuccess('Marca actualizada correctamente');
     } catch (err) {
@@ -108,7 +105,8 @@ export default function BrandsManager() {
   }, [search]);
 
   // Filtrado por búsqueda
-  const filteredBrands = brands.filter((u) => u.name?.toLowerCase().includes(search.toLowerCase()));
+  const normalizedSearch = normalizeCatalogName(search);
+  const filteredBrands = brands.filter((brand) => normalizeCatalogName(brand.name).includes(normalizedSearch));
 
   const sortedBrands = [...filteredBrands].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -116,6 +114,9 @@ export default function BrandsManager() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedBrands = sortedBrands.slice(startIndex, endIndex);
+  const similarBrands = normalizeCatalogName(newBrand)
+    ? brands.filter((brand) => normalizeCatalogName(brand.name).includes(normalizeCatalogName(newBrand)))
+    : [];
 
   return (
     <div className="space-y-4">
@@ -151,15 +152,13 @@ export default function BrandsManager() {
         editBrand={editBrand}
         addBrand={addBrand}
         newBrand={newBrand}
-        newBrandType={newBrandType}
-        setNewBrandType={setNewBrandType}
         saveBrand={saveBrand}
         deleteBrand={deleteBrand}
         editingId={editingId}
         editingName={editingName}
-        editingType={editingType}
-        setEditingType={setEditingType}
         setNewBrand={setNewBrand}
+        similarBrands={similarBrands}
+        addActionLabel={canCreateBrand ? 'Agregar' : 'Solicitar creación'}
         setEditingName={setEditingName}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

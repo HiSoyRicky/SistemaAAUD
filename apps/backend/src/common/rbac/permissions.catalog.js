@@ -20,6 +20,7 @@ const PERMISSIONS_CATALOG = [
   { module: 'inventory_transfers', action: 'create' },
   { module: 'inventory_transfers', action: 'read_all' },
   { module: 'inventory_transfers', action: 'review' },
+  { module: 'creation_requests', action: 'review' },
   { module: 'inventory_classification_rules', action: 'read' },
   { module: 'inventory_classification_rules', action: 'create' },
   { module: 'inventory_classification_rules', action: 'update' },

@@ -68,7 +68,7 @@ export const getInventoryFilterOptions = async (filters = {}, scope = {}, search
 export const getClassificationRules = async (options = {}) => {
   const findActiveRules = options.findActiveRules ?? repository.findActiveAssetClassificationRules;
   const rules = await findActiveRules();
-  const activeRules = rules.filter((rule) => rule?.active === true);
+  const activeRules = rules.filter((rule) => rule?.active === true && rule.administrative_area_id != null);
 
   return activeRules.map((rule) => ({
     id: rule.id,
@@ -446,7 +446,7 @@ export const create = async (payload, currentUser) => {
   const selectedTypeCode = rule?.asset_type?.code || selectedAssetType?.code;
   const selectedExtensionCode = rule?.extension?.code || selectedExtension?.code;
   const isVehicle = selectedExtensionCode === 'VEHICLES';
-  const isRealEstate = ['120401', '120402'].some((prefix) =>
+  const isRealEstate = ['120401', '120402', '1205'].some((prefix) =>
     rule?.classification?.code_new?.startsWith(prefix)
   );
   const isProperty = selectedTypeCode === 'PROPERTY' && !isRealEstate;

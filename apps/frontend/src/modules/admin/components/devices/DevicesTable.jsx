@@ -15,6 +15,8 @@ export default function DevicesTable({
   newDevice,
   setNewDevice,
   addDevice,
+  addActionLabel = 'Agregar',
+  suggestedDevices = [],
   successMessage,
   setCurrentPage,
   editDevice,
@@ -53,9 +55,17 @@ export default function DevicesTable({
           onClick={addDevice}
           className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
         >
-          Agregar
+          {addActionLabel}
         </button>
       </div>
+      {suggestedDevices.length > 0 && (
+        <ul className="-mt-3 mb-4 max-h-40 overflow-auto rounded border border-amber-200 bg-amber-50 p-2 text-sm" aria-label="Activos similares existentes">
+          <li className="mb-1 font-semibold text-amber-900">Activos similares existentes:</li>
+          {suggestedDevices.slice(0, 8).map((device) => (
+            <li key={device.id} className="text-amber-900">{device.name}</li>
+          ))}
+        </ul>
+      )}
 
       {/* Barra de búsqueda */}
       <div className="flex gap-2 mb-4">

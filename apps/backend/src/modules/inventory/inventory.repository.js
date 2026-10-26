@@ -557,8 +557,21 @@ export const findInventoryStats = async ({ search, filters, scope }) => {
   const rows = await prisma.inventory_items.findMany({
     where,
     select: {
+      id: true,
+      tag: true,
+      device_details: {
+        select: {
+          serie: true,
+          device: { select: { name: true } },
+          brand: { select: { name: true } },
+          model: { select: { name: true } },
+        },
+      },
+      asset_type: { select: { name: true } },
+      asset_classification_rule: { select: { asset_type: { select: { name: true } } } },
       status: { select: { name: true } },
       ubications: { select: { name: true } },
+      departments: { select: { name: true } },
     },
   });
 
@@ -568,15 +581,61 @@ export const findInventoryStats = async ({ search, filters, scope }) => {
   let active = 0;
   let warning = 0;
   const locations = new Set();
+  const duplicateTags = new Map();
+  const duplicateSeries = new Map();
+
+  const itemSummary = (row) => ({
+    id: row.id,
+    tag: row.tag,
+    serie: row.device_details?.serie || null,
+    device: row.device_details?.device?.name || null,
+    brand: row.device_details?.brand?.name || null,
+    model: row.device_details?.model?.name || null,
+    assetType:
+      row.asset_type?.name || row.asset_classification_rule?.asset_type?.name || 'Sin clasificar',
+    location: row.ubications?.name || null,
+    department: row.departments?.name || null,
+  });
+
+  const addDuplicate = (map, key, value, row) => {
+    if (!map.has(key)) map.set(key, { value, items: [] });
+    map.get(key).items.push(itemSummary(row));
+  };
 
   for (const row of rows) {
+    const normalizedTag = String(row.tag || '').normalize('NFKC').trim();
+    if (/^\d+$/.test(normalizedTag)) {
+      const numericTag = normalizedTag;
+      addDuplicate(duplicateTags, numericTag, numericTag, row);
+    }
+    const normalizedSerie = String(row.device_details?.serie || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase('es');
+    const comparableSerie = normalizedSerie.replace(/\s*\/\s*/g, '/');
+    if (comparableSerie && !['s/s', 's s'].includes(comparableSerie)) {
+      addDuplicate(duplicateSeries, normalizedSerie, row.device_details.serie.trim(), row);
+    }
     const statusName = String(row.status?.name || '').toUpperCase();
     if (statusName && !DISCARD_STATUSES.has(statusName)) active += 1;
     if (REVIEW_STATUSES.has(statusName)) warning += 1;
     if (row.ubications?.name) locations.add(row.ubications.name);
   }
 
-  return { total: rows.length, active, warning, locations: locations.size };
+  return {
+    total: rows.length,
+    active,
+    warning,
+    locations: locations.size,
+    duplicateTags: [...duplicateTags.values()]
+      .filter((group) => group.items.length > 1)
+      .map((group) => ({ ...group, count: group.items.length })),
+    duplicateSeries: [...duplicateSeries.values()]
+      .filter((group) => group.items.length > 1)
+      .map((group) => ({ ...group, count: group.items.length })),
+  };
 };
 
 export const findPage = async ({ search, filters, scope, skip, take }) => {
@@ -984,7 +1043,7 @@ export const updateWithTechnology = async ({
   userId,
 }) => {
   return runWithActivityLoggingSuppressed(
-    ['inventory_items', 'inventory_item_devices', 'inventory_item_vehicles', 'inventory_item_real_estate'],
+    ['inventory_items', 'inventory_item_devices', 'inventory_item_vehicles', 'inventory_item_real_estate', 'inventory_item_properties'],
     () => prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "inventory_items" WHERE id = ${Number(id)} FOR UPDATE`;
 

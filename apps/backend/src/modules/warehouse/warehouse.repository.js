@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma.js';
 import AppError from '../../common/utils/AppError.js';
+import { Prisma } from '@prisma/client';
 
 const itemSelect = {
   id: true,
@@ -173,23 +174,63 @@ export const findMovements = async ({ where = {}, skip = 0, take = 100, db = pri
     take,
   });
 
-export const countMovements = async (where = {}) => prisma.warehouseMovement.count({ where });
-
-export const summarizeMovements = async (where = {}) => {
-  const rows = await prisma.warehouseMovement.groupBy({
-    by: ['movement_type'],
-    where,
-    _sum: { quantity: true },
-    _count: { _all: true },
+// Paginate dispatches rather than individual lines, so a batch never crosses pages.
+export async function findMovementGroups({ where, skip, take, db = prisma }) {
+  const conditions = [];
+  if (where.item_id) conditions.push(Prisma.sql`m.item_id = ${where.item_id}`);
+  if (where.ubication_id) conditions.push(Prisma.sql`m.ubication_id = ${where.ubication_id}`);
+  if (where.department_id) conditions.push(Prisma.sql`m.department_id = ${where.department_id}`);
+  if (where.movement_type) conditions.push(Prisma.sql`m.movement_type::text = ${where.movement_type}`);
+  if (where.created_at?.gte) conditions.push(Prisma.sql`m.created_at >= ${where.created_at.gte}`);
+  if (where.created_at?.lte) conditions.push(Prisma.sql`m.created_at <= ${where.created_at.lte}`);
+  if (where.OR) {
+    const search = where.OR[0].reference.contains.replace(/[\\%_]/g, '\\$&');
+    const pattern = `%${search}%`;
+    conditions.push(Prisma.sql`(m.reference ILIKE ${pattern} OR m.receiver_name ILIKE ${pattern}
+      OR m.observation ILIKE ${pattern} OR i.name ILIKE ${pattern} OR i.code ILIKE ${pattern}
+      OR u.name ILIKE ${pattern} OR d.name ILIKE ${pattern} OR usr.nombre_completo ILIKE ${pattern})`);
+  }
+  const filter = conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}` : Prisma.empty;
+  const result = await db.$queryRaw`
+    WITH matching AS (
+      SELECT m.id, m.created_at,
+        CASE WHEN m.movement_type::text = 'OUT'
+          AND m.idempotency_key ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:[0-9]+$'
+          THEN 'batch:' || split_part(m.idempotency_key, ':', 1)
+          ELSE 'movement:' || m.id::text END AS group_key
+      FROM warehouse_movements m
+      JOIN warehouse_items i ON i.id = m.item_id
+      JOIN ubications u ON u.id = m.ubication_id
+      LEFT JOIN departments d ON d.id = m.department_id
+      LEFT JOIN users usr ON usr.id = m.created_by
+      ${filter}
+    ), grouped AS (
+      SELECT group_key, max(created_at) AS latest, max(id) AS latest_id
+      FROM matching GROUP BY group_key
+    ), page AS (
+      SELECT * FROM grouped ORDER BY latest DESC, latest_id DESC OFFSET ${skip} LIMIT ${take}
+    )
+    SELECT (SELECT count(*) FROM grouped)::int AS total, page.group_key
+    FROM (SELECT 1) singleton LEFT JOIN page ON true
+    ORDER BY page.latest DESC, page.latest_id DESC
+  `;
+  const groups = result.filter((row) => row.group_key);
+  if (!groups.length) return { total: result[0]?.total || 0, groups: [] };
+  const movements = await db.warehouseMovement.findMany({
+    where: { OR: groups.map(({ group_key }) => group_key.startsWith('batch:')
+      ? { movement_type: 'OUT', idempotency_key: { startsWith: `${group_key.slice(6)}:` } }
+      : { id: Number(group_key.slice(9)) }) },
+    include: movementInclude,
+    orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
   });
-  return rows.reduce((summary, row) => {
-    summary[row.movement_type] = {
-      quantity: row._sum.quantity || 0,
-      count: row._count._all,
-    };
-    return summary;
-  }, { IN: { quantity: 0, count: 0 }, OUT: { quantity: 0, count: 0 }, ADJUSTMENT: { quantity: 0, count: 0 } });
-};
+  const byKey = new Map(groups.map(({ group_key }) => [group_key, []]));
+  for (const movement of movements) {
+    const batchKey = `batch:${movement.idempotency_key?.split(':')[0]}`;
+    const key = byKey.has(batchKey) ? batchKey : `movement:${movement.id}`;
+    byKey.get(key)?.push(movement);
+  }
+  return { total: result[0].total, groups: groups.map(({ group_key }) => byKey.get(group_key)) };
+}
 
 export const createMovementWithStock = async ({
   itemId,
@@ -327,7 +368,8 @@ export const createBatchOutWithStock = async ({
       `;
       const total = stockRows.reduce((sum, row) => sum + Number(row.quantity), 0);
       if (total < line.quantity) {
-        throw new AppError(`Stock institucional insuficiente para el insumo ${line.itemId}`, 400);
+        const item = await findItemById(line.itemId, tx);
+        throw new AppError(`Stock institucional insuficiente para el insumo ${item?.name || 'seleccionado'}`, 400);
       }
 
       let remaining = line.quantity;

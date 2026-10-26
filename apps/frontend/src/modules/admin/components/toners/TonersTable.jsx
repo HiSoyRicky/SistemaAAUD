@@ -2,25 +2,24 @@
 
 import { useMemo, useState } from 'react';
 import ActionButton from '../../../../shared/components/ui/ActionButton';
+import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
 
 export default function TonersTable({
   toners,
   currentPage,
   itemsPerPage,
-  editingToner,
   startEdit,
-  updateToner,
   deleteToner,
 }) {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch = normalizeCatalogName(search);
 
     return toners.filter(
       (toner) =>
-        toner.toner_model?.toLowerCase().includes(normalizedSearch) ||
-        toner.color?.toLowerCase().includes(normalizedSearch)
+        normalizeCatalogName(toner.toner_model).includes(normalizedSearch) ||
+        normalizeCatalogName(toner.color).includes(normalizedSearch)
     );
   }, [toners, search]);
 
@@ -60,11 +59,7 @@ export default function TonersTable({
               <td className="px-3 py-1 text-center border">{t.stock}</td>
 
               <td className="px-3 py-1 border flex justify-center gap-2">
-                {editingToner === t.id ? (
-                  <ActionButton type="save" title="Guardar tóner" onClick={updateToner} />
-                ) : (
-                  <ActionButton type="edit" title="Editar tóner" onClick={() => startEdit(t)} />
-                )}
+                <ActionButton type="edit" title="Editar tóner" onClick={() => startEdit(t)} />
 
                 <ActionButton
                   type="trash"

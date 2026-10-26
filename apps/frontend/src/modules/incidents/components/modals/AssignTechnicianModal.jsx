@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { logger } from '../../../../../../backend/src/common/logger';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 
 function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
   const [selectedTechnician, setSelectedTechnician] = useState('');
@@ -49,7 +50,8 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+    <ModalLayer>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/55 backdrop-blur-md">
       <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-xl">
         <h3 className="mb-4 text-lg font-bold">Asignar Técnico</h3>
         <form onSubmit={handleSubmit}>
@@ -101,7 +103,7 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
         </form>
       </div>
       {showConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center z-60 bg-black/50">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-md">
           <div className="w-full max-w-sm p-5 bg-white shadow-xl rounded-xl">
             <h4 className="mb-3 text-lg font-extrabold text-gray-800">Confirmar asignación</h4>
 
@@ -163,6 +165,7 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
         </div>
       )}
     </div>
+    </ModalLayer>
   );
 }
 

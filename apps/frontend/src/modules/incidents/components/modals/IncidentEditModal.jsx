@@ -1,12 +1,14 @@
 // IncidentEditModal.jsx
 
 import IncidentEditForm from '../forms/IncidentEditForm';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 
 function IncidentEditModal({ incident, onClose, onSave }) {
   if (!incident) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <ModalLayer>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
       <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <h2 className="text-lg font-bold text-gray-900">
@@ -26,6 +28,7 @@ function IncidentEditModal({ incident, onClose, onSave }) {
         </div>
       </div>
     </div>
+    </ModalLayer>
   );
 }
 

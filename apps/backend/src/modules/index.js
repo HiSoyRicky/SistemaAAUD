@@ -4,6 +4,7 @@ export { default as activityRouter } from './activity/activity.routes.js';
 export { default as authRouter } from './auth/auth.routes.js';
 export { default as brandsRouter } from './brands/brands.routes.js';
 export { default as categoriesRouter } from './categories/categories.routes.js';
+export { default as creationRequestsRouter } from './creationRequests/creationRequests.routes.js';
 export { default as departmentsRouter } from './departments/departments.routes.js';
 export { default as devicesRouter } from './devices/devices.routes.js';
 export { default as healthRouter } from './health/health.routes.js';

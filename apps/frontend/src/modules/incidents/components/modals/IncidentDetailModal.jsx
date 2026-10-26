@@ -1,6 +1,7 @@
 // IncidentDetailModal.jsx
 
 import { formatDateTime } from '../../../../../../frontend/src/shared/utils/formatDate';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
 
 export const formatDateTimeLocal = (date) => {
   return date ? formatDateTime(date, '') : '—';
@@ -86,12 +87,10 @@ export default function IncidentDetailModal({
   ];
 
   return (
+    <ModalLayer>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center
-        bg-slate-950/50 p-3 backdrop-blur-sm sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+        bg-slate-950/60 p-3 backdrop-blur-md sm:p-6"
     >
       <div
         role="dialog"
@@ -389,6 +388,7 @@ export default function IncidentDetailModal({
         </footer>
       </div>
     </div>
+    </ModalLayer>
   );
 }
 

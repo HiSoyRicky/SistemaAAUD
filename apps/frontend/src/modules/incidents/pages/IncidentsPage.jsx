@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import useAuth from '../../../shared/hooks/useAuth';
+import ModalLayer from '../../../shared/components/ui/ModalLayer';
 
 import SuccessMessage from '../../../shared/common/SuccessMessage';
 import IncidentEditForm from '../components/forms/IncidentEditForm';
@@ -271,7 +272,7 @@ function IncidentsPage() {
       )}
 
       {incidentToEdit?.id_incident ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <ModalLayer><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
           <div className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-white p-5 shadow-2xl">
             <IncidentEditForm
               incident={incidentToEdit}
@@ -281,7 +282,7 @@ function IncidentsPage() {
               }}
             />
           </div>
-        </div>
+        </div></ModalLayer>
       ) : (
         incidentToEdit && <div>Error: Incidencia no válida</div>
       )}

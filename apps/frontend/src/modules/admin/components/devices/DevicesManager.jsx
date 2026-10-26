@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
 import DevicesTable from './DevicesTable';
+import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
+import useAuth from '../../../../shared/hooks/useAuth';
 
 export default function DevicesManager() {
+  const { hasPermission } = useAuth();
+  const canCreateDevice = hasPermission('devices.create');
   const [devices, setDevices] = useState([]);
   const [newDevice, setNewDevice] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -38,11 +42,12 @@ export default function DevicesManager() {
     }
 
     try {
-      await api.post(API_URL, { name: newDevice });
+      if (canCreateDevice) await api.post(API_URL, { name: newDevice });
+      else await api.post('/api/creation-requests', { type: 'DEVICE', payload: { name: newDevice.trim() } });
       setNewDevice('');
-      fetchDevices();
+      if (canCreateDevice) fetchDevices();
       setErrorMessage('');
-      setSuccessMessage('Dispositivo agregado correctamente');
+      setSuccessMessage(canCreateDevice ? 'Activo agregado correctamente' : 'Solicitud enviada al administrador para revisión');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       if (err.response) {
@@ -113,8 +118,14 @@ export default function DevicesManager() {
 
   // Filtrado por búsqueda
   const filteredDevices = devices.filter((u) =>
-    u.name?.toLowerCase().includes(search.toLowerCase())
+    normalizeCatalogName(u.name).includes(normalizeCatalogName(search))
   );
+
+  const suggestedDevices = newDevice.trim()
+    ? devices.filter((device) =>
+        normalizeCatalogName(device.name).includes(normalizeCatalogName(newDevice))
+      )
+    : [];
 
   const sortedDevices = [...filteredDevices].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -141,6 +152,8 @@ export default function DevicesManager() {
         newDevice={newDevice}
         setNewDevice={setNewDevice}
         addDevice={addDevice}
+        addActionLabel={canCreateDevice ? 'Agregar' : 'Solicitar creación'}
+        suggestedDevices={suggestedDevices}
         successMessage={successMessage}
         errorMessage={errorMessage}
         setCurrentPage={setCurrentPage}

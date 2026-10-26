@@ -2,6 +2,7 @@
 
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
+import ModalLayer from './ModalLayer';
 
 export default function Modal({
   open,
@@ -10,8 +11,8 @@ export default function Modal({
   children,
   footer,
   size = 'md',
-  closeOnOverlayClick = true,
   showCloseButton = true,
+  constrainToViewport = false,
 }) {
   useEffect(() => {
     if (!open) return undefined;
@@ -29,17 +30,6 @@ export default function Modal({
     };
   }, [open, onClose, showCloseButton]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [open]);
-
   if (!open) {
     return null;
   }
@@ -49,32 +39,23 @@ export default function Modal({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
-  };
-
-  const handleOverlayClick = (event) => {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-
-    if (closeOnOverlayClick) {
-      onClose?.();
-    }
+    '2xl': 'max-w-2xl',
   };
 
   return (
+    <ModalLayer>
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4 bg-black/55 backdrop-blur-md ${constrainToViewport ? 'overscroll-contain' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
-      onMouseDown={handleOverlayClick}
     >
       <div
-        className={`w-full ${sizeClasses[size] || sizeClasses.md} overflow-hidden bg-white rounded-xl shadow-2xl`}
+        className={`w-full ${sizeClasses[size] || sizeClasses.md} overflow-hidden bg-white rounded-xl shadow-2xl ${constrainToViewport ? 'flex max-h-[calc(100dvh-2rem)] flex-col' : ''}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b">
             {title ? (
               <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
                 {title}
@@ -96,7 +77,7 @@ export default function Modal({
           </div>
         )}
 
-        <div className="px-6 py-5">{children}</div>
+        <div className={`px-6 py-5 ${constrainToViewport ? 'min-h-0 overflow-y-auto overscroll-contain' : ''}`}>{children}</div>
 
         {footer && (
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
@@ -105,5 +86,6 @@ export default function Modal({
         )}
       </div>
     </div>
+    </ModalLayer>
   );
 }

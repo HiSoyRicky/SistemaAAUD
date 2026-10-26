@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
+import ModalLayer from '../../../../../shared/components/ui/ModalLayer';
 import useAuth from '../../../../../shared/hooks/useAuth';
 import {
   formatDateOnlyToDDMMYYYY,
@@ -81,6 +82,19 @@ const validateInventoryForm = (
   return errors;
 };
 
+const PROPERTY_MATERIALS = [
+  'Metal',
+  'Madera',
+  'Plástico',
+  'Vidrio',
+  'Tela',
+  'Concreto',
+  'Aluminio',
+  'Acero',
+  'Cuero',
+  'Otro',
+];
+
 export default function InventoryFormModal({ initialData = {}, onCancel, onSubmit }) {
   const isEdit = !!initialData.id;
   const { hasPermission } = useAuth();
@@ -93,6 +107,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     tag: initialData.tag || '',
     id_ubication: initialData.id_ubication || null,
     id_department: initialData.id_department || null,
+    id_administrative_area: initialData.id_administrative_area || '',
     user: initialData.user || '',
     id_device: initialData.id_device || '',
     asset_type_id:
@@ -154,6 +169,29 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
+  const requestCatalogCreation = async (type, idBrand = null, idDevice = null) => {
+    const name = window
+      .prompt(`Nombre de la nueva ${type === 'BRAND' ? 'marca' : 'modelo'}:`)
+      ?.trim();
+    if (!name) return;
+    try {
+      const payload =
+        type === 'BRAND'
+          ? { name }
+          : {
+              name,
+              id_brand: Number(idBrand),
+              id_device: idDevice == null || idDevice === '' ? null : Number(idDevice),
+            };
+      await Inventory.requestCreation(type, payload);
+      window.alert(
+        'Solicitud enviada al administrador. Podrás seleccionar el registro cuando sea aprobada.'
+      );
+    } catch (error) {
+      window.alert(error.response?.data?.message || 'No se pudo enviar la solicitud.');
+    }
+  };
+
   const ALLOWED_STATUS = new Set([
     'Buen estado',
     'Mal estado',
@@ -192,6 +230,25 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
           Inventory.fetchClassificationRules(),
           Inventory.fetchVehicleCatalog().catch(() => []),
         ]);
+        const currentRule = initialData.classification_rule?.id
+          ? {
+              ...initialData.classification_rule,
+              label:
+                initialData.classification_rule.label ||
+                initialData.classification_rule.classification?.description ||
+                initialData.classification?.description,
+              asset_type: initialData.classification_rule.asset_type || initialData.asset_type,
+              extension:
+                initialData.classification_rule.extension || initialData.extension?.extension,
+            }
+          : null;
+        const rulesWithAssignedLegacy =
+          currentRule &&
+          !classificationRules.some((rule) => String(rule.id) === String(currentRule.id))
+            ? [...classificationRules, currentRule]
+            : classificationRules.map((rule) =>
+                String(rule.id) === String(currentRule?.id) ? currentRule : rule
+              );
         setOptions({
           devices,
           brands,
@@ -199,7 +256,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
           statuses,
           assetTypes,
           assetExtensions,
-          classificationRules,
+          classificationRules: rulesWithAssignedLegacy,
           vehicleCatalog,
         });
 
@@ -211,6 +268,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
             rule.extension?.code === 'VEHICLES' &&
             rule.classification?.code_new === '12040302'
         );
+
         if (isVehicleRecord && !initialData.classification_rule?.id && vehicleRule) {
           setFormData((current) => ({
             ...current,
@@ -230,19 +288,27 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
     fetchOptions();
   }, []);
 
-  const filteredBrandIds = new Set(
-    options.models
-      .filter((m) => String(m.id_device) === String(formData.id_device))
-      .map((m) => m.id_brand)
+  const filteredBrands = options.brands.filter(
+    (brand, index, all) =>
+      all.findIndex((candidate) => normalizeText(candidate.name) === normalizeText(brand.name)) ===
+      index
   );
-
-  const filteredBrands = options.brands.filter((b) => filteredBrandIds.has(b.id));
 
   const filteredModels = options.models.filter(
     (m) =>
       String(m.id_brand) === String(formData.id_brand) &&
       String(m.id_device) === String(formData.id_device)
   );
+  const selectedModel = options.models.find(
+    (model) => String(model.id) === String(formData.id_model)
+  );
+  const modelBrand = options.brands.find(
+    (brand) => String(brand.id) === String(selectedModel?.id_brand)
+  );
+  const brandOptionList = [
+    ...filteredBrands.filter((brand) => String(brand.id) !== String(modelBrand?.id)),
+    ...(modelBrand ? [modelBrand] : []),
+  ];
 
   const selectedStatus = options.statuses.find(
     (status) => String(status.id) === String(formData.id_status)
@@ -269,11 +335,15 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         (rule) =>
           selectedTypeCode !== 'PROPERTY' ||
           rule.device?.id ||
-          /^12040[12]/.test(rule.classification?.code_new || '')
+          /^(12040[12]|1205)/.test(rule.classification?.code_new || '')
       )
       .map((rule) => ({
         value: `rule:${rule.id}`,
-        label: rule.device?.name || rule.label || rule.classification?.description || 'Sin clasificación',
+        label:
+          rule.device?.name ||
+          rule.label ||
+          rule.classification?.description ||
+          'Sin clasificación',
         rule,
         deviceId: rule.device?.id || '',
       }));
@@ -297,14 +367,17 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   const selectedItemOption = availableItemOptions.find(
     (option) => option.value === formData.item_selection
   );
-  const selectedRule = selectedItemOption?.rule || null;
+  const selectedRule =
+    selectedItemOption?.rule || (isEdit ? initialData.classification_rule : null);
   const isVehicle = selectedTypeCode === 'VEHICLE';
   const isProperty = selectedTypeCode === 'PROPERTY';
   const isRealEstate = Boolean(
     selectedRule?.classification?.code_new &&
-    /^(120401|120402)/.test(selectedRule.classification.code_new)
+    /^(120401|120402|1205)/.test(selectedRule.classification.code_new)
   );
-  const hasSelectedItem = Boolean(selectedItemOption);
+  const hasSelectedItem = Boolean(
+    selectedItemOption || (isEdit && initialData.classification_rule?.id)
+  );
   const existingVehicleCatalog = options.vehicleCatalog.find(
     (entry) =>
       isVehicle &&
@@ -419,8 +492,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
       ...current,
       asset_type_id: typeId,
       extension_id: extension ? String(extension.id) : '',
-      classification_rule_id: '',
-      item_selection: '',
+      classification_rule_id: selectedTypeCode === type?.code ? current.classification_rule_id : '',
+      item_selection: selectedTypeCode === type?.code ? current.item_selection : '',
       id_device: '',
       id_brand: '',
       id_model: '',
@@ -438,20 +511,43 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   const handleItemSelectionChange = (event) => {
     const value = event.target.value;
     const option = availableItemOptions.find((item) => item.value === value);
+    const legacyCurrentRule =
+      isEdit && String(value) === `rule:${initialData.classification_rule?.id}`
+        ? initialData.classification_rule
+        : null;
     setFormData((current) => ({
       ...current,
       item_selection: value,
-      classification_rule_id: option?.rule ? String(option.rule.id) : '',
-      id_device: option?.deviceId ? String(option.deviceId) : '',
+      classification_rule_id: option?.rule
+        ? String(option.rule.id)
+        : legacyCurrentRule
+          ? String(legacyCurrentRule.id)
+          : '',
+      id_device: option?.deviceId
+        ? String(option.deviceId)
+        : legacyCurrentRule?.device?.id
+          ? String(legacyCurrentRule.device.id)
+          : legacyCurrentRule?.device_id
+            ? String(legacyCurrentRule.device_id)
+            : '',
       vehicle_catalog_id: '',
       vehicle_catalog_brand_id: '',
       vehicle_catalog_model_id: '',
       vehicle_catalog_year: '',
       vehicle_catalog_type: '',
       vehicle_catalog_fuel: '',
-      id_brand: '',
-      id_model: '',
-      serie: '',
+      id_brand:
+        legacyCurrentRule && legacyCurrentRule.id === initialData.classification_rule?.id
+          ? current.id_brand
+          : '',
+      id_model:
+        legacyCurrentRule && legacyCurrentRule.id === initialData.classification_rule?.id
+          ? current.id_model
+          : '',
+      serie:
+        legacyCurrentRule && legacyCurrentRule.id === initialData.classification_rule?.id
+          ? current.serie
+          : '',
     }));
     setErrors((current) => ({ ...current, item_selection: '', classification: '' }));
   };
@@ -497,13 +593,25 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
       classification_rule_id: formData.classification_rule_id
         ? Number(formData.classification_rule_id)
         : null,
+      id_administrative_area: formData.id_administrative_area
+        ? Number(formData.id_administrative_area)
+        : null,
       id_device: formData.id_device ? Number(formData.id_device) : null,
       id_brand: formData.id_brand ? Number(formData.id_brand) : null,
       id_model: formData.id_model ? Number(formData.id_model) : null,
       vehicle_model_year: formData.vehicle_model_year ? Number(formData.vehicle_model_year) : null,
-      vehicle_catalog_id: selectedVehicleCatalog ? Number(selectedVehicleCatalog.id) : null,
+      vehicle_catalog_id: isVehicle
+        ? selectedVehicleCatalog
+          ? Number(selectedVehicleCatalog.id)
+          : null
+        : undefined,
       vehicle_mileage: formData.vehicle_mileage === '' ? null : Number(formData.vehicle_mileage),
+      cadastral_number: formData.cadastral_number || null,
+      real_estate_address: formData.real_estate_address || null,
       real_estate_area_m2: formData.real_estate_area_m2 || null,
+      real_estate_location_geo: formData.real_estate_location_geo || null,
+      property_material: formData.property_material || null,
+      property_dimensions: formData.property_dimensions || null,
       transferdate: formData.transferDateInput || null,
       id_ubication: isDiscardedStatus ? null : formData.id_ubication,
       id_department: isDiscardedStatus ? null : formData.id_department,
@@ -532,7 +640,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
 
   if (fetchError) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-40">
+      <ModalLayer>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/55 backdrop-blur-md">
         <div className="w-full max-w-lg p-6 bg-white shadow-xl rounded-xl">
           <p className="text-red-500">{fetchError}</p>
           <button type="button" onClick={onCancel} className="px-4 py-2 mt-4 bg-gray-300 rounded">
@@ -540,33 +649,20 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
           </button>
         </div>
       </div>
+      </ModalLayer>
     );
   }
-
-  const LOCKED_ON_EDIT = new Set([
-    'tag',
-    'asset_type_id',
-    'item_selection',
-    'id_device',
-    'id_brand',
-    'id_model',
-    'serie',
-    'id_ubication',
-    'id_department',
-  ]);
 
   const EDITABLE_ALWAYS = new Set(['user', 'ip', 'id_status', 'transferDateInput', 'observation']);
 
   const isFieldLocked = (name) => {
     if (!isEdit) return false;
-    if (name === 'asset_type_id' || name === 'item_selection') return true;
     if (!canFullEdit) {
       if (name === 'user') return !canEditAssignee;
       return true;
     }
-    if (EDITABLE_ALWAYS.has(name)) return false;
-    if (!LOCKED_ON_EDIT.has(name)) return false;
-    return safeMode && !unlocked[name];
+    if (!safeMode || EDITABLE_ALWAYS.has(name)) return false;
+    return !unlocked[name];
   };
 
   const toggleField = (name) => {
@@ -579,7 +675,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-3">
+    <ModalLayer>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3 backdrop-blur-md">
       <div className="relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div>
@@ -696,19 +793,34 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                     options={options.assetTypes.map((type) => ({ id: type.id, name: type.name }))}
                     error={errors.asset_type_id}
                     locked={isFieldLocked('asset_type_id')}
+                    onToggle={() => toggleField('asset_type_id')}
                   />
                   <SelectField
                     label={isVehicle ? 'Clasificación del vehículo *' : 'Bien / categoría *'}
                     name="item_selection"
                     value={formData.item_selection}
                     onChange={handleItemSelectionChange}
-                    options={availableItemOptions.map((option) => ({
-                      id: option.value,
-                      name: option.label,
-                    }))}
+                    options={[
+                      ...(!selectedItemOption && isEdit && initialData.classification_rule?.id
+                        ? [
+                            {
+                              id: `rule:${initialData.classification_rule.id}`,
+                              name:
+                                selectedRule?.classification?.description ||
+                                initialData.classification?.description ||
+                                'Clasificación actual del activo',
+                            },
+                          ]
+                        : []),
+                      ...availableItemOptions.map((option) => ({
+                        id: option.value,
+                        name: option.label,
+                      })),
+                    ]}
                     error={errors.item_selection}
                     disabled={!formData.asset_type_id}
                     locked={isFieldLocked('item_selection')}
+                    onToggle={() => toggleField('item_selection')}
                   />
                   <InputField
                     label="Marbete *"
@@ -721,15 +833,6 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                   />
                   {isTechnology && (
                     <>
-                      <InputField
-                        label="Serie *"
-                        name="serie"
-                        value={formData.serie}
-                        onChange={handleChange}
-                        error={errors.serie}
-                        locked={isFieldLocked('serie')}
-                        onToggle={() => toggleField('serie')}
-                      />
                       <SelectField
                         label="Marca *"
                         name="id_brand"
@@ -738,7 +841,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                           handleChange(event);
                           setFormData((current) => ({ ...current, id_model: '' }));
                         }}
-                        options={filteredBrands.map((brand) => ({
+                        options={brandOptionList.map((brand) => ({
                           id: brand.id,
                           name: brand.name,
                         }))}
@@ -746,6 +849,14 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         disabled={!formData.id_device}
                         locked={isFieldLocked('id_brand')}
                         onToggle={() => toggleField('id_brand')}
+                        belowAction={
+                          !hasPermission('brands.create') && (
+                            <RequestCatalogAction
+                              onClick={() => requestCatalogCreation('BRAND')}
+                              label="Solicitar marca"
+                            />
+                          )
+                        }
                       />
                       <SelectField
                         label="Modelo *"
@@ -760,6 +871,30 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         disabled={!formData.id_brand}
                         locked={isFieldLocked('id_model')}
                         onToggle={() => toggleField('id_model')}
+                        belowAction={
+                          !hasPermission('models.create') &&
+                          formData.id_brand && (
+                            <RequestCatalogAction
+                              onClick={() =>
+                                requestCatalogCreation(
+                                  'MODEL',
+                                  formData.id_brand,
+                                  formData.id_device
+                                )
+                              }
+                              label="Solicitar modelo"
+                            />
+                          )
+                        }
+                      />
+                      <InputField
+                        label="Serie *"
+                        name="serie"
+                        value={formData.serie}
+                        onChange={handleChange}
+                        error={errors.serie}
+                        locked={isFieldLocked('serie')}
+                        onToggle={() => toggleField('serie')}
                       />
                     </>
                   )}
@@ -768,12 +903,6 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                     hasSelectedItem &&
                     selectedItemOption?.deviceId && (
                       <>
-                        <InputField
-                          label="Serie"
-                          name="serie"
-                          value={formData.serie}
-                          onChange={handleChange}
-                        />
                         <SelectField
                           label="Marca"
                           name="id_brand"
@@ -782,11 +911,21 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                             handleChange(event);
                             setFormData((current) => ({ ...current, id_model: '' }));
                           }}
-                          options={filteredBrands.map((brand) => ({
+                          options={brandOptionList.map((brand) => ({
                             id: brand.id,
                             name: brand.name,
                           }))}
                           disabled={!formData.id_device}
+                          locked={isFieldLocked('id_brand')}
+                          onToggle={() => toggleField('id_brand')}
+                          belowAction={
+                            !hasPermission('brands.create') && (
+                              <RequestCatalogAction
+                                onClick={() => requestCatalogCreation('BRAND')}
+                                label="Solicitar marca"
+                              />
+                            )
+                          }
                         />
                         <SelectField
                           label="Modelo"
@@ -798,6 +937,31 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                             name: model.name,
                           }))}
                           disabled={!formData.id_brand}
+                          locked={isFieldLocked('id_model')}
+                          onToggle={() => toggleField('id_model')}
+                          belowAction={
+                            !hasPermission('models.create') &&
+                            formData.id_brand && (
+                              <RequestCatalogAction
+                                onClick={() =>
+                                  requestCatalogCreation(
+                                    'MODEL',
+                                    formData.id_brand,
+                                    formData.id_device
+                                  )
+                                }
+                                label="Solicitar modelo"
+                              />
+                            )
+                          }
+                        />
+                        <InputField
+                          label="Serie"
+                          name="serie"
+                          value={formData.serie}
+                          onChange={handleChange}
+                          locked={isFieldLocked('serie')}
+                          onToggle={() => toggleField('serie')}
                         />
                       </>
                     )}
@@ -822,6 +986,16 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                           id: brand.id,
                           name: brand.name,
                         }))}
+                        locked={isFieldLocked('vehicle_catalog_brand_id')}
+                        onToggle={() => toggleField('vehicle_catalog_brand_id')}
+                        belowAction={
+                          !hasPermission('brands.create') && (
+                            <RequestCatalogAction
+                              onClick={() => requestCatalogCreation('BRAND')}
+                              label="Solicitar marca"
+                            />
+                          )
+                        }
                       />
                       <SelectField
                         label="Modelo *"
@@ -842,6 +1016,17 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                           name: model.name,
                         }))}
                         disabled={!vehicleBrandId}
+                        locked={isFieldLocked('vehicle_catalog_model_id')}
+                        onToggle={() => toggleField('vehicle_catalog_model_id')}
+                        belowAction={
+                          !hasPermission('models.create') &&
+                          vehicleBrandId && (
+                            <RequestCatalogAction
+                              onClick={() => requestCatalogCreation('MODEL', vehicleBrandId, null)}
+                              label="Solicitar modelo"
+                            />
+                          )
+                        }
                       />
                       <SelectField
                         label="Año de modelo *"
@@ -858,6 +1043,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         }
                         options={vehicleYears.map((year) => ({ id: year, name: year }))}
                         disabled={!vehicleModelId}
+                        locked={isFieldLocked('vehicle_catalog_year')}
+                        onToggle={() => toggleField('vehicle_catalog_year')}
                       />
                       <SelectField
                         label="Tipo de vehículo *"
@@ -873,6 +1060,8 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         }
                         options={vehicleTypes.map((type) => ({ id: type, name: type }))}
                         disabled={!vehicleYear}
+                        locked={isFieldLocked('vehicle_catalog_type')}
+                        onToggle={() => toggleField('vehicle_catalog_type')}
                       />
                       <SelectField
                         label="Combustible *"
@@ -888,30 +1077,40 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         options={vehicleFuels.map((fuel) => ({ id: fuel, name: fuel }))}
                         disabled={!vehicleType}
                         error={errors.vehicle_catalog_id}
+                        locked={isFieldLocked('vehicle_catalog_fuel')}
+                        onToggle={() => toggleField('vehicle_catalog_fuel')}
                       />
                       <InputField
                         label="Placa"
                         name="vehicle_plate"
                         value={formData.vehicle_plate}
                         onChange={handleChange}
+                        locked={isFieldLocked('vehicle_plate')}
+                        onToggle={() => toggleField('vehicle_plate')}
                       />
                       <InputField
                         label="Motor"
                         name="vehicle_engine"
                         value={formData.vehicle_engine}
                         onChange={handleChange}
+                        locked={isFieldLocked('vehicle_engine')}
+                        onToggle={() => toggleField('vehicle_engine')}
                       />
                       <InputField
                         label="Chasis"
                         name="vehicle_chassis"
                         value={formData.vehicle_chassis}
                         onChange={handleChange}
+                        locked={isFieldLocked('vehicle_chassis')}
+                        onToggle={() => toggleField('vehicle_chassis')}
                       />
                       <InputField
                         label="Kilometraje"
                         name="vehicle_mileage"
                         value={formData.vehicle_mileage}
                         onChange={handleChange}
+                        locked={isFieldLocked('vehicle_mileage')}
+                        onToggle={() => toggleField('vehicle_mileage')}
                       />
                     </>
                   )}
@@ -922,40 +1121,62 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         name="cadastral_number"
                         value={formData.cadastral_number}
                         onChange={handleChange}
+                        locked={isFieldLocked('cadastral_number')}
+                        onToggle={() => toggleField('cadastral_number')}
                       />
                       <InputField
                         label="Área (m²)"
                         name="real_estate_area_m2"
                         value={formData.real_estate_area_m2}
                         onChange={handleChange}
+                        locked={isFieldLocked('real_estate_area_m2')}
+                        onToggle={() => toggleField('real_estate_area_m2')}
                       />
                       <InputField
                         label="Dirección"
                         name="real_estate_address"
                         value={formData.real_estate_address}
                         onChange={handleChange}
+                        locked={isFieldLocked('real_estate_address')}
+                        onToggle={() => toggleField('real_estate_address')}
                       />
                       <InputField
                         label="Ubicación geográfica"
                         name="real_estate_location_geo"
                         value={formData.real_estate_location_geo}
                         onChange={handleChange}
+                        locked={isFieldLocked('real_estate_location_geo')}
+                        onToggle={() => toggleField('real_estate_location_geo')}
                       />
                     </>
                   )}
                   {isProperty && !isRealEstate && hasSelectedItem && (
                     <>
-                      <InputField
+                      <SelectField
                         label="Material"
                         name="property_material"
                         value={formData.property_material}
                         onChange={handleChange}
+                        options={[
+                          ...(formData.property_material &&
+                          !PROPERTY_MATERIALS.includes(formData.property_material)
+                            ? [{ id: formData.property_material, name: formData.property_material }]
+                            : []),
+                          ...PROPERTY_MATERIALS.map((material) => ({
+                            id: material,
+                            name: material,
+                          })),
+                        ]}
+                        locked={isFieldLocked('property_material')}
+                        onToggle={() => toggleField('property_material')}
                       />
                       <InputField
                         label="Dimensiones"
                         name="property_dimensions"
                         value={formData.property_dimensions}
                         onChange={handleChange}
+                        locked={isFieldLocked('property_dimensions')}
+                        onToggle={() => toggleField('property_dimensions')}
                       />
                     </>
                   )}
@@ -978,12 +1199,17 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                   {selectedRule ? (
                     <>
                       <p className="truncate text-sm font-semibold text-slate-900">
-                        {selectedRule.label}
+                        {selectedRule.label ||
+                          selectedRule.classification?.description ||
+                          'Clasificación actual'}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {selectedRule.asset_type?.name} ·{' '}
-                        {selectedRule.extension?.name || 'Sin extensión'} ·{' '}
-                        {selectedRule.administrative_area?.name || 'Global'}
+                        {selectedRule.asset_type?.name || selectedTypeCode || 'Tipo no disponible'}{' '}
+                        ·{' '}
+                        {selectedRule.extension?.name ||
+                          selectedRule.extension?.code ||
+                          'Sin extensión'}{' '}
+                        · {selectedRule.administrative_area?.name || 'Sin área asignada'}
                       </p>
                     </>
                   ) : (
@@ -1063,6 +1289,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
         )}
       </div>
     </div>
+    </ModalLayer>
   );
 }
 
@@ -1176,6 +1403,7 @@ function SelectField({
   error,
   locked,
   onToggle,
+  belowAction,
 }) {
   const finalDisabled = disabled || !!locked;
 
@@ -1217,6 +1445,7 @@ function SelectField({
           </option>
         ))}
       </select>
+      {belowAction}
 
       {error && (
         <div className="flex items-start gap-2 mt-1 text-xs text-red-600">
@@ -1227,6 +1456,18 @@ function SelectField({
         </div>
       )}
     </div>
+  );
+}
+
+function RequestCatalogAction({ onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-1 block text-[11px] font-medium text-blue-700 hover:underline"
+    >
+      {label}
+    </button>
   );
 }
 

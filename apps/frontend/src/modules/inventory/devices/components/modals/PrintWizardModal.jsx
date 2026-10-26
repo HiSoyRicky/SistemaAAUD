@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
+import ModalLayer from '../../../../../shared/components/ui/ModalLayer';
 
 function normalizeText(value) {
   return String(value || '')
@@ -142,14 +143,9 @@ export default function PrintWizardModal({
   if (!open || !localDevice) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+    <ModalLayer>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
       {/* click afuera cierra */}
-      <button
-        type="button"
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-        aria-label="Cerrar modal"
-      />
 
       <div className="relative z-[81] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
@@ -461,6 +457,7 @@ export default function PrintWizardModal({
         </div>
       </div>
     </div>
+    </ModalLayer>
   );
 }
 

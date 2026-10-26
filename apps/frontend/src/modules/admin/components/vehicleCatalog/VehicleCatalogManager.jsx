@@ -1,6 +1,8 @@
 import { Pencil, Save, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
+import ModalLayer from '../../../../shared/components/ui/ModalLayer';
+import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
 
 const emptyForm = { id_brand: '', id_model: '', model_year: '', vehicle_type: '', fuel_type: '' };
 const currentYear = new Date().getFullYear();
@@ -58,10 +60,26 @@ export default function VehicleCatalogManager() {
   const [loading, setLoading] = useState(true);
 
   const availableModels = useMemo(
-    () => models.filter((model) => String(model.id_brand) === String(form.id_brand)),
+    () => models.filter((model) => String(model.id_brand) === String(form.id_brand) && model.id_device == null),
     [models, form.id_brand]
   );
-  const vehicleBrands = brands.filter((brand) => brand.catalog_type === 'VEHICLE');
+  const selectedVehicleModel = models.find((model) => String(model.id) === String(form.id_model));
+  const selectedVehicleBrand = brands.find((brand) => String(brand.id) === String(selectedVehicleModel?.id_brand));
+  const vehicleBrands = [
+    ...brands.filter((brand, index, all) =>
+      all.findIndex((candidate) => normalizeCatalogName(candidate.name) === normalizeCatalogName(brand.name)) === index &&
+      String(brand.id) !== String(selectedVehicleBrand?.id)
+    ),
+    ...(selectedVehicleBrand ? [selectedVehicleBrand] : []),
+  ];
+  const similarConfigurations = catalog.filter((entry) =>
+    String(entry.id_brand) === String(form.id_brand) &&
+    (!form.id_model || String(entry.id_model) === String(form.id_model)) &&
+    (!form.model_year || String(entry.model_year) === String(form.model_year)) &&
+    (!form.vehicle_type || normalizeCatalogName(entry.vehicle_type).includes(normalizeCatalogName(form.vehicle_type))) &&
+    (!form.fuel_type || normalizeCatalogName(entry.fuel_type).includes(normalizeCatalogName(form.fuel_type))) &&
+    Number(entry.id) !== Number(editingId)
+  );
 
   const load = async () => {
     setLoading(true);
@@ -149,7 +167,7 @@ export default function VehicleCatalogManager() {
           {error}
         </p>
       )}
-      {showForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="vehicle-catalog-modal-title">
+      {showForm && <ModalLayer><div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="vehicle-catalog-modal-title">
       <form
         onSubmit={save}
         className="max-h-[90vh] w-full max-w-4xl space-y-4 overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
@@ -255,6 +273,16 @@ export default function VehicleCatalogManager() {
             ))}
           </select>
         </label>
+        {similarConfigurations.length > 0 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 md:col-span-2 xl:col-span-3">
+            <p className="font-semibold">Configuraciones de vehículo similares ya registradas</p>
+            <ul className="mt-1 list-inside list-disc">
+              {similarConfigurations.slice(0, 8).map((entry) => (
+                <li key={entry.id}>{entry.brand.name} {entry.model.name} {entry.model_year} · {entry.vehicle_type} · {entry.fuel_type}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         </div>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={closeForm} className="rounded-lg border px-4 py-2">Cancelar</button>
@@ -264,7 +292,7 @@ export default function VehicleCatalogManager() {
           </button>
         </div>
       </form>
-      </div>}
+      </div></ModalLayer>}
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50">

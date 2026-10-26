@@ -128,6 +128,7 @@ function buildItemWhere(query = {}) {
   const where = {
     ...(query.active !== undefined && { active: query.active === true || query.active === 'true' }),
     ...(category && { category: { equals: category, mode: 'insensitive' } }),
+    ...((query.in_stock === true || query.in_stock === 'true') && { stock: { some: { quantity: { gt: 0 } } } }),
   };
 
   if (search) {
@@ -279,15 +280,13 @@ export const listStock = async (query = {}) => {
 export const listMovements = async (query = {}) => {
   const pagination = parsePagination(query);
   const where = buildMovementWhere(query);
-  const [movements, total, summary] = await Promise.all([
-    repository.findMovements({ where, skip: pagination.skip, take: pagination.limit }),
-    repository.countMovements(where),
-    repository.summarizeMovements(where),
-  ]);
+  const { groups, total } = await repository.findMovementGroups({ where, skip: pagination.skip, take: pagination.limit });
   return dto.mapPaginated({
-    data: movements.map(dto.mapMovement),
+    data: groups.filter((group) => group.length).map((group) => {
+      const items = group.map(dto.mapMovement);
+      return items.length > 1 ? { ...items[0], group_items: items } : items[0];
+    }),
     total,
-    summary,
     page: pagination.page,
     limit: pagination.limit,
   });

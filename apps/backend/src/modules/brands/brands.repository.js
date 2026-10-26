@@ -1,6 +1,7 @@
 // brands.repository.js
 
 import { prisma } from '../../config/prisma.js';
+import normalizeCatalogName from '../../common/utils/normalizeCatalogName.js';
 
 export const findAll = async () => {
   return prisma.brands.findMany({
@@ -13,14 +14,11 @@ export const findById = async (id) => {
   return prisma.brands.findUnique({ where: { id: Number(id) } });
 };
 
-export const findByName = async (name, catalog_type, excludeId = null) => {
-  return prisma.brands.findFirst({
-    where: {
-      name,
-      catalog_type,
-      ...(excludeId ? { id: { not: Number(excludeId) } } : {}),
-    },
-  });
+export const findByName = async (name, excludeId = null) => {
+  const rows = await prisma.brands.findMany();
+  return rows.find(
+    (row) => (excludeId == null || row.id !== Number(excludeId)) && normalizeCatalogName(row.name) === normalizeCatalogName(name)
+  ) || null;
 };
 
 export const create = async (data) => {

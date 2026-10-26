@@ -67,7 +67,7 @@ El inventario central ya tiene `inventory_item_vehicles` con placa, chasis, moto
 
 **Siguiente tramo:** (1) aplicar migraciones de detalle/catálogo y validar el flujo en navegador; (2) extender exportación e historial; (3) confirmar significado de cuenta contable, fechas y columnas financieras; (4) diseñar después el historial común de adquisición/depreciación; (5) preparar importación idempotente que preserve marbetes y normalice `ND`/`NA`/vacíos con reglas explícitas; (6) validar en copia antes de cargar datos reales.
 
-**Avance 2026-10-20:** Informática queda restringida por API a tipo Tecnología más extensión DEVICES; no depende de ocultar opciones en frontend. Administración separa marcas y modelos tecnológicos de los vehiculares mediante el tipo de catálogo. El Catálogo de vehículos relaciona marcas y modelos tipados como VEHICLE con año, tipo normalizado y combustible. La lista normalizada contiene Barredora, Bus, Busito / microbús, Camión, Camión compactador, Camión empacador, Camión volquete / volquete, Camioneta, Camión cisterna, Cargador frontal, Cabezal tipo mula, Cama baja, Grúa, Excavadora, Retroexcavadora, Montacarga, Tractor, Mini truck, Minicar, Sedán, Pick-up, Panel, Remolque, Remolque / casa rodante y Roll-off. El año se puede escribir con sugerencias. La captura mantiene placa/motor/chasis/kilometraje editables y no solicita serie vehicular. Migraciones nuevas `20261020120000_vehicle_catalog`, `20261020130000_remove_vehicle_serial` y `20261020140000_vehicle_brand_model_scope`, además de `20261020110000_vehicle_land_details`, pendientes de aplicar. Validación de Prisma, generación de cliente y parseo estático correctos; sin pruebas de API ni navegador en este avance.
+**Avance 2026-10-20:** Informática queda restringida por API a tipo Tecnología más extensión DEVICES; no depende de ocultar opciones en frontend. Las marcas son compartidas entre tecnología y vehículos para evitar duplicar una marca que fabrica productos de ambos tipos; los modelos tecnológicos se diferencian por `id_device` y los modelos vehiculares usan `id_device` nulo. El Catálogo de vehículos relaciona estos modelos con año, tipo normalizado y combustible. La lista normalizada contiene Barredora, Bus, Busito / microbús, Camión, Camión compactador, Camión empacador, Camión volquete / volquete, Camioneta, Camión cisterna, Cargador frontal, Cabezal tipo mula, Cama baja, Grúa, Excavadora, Retroexcavadora, Montacarga, Tractor, Mini truck, Minicar, Sedán, Pick-up, Panel, Remolque, Remolque / casa rodante y Roll-off. El año se puede escribir con sugerencias. La captura mantiene placa/motor/chasis/kilometraje editables y no solicita serie vehicular. La columna heredada `catalog_type` se conserva por compatibilidad de esquema; no determina el uso de la marca. Los registros históricos duplicados entre tipos no se fusionan automáticamente. Migraciones nuevas `20261020120000_vehicle_catalog`, `20261020130000_remove_vehicle_serial` y `20261020140000_vehicle_brand_model_scope`, además de `20261020110000_vehicle_land_details`, pendientes de aplicar. Validación de Prisma, generación de cliente y parseo estático correctos; sin pruebas de API ni navegador en este avance.
 
 El catálogo usa selectores para año de modelo, tipo de vehículo y combustible. Si la tabla del catálogo aún no existe en la base, el endpoint devuelve un mensaje explícito indicando que falta aplicar la migración en vez de un error genérico.
 
@@ -217,7 +217,7 @@ Los 1,972 bienes actuales son tecnológicos. La separación de alcance solo se p
 Resolución (`resolveClassificationRule`):
 
 1. Con bien (`device_id`): solo la regla de ese bien. No hay respaldo genérico.
-2. Sin bien: `asset_type + extension + área`; si no existe, la regla `is_default` de `asset_type + extension`.
+2. Sin bien: `asset_type + extension + área administrativa` exacta. El área es obligatoria; no existe regla global ni respaldo `is_default` sin área.
 
 - Una regla por bien: índice único en `device_id`; el servicio responde 409 y el formulario de Administración oculta los bienes que ya tienen regla.
 - Un bien sin regla se registra como tecnológico y exige marca y modelo.
@@ -225,7 +225,7 @@ Resolución (`resolveClassificationRule`):
   - Al arrancar el servidor, aplica las reglas vigentes a todos los bienes existentes.
   - Al crear, editar, activar o desactivar una regla, sincroniza los bienes de los devices afectados dentro de la misma transacción.
   - Al dar de alta o editar un bien, su regla se resuelve desde su device. El device siempre queda persistido en `inventory_item_devices`.
-  - Si la regla define área administrativa, el área del bien se sobrescribe; si no la define, el área del bien se conserva.
+  - Las reglas nuevas requieren área administrativa y esa área se asigna al bien. Las reglas históricas sin área deben corregirse antes de poder seleccionarlas o resolverlas.
   - Los cambios se auditan con `source: inventory.classification-sync`.
 
 ## 10. Backlog priorizado

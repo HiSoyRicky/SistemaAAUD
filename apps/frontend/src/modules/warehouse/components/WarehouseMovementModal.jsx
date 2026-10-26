@@ -1,6 +1,7 @@
 import { ArrowLeft, ClipboardList, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import ModalLayer from '../../../shared/components/ui/ModalLayer';
 import Warehouse from '../services/warehouse.api';
 
 const INITIAL_FORM = {
@@ -21,6 +22,10 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
   const [form, setForm] = useState(INITIAL_FORM);
   const [search, setSearch] = useState('');
   const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [movementError, setMovementError] = useState('');
   const [lines, setLines] = useState([]);
   const [saving, setSaving] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState('');
@@ -31,25 +36,34 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
     setForm(INITIAL_FORM);
     setSearch('');
     setItems([]);
+    setSelectedItem(null);
+    setSearchError('');
+    setMovementError('');
     setLines([]);
     setIdempotencyKey(globalThis.crypto.randomUUID());
   }, [open]);
 
   useEffect(() => {
-    if (!open || !search.trim()) {
+    if (!open || !search.trim() || selectedItem) {
       setItems([]);
+      setSearching(false);
       return undefined;
     }
+    let cancelled = false;
+    setSearching(true);
+    setSearchError('');
     const timer = setTimeout(async () => {
       try {
-        const result = await Warehouse.fetchItems({ search, active: true, limit: 25 });
-        setItems(result?.data || []);
+        const result = await Warehouse.fetchItems({ search, active: true, limit: 25, ...(form.movement_type === 'OUT' ? { in_stock: true } : {}) });
+        if (!cancelled) setItems((result?.data || []).filter((item) => form.movement_type !== 'OUT' || Number(item.current_stock) > 0));
       } catch (error) {
-        toast.error(error.response?.data?.message || 'No se pudo buscar el catálogo');
+        if (!cancelled) setSearchError(error.response?.data?.message || 'No se pudo buscar el catálogo');
+      } finally {
+        if (!cancelled) setSearching(false);
       }
     }, 250);
-    return () => clearTimeout(timer);
-  }, [open, search]);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [open, search, selectedItem, form.movement_type]);
 
   if (!open) return null;
 
@@ -57,7 +71,6 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
   const availableDepartments = departments
     .filter((department) => Number(department.id_ubication) === Number(form.ubication_id))
     .sort((a, b) => a.name.localeCompare(b.name, 'es'));
-  const selectedItem = items.find((item) => Number(item.id) === Number(form.item_id));
   const isOutgoing = form.movement_type === 'OUT';
   const isBatchMovement = ['IN', 'OUT'].includes(form.movement_type);
 
@@ -77,18 +90,33 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
 
   const addLine = () => {
     if (!selectedItem || Number(form.quantity) < 1) return;
+    if (!validateQuantity(selectedItem, form.quantity)) return;
     if (lines.some((line) => Number(line.item_id) === Number(selectedItem.id))) {
       toast.info('Ese insumo ya está agregado');
       return;
     }
     setLines((current) => [...current, { item_id: selectedItem.id, quantity: Number(form.quantity), item: selectedItem }]);
     updateForm({ item_id: '', quantity: 1 });
+    setSelectedItem(null);
     setSearch('');
+  };
+
+  const validateQuantity = (item, quantity) => {
+    if (!Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
+      setMovementError('Indique una cantidad entera mayor que cero.');
+      return false;
+    }
+    if (isOutgoing && Number(quantity) > Number(item.current_stock)) {
+      setMovementError(`Stock insuficiente para ${item.name}. Disponible: ${item.current_stock} ${item.unit}.`);
+      return false;
+    }
+    return true;
   };
 
   const goToConfirm = () => {
     const finalLines = [...lines];
     if (selectedItem) {
+      if (!validateQuantity(selectedItem, form.quantity)) return;
       if (lines.some((line) => Number(line.item_id) === Number(selectedItem.id))) {
         toast.info('Ese insumo ya está agregado');
         return;
@@ -113,6 +141,7 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
     }
     setLines(finalLines);
     updateForm({ item_id: '', quantity: 1 });
+    setSelectedItem(null);
     setSearch('');
     setStep(3);
   };
@@ -167,7 +196,10 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
       onSaved?.();
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'No se pudo registrar el movimiento');
+      const message = error.response?.data?.message || 'No se pudo registrar el movimiento';
+      const stockMatch = message.match(/stock institucional insuficiente para el insumo\s+(\d+)/i);
+      const item = stockMatch && finalLines.find((line) => Number(line.item_id) === Number(stockMatch[1]));
+      setMovementError(stockMatch ? `Stock insuficiente para ${item?.item?.name || 'el insumo seleccionado'}. Actualice la disponibilidad e intente nuevamente.` : message);
     } finally {
       setSaving(false);
     }
@@ -178,13 +210,14 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
       <strong className="text-slate-900 sm:col-span-2">{selectedItem.name}</strong>
       <span><strong>Código:</strong> {selectedItem.code || '-'}</span>
       <span><strong>Unidad:</strong> {selectedItem.unit}</span>
+      <span><strong>Disponible:</strong> {selectedItem.current_stock ?? 0}</span>
       <span><strong>Categoría:</strong> {selectedItem.category || 'Sin categoría'}</span>
     </div>
   ) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true">
-      <button type="button" aria-label="Cerrar" onClick={onClose} className="absolute inset-0 cursor-default" />
+    <ModalLayer>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
       <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white"><ClipboardList size={21} /></div><div><h2 className="text-xl font-bold text-slate-900">Registrar movimiento</h2><p className="text-sm text-slate-500">Paso {step} de 3: {step === 1 ? 'Define el movimiento' : step === 2 ? 'Agrega los insumos' : 'Confirma los datos'}</p></div></div>
@@ -204,9 +237,12 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
           ) : step === 2 ? (
             <div className="space-y-4">
               <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600"><strong>{MOVEMENT_LABELS[form.movement_type]}</strong>{isOutgoing ? ` · ${ubications.find((item) => Number(item.id) === Number(form.ubication_id))?.name || ''} · ${availableDepartments.find((item) => Number(item.id) === Number(form.department_id))?.name || ''}` : ' · Almacén / Carrasquilla'}</div>
-              <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Buscar insumo por nombre o código<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ej. papel o 232141..." className="h-11 rounded-md border border-slate-300 px-3 font-normal" /></label>
+              <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Buscar insumo por nombre o código<input value={search} onChange={(event) => { setSearch(event.target.value); setSelectedItem(null); updateForm({ item_id: '' }); }} placeholder="Ej. papel o 232141..." className="h-11 rounded-md border border-slate-300 px-3 font-normal" /></label>
+              {!selectedItem && search.trim() && <div className="max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white text-sm" aria-live="polite">
+                {searching ? <p className="p-3 text-slate-500">Buscando...</p> : searchError ? <p className="p-3 text-red-700">{searchError}</p> : items.length ? items.map((item) => <button type="button" key={item.id} onClick={() => { setSelectedItem(item); setSearch(item.name); updateForm({ item_id: item.id }); }} className="flex w-full justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left hover:bg-blue-50"><span>{item.code || '-'} - {item.name}</span><span className="whitespace-nowrap text-slate-600">Disponible: {item.current_stock ?? 0} {item.unit}</span></button>) : <p className="p-3 text-slate-500">{isOutgoing ? 'No se encontraron insumos disponibles.' : 'No se encontraron insumos.'}</p>}
+              </div>}
               <div className="grid gap-4 md:grid-cols-[1fr_160px]">
-                <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Insumo<select value={form.item_id} onChange={(event) => updateForm({ item_id: event.target.value })} className="h-11 rounded-md border border-slate-300 px-3 font-normal"><option value="">Seleccione un resultado</option>{items.map((item) => <option key={item.id} value={item.id}>{item.code || '-'} - {item.name}</option>)}</select>{details}</label>
+                <div>{details}</div>
                 <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Cantidad<input type="number" min="1" value={form.quantity} onChange={(event) => updateForm({ quantity: event.target.value })} className="h-11 rounded-md border border-slate-300 px-3 font-normal" /></label>
               </div>
               {isBatchMovement && <button type="button" onClick={addLine} className="inline-flex h-10 items-center gap-2 rounded-md border border-blue-200 px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50"><Plus size={16} />Agregar otro insumo</button>}
@@ -280,6 +316,9 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
         </form>
       </div>
 
+      {movementError && <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/40 p-4" role="alertdialog" aria-modal="true" aria-labelledby="warehouse-movement-error"><div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl"><h3 id="warehouse-movement-error" className="text-lg font-bold text-slate-900">No se pudo continuar</h3><p className="mt-2 text-sm text-slate-700">{movementError}</p><div className="mt-5 flex justify-end"><button type="button" onClick={() => setMovementError('')} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Entendido</button></div></div></div>}
+
     </div>
+    </ModalLayer>
   );
 }

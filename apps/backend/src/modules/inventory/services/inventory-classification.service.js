@@ -60,7 +60,8 @@ export const resolveClassificationRule = async (ruleOrContext, options = {}) => 
     if (!Number.isInteger(parsedRuleId) || parsedRuleId <= 0) {
       throw new AppError('ID de regla de clasificación inválido', 400);
     }
-    return assertActiveRule(await findById(parsedRuleId));
+    const rule = await findById(parsedRuleId);
+    return assertActiveRule(rule);
   }
 
   const {
@@ -70,12 +71,15 @@ export const resolveClassificationRule = async (ruleOrContext, options = {}) => 
     administrativeAreaId = null,
   } = ruleOrContext;
 
+  if (deviceId === null && (!Number.isInteger(Number(administrativeAreaId)) || Number(administrativeAreaId) <= 0)) {
+    return null;
+  }
+
   const candidates =
     deviceId !== null
       ? [{ deviceId }]
       : [
           { deviceId: null, assetTypeId, extensionId, administrativeAreaId },
-          { deviceId: null, assetTypeId, extensionId, administrativeAreaId: null, isDefault: true },
         ];
 
 

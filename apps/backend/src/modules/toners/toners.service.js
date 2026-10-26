@@ -85,6 +85,9 @@ export const create = async (payload) => {
 
   await ensurePrinterModelExists(id_printer_model);
 
+  const duplicate = await repository.findDuplicate({ toner_model, color, id_printer_model });
+  if (duplicate) throw new AppError('Ya existe ese tóner para el mismo modelo de impresora y color', 409);
+
   const created = await repository.createWithStock({
     toner_model,
     color,
@@ -122,6 +125,17 @@ export const update = async (idParam, payload) => {
     await ensurePrinterModelExists(id_printer_model);
     data.id_printer_model = id_printer_model;
   }
+
+  const nextPrinterModelId = data.id_printer_model ?? toner.id_printer_model;
+  const nextColor = data.color ?? toner.color;
+  const nextTonerModel = data.toner_model ?? toner.toner_model;
+  const duplicate = await repository.findDuplicate({
+    toner_model: nextTonerModel,
+    color: nextColor,
+    id_printer_model: nextPrinterModelId,
+    excludeId: id,
+  });
+  if (duplicate) throw new AppError('Ya existe ese tóner para el mismo modelo de impresora y color', 409);
 
   if (Object.keys(data).length === 0) {
     throw new AppError('No hay campos para actualizar', 400);

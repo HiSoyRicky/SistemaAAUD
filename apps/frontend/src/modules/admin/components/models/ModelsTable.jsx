@@ -1,6 +1,8 @@
 // ModelsTable.jsx
 
 import ActionButton from '../../../../shared/components/ui/ActionButton';
+import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
+import { Fragment } from 'react';
 
 export default function ModelsTable({
   models,
@@ -26,6 +28,9 @@ export default function ModelsTable({
   setEditingDevice,
   deleteModel,
   catalogType = 'TECHNOLOGY',
+  similarModels = [],
+  similarEditingModels = [],
+  addActionLabel = 'Agregar',
 }) {
   return (
     <div>
@@ -54,7 +59,7 @@ export default function ModelsTable({
           disabled={catalogType === 'TECHNOLOGY' && !selectedDevice}
         >
             <option value="">Seleccionar Marca</option>
-          {brands.map((b) => (
+          {[...new Map(brands.map((b) => [normalizeCatalogName(b.name), b])).values()].map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
             </option>
@@ -75,9 +80,26 @@ export default function ModelsTable({
           className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
           disabled={(catalogType === 'TECHNOLOGY' && !selectedDevice) || !selectedBrand || !newModel.trim()}
         >
-          Agregar
+          {addActionLabel}
         </button>
       </div>
+      {similarModels.length > 0 && (
+        <ul className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm" aria-label="Modelos similares">
+          <li className="mb-1 font-semibold">Modelos similares existentes</li>
+          {similarModels.slice(0, 8).map((model) => {
+            const brandName = brands.find((brand) => Number(brand.id) === Number(model.id_brand))?.name;
+            const deviceName = devices.find((device) => Number(device.id) === Number(model.id_device))?.name;
+            return (
+              <li key={model.id} className="flex flex-wrap gap-x-2">
+                <span className="font-medium">{model.name}</span>
+                <span className="text-amber-900/75">
+                  {[brandName, deviceName || (model.id_device == null ? 'Vehículos' : null)].filter(Boolean).join(' · ')}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {/* Tabla */}
       <table className="w-full text-sm border">
@@ -97,7 +119,8 @@ export default function ModelsTable({
             const deviceId = m.id_device;
 
             return (
-              <tr key={m.id}>
+              <Fragment key={m.id}>
+              <tr>
                 <td className="px-3 py-1 text-center border">
                   {(currentPage - 1) * itemsPerPage + index + 1}
                 </td>
@@ -125,7 +148,7 @@ export default function ModelsTable({
                       className="w-full px-2 py-1 border rounded"
                     >
                       <option value="">Seleccionar Marca</option>
-                      {brands.map((b) => (
+                      {[...new Map(brands.map((b) => [normalizeCatalogName(b.name), b])).values()].map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name}
                         </option>
@@ -190,6 +213,15 @@ export default function ModelsTable({
                   )}
                 </td>
               </tr>
+              {editingId === m.id && similarEditingModels.length > 0 && (
+                <tr>
+                  <td colSpan="5" className="border px-3 py-2 text-sm text-amber-900">
+                    <span className="font-semibold">Modelos similares existentes: </span>
+                    {similarEditingModels.slice(0, 8).map((model) => model.name).join(' · ')}
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>

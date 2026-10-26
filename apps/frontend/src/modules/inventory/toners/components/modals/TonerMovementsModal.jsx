@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { useNotifications } from '../../../../../app/providers/NotificationContext';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
+import ModalLayer from '../../../../../shared/components/ui/ModalLayer';
 import TonerDeliveryPrint from '../../../../../shared/components/Print/TonerDeliveryPrint';
 import { formatDateToDDMMYYYY } from '../../../../../shared/utils/formatDate';
 import { Toners } from '../../services/toners.api';
@@ -104,7 +105,8 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
   const isOut = movementType === 'OUT';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <ModalLayer>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-md">
       <div className="relative w-[620px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -282,6 +284,7 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
         </div>
       )}
     </div>
+    </ModalLayer>
   );
 }
 

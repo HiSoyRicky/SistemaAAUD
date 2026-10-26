@@ -7,7 +7,6 @@ import useAuth from '../../../../shared/hooks/useAuth';
 const RULES_URL = '/api/inventory/classification-rules';
 const MANAGE_URL = `${RULES_URL}/manage`;
 const NO_EXTENSION = '__none__';
-const GLOBAL_AREA = '__global__';
 const EXPECTED_EXTENSION_BY_TYPE = {
   TECHNOLOGY: 'DEVICES',
   VEHICLE: 'VEHICLES',
@@ -44,9 +43,8 @@ function normalizeRule(rule) {
     asset_type_id: rule.asset_type?.id == null ? '' : String(rule.asset_type.id),
     extension_id: rule.extension?.id == null ? NO_EXTENSION : String(rule.extension.id),
     administrative_area_id:
-      rule.administrative_area?.id == null ? GLOBAL_AREA : String(rule.administrative_area.id),
-    classification_id:
-      rule.classification?.id == null ? '' : String(rule.classification.id),
+      rule.administrative_area?.id == null ? '' : String(rule.administrative_area.id),
+    classification_id: rule.classification?.id == null ? '' : String(rule.classification.id),
     is_default: Boolean(rule.is_default),
     active: Boolean(rule.active),
   };
@@ -65,9 +63,12 @@ function isCompatibleRule(rule) {
 function isClassificationCompatible(typeCode, classificationCode) {
   const code = String(classificationCode || '');
   if (typeCode === 'VEHICLE') return code === VEHICLE_CLASSIFICATION_CODE;
-  if (typeCode === 'TECHNOLOGY') return code.startsWith('120403') && !TECHNOLOGY_EXCLUDED_CODES.has(code);
+  if (typeCode === 'TECHNOLOGY')
+    return code.startsWith('120403') && !TECHNOLOGY_EXCLUDED_CODES.has(code);
   if (typeCode === 'PROPERTY') {
-    return (code.startsWith('1204') && !PROPERTY_EXCLUDED_CODES.has(code)) || code.startsWith('1205');
+    return (
+      (code.startsWith('1204') && !PROPERTY_EXCLUDED_CODES.has(code)) || code.startsWith('1205')
+    );
   }
   return false;
 }
@@ -128,8 +129,9 @@ export default function ClassificationRulesManager() {
       ]);
       const firstRulePage = Array.isArray(ruleResponse.data?.data) ? ruleResponse.data.data : [];
       const remainingRulePages = await Promise.all(
-        Array.from({ length: Math.max(Number(ruleResponse.data?.totalPages || 1) - 1, 0) }, (_, i) =>
-          api.get(MANAGE_URL, { params: { limit: 200, page: i + 2 } })
+        Array.from(
+          { length: Math.max(Number(ruleResponse.data?.totalPages || 1) - 1, 0) },
+          (_, i) => api.get(MANAGE_URL, { params: { limit: 200, page: i + 2 } })
         )
       );
       setRules([
@@ -166,59 +168,56 @@ export default function ClassificationRulesManager() {
     loadData();
   }, []);
 
-  const filteredRules = useMemo(
-    () => {
-      const normalizedSearch = deviceSearch
-        .trim()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLocaleLowerCase('es');
+  const filteredRules = useMemo(() => {
+    const normalizedSearch = deviceSearch
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es');
 
-      return rules
-        .filter((rule) => {
-          const scope = rule.scope || (rule.device_id ? 'DEVICE' : 'GENERIC');
-          const deviceName = String(rule.device?.name || '')
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLocaleLowerCase('es');
-          return (
-            (!normalizedSearch || deviceName.includes(normalizedSearch)) &&
-            (!filters.scope || scope === filters.scope) &&
-            (!filters.device || String(rule.device?.id) === filters.device) &&
-            (!filters.assetType || String(rule.asset_type?.id) === filters.assetType) &&
-            (!filters.extension || String(rule.extension?.id) === filters.extension) &&
-            (!filters.area || String(rule.administrative_area?.id) === filters.area) &&
-            (!filters.classification || String(rule.classification?.id) === filters.classification) &&
-            (!filters.active || String(rule.active) === filters.active) &&
-            (!filters.default || String(rule.is_default) === filters.default)
-          );
-        })
-        .sort((left, right) => {
-          const compare = (a, b) =>
-            String(a ?? '').localeCompare(String(b ?? ''), 'es', {
-              numeric: true,
-              sensitivity: 'base',
-            });
-          const leftDevice = left.device?.name;
-          const rightDevice = right.device?.name;
+    return rules
+      .filter((rule) => {
+        const scope = rule.scope || (rule.device_id ? 'DEVICE' : 'GENERIC');
+        const deviceName = String(rule.device?.name || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLocaleLowerCase('es');
+        return (
+          (!normalizedSearch || deviceName.includes(normalizedSearch)) &&
+          (!filters.scope || scope === filters.scope) &&
+          (!filters.device || String(rule.device?.id) === filters.device) &&
+          (!filters.assetType || String(rule.asset_type?.id) === filters.assetType) &&
+          (!filters.extension || String(rule.extension?.id) === filters.extension) &&
+          (!filters.area || String(rule.administrative_area?.id) === filters.area) &&
+          (!filters.classification || String(rule.classification?.id) === filters.classification) &&
+          (!filters.active || String(rule.active) === filters.active) &&
+          (!filters.default || String(rule.is_default) === filters.default)
+        );
+      })
+      .sort((left, right) => {
+        const compare = (a, b) =>
+          String(a ?? '').localeCompare(String(b ?? ''), 'es', {
+            numeric: true,
+            sensitivity: 'base',
+          });
+        const leftDevice = left.device?.name;
+        const rightDevice = right.device?.name;
 
-          if (!leftDevice || !rightDevice) {
-            if (leftDevice) return -1;
-            if (rightDevice) return 1;
-          }
+        if (!leftDevice || !rightDevice) {
+          if (leftDevice) return -1;
+          if (rightDevice) return 1;
+        }
 
-          return (
-            compare(leftDevice, rightDevice) ||
-            compare(left.asset_type?.code, right.asset_type?.code) ||
-            compare(left.extension?.code, right.extension?.code) ||
-            compare(left.administrative_area?.name, right.administrative_area?.name) ||
-            compare(left.classification?.code_new, right.classification?.code_new) ||
-            left.id - right.id
-          );
-        });
-    },
-    [rules, filters, deviceSearch]
-  );
+        return (
+          compare(leftDevice, rightDevice) ||
+          compare(left.asset_type?.code, right.asset_type?.code) ||
+          compare(left.extension?.code, right.extension?.code) ||
+          compare(left.administrative_area?.name, right.administrative_area?.name) ||
+          compare(left.classification?.code_new, right.classification?.code_new) ||
+          left.id - right.id
+        );
+      });
+  }, [rules, filters, deviceSearch]);
 
   const availableDevices = useMemo(() => {
     const devicesWithRule = new Set(
@@ -234,17 +233,13 @@ export default function ClassificationRulesManager() {
   const compatibleRulesForType = useMemo(
     () =>
       rules.filter(
-        (rule) =>
-          isCompatibleRule(rule) && String(rule.asset_type?.id ?? '') === form.asset_type_id
+        (rule) => isCompatibleRule(rule) && String(rule.asset_type?.id ?? '') === form.asset_type_id
       ),
     [rules, form.asset_type_id]
   );
 
   const deviceRuleForForm = useMemo(
-    () =>
-      rules.find(
-        (rule) => String(rule.device_id ?? rule.device?.id ?? '') === form.device_id
-      ),
+    () => rules.find((rule) => String(rule.device_id ?? rule.device?.id ?? '') === form.device_id),
     [form.device_id, rules]
   );
   const observedDeviceTypeIds = deviceAssetTypeProfiles[form.device_id] || [];
@@ -259,22 +254,14 @@ export default function ClassificationRulesManager() {
     const typeIds = new Set(
       rules.filter(isCompatibleRule).map((rule) => String(rule.asset_type?.id ?? ''))
     );
-    return catalogs.assetTypes.filter(
-      (item) => {
-        const itemId = String(item.id);
-        if (!typeIds.has(itemId)) return false;
-        if (observedDeviceTypeIds.length) return observedDeviceTypeIds.includes(itemId);
-        if (lockDeviceAssetType) return itemId === String(deviceRuleForForm?.asset_type?.id);
-        return true;
-      }
-    );
-  }, [
-    catalogs.assetTypes,
-    deviceRuleForForm,
-    lockDeviceAssetType,
-    observedDeviceTypeIds,
-    rules,
-  ]);
+    return catalogs.assetTypes.filter((item) => {
+      const itemId = String(item.id);
+      if (!typeIds.has(itemId)) return false;
+      if (observedDeviceTypeIds.length) return observedDeviceTypeIds.includes(itemId);
+      if (lockDeviceAssetType) return itemId === String(deviceRuleForForm?.asset_type?.id);
+      return true;
+    });
+  }, [catalogs.assetTypes, deviceRuleForForm, lockDeviceAssetType, observedDeviceTypeIds, rules]);
 
   const availableExtensions = useMemo(() => {
     const extensionIds = new Set(
@@ -296,18 +283,15 @@ export default function ClassificationRulesManager() {
   );
 
   const availableAreas = useMemo(() => {
-    const areaIds = new Set(
-      compatibleRulesForExtension.map((rule) =>
-        rule.administrative_area?.id == null ? GLOBAL_AREA : String(rule.administrative_area.id)
-      )
-    );
-    return catalogs.areas.filter((item) => areaIds.has(String(item.id)));
-  }, [catalogs.areas, compatibleRulesForExtension]);
+    return catalogs.areas;
+  }, [catalogs.areas]);
 
   const availableClassifications = useMemo(() => {
-    const typeCode = catalogs.assetTypes.find((type) => String(type.id) === form.asset_type_id)?.code;
-    return catalogs.classifications.filter(
-      (item) => isClassificationCompatible(typeCode, item.code_new)
+    const typeCode = catalogs.assetTypes.find(
+      (type) => String(type.id) === form.asset_type_id
+    )?.code;
+    return catalogs.classifications.filter((item) =>
+      isClassificationCompatible(typeCode, item.code_new)
     );
   }, [catalogs.assetTypes, catalogs.classifications, form.asset_type_id]);
 
@@ -322,10 +306,7 @@ export default function ClassificationRulesManager() {
     setEditingId(rule.id);
     const normalizedForm = normalizeRule(rule);
     const observedTypeIds = deviceAssetTypeProfiles[String(rule.device_id)] || [];
-    if (
-      observedTypeIds.length &&
-      !observedTypeIds.includes(normalizedForm.asset_type_id)
-    ) {
+    if (observedTypeIds.length && !observedTypeIds.includes(normalizedForm.asset_type_id)) {
       normalizedForm.asset_type_id = observedTypeIds.length === 1 ? observedTypeIds[0] : '';
       normalizedForm.extension_id = '';
       normalizedForm.administrative_area_id = '';
@@ -393,16 +374,17 @@ export default function ClassificationRulesManager() {
       setFormError('Esa clasificación no corresponde a la combinación seleccionada.');
       return;
     }
+    if (!form.administrative_area_id) {
+      setFormError('Seleccione un área administrativa para guardar la regla.');
+      return;
+    }
 
     const payload = {
       device_id: form.scope === 'DEVICE' ? Number(form.device_id) : null,
       asset_type_id: Number(form.asset_type_id),
       extension_id:
         form.extension_id && form.extension_id !== NO_EXTENSION ? Number(form.extension_id) : null,
-      administrative_area_id:
-        form.administrative_area_id && form.administrative_area_id !== GLOBAL_AREA
-          ? Number(form.administrative_area_id)
-          : null,
+      administrative_area_id: Number(form.administrative_area_id),
       classification_id: Number(form.classification_id),
       is_default: form.scope === 'GENERIC' && Boolean(form.is_default),
       active: Boolean(form.active),
@@ -421,7 +403,9 @@ export default function ClassificationRulesManager() {
         );
       });
       if (duplicateGenericRule) {
-        setFormError('Ya existe una regla genérica para esta clasificación y alcance. Edita la existente.');
+        setFormError(
+          'Ya existe una regla genérica para esta clasificación y alcance. Edita la existente.'
+        );
         return;
       }
     }
@@ -597,21 +581,12 @@ export default function ClassificationRulesManager() {
               <select
                 value={form.administrative_area_id}
                 onChange={(e) => updateForm('administrative_area_id', e.target.value)}
-                disabled={
-                  !form.extension_id ||
-                  (availableAreas.length === 0 &&
-                    !compatibleRulesForExtension.some(
-                      (rule) => rule.administrative_area?.id == null
-                    ))
-                }
+                disabled={!form.extension_id || availableAreas.length === 0}
                 className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
               >
                 <option value="">
                   {form.extension_id ? 'Seleccione...' : 'Seleccione primero una extensión'}
                 </option>
-                {compatibleRulesForExtension.some(
-                    (rule) => rule.administrative_area?.id == null
-                  ) && <option value={GLOBAL_AREA}>Global</option>}
                 {availableAreas.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -796,7 +771,9 @@ export default function ClassificationRulesManager() {
                     <td className="px-3 py-3">{rule.device?.name || '—'}</td>
                     <td className="px-3 py-3">{rule.asset_type?.code || '—'}</td>
                     <td className="px-3 py-3">{rule.extension?.code || '—'}</td>
-                    <td className="px-3 py-3">{rule.administrative_area?.name || 'Global'}</td>
+                    <td className="px-3 py-3">
+                      {rule.administrative_area?.name || 'Sin área asignada'}
+                    </td>
                     <td className="px-3 py-3 font-mono text-xs">
                       {rule.classification?.code_new || '—'}
                     </td>

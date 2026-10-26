@@ -7,6 +7,7 @@ function mapTonerListItem(toner) {
     id: toner.id,
     color: toner.color,
     toner_model: toner.toner_model,
+    id_printer_model: toner.id_printer_model,
     brand: toner.models?.brands?.name ?? null,
     printer_model: toner.models?.name ?? null,
     stock,

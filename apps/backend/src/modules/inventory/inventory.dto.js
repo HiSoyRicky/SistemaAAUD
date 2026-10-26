@@ -117,6 +117,9 @@ export const mapInventoryItem = (item) => {
                 location_geo: realEstate.location_geo,
               }
             : null,
+          property: property
+            ? { material: property.material, dimensions: property.dimensions }
+            : null,
         }
       : null,
     technology: technologyData,
@@ -147,6 +150,7 @@ export const mapInventoryItem = (item) => {
     classification_rule: classificationRule
       ? {
           id: classificationRule.id,
+          device_id: classificationRule.device_id,
           active: classificationRule.active,
           is_default: classificationRule.is_default,
           classification: classification
@@ -174,6 +178,9 @@ export const mapInventoryItem = (item) => {
                 code: classificationRule.extension.code,
                 name: classificationRule.extension.name,
               }
+            : null,
+          device: classificationRule.device
+            ? { id: classificationRule.device.id, name: classificationRule.device.name }
             : null,
           administrative_area: classificationRule.administrative_area
             ? {

@@ -58,6 +58,13 @@ export function toInventoryAuditSnapshot(record) {
     };
   }
 
+  if (record.property_details) {
+    snapshot.property_details = {
+      material: record.property_details.material ?? null,
+      dimensions: record.property_details.dimensions ?? null,
+    };
+  }
+
   if (snapshot.transferdate instanceof Date) {
     snapshot.transferdate = snapshot.transferdate.toISOString();
   }

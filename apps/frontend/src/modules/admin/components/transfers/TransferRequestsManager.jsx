@@ -8,6 +8,7 @@ import { CheckCircle2, Printer, RefreshCw, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import useAuth from '../../../../shared/hooks/useAuth';
+import ModalLayer from '@/shared/components/ui/ModalLayer';
 
 const STATUS_FILTERS = [
   { value: '', label: 'Todas' },
@@ -320,7 +321,7 @@ export default function TransferRequestsManager() {
       </div>
 
       {selectedRequest && buildPreviewDevice(selectedRequest) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <ModalLayer><div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md">
           <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
               <div>
@@ -460,7 +461,7 @@ export default function TransferRequestsManager() {
               </div>
             </div>
           </div>
-        </div>
+        </div></ModalLayer>
       )}
 
       {printableRequest && buildPreviewDevice(printableRequest) && (

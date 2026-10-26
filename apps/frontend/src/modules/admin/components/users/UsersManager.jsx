@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import useAuth from '../../../../shared/hooks/useAuth';
 import Pagination from '../../../../shared/components/ui/Pagination';
+import Modal from '../../../../shared/components/ui/Modal';
 import { Users } from '../../../inventory/devices/services/inventory.api';
 import UserForm from './UsersForm';
 import UsersTable from './UsersTable';
@@ -197,6 +198,13 @@ export default function UsersManager() {
 
   return (
     <div className="space-y-4">
+      <Modal
+        open={showForm}
+        onClose={handleCancel}
+        title={editing ? 'Editar usuario' : 'Crear usuario'}
+        size="2xl"
+        constrainToViewport
+      >
       {showForm && (
         <UserForm
           form={form}
@@ -208,6 +216,7 @@ export default function UsersManager() {
           onCancel={handleCancel}
         />
       )}
+      </Modal>
 
       <UsersTable
         users={paginatedUsers}

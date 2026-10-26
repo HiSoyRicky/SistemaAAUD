@@ -23,6 +23,7 @@ const listQuerySchema = z.object({
   limit: zOptionalInt('Límite inválido', { min: 1, max: 200 }),
   search: zOptionalNullableString('La búsqueda debe ser texto'),
   active: z.any().optional(),
+  in_stock: z.any().optional(),
   category: zOptionalNullableString('La categoría debe ser texto'),
   item_id: zOptionalInt('Insumo inválido', { min: 1 }),
   ubication_id: zOptionalInt('Ubicación inválida', { min: 1 }),

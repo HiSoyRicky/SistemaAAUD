@@ -246,6 +246,7 @@ export async function exportWarehouseMovementsToExcel(rows) {
       { header: 'Departamento', key: 'departamento', width: 28 },
       { header: 'Receptor', key: 'receptor', width: 28 },
       { header: 'Despachado por', key: 'despachado_por', width: 28 },
+      { header: 'Observación', key: 'observacion', width: 45 },
     ],
     rows: rows.map((row) => ({
       fecha: formatDateTime(row.created_at),
@@ -259,6 +260,7 @@ export async function exportWarehouseMovementsToExcel(rows) {
       departamento: row.department?.name || '-',
       receptor: row.receiver_name || '-',
       despachado_por: row.user?.nombre_completo || '-',
+      observacion: row.observation || '-',
     })),
     fileName: `Movimientos-Almacen-${new Date().toISOString().slice(0, 10)}.xlsx`,
   });

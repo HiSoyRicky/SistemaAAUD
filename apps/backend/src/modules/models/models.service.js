@@ -30,9 +30,6 @@ export const create = async (payload) => {
 
   const brand = await repository.findBrandById(id_brand);
   if (!brand) throw new AppError('La marca seleccionada no existe', 400);
-  if ((brand.catalog_type === 'VEHICLE' && id_device !== null) || (brand.catalog_type !== 'VEHICLE' && id_device === null)) {
-    throw new AppError(brand.catalog_type === 'VEHICLE' ? 'Las marcas de vehículos no deben asociarse a un dispositivo tecnológico' : 'Seleccione el dispositivo tecnológico del modelo', 400);
-  }
 
   try {
     const existingModel = await repository.findByNameBrandDevice({
@@ -86,8 +83,18 @@ export const update = async (idParam, payload) => {
 
   const brand = await repository.findBrandById(id_brand);
   if (!brand) throw new AppError('La marca seleccionada no existe', 400);
-  if ((brand.catalog_type === 'VEHICLE' && id_device !== null) || (brand.catalog_type !== 'VEHICLE' && (!Number.isInteger(id_device) || id_device < 1))) {
-    throw new AppError(brand.catalog_type === 'VEHICLE' ? 'Las marcas de vehículos no deben asociarse a un dispositivo tecnológico' : 'Seleccione el dispositivo tecnológico del modelo', 400);
+  if (id_device !== null && (!Number.isInteger(id_device) || id_device < 1)) {
+    throw new AppError('Seleccione un dispositivo tecnológico válido', 400);
+  }
+
+  const duplicateModel = await repository.findDuplicateNameBrandDevice({
+    name,
+    id_brand,
+    id_device,
+    excludeId: id,
+  });
+  if (duplicateModel) {
+    throw new AppError('El modelo ya existe para esta marca y tipo de dispositivo', 409);
   }
 
   const updated = await repository.updateById(id, {
