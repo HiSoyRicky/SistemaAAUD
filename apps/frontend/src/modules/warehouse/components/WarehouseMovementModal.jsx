@@ -1,6 +1,7 @@
 import { ArrowLeft, ClipboardList, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { v4 as uuidv4 } from 'uuid';
 import ModalLayer from '../../../shared/components/ui/ModalLayer';
 import Warehouse from '../services/warehouse.api';
 
@@ -40,7 +41,7 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
     setSearchError('');
     setMovementError('');
     setLines([]);
-    setIdempotencyKey(globalThis.crypto.randomUUID());
+    setIdempotencyKey(uuidv4());
   }, [open]);
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { v4 as uuidv4 } from 'uuid';
 import Pagination from '../../../shared/components/ui/Pagination';
 import Modal from '../../../shared/components/ui/Modal';
 import useAuth from '../../../shared/hooks/useAuth';
@@ -203,7 +204,7 @@ function WarehousePage({ historyOnly = false }) {
           { item_id: Number(movementForm.item_id), quantity: Number(movementForm.quantity) },
         ];
         await Warehouse.createBatchOut({
-          idempotency_key: globalThis.crypto.randomUUID(),
+          idempotency_key: uuidv4(),
           ubication_id: Number(movementForm.ubication_id),
           department_id: Number(movementForm.department_id),
           receiver_name: movementForm.receiver_name,
@@ -213,7 +214,7 @@ function WarehousePage({ historyOnly = false }) {
         });
       } else {
         await Warehouse.createMovement({
-          idempotency_key: globalThis.crypto.randomUUID(),
+          idempotency_key: uuidv4(),
           ...movementForm,
           item_id: Number(movementForm.item_id),
           quantity: Number(movementForm.quantity),
