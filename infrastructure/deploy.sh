@@ -36,7 +36,12 @@ APACHE_ROOT=$(apache2ctl -S 2>&1) \
 
 [[ "$APACHE_ROOT" == *'system.aaud.local'* ]] \
   || fail 'VirtualHost AAUD no detectado'
-if ! sudo grep -Eq '^[[:space:]]*DocumentRoot[[:space:]]+/var/www/aaud-system/shared/frontend/current[[:space:]]*$' /etc/apache2/sites-enabled/system.aaud.local.conf; then
+APACHE_CONF=/etc/apache2/sites-enabled/system.aaud.local.conf
+
+[[ -r "$APACHE_CONF" ]] \
+  || fail "No se puede leer la configuración de Apache: $APACHE_CONF"
+
+if ! grep -Eq '^[[:space:]]*DocumentRoot[[:space:]]+/var/www/aaud-system/shared/frontend/current[[:space:]]*$' "$APACHE_CONF"; then
   fail 'Apache aún no usa shared/frontend/current. No se realizará el despliegue.'
 fi
 
