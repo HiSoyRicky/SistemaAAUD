@@ -108,11 +108,11 @@ function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 to-blue-600">
-      <div className="w-full max-w-md p-8 bg-white shadow-2xl rounded-xl">
-        <h2 className="text-5xl font-bold text-center text-gray-900">Bienvenido</h2>
+      <div className="w-full max-w-md p-5 sm:p-8 bg-white shadow-2xl rounded-xl">
+        <h2 className="text-3xl sm:text-5xl font-bold text-center text-gray-900">Bienvenido</h2>
 
         {/* Logo debajo del título */}
-        <img src={LogoGobNal} alt="Logo" className="object-contain max-w-xs mx-auto" />
+        <img src={LogoGobNal} alt="Logo" className="object-contain w-full max-w-xs h-auto mx-auto" />
 
         <form onSubmit={handleSubmit} className="w-full space-y-6">
           {/* Si estamos en login mode, mostrar el formulario */}
@@ -135,6 +135,7 @@ function LoginPage() {
               </div>
 
               <div className="relative">
+                <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700">Contraseña</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
@@ -148,16 +149,10 @@ function LoginPage() {
 
                 <button
                   type="button"
-                  className="absolute -translate-y-1/2 right-3 top-1/2 text-gray-500 hover:text-gray-700"
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Evita que el botón robe el foco
-                    setShowPassword(true);
-                  }}
-                  onMouseUp={() => setShowPassword(false)}
-                  onMouseLeave={() => setShowPassword(false)}
-                  onTouchStart={() => setShowPassword(true)}
-                  onTouchEnd={() => setShowPassword(false)}
-                  onTouchCancel={() => setShowPassword(false)}
+                  className="absolute right-3 bottom-2 p-1 text-gray-500 hover:text-gray-700"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>

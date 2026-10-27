@@ -51,8 +51,8 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
 
   return (
     <ModalLayer>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/55 backdrop-blur-md">
-      <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/55 p-4 backdrop-blur-md">
+      <div className="w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 bg-white rounded-lg shadow-xl">
         <h3 className="mb-4 text-lg font-bold">Asignar Técnico</h3>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -84,7 +84,7 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
               )}
             </select>
           </div>
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-wrap justify-end gap-4">
             <button
               type="button"
               onClick={onClose}
@@ -103,8 +103,8 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
         </form>
       </div>
       {showConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-md">
-          <div className="w-full max-w-sm p-5 bg-white shadow-xl rounded-xl">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 bg-white shadow-xl rounded-xl">
             <h4 className="mb-3 text-lg font-extrabold text-gray-800">Confirmar asignación</h4>
 
             <p className="mb-5 text-sm text-gray-700">
@@ -115,7 +115,7 @@ function AssignTechnicianModal({ technicians, onClose, onConfirm }) {
               ?
             </p>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-wrap justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowConfirm(false)}

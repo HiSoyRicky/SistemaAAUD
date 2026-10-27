@@ -67,7 +67,8 @@ export default function UbicationsManager({
       )}
 
       {/* Tabla */}
-      <table className="w-full text-sm border">
+      <div className="max-w-full overflow-x-auto" role="region" aria-label="Tabla de resultados" tabIndex={0}>
+      <table className="w-full min-w-[36rem] text-sm border">
         <thead className="bg-gray-100">
           <tr>
             <th className="px-2 text-center border">#</th>
@@ -114,6 +115,7 @@ export default function UbicationsManager({
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* Paginación */}
       <Pagination

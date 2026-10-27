@@ -3,7 +3,10 @@
 import AppError from '../../common/utils/AppError.js';
 import { getClientIp } from '../../common/utils/clientInfo.js';
 import { prisma } from '../../config/prisma.js';
-import { appendPrinterIpsToIncidentDescription, getReporterIncidentDescription } from './incidentDescription.js';
+import {
+  appendPrinterIpsToIncidentDescription,
+  getReporterIncidentDescription,
+} from './incidentDescription.js';
 import { scheduleIncidentCreatedNotification } from './incidentNotificationService.js';
 
 const PUBLIC_INCIDENT_USER_ID = 2;
@@ -136,6 +139,37 @@ export async function resolveTonerPrinterIps({ categoryName, payload, tx }) {
   ];
 }
 
+export async function resolveSelectedTonerPrinter({ categoryName, payload, tx }) {
+  if (payload.id_printer_device == null || payload.id_printer_device === '') return null;
+  const id = parseOptionalPositiveInt(payload.id_printer_device);
+  const modelId = parseOptionalPositiveInt(payload.id_printer_model);
+  const tonerId = parseOptionalPositiveInt(payload.id_toner);
+  if (!normalizeCategoryName(categoryName).includes('toner') || !id || !modelId || !tonerId) {
+    throw new AppError('Selección de impresora inválida', 400);
+  }
+  const printer = await tx.inventory_devices.findFirst({
+    where: {
+      id,
+      id_model: modelId,
+      device: { name: 'Impresora' },
+      model: { toners: { some: { id: tonerId } } },
+      inventory: {
+        is: {
+          id_ubication: Number(payload.id_ubication),
+          id_department: Number(payload.id_department),
+        },
+      },
+    },
+    select: { ip: true, inventory: { select: { tag: true } } },
+  });
+  if (!printer)
+    throw new AppError(
+      'La impresora seleccionada no corresponde al modelo y departamento indicados',
+      400
+    );
+  return { tag: printer.inventory.tag, ip: String(printer.ip || '').trim() };
+}
+
 export function buildCreateData(payload, clientIp) {
   const userIdNum = PUBLIC_INCIDENT_USER_ID;
   const ubicationIdNum = Number(payload.id_ubication);
@@ -218,7 +252,10 @@ async function createIncident({ payload, req, io }) {
         select: { id: true, active: true },
       });
       if (!actor?.active) {
-        throw new AppError('El usuario genérico de incidencias (ID 2) no existe o está inactivo', 503);
+        throw new AppError(
+          'El usuario genérico de incidencias (ID 2) no existe o está inactivo',
+          503
+        );
       }
 
       await validateIncidentLocation(tx, {
@@ -241,11 +278,21 @@ async function createIncident({ payload, req, io }) {
         tx,
       });
 
-      const printerIps = await resolveTonerPrinterIps({
+      const selectedPrinter = await resolveSelectedTonerPrinter({
         categoryName: category.name,
         payload,
         tx,
       });
+      const printerIps = selectedPrinter
+        ? [selectedPrinter.ip]
+        : await resolveTonerPrinterIps({ categoryName: category.name, payload, tx });
+      if (selectedPrinter)
+        createData.description = `${createData.description.trimEnd()}\nMarbete: ${selectedPrinter.tag}`;
+      if (createData.description.length > 255)
+        throw new AppError(
+          'La descripción es demasiado larga para identificar la impresora. Acorte el texto e intente nuevamente.',
+          400
+        );
       createData.description = appendPrinterIpsToIncidentDescription(
         createData.description,
         printerIps

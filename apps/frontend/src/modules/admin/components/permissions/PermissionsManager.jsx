@@ -548,7 +548,7 @@ export default function PermissionsManager() {
       {mode === 'role' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
-            <div className="min-w-[260px] flex-1">
+            <div className="min-w-0 flex-1 sm:min-w-[260px]">
               <label htmlFor="roleSelect" className="mb-1 block text-sm font-medium text-gray-700">
                 Rol
               </label>

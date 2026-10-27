@@ -18,6 +18,7 @@ function Header({ sidebarFixed }) {
 
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const mobileButtonRef = useRef(null);
 
   const initials = useMemo(() => {
     if (!loggedUserName) return '?';
@@ -44,7 +45,7 @@ function Header({ sidebarFixed }) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setUserMenuOpen(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target) && !mobileButtonRef.current?.contains(e.target)) {
         // si click afuera del panel mobile y estaba abierto
         // (pero no cierres si el click es en el botón hamburguesa: lo manejamos aparte)
         if (mobileOpen) setMobileOpen(false);
@@ -53,6 +54,19 @@ function Header({ sidebarFixed }) {
 
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      if (mobileOpen) {
+        setMobileOpen(false);
+        mobileButtonRef.current?.focus();
+      }
+      setUserMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [mobileOpen]);
 
   // Cierra menú mobile si cambia el tamaño a desktop
@@ -93,9 +107,12 @@ function Header({ sidebarFixed }) {
             {isAuthenticated && (
               <button
                 type="button"
+                ref={mobileButtonRef}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-navigation"
                 className="inline-flex items-center justify-center w-10 h-10 text-white transition md:hidden rounded-xl bg-white/10 ring-1 ring-white/15 hover:bg-white/15"
                 onClick={() => setMobileOpen((p) => !p)}
-                aria-label="Abrir menú"
+                aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
               >
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -107,6 +124,8 @@ function Header({ sidebarFixed }) {
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen((prev) => !prev)}
+                  aria-label="Menú de usuario"
+                  aria-expanded={userMenuOpen}
                   className="flex items-center gap-2 px-2 py-1 transition rounded-full bg-white/10 ring-1 ring-white/15 hover:bg-white/15"
                 >
                   <div className="flex items-center justify-center font-extrabold bg-white rounded-full shadow-sm h-9 w-9 text-slate-900">
@@ -166,27 +185,42 @@ function Header({ sidebarFixed }) {
 
         {/* Mobile panel */}
         {isAuthenticated && mobileOpen && (
-          <div ref={mobileMenuRef} className="pb-3 md:hidden">
+          <div id="mobile-navigation" ref={mobileMenuRef} className="max-h-[calc(100dvh-4rem)] overflow-y-auto pb-3 md:hidden">
             <div className="p-2 mt-2 rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
               <div className="grid gap-2">
                 {menuItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) =>
-                      [
-                        'flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition',
-                        isActive
-                          ? 'bg-white text-slate-900'
-                          : 'text-white/90 hover:bg-white/10 hover:text-white',
-                      ].join(' ')
-                    }
-                  >
-                    {/* Renderizamos el componente de icono correctamente */}
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
-                  </NavLink>
+                  <div key={item.path || item.label}>
+                    {item.children ? (
+                      <>
+                        <div className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white/80">
+                          <item.icon className="w-5 h-5" />
+                          {item.label}
+                        </div>
+                        <div className="ml-4 grid gap-1">
+                          {item.children.map((child) => (
+                            <NavLink
+                              key={child.path}
+                              to={child.path}
+                              onClick={() => setMobileOpen(false)}
+                              className={({ isActive }) => `flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${isActive ? 'bg-white text-slate-900' : 'text-white/90 hover:bg-white/10'}`}
+                            >
+                              <child.icon className="w-5 h-5 shrink-0" />
+                              {child.label}
+                            </NavLink>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setMobileOpen(false)}
+                        className={({ isActive }) => `flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${isActive ? 'bg-white text-slate-900' : 'text-white/90 hover:bg-white/10'}`}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        {item.label}
+                      </NavLink>
+                    )}
+                  </div>
                 ))}
 
                 <div className="h-px my-1 bg-white/10" />

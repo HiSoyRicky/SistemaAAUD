@@ -109,7 +109,7 @@ export default function AdminPage() {
       )}
 
       {/* Contenido */}
-      <div className="bg-white shadow-lg rounded-lg p-6 min-h-[400px]">
+      <div className="min-w-0 rounded-lg bg-white p-3 shadow-lg sm:p-6">
         <Outlet />
       </div>
     </div>

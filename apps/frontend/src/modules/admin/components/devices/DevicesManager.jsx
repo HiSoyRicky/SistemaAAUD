@@ -36,7 +36,7 @@ export default function DevicesManager() {
 
   //  Agregar nuevo dispositivo
   const addDevice = async () => {
-    if (!newDevice) {
+    if (!newDevice.trim()) {
       setErrorMessage('Por favor completa todos los campos');
       return;
     }
@@ -49,6 +49,7 @@ export default function DevicesManager() {
       setErrorMessage('');
       setSuccessMessage(canCreateDevice ? 'Activo agregado correctamente' : 'Solicitud enviada al administrador para revisión');
       setTimeout(() => setSuccessMessage(''), 3000);
+      return true;
     } catch (err) {
       if (err.response) {
         const status = err.response.status;
@@ -65,6 +66,7 @@ export default function DevicesManager() {
 
       // Borra el mensaje de error luego de unos segundos
       setTimeout(() => setErrorMessage(''), 4000);
+      return false;
     }
   };
 
@@ -76,7 +78,7 @@ export default function DevicesManager() {
 
   //  Guardar edición
   const saveDevice = async (id) => {
-    if (!editingName.trim()) return;
+    if (!editingName.trim()) { setErrorMessage('Escribe el nombre del activo'); return false; }
     try {
       await api.put(`/api/devices/${id}`, {
         name: editingName,
@@ -87,11 +89,13 @@ export default function DevicesManager() {
       setErrorMessage('');
       setSuccessMessage('Dispositivo actualizado correctamente');
       setTimeout(() => setSuccessMessage(''), 3000);
+      return true;
     } catch (err) {
       console.error('Error al guardar dispositivo:', err);
       setSuccessMessage('');
       setErrorMessage(err.response?.data?.message || 'Error al guardar dispositivo');
       setTimeout(() => setErrorMessage(''), 5000);
+      return false;
     }
   };
 
@@ -156,6 +160,7 @@ export default function DevicesManager() {
         suggestedDevices={suggestedDevices}
         successMessage={successMessage}
         errorMessage={errorMessage}
+        setErrorMessage={setErrorMessage}
         setCurrentPage={setCurrentPage}
         editDevice={editDevice}
         deleteDevice={deleteDevice}

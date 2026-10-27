@@ -21,7 +21,7 @@ export default function InventoryDuplicatesModal({ open, onClose, onSearchGroup,
   return (
     <ModalLayer>
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/65 p-3 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="duplicate-modal-title">
-      <section className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <section className="max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-5">
           <div className="flex gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><AlertTriangle size={23} /></span>
@@ -34,7 +34,7 @@ export default function InventoryDuplicatesModal({ open, onClose, onSearchGroup,
         </header>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
-          <div className="flex rounded-lg bg-slate-100 p-1">
+          <div className="flex flex-wrap rounded-lg bg-slate-100 p-1">
             <button type="button" onClick={() => setTab('tags')} className={`rounded-md px-4 py-2 text-sm font-semibold ${tab === 'tags' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-600'}`}>
               Marbetes ({duplicateTags.length})
             </button>
@@ -48,7 +48,7 @@ export default function InventoryDuplicatesModal({ open, onClose, onSearchGroup,
           </label>
         </div>
 
-        <div className="overflow-y-auto bg-slate-50 p-5">
+        <div className="bg-slate-50 p-5">
           {filteredGroups.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center text-sm text-slate-500"><ClipboardCheck className="mx-auto mb-2 text-emerald-600" />No hay coincidencias en esta sección.</div>
           ) : (
@@ -87,7 +87,7 @@ export default function InventoryDuplicatesModal({ open, onClose, onSearchGroup,
             </div>
           )}
         </div>
-        <footer className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500">
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500">
           <span>Los marbetes numéricos duplicados requieren corrección; las series necesitan confirmación del registro.</span>
           <button type="button" onClick={onClose} className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white">Cerrar</button>
         </footer>

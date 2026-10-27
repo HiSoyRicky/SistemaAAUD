@@ -70,7 +70,8 @@ export default function UsersTable({
         </div>
       )}
 
-      <table className="w-full text-sm border">
+      <div className="max-w-full overflow-x-auto" role="region" aria-label="Tabla de resultados" tabIndex={0}>
+      <table className="w-full min-w-[36rem] text-sm border">
         <thead>
           <tr className="bg-gray-200">
             <th className="p-2 text-center border">#</th>
@@ -127,6 +128,7 @@ export default function UsersTable({
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

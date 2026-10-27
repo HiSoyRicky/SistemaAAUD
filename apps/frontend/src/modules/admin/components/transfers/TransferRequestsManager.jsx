@@ -322,7 +322,7 @@ export default function TransferRequestsManager() {
 
       {selectedRequest && buildPreviewDevice(selectedRequest) && (
         <ModalLayer><div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md">
-          <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[92vh]">
+          <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[calc(100dvh-2rem)]">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
               <div>
                 <h2 className="mt-2 text-2xl font-bold text-slate-900">Revisión de traslado</h2>

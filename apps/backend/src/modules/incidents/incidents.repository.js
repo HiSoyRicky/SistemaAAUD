@@ -119,6 +119,31 @@ export const findAll = async ({ technicianId } = {}) => {
   return queryIncidentsWithAssignmentFallback(query, (args) => prisma.bd_incidents.findMany(args));
 };
 
+export function buildIncidentSearchWhere(search) {
+  const text = String(search || '').trim();
+  if (!text) return {};
+  const contains = { contains: text, mode: 'insensitive' };
+  const statusIds = [[1, 'pendiente'], [2, 'asignado'], [3, 'resuelto']]
+    .filter(([, label]) => label.includes(text.toLowerCase())).map(([id]) => id);
+  return { OR: [
+    { reporter_name: contains }, { email: contains }, { description: contains },
+    { other_category_detail: contains }, { ubications: { is: { name: contains } } },
+    { departments: { is: { name: contains } } }, { categories: { is: { name: contains } } },
+    ...(statusIds.length ? [{ id_status: { in: statusIds } }] : []),
+  ] };
+}
+
+export async function findPage({ technicianId, search, skip, take, db = prisma }) {
+  const scope = technicianId ? { id_technician: Number(technicianId) } : {};
+  const where = { ...scope, ...buildIncidentSearchWhere(search) };
+  const [rows, total, counts] = await Promise.all([
+    queryIncidentsWithAssignmentFallback({ where, select: listSelect, orderBy: [{ id_status: 'asc' }, { id: 'desc' }], skip, take }, (args) => db.bd_incidents.findMany(args)),
+    db.bd_incidents.count({ where }),
+    db.bd_incidents.groupBy({ by: ['id_status'], where: scope, _count: { _all: true } }),
+  ]);
+  return { rows, total, counts };
+}
+
 export const findById = async (id) => {
   const query = {
     where: { id: Number(id) },

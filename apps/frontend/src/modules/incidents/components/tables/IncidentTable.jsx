@@ -72,6 +72,7 @@ function IncidentTable({
   onResolve,
   onEdit,
   visibleColumns,
+  serverPagination = false,
 }) {
   if (!Array.isArray(incidents)) incidents = [];
   const itemsPerPage = 10;
@@ -100,7 +101,7 @@ function IncidentTable({
     // Luego por id_incident descendente
     return b.id_incident - a.id_incident;
   });
-  const paginatedIncidents = sortedIncidents.slice(startIndex, endIndex);
+  const paginatedIncidents = serverPagination ? incidents : sortedIncidents.slice(startIndex, endIndex);
 
   const tdClass =
     'border-x border-slate-100 px-4 py-3 text-center align-middle text-sm text-slate-700';
@@ -282,13 +283,13 @@ function IncidentTable({
       </div>
 
       {/* Paginación */}
-      <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
+      {!serverPagination && <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={(page) => setCurrentPage(page)}
         />
-      </div>
+      </div>}
 
       <IncidentDetailModal
         isOpen={showDetailModal}

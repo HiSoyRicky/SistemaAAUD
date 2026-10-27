@@ -24,6 +24,7 @@ export const incidentSchema = z.object({
   id_department: z.coerce.number().min(1, 'Seleccione un departamento'),
   id_device: optionalPositiveInt,
   id_printer_model: optionalPositiveInt,
+  id_printer_device: optionalPositiveInt,
   id_toner: optionalPositiveInt,
   toner_color: z.preprocess((value) => {
     if (value === '' || value === null || value === undefined) {

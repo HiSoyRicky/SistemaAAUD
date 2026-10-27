@@ -5,6 +5,7 @@ import api from '../../../shared/api/apiClient';
 // --- Incidencias ---
 const Incidents = {
   fetchAll: () => api.get('/api/incidents').then((res) => res.data),
+  fetchPage: (params) => api.get('/api/incidents', { params }).then((res) => res.data),
 
   // Crear incidencia
   create: (payload, { isPublic = false } = {}) =>
@@ -41,6 +42,12 @@ const Incidents = {
         params: { id_ubication, id_department },
       })
       .then((res) => res.data),
+
+  fetchTonerPrinters: (params) =>
+    api.get('/api/incidents/toner-printers', { params, skipSessionExpiryRedirect: true }).then((res) => res.data),
+
+  fetchTonerLevels: (id, params) =>
+    api.get(`/api/incidents/toner-printers/${id}/levels`, { params, skipSessionExpiryRedirect: true }).then((res) => res.data),
 };
 
 export const getCategories = () => api.get('/api/categories').then((res) => res.data.data);

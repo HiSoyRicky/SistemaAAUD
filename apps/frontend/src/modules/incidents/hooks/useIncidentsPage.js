@@ -1,6 +1,6 @@
 // useIncidentsPage.js
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { onIncidentCreated, onIncidentUpdated } from '../../../services/socket/incidentsSocket';
 import { connectSocket, disconnectSocket, socket } from '../../../services/socket/socketClient';
 import { exportIncidentsToExcel } from '../../../shared/utils/exportExcel';
@@ -23,6 +23,13 @@ export default function useIncidentsPage({
   const [notification, setNotification] = useState({ message: '', type: '' });
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [metrics, setMetrics] = useState({ total: 0, pending: 0, assigned: 0, resolved: 0 });
+  const requestId = useRef(0);
+
+  useEffect(() => { const timer = setTimeout(() => { setPage(1); setDebouncedSearch(search); }, 300); return () => clearTimeout(timer); }, [search]);
 
   const showNotification = useCallback((msg, type) => {
     setNotification({ message: msg, type });
@@ -39,22 +46,26 @@ export default function useIncidentsPage({
   }, []);
 
   const fetchIncidents = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     try {
-      let fetched = await Incidents.fetchAll();
-      fetched = Array.isArray(fetched) ? fetched : [];
-
-      const techId = Number.parseInt(loggedUserId);
-      if (userType === 'tecnico' && loggedUserId && !Number.isNaN(techId)) {
-        fetched = fetched.filter((inc) => inc.id_technician === techId);
-      }
-
-      setIncidents(fetched);
+      const result = await Incidents.fetchPage({ page, limit: 25, search: debouncedSearch, ...(userType === 'tecnico' ? { own: 'true' } : {}) });
+      if (currentRequest !== requestId.current) return;
+      setIncidents(result.data || []);
+      setTotalPages(result.totalPages || 1);
+      setMetrics(result.metrics || { total: 0, pending: 0, assigned: 0, resolved: 0 });
+      if (page > (result.totalPages || 1)) setPage(result.totalPages || 1);
     } catch (error) {
-      console.error('Error al cargar incidencias:', error);
-      showNotification('Error al cargar incidencias: ' + error.message, 'error');
+      if (currentRequest !== requestId.current) return;
+      showNotification('Error al cargar incidencias: ' + getApiErrorMessage(error), 'error');
       setIncidents([]);
     }
-  }, [userType, loggedUserId, showNotification]);
+  }, [userType, page, debouncedSearch, showNotification, getApiErrorMessage]);
+  const fetchRef = useRef(fetchIncidents);
+  fetchRef.current = fetchIncidents;
+
+  useEffect(() => {
+    if (userType && userType !== 'trabajador' && localStorage.getItem('token')) fetchIncidents();
+  }, [userType, fetchIncidents]);
 
   const fetchTechnicians = useCallback(async () => {
     try {
@@ -81,7 +92,7 @@ export default function useIncidentsPage({
       console.log('Socket conectado:', socket.id);
 
       if (canReadIncidents) {
-        fetchIncidents();
+        fetchRef.current();
       }
     };
 
@@ -92,7 +103,7 @@ export default function useIncidentsPage({
     const handleReconnect = () => {
       console.log('Socket reconectado');
       if (canReadIncidents) {
-        fetchIncidents();
+        fetchRef.current();
       }
     };
 
@@ -100,57 +111,10 @@ export default function useIncidentsPage({
     socket.on('disconnect', handleDisconnect);
     socket.on('reconnect', handleReconnect);
 
-    const offCreated = onIncidentCreated((newIncident) => {
-      const techId = Number.parseInt(loggedUserId);
-
-      if (userType === 'tecnico' && newIncident.id_technician !== techId) {
-        return;
-      }
-
-      setIncidents((prev) => {
-        // Evitar duplicados
-        const exists = prev.some((i) => i.id_incident === newIncident.id_incident);
-        if (exists) return prev;
-
-        return [...prev, newIncident].sort(
-          (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
-        );
-      });
-
-    });
-
-    const offUpdated = onIncidentUpdated((updated) => {
-      setIncidents((prev) => {
-        const techId = Number.parseInt(loggedUserId);
-        const exists = prev.some((i) => i.id_incident === updated.id_incident);
-
-        // Técnico: solo incidencias propias
-        if (userType === 'tecnico') {
-          if (updated.id_technician !== techId) {
-            return prev.filter((i) => i.id_incident !== updated.id_incident);
-          }
-
-          if (!exists) {
-            return [...prev, updated].sort(
-              (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
-            );
-          }
-        }
-
-        if (!exists) {
-          return [...prev, updated].sort(
-            (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
-          );
-        }
-
-        return prev
-          .map((inc) => (inc.id_incident === updated.id_incident ? { ...inc, ...updated } : inc))
-          .sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
-      });
-    });
+    const offCreated = onIncidentCreated(() => { if (canReadIncidents) fetchRef.current(); });
+    const offUpdated = onIncidentUpdated(() => { if (canReadIncidents) fetchRef.current(); });
 
     if (canReadIncidents) {
-      fetchIncidents();
       if (canAssignIncidents) {
         fetchTechnicians();
       }
@@ -168,7 +132,6 @@ export default function useIncidentsPage({
     };
   }, [
     userType,
-    fetchIncidents,
     fetchTechnicians,
     showNotification,
     canAssignIncidents,
@@ -308,73 +271,28 @@ export default function useIncidentsPage({
     [currentIncidentToResolve, showNotification, fetchIncidents]
   );
 
-  const handleExportIncidents = useCallback(() => {
-    exportIncidentsToExcel(incidents);
-    showNotification('Incidencias exportadas a Excel', 'success');
-  }, [incidents, showNotification]);
-
-  const sortedIncidentsForTable = useMemo(() => {
-    const arr = Array.isArray(incidents) ? incidents : [];
-    const techId = Number.parseInt(loggedUserId);
-
-    const filtered =
-      userType === 'tecnico' && loggedUserId && !Number.isNaN(techId)
-        ? arr.filter((inc) => inc.id_technician && inc.id_technician === techId)
-        : arr;
-
-    return filtered.slice().sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
-  }, [incidents, userType, loggedUserId]);
-
-  const getCategoryText = (id) => {
-    switch (id) {
-      case 1:
-        return 'internet';
-      case 2:
-        return 'equipo';
-      case 3:
-        return 'programa';
-      case 4:
-        return 'otro';
-      default:
-        return '';
+  const handleExportIncidents = useCallback(async () => {
+    try {
+      const params = { limit: 100, ...(userType === 'tecnico' ? { own: 'true' } : {}) };
+      const first = await Incidents.fetchPage({ ...params, page: 1 });
+      const rows = [...(first.data || [])];
+      for (let n = 2; n <= first.totalPages; n += 1) {
+        const result = await Incidents.fetchPage({ ...params, page: n });
+        rows.push(...(result.data || []));
+      }
+      await exportIncidentsToExcel(rows);
+      showNotification('Incidencias exportadas a Excel', 'success');
+    } catch (error) {
+      showNotification('Error al exportar incidencias: ' + getApiErrorMessage(error), 'error');
     }
-  };
+  }, [userType, showNotification, getApiErrorMessage]);
 
-  const getStatusText = (id) => {
-    switch (id) {
-      case 1:
-        return 'pendiente';
-      case 2:
-        return 'asignado';
-      case 3:
-        return 'resuelto';
-      default:
-        return '';
-    }
-  };
-
-  const filteredIncidentsForTable = useMemo(() => {
-    if (!search.trim()) return sortedIncidentsForTable;
-
-    const text = search.toLowerCase();
-
-    const safe = (val) => (val === null || val === undefined ? '' : String(val).toLowerCase());
-
-    return sortedIncidentsForTable.filter(
-      (inc) =>
-        safe(inc.reporter_name).includes(text) ||
-        safe(inc.reporter_email).includes(text) ||
-        safe(inc.ubication_name).includes(text) ||
-        safe(inc.department_name).includes(text) ||
-        safe(inc.description).includes(text) ||
-        safe(inc.other_category_detail).includes(text) ||
-        getCategoryText(inc.id_category).includes(text) ||
-        getStatusText(inc.id_status).includes(text)
-    );
-  }, [search, sortedIncidentsForTable]);
+  const sortedIncidentsForTable = incidents;
+  const filteredIncidentsForTable = incidents;
 
   return {
     incidents,
+    page, setPage, totalPages, metrics,
     technicians,
     sortedIncidentsForTable,
     filteredIncidentsForTable,

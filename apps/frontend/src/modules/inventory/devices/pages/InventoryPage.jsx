@@ -98,6 +98,7 @@ function InventoryPage({ scope = 'equipos' }) {
   const [administrativeAreas, setAdministrativeAreas] = useState([]);
   const [filterOptions, setFilterOptions] = useState({});
   const [devices, setDevices] = useState([]);
+  const deviceRequest = useRef(0);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
@@ -168,6 +169,7 @@ function InventoryPage({ scope = 'equipos' }) {
   };
 
   const loadDevices = async (searchTerm = '') => {
+    const requestId = ++deviceRequest.current;
     try {
       const queryFilters = {
         ubication: inventoryFilters.ubication_name,
@@ -185,6 +187,7 @@ function InventoryPage({ scope = 'equipos' }) {
         limit: inventoryLimit,
         ...queryFilters,
       });
+      if (requestId !== deviceRequest.current) return;
       const data = Array.isArray(response) ? response : response?.data || [];
       setDevices(data);
       setInventoryMeta({
@@ -193,12 +196,15 @@ function InventoryPage({ scope = 'equipos' }) {
         stats: response?.stats || null,
       });
     } catch (error) {
+      if (requestId !== deviceRequest.current) return;
       console.error('Error al obtener dispositivos:', error);
+      toast.error('No se pudo cargar el inventario');
     }
   };
 
   useEffect(() => {
-    void loadDevices(search);
+    const timer = setTimeout(() => void loadDevices(search), 250);
+    return () => { clearTimeout(timer); deviceRequest.current += 1; };
   }, [search, inventoryPage, inventoryLimit, inventoryFilters]);
 
   useEffect(() => {
@@ -239,6 +245,7 @@ function InventoryPage({ scope = 'equipos' }) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchFilterOptions = async () => {
       try {
         const data = await Inventory.fetchFilterOptions({
@@ -253,6 +260,7 @@ function InventoryPage({ scope = 'equipos' }) {
           status: inventoryFilters.status_name,
           asset_type: inventoryFilters.asset_type_name,
         });
+        if (cancelled) return;
 
         const nextOptions = {
           ubication_name: (data.ubications || []).map((item) => item.name),
@@ -283,11 +291,13 @@ function InventoryPage({ scope = 'equipos' }) {
           });
         }
       } catch (error) {
+        if (cancelled) return;
         console.error('Error al obtener opciones de filtro:', error);
       }
     };
 
-    void fetchFilterOptions();
+    const timer = setTimeout(() => void fetchFilterOptions(), 250);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [
     search,
     inventoryFilters.ubication_name,

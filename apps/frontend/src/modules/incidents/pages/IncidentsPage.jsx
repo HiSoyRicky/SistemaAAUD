@@ -12,6 +12,7 @@ import {
 import { useMemo } from 'react';
 import useAuth from '../../../shared/hooks/useAuth';
 import ModalLayer from '../../../shared/components/ui/ModalLayer';
+import Pagination from '../../../shared/components/ui/Pagination';
 
 import SuccessMessage from '../../../shared/common/SuccessMessage';
 import IncidentEditForm from '../components/forms/IncidentEditForm';
@@ -41,15 +42,6 @@ const roleCopy = {
   },
 };
 
-function getStatusMetrics(incidents = []) {
-  const total = incidents.length;
-  const pending = incidents.filter((item) => Number(item.id_status) === 1).length;
-  const assigned = incidents.filter((item) => Number(item.id_status) === 2).length;
-  const resolved = incidents.filter((item) => Number(item.id_status) === 3).length;
-
-  return { total, pending, assigned, resolved };
-}
-
 function IncidentsPage() {
   const { userType, loggedUserName, loggedUserId, hasPermission } = useAuth();
   const canAssignIncidents = hasPermission('incidents.assign');
@@ -57,7 +49,8 @@ function IncidentsPage() {
 
   const {
     technicians,
-    sortedIncidentsForTable,
+    metrics,
+    page, setPage, totalPages,
     filteredIncidentsForTable,
     search,
     setSearch,
@@ -85,10 +78,6 @@ function IncidentsPage() {
   } = useIncidentsPage({ userType, loggedUserName, loggedUserId, canAssignIncidents });
 
   const pageCopy = roleCopy[userType] || roleCopy.trabajador;
-  const metrics = useMemo(
-    () => getStatusMetrics(sortedIncidentsForTable),
-    [sortedIncidentsForTable]
-  );
   const metricCards = useMemo(() => {
     const cards = [
       {
@@ -260,6 +249,7 @@ function IncidentsPage() {
           </div>
 
           <IncidentTable
+            serverPagination
             incidents={filteredIncidentsForTable}
             userType={userType}
             canAssignIncidents={canAssignIncidents}
@@ -268,6 +258,7 @@ function IncidentsPage() {
             onResolve={canUpdateIncidents ? handleOpenResolveModal : null}
             onEdit={setIncidentToEdit}
           />
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
         </section>
       )}
 

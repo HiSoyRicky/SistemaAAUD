@@ -231,8 +231,8 @@ function SolutionForm({
 function ConfirmResolveModal({ solutionText, isSubmitting, onCancel, onConfirm }) {
   return (
     <ModalLayer>
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
+      <div className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <h4 className="mb-3 text-lg font-extrabold text-slate-900">Confirmar resolución</h4>
 
         <p className="mb-2 text-sm text-slate-700">
@@ -240,11 +240,11 @@ function ConfirmResolveModal({ solutionText, isSubmitting, onCancel, onConfirm }
           respuesta?
         </p>
 
-        <div className="mb-4 rounded-lg border bg-slate-50 p-3 text-xs text-slate-800">
+        <div className="mb-4 break-words rounded-lg border bg-slate-50 p-3 text-xs text-slate-800">
           {solutionText}
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}

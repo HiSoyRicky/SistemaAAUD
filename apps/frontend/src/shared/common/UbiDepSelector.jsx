@@ -168,7 +168,7 @@ function UbiDepSelector({
           label="Ubicación"
           htmlFor="id_ubication"
           error={errors.ubication}
-          hint={compact ? null : 'Selecciona primero una ubicación para filtrar departamentos.'}
+          hint={compact || selectedUbication ? null : 'Selecciona primero una ubicación para filtrar departamentos.'}
           compact={compact}
         >
           <div className={wrapSelect}>
@@ -209,6 +209,7 @@ function UbiDepSelector({
               />
             </svg>
           </div>
+          {selectedUbication && <p className="break-words text-xs text-gray-600 sm:hidden">{sortedUbications.find((item) => item.id === selectedUbication)?.name}</p>}
         </Field>
 
         {/* Departamento */}
@@ -259,6 +260,7 @@ function UbiDepSelector({
             </svg>
           </div>
 
+          {selectedDepartment && <p className="break-words text-xs text-gray-600 sm:hidden">{sortedDepartments.find((item) => item.id === selectedDepartment)?.name}</p>}
           {errors.department && (
             <p id="department-error" className="sr-only">
               {errors.department}

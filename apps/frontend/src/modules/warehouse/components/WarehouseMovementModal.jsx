@@ -218,13 +218,13 @@ export default function WarehouseMovementModal({ open, ubications, departments, 
   return (
     <ModalLayer>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
-      <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="relative z-10 w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl bg-white shadow-2xl">
         <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white"><ClipboardList size={21} /></div><div><h2 className="text-xl font-bold text-slate-900">Registrar movimiento</h2><p className="text-sm text-slate-500">Paso {step} de 3: {step === 1 ? 'Define el movimiento' : step === 2 ? 'Agrega los insumos' : 'Confirma los datos'}</p></div></div>
           <button type="button" title="Cerrar" onClick={onClose} className="rounded-md p-2 text-slate-500 hover:bg-slate-100"><X size={19} /></button>
         </header>
         <div className="flex gap-2 border-b border-slate-200 px-5 py-3 text-sm"><span className={`rounded-full px-3 py-1 font-semibold ${step === 1 ? 'bg-blue-600 text-white' : 'bg-emerald-100 text-emerald-800'}`}>1. Movimiento</span><span className={`rounded-full px-3 py-1 font-semibold ${step === 2 ? 'bg-blue-600 text-white' : step === 3 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>2. Insumos</span><span className={`rounded-full px-3 py-1 font-semibold ${step === 3 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>3. Confirmar</span></div>
-        <form onSubmit={submit} className="max-h-[75vh] overflow-y-auto p-5">
+        <form onSubmit={submit} className="p-5">
           {step === 1 ? (
             <div className="flex flex-col gap-4">
               <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">Movimiento<select value={form.movement_type} onChange={(event) => updateForm({ movement_type: event.target.value, ubication_id: '', department_id: '' })} className="h-11 rounded-md border border-slate-300 px-3 font-normal"><option value="OUT">Salida</option><option value="IN">Entrada</option><option value="ADJUSTMENT">Ajuste</option></select></label>

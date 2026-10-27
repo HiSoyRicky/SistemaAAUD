@@ -156,7 +156,7 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
         aria-modal="true"
         aria-labelledby="asset-detail-title"
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl"
       >
         <header className="flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5">
           <div>
@@ -179,7 +179,7 @@ function InventoryDetailModal({ isOpen, onClose, item }) {
             <X className="h-5 w-5" />
           </button>
         </header>
-        <main className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
+        <main className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
           <section className="rounded-xl border border-slate-200 bg-white p-5">
             <SectionTitle icon={Info} title="Resumen" />
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

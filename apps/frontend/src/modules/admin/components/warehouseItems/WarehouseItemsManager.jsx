@@ -197,7 +197,7 @@ export default function WarehouseItemsManager() {
         >
           <form
             onSubmit={submit}
-            className="relative z-10 w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl"
+            className="relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-4 shadow-2xl sm:p-6"
           >
             <div className="mb-4 flex items-center justify-between rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
               {editingId && !fieldsUnlocked ? (
@@ -276,7 +276,7 @@ export default function WarehouseItemsManager() {
                 />
               </label>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 type="button"
                 onClick={closeForm}

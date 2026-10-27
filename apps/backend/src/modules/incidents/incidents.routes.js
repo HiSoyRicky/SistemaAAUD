@@ -7,6 +7,8 @@ import authMiddleware from '../../common/middleware/authMiddleware.js';
 import requirePasswordChange from '../../common/middleware/requirePasswordChange.js';
 import requirePermission from '../../common/middleware/requirePermission.js';
 import * as controller from './incidents.controller.js';
+import catchAsync from '../../common/utils/catchAsync.js';
+import { listPhysicalPrinters, getPrinterLevels } from './printerLevels.js';
 import { registerIncidentCreationRoutes } from './incidentCreation.routes.js';
 import {
   validateDeleteIncident,
@@ -70,6 +72,11 @@ router.get(
   tonerOptionsLimiter,
   controller.getTonerOptions
 );
+
+// Mismo acceso público acotado que las opciones de solicitud; no acepta direcciones IP.
+const printerLevelsLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
+router.get('/toner-printers', tonerOptionsLimiter, catchAsync(async (req, res) => res.json(await listPhysicalPrinters(req.query))));
+router.get('/toner-printers/:id/levels', printerLevelsLimiter, catchAsync(async (req, res) => res.json(await getPrinterLevels(req.params.id, req.query))));
 
 router.get(
   '/:id',

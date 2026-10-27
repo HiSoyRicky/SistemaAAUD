@@ -11,7 +11,7 @@ import {
   Trash2,
   Warehouse as WarehouseIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Pagination from '../../../shared/components/ui/Pagination';
@@ -62,13 +62,15 @@ function WarehousePage({ historyOnly = false }) {
   const [historyUbication, setHistoryUbication] = useState('');
   const [historyDepartment, setHistoryDepartment] = useState('');
   const [dispatchLines, setDispatchLines] = useState([]);
+  const loadRequest = useRef(0);
 
   const canCreateMovement = hasPermission('warehouse_movements.create');
 
   const load = async () => {
+    const requestId = ++loadRequest.current;
     setLoading(true);
     try {
-      const requests = [Warehouse.fetchUbications(), Warehouse.fetchDepartments()];
+      const requests = [];
       if (!historyOnly && hasPermission('warehouse_stock.read')) {
         requests.unshift(Warehouse.fetchStock({ search: stockSearch, page: stockPage, limit: 25 }));
       }
@@ -89,14 +91,12 @@ function WarehousePage({ historyOnly = false }) {
         );
       }
       const responses = await Promise.all(requests);
+      if (requestId !== loadRequest.current) return;
       const hasStockResponse = !historyOnly && hasPermission('warehouse_stock.read');
       const stockData = hasStockResponse ? responses[0] : null;
       const offset = hasStockResponse ? 1 : 0;
       const hasMovementResponse = historyOnly && hasPermission('warehouse_movements.read');
       const movementData = hasMovementResponse ? responses[offset] : null;
-      const ubicationIndex = offset + (hasMovementResponse ? 1 : 0);
-      const ubicationData = responses[ubicationIndex];
-      const departmentData = responses[ubicationIndex + 1];
       setStock(stockData?.data || []);
       setStockMeta({ total: stockData?.total || 0, totalPages: stockData?.totalPages || 1 });
       setMovements(movementData?.data || []);
@@ -107,17 +107,29 @@ function WarehousePage({ historyOnly = false }) {
       if (movementData && historyPage > movementData.totalPages) {
         setHistoryPage(movementData.totalPages || 1);
       }
-      setUbications(Array.isArray(ubicationData) ? ubicationData : []);
-      setDepartments(Array.isArray(departmentData) ? departmentData : []);
     } catch (error) {
+      if (requestId !== loadRequest.current) return;
       toast.error(error.response?.data?.message || 'No se pudo cargar Almacén');
     } finally {
-      setLoading(false);
+      if (requestId === loadRequest.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+    Promise.all([Warehouse.fetchUbications(), Warehouse.fetchDepartments()])
+      .then(([locations, departmentsData]) => {
+        if (cancelled) return;
+        setUbications(Array.isArray(locations) ? locations : []);
+        setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+      })
+      .catch(() => { if (!cancelled) toast.error('No se pudieron cargar las ubicaciones y departamentos'); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 250);
+    return () => { clearTimeout(timer); loadRequest.current += 1; };
   }, [
     stockSearch,
     historySearch,
@@ -150,16 +162,19 @@ function WarehousePage({ historyOnly = false }) {
   }, [historyUbication]);
 
   useEffect(() => {
+    let cancelled = false;
     const timer = setTimeout(async () => {
       if (!hasPermission('warehouse_items.read')) return;
       try {
         const result = await Warehouse.fetchItems({ search: movementSearch, limit: 25 });
+        if (cancelled) return;
         setMovementItems(result?.data || []);
       } catch (error) {
+        if (cancelled) return;
         toast.error(error.response?.data?.message || 'No se pudo buscar el catálogo');
       }
     }, 250);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [movementSearch, hasPermission]);
 
   const selectedMovementItem = movementItems.find(
@@ -551,7 +566,7 @@ function WarehousePage({ historyOnly = false }) {
                 value={stockSearch}
                 onChange={(event) => setStockSearch(event.target.value)}
                 placeholder="Buscar insumo por nombre o código"
-                className="h-9 min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
+                className="h-9 w-full sm:w-auto sm:min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
               />
               <button
                 type="button"
@@ -616,7 +631,7 @@ function WarehousePage({ historyOnly = false }) {
                 value={historySearch}
                 onChange={(event) => setHistorySearch(event.target.value)}
                 placeholder="Buscar por nombre, código o persona"
-                className="h-9 w-56 min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
+                className="h-9 w-full sm:w-56 sm:min-w-[260px] rounded-md border border-slate-300 px-3 text-sm"
               />
               <select
                 value={movementTypeFilter}

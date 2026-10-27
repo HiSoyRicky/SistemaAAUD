@@ -170,7 +170,7 @@ export default function VehicleCatalogManager() {
       {showForm && <ModalLayer><div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="vehicle-catalog-modal-title">
       <form
         onSubmit={save}
-        className="max-h-[90vh] w-full max-w-4xl space-y-4 overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-4xl space-y-4 overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
       >
         <div className="flex items-center justify-between">
           <h3 id="vehicle-catalog-modal-title" className="text-lg font-semibold text-slate-900">

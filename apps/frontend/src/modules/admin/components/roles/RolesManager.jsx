@@ -128,7 +128,7 @@ export default function RolesManager() {
 
       {modalOpen && (canCreate || (editingId && canUpdate)) && (
         <ModalLayer><div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="role-modal-title">
-          <form onSubmit={submit} className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+          <form onSubmit={submit} className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
             <div className="mb-5 flex items-center justify-between"><h3 id="role-modal-title" className="text-xl font-bold text-slate-900">{editingId ? 'Editar rol' : 'Crear nuevo rol'}</h3><button type="button" title="Cerrar" onClick={resetForm} className="rounded-md p-2 text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
             <label className="text-sm font-semibold text-slate-700">Nombre del rol<input autoFocus value={name} maxLength={50} onChange={(event) => { setName(event.target.value); setFormError(''); }} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Ej. Encargado de Almacén" required /></label>
             {formError && <p className="mt-2 text-sm text-red-600">{formError}</p>}

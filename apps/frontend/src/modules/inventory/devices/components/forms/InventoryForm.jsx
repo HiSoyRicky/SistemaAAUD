@@ -641,7 +641,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   if (fetchError) {
     return (
       <ModalLayer>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/55 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/55 p-3 backdrop-blur-md">
         <div className="w-full max-w-lg p-6 bg-white shadow-xl rounded-xl">
           <p className="text-red-500">{fetchError}</p>
           <button type="button" onClick={onCancel} className="px-4 py-2 mt-4 bg-gray-300 rounded">
@@ -677,7 +677,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
   return (
     <ModalLayer>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3 backdrop-blur-md">
-      <div className="relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-950 md:text-xl">
@@ -1270,7 +1270,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
               </CompactSection>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-200 bg-white px-5 py-3">
+            <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 bg-white px-5 py-3">
               <button
                 type="button"
                 onClick={onCancel}
@@ -1323,7 +1323,7 @@ function InputField({ label, name, value, onChange, error, locked, onToggle }) {
   return (
     <div>
       <div className="mb-1 flex min-h-5 items-center justify-between gap-2">
-        <label htmlFor={name} className="block truncate text-xs font-semibold text-slate-700">
+        <label htmlFor={name} className="block text-xs font-semibold text-slate-700">
           {label}
         </label>
         {locked !== undefined && onToggle && (
@@ -1410,7 +1410,7 @@ function SelectField({
   return (
     <div>
       <div className="mb-1 flex min-h-5 items-center justify-between gap-2">
-        <label htmlFor={name} className="block truncate text-xs font-semibold text-slate-700">
+        <label htmlFor={name} className="block text-xs font-semibold text-slate-700">
           {label}
         </label>
         {locked !== undefined && onToggle && (
@@ -1475,7 +1475,7 @@ function DateField({ label, name, value, onChange, disabled }) {
   return (
     <div>
       <div className="mb-1 flex min-h-5 items-center">
-        <label htmlFor={name} className="block truncate text-xs font-semibold text-slate-700">
+        <label htmlFor={name} className="block text-xs font-semibold text-slate-700">
           {label}
         </label>
       </div>

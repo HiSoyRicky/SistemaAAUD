@@ -17,6 +17,7 @@ export const createIncidentBodySchema = z.object({
   id_department: zRequiredInt('id_department debe ser un número entero'),
   id_device: zOptionalInt('Equipo inválido', { min: 1, nullable: true }),
   id_printer_model: zOptionalInt('Modelo de impresora inválido', { min: 1, nullable: true }),
+  id_printer_device: zOptionalInt('Impresora inválida', { min: 1, nullable: true }),
   id_toner: zOptionalInt('Tóner inválido', { min: 1, nullable: true }),
   toner_color: zOptionalNullableString('Color de tóner inválido'),
   description: zRequiredString('description es obligatorio').refine(

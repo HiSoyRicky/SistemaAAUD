@@ -43,21 +43,21 @@ export default function IncidentsMonitorPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 p-4 sm:p-8">
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col items-start justify-between gap-4 mb-8 md:flex-row md:items-center">
         <div>
-          <h1 className="text-5xl font-extrabold text-slate-800">Monitor de Incidencias</h1>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-800">Monitor de Incidencias</h1>
 
           <p className="mt-2 text-lg text-slate-500">Sistema de Gestión de Incidencias</p>
         </div>
 
-        <div className="text-right">
-          <div className="text-5xl font-bold text-slate-800">{formatTime(time, '-')}</div>
+        <div className="min-w-0 text-left md:text-right">
+          <div className="text-3xl sm:text-5xl font-bold text-slate-800">{formatTime(time, '-')}</div>
 
           <div className="text-lg text-slate-500">{formatDateWithWeekday(time, '-')}</div>
 
-          <div className="flex items-center justify-end gap-2 mt-3">
+          <div className="flex items-center justify-start gap-2 mt-3 md:justify-end">
             <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
 
             <span className="font-medium text-green-600">Actualización en tiempo real</span>
@@ -65,19 +65,19 @@ export default function IncidentsMonitorPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-lg p-6 mb-8 border border-slate-200">
+      <div className="bg-white rounded-3xl shadow-lg p-3 sm:p-6 mb-8 border border-slate-200">
         <IncidentsTechnicianChart incidents={incidents} loading={loading} />
       </div>
 
       {/* TABLA */}
       <div className="bg-white rounded-3xl shadow-lg border border-slate-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b">
           <h2 className="text-2xl font-bold text-slate-700">Listado de Incidencias</h2>
 
           <span className="text-slate-500">{incidents.length} registros</span>
         </div>
 
-        <div className="p-5 overflow-auto max-h-[650px]">
+        <div className="p-3 sm:p-5 overflow-auto max-h-[650px]">
           <IncidentTable
             incidents={incidents}
             visibleColumns={{

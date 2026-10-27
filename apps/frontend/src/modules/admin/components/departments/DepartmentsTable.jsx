@@ -110,7 +110,8 @@ export default function DepartmentsTable({
       )}
 
       {/* Tabla de departamentos */}
-      <table className="w-full text-sm border">
+      <div className="max-w-full overflow-x-auto" role="region" aria-label="Tabla de resultados" tabIndex={0}>
+      <table className="w-full min-w-[36rem] text-sm border">
         <thead className="bg-gray-100">
           <tr>
             <th className="px-3 py-1 text-center border">#</th>
@@ -200,6 +201,7 @@ export default function DepartmentsTable({
           ))}
         </tbody>
       </table>
+      </div>
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

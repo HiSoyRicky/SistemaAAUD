@@ -32,9 +32,25 @@ function parsePositiveInt(value, fieldName) {
   return parsed;
 }
 
-export const getAll = async (currentUser) => {
+export const getAll = async (currentUser, query = {}) => {
   const permissions = await getResolvedUserPermissionCodes(currentUser);
-  const technicianId = canReadAllIncidents(permissions) ? null : Number(currentUser?.id);
+  const technicianId = canReadAllIncidents(permissions) && query.own !== 'true' ? null : Number(currentUser?.id);
+  if (technicianId !== null && (!Number.isInteger(technicianId) || technicianId <= 0)) {
+    throw new AppError('No autenticado', 401);
+  }
+  if (query.page !== undefined || query.limit !== undefined) {
+    const page = query.page === undefined ? 1 : parsePositiveInt(query.page, 'Página');
+    const limit = Math.min(query.limit === undefined ? 25 : parsePositiveInt(query.limit, 'Límite'), 100);
+    const { rows, total, counts } = await repository.findPage({ technicianId, search: query.search, skip: (page - 1) * limit, take: limit });
+    const metrics = { total: 0, pending: 0, assigned: 0, resolved: 0 };
+    for (const row of counts) {
+      const count = row._count._all;
+      metrics.total += count;
+      const name = { 1: 'pending', 2: 'assigned', 3: 'resolved' }[row.id_status];
+      if (name) metrics[name] = count;
+    }
+    return { data: rows.map(mapIncidentListItem), total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)), metrics };
+  }
   const incidents = await repository.findAll({ technicianId });
   return incidents.map(mapIncidentListItem);
 };

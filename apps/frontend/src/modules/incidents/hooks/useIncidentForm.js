@@ -1,11 +1,12 @@
 // useIncidentForm.js
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { incidentSchema } from '../schemas/incident.schema';
 import { getCategories, Incidents } from '../services/incidents.api';
+import { mergeTonerDescription } from '../utils/tonerForm';
 
 const TONER_COLOR_LABELS = {
   BLACK: 'Negro',
@@ -45,6 +46,7 @@ export function useIncidentForm({ onSubmit }) {
   const [tonerPrinters, setTonerPrinters] = useState([]);
   const [isLoadingTonerOptions, setIsLoadingTonerOptions] = useState(false);
   const [tonerOptionsError, setTonerOptionsError] = useState('');
+  const previousAutoDescription = useRef('');
 
   const {
     register,
@@ -68,6 +70,7 @@ export function useIncidentForm({ onSubmit }) {
       id_category: '',
       other_category_detail: '',
       id_printer_model: '',
+      id_printer_device: '',
       toner_color: '',
       id_toner: '',
     },
@@ -112,6 +115,14 @@ export function useIncidentForm({ onSubmit }) {
       id_toner: toner.id_toner,
     }));
   }, [selectedPrinter]);
+
+  const tonerDescription = useMemo(() => {
+    const color = normalizeTonerColor(selectedTonerColor);
+    const toner = selectedPrinter?.toners?.find((item) => item.color === color);
+    if (!isTonerCategory || !selectedPrinter || !toner) return '';
+    const colorLabel = TONER_COLOR_LABELS[color] || color;
+    return `${selectedPrinter.brand || 'Sin marca'} | ${selectedPrinter.printer_model || 'Sin modelo'} | ${toner.toner_model || `Tóner ${colorLabel}`} (${colorLabel})`;
+  }, [isTonerCategory, selectedPrinter, selectedTonerColor]);
 
   useEffect(() => {
     let ignore = false;
@@ -170,6 +181,7 @@ export function useIncidentForm({ onSubmit }) {
       shouldValidate: false,
       shouldDirty: false,
     });
+    setFieldValueIfChanged('id_printer_device', '', { shouldDirty: false });
     setFieldValueIfChanged('toner_color', '', {
       shouldValidate: false,
       shouldDirty: false,
@@ -200,10 +212,6 @@ export function useIncidentForm({ onSubmit }) {
       });
       setFieldValueIfChanged('id_toner', '', {
         shouldValidate: false,
-        shouldDirty: true,
-      });
-      setFieldValueIfChanged('description', '', {
-        shouldValidate: true,
         shouldDirty: true,
       });
       return;
@@ -253,10 +261,6 @@ export function useIncidentForm({ onSubmit }) {
             shouldValidate: false,
             shouldDirty: true,
           });
-          setFieldValueIfChanged('description', '', {
-            shouldValidate: true,
-            shouldDirty: true,
-          });
         }
       } catch (error) {
         if (ignore) return;
@@ -296,10 +300,6 @@ export function useIncidentForm({ onSubmit }) {
         shouldValidate: false,
         shouldDirty: true,
       });
-      setFieldValueIfChanged('description', '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
       return;
     }
 
@@ -326,10 +326,6 @@ export function useIncidentForm({ onSubmit }) {
       shouldValidate: false,
       shouldDirty: true,
     });
-    setFieldValueIfChanged('description', '', {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
   }, [clearErrors, isTonerCategory, selectedPrinter, selectedTonerColor]);
 
   useEffect(() => {
@@ -351,18 +347,17 @@ export function useIncidentForm({ onSubmit }) {
       shouldDirty: true,
     });
 
-    const brand = selectedPrinter.brand || 'Sin marca';
-    const printerModel = selectedPrinter.printer_model || 'Sin modelo';
-    const colorLabel = TONER_COLOR_LABELS[color] || color;
-    const tonerModel = toner.toner_model || `Tóner ${colorLabel}`;
-    const autoDescription = `${brand} | ${printerModel} | ${tonerModel} (${colorLabel})`;
+    const autoDescription = tonerDescription;
 
-    setFieldValueIfChanged('description', autoDescription, {
+    const currentDescription = getValues('description') || '';
+    const previous = previousAutoDescription.current;
+    previousAutoDescription.current = autoDescription;
+    setFieldValueIfChanged('description', mergeTonerDescription(currentDescription, previous, autoDescription), {
       shouldValidate: true,
       shouldDirty: true,
     });
     clearErrors(['description', 'toner_color']);
-  }, [clearErrors, isTonerCategory, selectedPrinter, selectedTonerColor]);
+  }, [clearErrors, isTonerCategory, selectedPrinter, selectedTonerColor, tonerDescription]);
 
   const handleUbiDepChange = ({ id_ubication, id_department, ubication_name, department_name }) => {
     setValue('id_ubication', id_ubication ?? '', {
@@ -379,6 +374,7 @@ export function useIncidentForm({ onSubmit }) {
     clearErrors(['id_ubication', 'id_department', 'id_printer_model', 'toner_color']);
 
     if (isTonerCategory) {
+      setFieldValueIfChanged('id_printer_device', '', { shouldDirty: true });
       setFieldValueIfChanged('id_printer_model', '', {
         shouldValidate: true,
         shouldDirty: true,
@@ -389,10 +385,6 @@ export function useIncidentForm({ onSubmit }) {
       });
       setFieldValueIfChanged('id_toner', '', {
         shouldValidate: false,
-        shouldDirty: true,
-      });
-      setFieldValueIfChanged('description', '', {
-        shouldValidate: true,
         shouldDirty: true,
       });
     }
@@ -470,6 +462,7 @@ export function useIncidentForm({ onSubmit }) {
 
   const newIncident = () => {
     reset();
+    previousAutoDescription.current = '';
     setShowModal(false);
     setIncidentId(null);
     setSelectedUbication('');
@@ -486,6 +479,7 @@ export function useIncidentForm({ onSubmit }) {
     errors,
     isSubmitting,
     watch,
+    setValue,
     showModal,
     incidentId,
     categories,
@@ -495,6 +489,7 @@ export function useIncidentForm({ onSubmit }) {
     isOtherCategory,
     tonerPrinters,
     availableTonerColors,
+    tonerDescription,
     isLoadingTonerOptions,
     tonerOptionsError,
     selectedUbication,

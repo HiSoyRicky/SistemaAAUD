@@ -106,8 +106,8 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
 
   return (
     <ModalLayer>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-md">
-      <div className="relative w-[620px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 backdrop-blur-md">
+      <div className="relative w-full max-w-[620px] max-h-[90dvh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div className="flex items-center gap-3">
@@ -126,7 +126,8 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1 transition rounded-md hover:bg-gray-100"
+            aria-label="Cerrar movimiento de tóner"
+            className="p-2 transition rounded-md hover:bg-gray-100"
           >
             <X size={18} />
           </button>
@@ -140,7 +141,7 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
               Tipo de Movimiento
             </label>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <button
                 id="movementTypeIn"
                 type="button"
@@ -248,7 +249,7 @@ function TonerMovementModal({ toner, onClose, onSuccess }) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+        <div className="flex flex-wrap justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}

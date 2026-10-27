@@ -64,7 +64,7 @@ export default function CreationRequestsManager() {
 
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Solicitudes de creación</h2>
           <p className="text-sm text-slate-500">
@@ -142,7 +142,7 @@ export default function CreationRequestsManager() {
                   <p className="mt-2 text-sm text-slate-600">Nota: {request.review_notes}</p>
                 )}
                 {(pending || retryable) && (
-                  <div className="mt-3 flex justify-end gap-2">
+                  <div className="mt-3 flex flex-wrap justify-end gap-2">
                     {pending && (
                       <>
                         <button

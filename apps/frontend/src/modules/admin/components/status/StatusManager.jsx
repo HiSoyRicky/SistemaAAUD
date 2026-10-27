@@ -66,8 +66,8 @@ export default function StatusesManager() {
   };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
+    fetchStatuses();
+  }, []);
 
   return (
     <div>
@@ -98,7 +98,8 @@ export default function StatusesManager() {
       )}
 
       {/* Tabla */}
-      <table className="w-full text-sm border">
+      <div className="max-w-full overflow-x-auto" role="region" aria-label="Tabla de resultados" tabIndex={0}>
+      <table className="w-full min-w-[36rem] text-sm border">
         <thead className="bg-gray-100">
           <tr>
             <th className="px-3 py-1 text-center border">#</th>
@@ -144,6 +145,7 @@ export default function StatusesManager() {
           ))}
         </tbody>
       </table>
+      </div>
 
       <Pagination
         currentPage={currentPage}

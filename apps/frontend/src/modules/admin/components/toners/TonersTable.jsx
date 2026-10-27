@@ -36,7 +36,8 @@ export default function TonersTable({
         className="w-full px-2 py-1 border rounded"
       />
 
-      <table className="w-full text-sm border">
+      <div className="max-w-full overflow-x-auto" role="region" aria-label="Tabla de resultados" tabIndex={0}>
+      <table className="w-full min-w-[36rem] text-sm border">
         <thead className="bg-gray-100">
           <tr>
             <th className="px-3 py-1 text-center border">#</th>
@@ -71,6 +72,7 @@ export default function TonersTable({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
