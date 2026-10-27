@@ -69,6 +69,7 @@ test('lista solo reglas activas con metadata derivada', async () => {
         classification: { id: 10, code_new: '12040320', description: 'Equipo informático', active: true, is_assignable: true },
         asset_type: { id: 4, code: 'TECHNOLOGY', name: 'Tecnología', active: true },
         extension: { id: 2, code: 'DEVICES', name: 'Dispositivos', active: true },
+        administrative_area_id: 7,
         administrative_area: { id: 7, name: 'TECNOLOGÍA' },
       },
       {
@@ -156,7 +157,7 @@ test('resuelve reglas por precedencia de device, área y fallback genérico', as
   assert.deepEqual(calls, ['device-area']);
 });
 
-test('usa el fallback genérico default cuando no existe regla específica de área', async () => {
+test('no usa fallback genérico cuando no existe regla específica de área', async () => {
   const calls = [];
   const findActiveByScope = async (scope) => {
     const key = scope.administrativeAreaId === null ? 'generic-default' : 'generic-area';
@@ -169,8 +170,8 @@ test('usa el fallback genérico default cuando no existe regla específica de á
     { findActiveByScope }
   );
 
-  assert.equal(result, baseRule);
-  assert.deepEqual(calls, ['generic-area', 'generic-default']);
+  assert.equal(result, null);
+  assert.deepEqual(calls, ['generic-area']);
 });
 
 test('una regla específica DEVICES sí coincide con el contexto DEVICES', async () => {
@@ -208,8 +209,10 @@ test('resuelve la regla de un bien solo por equipo, sin fallback genérico', asy
   assert.deepEqual(scopes, [{ deviceId: 25 }]);
 });
 
-test('clasifica como tecnológica solo la regla con extensión DEVICES', () => {
-  assert.equal(isTechnologyRule({ extension: { code: 'DEVICES' } }), true);
-  assert.equal(isTechnologyRule({ extension: { code: 'VEHICLES' } }), false);
+test('clasifica como tecnológica la regla TECHNOLOGY con extensión DEVICES o la ausencia de regla', () => {
+  assert.equal(isTechnologyRule({ asset_type: { code: 'TECHNOLOGY' }, extension: { code: 'DEVICES' } }), true);
+  assert.equal(isTechnologyRule({ asset_type: { code: 'PROPERTY' }, extension: { code: 'DEVICES' } }), false);
+  assert.equal(isTechnologyRule({ asset_type: { code: 'TECHNOLOGY' }, extension: { code: 'VEHICLES' } }), false);
+  assert.equal(isTechnologyRule({ extension: { code: 'DEVICES' } }), false);
   assert.equal(isTechnologyRule(null), true);
 });
