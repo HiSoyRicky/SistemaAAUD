@@ -31,8 +31,11 @@ cd "$APP_DIR"
 node "$PUBLISH" verify "$CURRENT"
 
 # Evitar ejecutar este script mientras Apache siga sirviendo el directorio antiguo.
-APACHE_ROOT=$(sudo apache2ctl -S 2>/dev/null || true)
-[[ "$APACHE_ROOT" == *'system.aaud.local'* ]] || fail 'VirtualHost AAUD no detectado'
+APACHE_ROOT=$(apache2ctl -S 2>&1) \
+  || fail 'No se pudo consultar la configuración de Apache'
+
+[[ "$APACHE_ROOT" == *'system.aaud.local'* ]] \
+  || fail 'VirtualHost AAUD no detectado'
 if ! sudo grep -Eq '^[[:space:]]*DocumentRoot[[:space:]]+/var/www/aaud-system/shared/frontend/current[[:space:]]*$' /etc/apache2/sites-enabled/system.aaud.local.conf; then
   fail 'Apache aún no usa shared/frontend/current. No se realizará el despliegue.'
 fi
