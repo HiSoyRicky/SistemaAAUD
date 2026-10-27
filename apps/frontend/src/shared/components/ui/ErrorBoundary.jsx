@@ -1,6 +1,7 @@
 // ErrorBoundary.jsx
 
 import { Component } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 class ErrorBoundary extends Component {
   state = {
@@ -16,7 +17,12 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    const errorId = `ERR-${crypto.randomUUID()}`;
+    let errorId;
+    try {
+      errorId = `ERR-${uuidv4()}`;
+    } catch {
+      errorId = `ERR-${Date.now()}`;
+    }
 
     console.error('ErrorBoundary capturó:', error);
     console.error('Info:', errorInfo);
