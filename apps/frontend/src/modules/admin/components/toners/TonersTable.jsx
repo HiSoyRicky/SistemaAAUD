@@ -5,6 +5,8 @@ import ActionButton from '../../../../shared/components/ui/ActionButton';
 import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
 
 export default function TonersTable({
+  canUpdate,
+  canDelete,
   toners,
   currentPage,
   itemsPerPage,
@@ -60,13 +62,13 @@ export default function TonersTable({
               <td className="px-3 py-1 text-center border">{t.stock}</td>
 
               <td className="px-3 py-1 border flex justify-center gap-2">
-                <ActionButton type="edit" title="Editar tóner" onClick={() => startEdit(t)} />
+                {canUpdate && <ActionButton type="edit" title="Editar tóner" onClick={() => startEdit(t)} />}
 
-                <ActionButton
+                {canDelete && <ActionButton
                   type="trash"
                   title="Eliminar tóner"
                   onClick={() => deleteToner(t.id)}
-                />
+                />}
               </td>
             </tr>
           ))}

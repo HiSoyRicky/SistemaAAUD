@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  AlertTriangle,
   ClipboardList,
   Download,
   Eye,
@@ -25,6 +26,7 @@ import {
 import { formatDateTime } from '../../../shared/utils/formatDate';
 import WarehouseMovementModal from '../components/WarehouseMovementModal';
 import Warehouse from '../services/warehouse.api';
+import { stockStatus } from '../utils/stockStatus';
 
 const emptyMovement = {
   item_id: '',
@@ -43,6 +45,9 @@ function WarehousePage({ historyOnly = false }) {
   const [movementSearch, setMovementSearch] = useState('');
   const [movementItems, setMovementItems] = useState([]);
   const [stock, setStock] = useState([]);
+  const [stockAlerts, setStockAlerts] = useState(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const alertsInitialized = useRef(false);
   const [movements, setMovements] = useState([]);
   const [ubications, setUbications] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -67,7 +72,7 @@ function WarehousePage({ historyOnly = false }) {
 
   const canCreateMovement = hasPermission('warehouse_movements.create');
 
-  const load = async () => {
+  const load = async ({ showAlerts = false } = {}) => {
     const requestId = ++loadRequest.current;
     setLoading(true);
     try {
@@ -100,6 +105,19 @@ function WarehousePage({ historyOnly = false }) {
       const movementData = hasMovementResponse ? responses[offset] : null;
       setStock(stockData?.data || []);
       setStockMeta({ total: stockData?.total || 0, totalPages: stockData?.totalPages || 1 });
+      if (hasStockResponse) {
+        try {
+          const alerts = await Warehouse.fetchStockAlerts();
+          if (requestId !== loadRequest.current) return;
+          setStockAlerts(alerts);
+          if ((!alertsInitialized.current || showAlerts) && alerts.length) setAlertsOpen(true);
+          alertsInitialized.current = true;
+        } catch {
+          if (requestId !== loadRequest.current) return;
+          setStockAlerts(null);
+          toast.error('No se pudieron cargar las alertas de existencias');
+        }
+      }
       setMovements(movementData?.data || []);
       setHistoryMeta({
         total: movementData?.total || 0,
@@ -343,7 +361,7 @@ function WarehousePage({ historyOnly = false }) {
           )}
           <button
             type="button"
-            onClick={load}
+            onClick={() => load()}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <RefreshCw size={16} /> Actualizar
@@ -554,12 +572,18 @@ function WarehousePage({ historyOnly = false }) {
           departments={departments}
           loggedUserName={loggedUserName}
           onClose={() => setMovementModalOpen(false)}
-          onSaved={load}
+          onSaved={() => load({ showAlerts: true })}
         />
       )}
 
       {!historyOnly && (
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          {hasPermission('warehouse_stock.read') && stockAlerts !== null && stockAlerts.length > 0 && (
+            <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-5 py-4 text-amber-900">
+              <span className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle size={18} /> {stockAlerts.length} insumo(s) con existencias bajas o agotadas</span>
+              <button type="button" onClick={() => setAlertsOpen(true)} className="rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-amber-100">Ver resumen</button>
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <h2 className="text-lg font-bold text-slate-900">Existencias actuales</h2>
             <div className="flex flex-wrap items-end gap-2">
@@ -588,7 +612,7 @@ function WarehousePage({ historyOnly = false }) {
                   <tr>
                     <th className="px-5 py-3">Insumo</th>
                     <th className="px-5 py-3">Unidad</th>
-                    <th className="px-5 py-3">Cantidad</th>
+                    <th className="px-5 py-3">Cantidad total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -601,7 +625,14 @@ function WarehousePage({ historyOnly = false }) {
                         </div>
                       </td>
                       <td className="px-5 py-3">{entry.item?.unit || '-'}</td>
-                      <td className="px-5 py-3">{entry.quantity}</td>
+                      <td className="px-5 py-3">
+                        {(() => { const status = stockStatus(entry.item?.current_stock ?? entry.quantity, entry.item?.min_stock); return (
+                          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-semibold ${status.className}`}>
+                            {entry.item?.current_stock ?? entry.quantity}
+                          </span>
+                        ); })()}
+                        <div className="mt-1 text-xs text-slate-500">Mínimo: {entry.item?.min_stock ?? 0}</div>
+                      </td>
                     </tr>
                   ))}
                   {!stock.length && (
@@ -621,6 +652,23 @@ function WarehousePage({ historyOnly = false }) {
             onPageChange={setStockPage}
           />
         </section>
+      )}
+
+      {!historyOnly && hasPermission('warehouse_stock.read') && (
+        <Modal open={alertsOpen} onClose={() => setAlertsOpen(false)} title="Insumos con pocas existencias" size="2xl" constrainToViewport>
+          <p className="mb-4 text-sm text-slate-600">Estos insumos están agotados o alcanzaron su mínimo. Las cantidades representan el stock total.</p>
+          {stockAlerts?.length ? (
+            <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200">
+              {stockAlerts.map(({ item, quantity }) => {
+                const status = stockStatus(quantity, item.min_stock);
+                return <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div><p className="font-semibold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">Código: {item.code || 'Sin código'} · Mínimo: {item.min_stock} {item.unit}</p></div>
+                  <span className={`rounded-full px-3 py-1 text-sm font-semibold ${status.className}`}>{quantity} {item.unit} · {status.label}</span>
+                </li>;
+              })}
+            </ul>
+          ) : <p className="text-sm text-slate-500">No hay insumos con existencias bajas.</p>}
+        </Modal>
       )}
 
       {historyOnly && (

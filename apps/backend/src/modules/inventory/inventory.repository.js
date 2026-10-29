@@ -273,6 +273,12 @@ export function buildInventorySearchWhere(search, filters = {}, scope = {}) {
             is: { asset_type: { is: { name: { equals: filters.asset_type, mode: 'insensitive' } } } },
           },
         },
+        {
+          asset_classification_rule: {
+            is: { classification: { is: { description: { equals: filters.asset_type, mode: 'insensitive' } } } },
+          },
+        },
+        ...(filters.asset_type === 'Terreno o inmueble' ? [{ real_estate_details: { isNot: null } }] : []),
       ],
     },
     filters.extension && {
@@ -423,6 +429,8 @@ export const findInventoryFilterOptions = async (filters = {}, scope = {}, searc
     deviceRows,
     brandRows,
     modelRows,
+    vehicleBrandRows,
+    vehicleModelRows,
     statusRows,
     userRows,
     assetTypeRows,
@@ -459,6 +467,16 @@ export const findInventoryFilterOptions = async (filters = {}, scope = {}, searc
       distinct: ['id_model'],
       select: { id_model: true },
     }),
+    prisma.inventory_item_vehicles.findMany({
+      where: { item: { is: buildWhereExcluding('brand') }, make: { not: null } },
+      distinct: ['make'],
+      select: { make: true },
+    }),
+    prisma.inventory_item_vehicles.findMany({
+      where: { item: { is: buildWhereExcluding('model') }, model: { not: null } },
+      distinct: ['model'],
+      select: { model: true },
+    }),
     prisma.inventory_items.findMany({
       where: buildWhereExcluding('status'),
       distinct: ['id_status'],
@@ -487,6 +505,7 @@ export const findInventoryFilterOptions = async (filters = {}, scope = {}, searc
     models,
     statuses,
     assetTypes,
+    classificationRows,
   ] = await Promise.all([
       prisma.ubications.findMany({
         where: { id: { in: locationRows.map((row) => row.id_ubication) } },
@@ -532,6 +551,15 @@ export const findInventoryFilterOptions = async (filters = {}, scope = {}, searc
         select: { id: true, name: true },
         orderBy: { name: 'asc' },
       }),
+      prisma.inventory_items.findMany({
+        where: withAnd(buildWhereExcluding('asset_type'), {
+          asset_classification_rule_id: { not: null },
+        }),
+        distinct: ['asset_classification_rule_id'],
+        select: {
+          asset_classification_rule: { select: { classification: { select: { description: true } } } },
+        },
+      }),
     ]);
 
   return {
@@ -541,8 +569,14 @@ export const findInventoryFilterOptions = async (filters = {}, scope = {}, searc
     devices,
     brands,
     models,
+    vehicle_brands: vehicleBrandRows.filter((row) => row.make).map((row) => ({ name: row.make })),
+    vehicle_models: vehicleModelRows.filter((row) => row.model).map((row) => ({ name: row.model })),
     statuses,
-    asset_types: assetTypes,
+    asset_types: [...new Set([
+      ...assetTypes.map((assetType) => assetType.name),
+      ...classificationRows.map((row) => row.asset_classification_rule?.classification?.description),
+      ...(!scope?.technologyOnly ? ['Terreno o inmueble'] : []),
+    ].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })),
     users: userRows
       .map((row) => row.user)
       .filter(Boolean)
@@ -638,17 +672,42 @@ export const findInventoryStats = async ({ search, filters, scope }) => {
   };
 };
 
-export const findPage = async ({ search, filters, scope, skip, take }) => {
+export const findPage = async ({ search, filters, scope, skip, take }, client = prisma) => {
   const where = buildInventorySearchWhere(search, filters, scope);
-  const [data, total] = await prisma.$transaction([
-    prisma.inventory_items.findMany({
+  return client.$transaction(async (db) => {
+    const rows = await db.inventory_items.findMany({
       where,
+      select: {
+        id: true,
+        tag: true,
+        user: true,
+        description: true,
+        asset_type: { select: { name: true } },
+        asset_classification_rule: {
+          select: { classification: { select: { id: true } }, asset_type: { select: { name: true } } },
+        },
+        ubications: { select: { name: true } },
+        departments: { select: { name: true } },
+        administrative_area: { select: { name: true } },
+        device_details: {
+          select: {
+            serie: true,
+            device: { select: { name: true } },
+            brand: { select: { name: true } },
+            model: { select: { name: true } },
+          },
+        },
+        status: { select: { name: true } },
+      },
+    });
+    const page = getInventoryPage(rows, skip, take);
+    const data = await db.inventory_items.findMany({
+      where: { AND: [where, { id: { in: page.map((row) => row.id) } }] },
       include: includeRelations,
-    }),
-    prisma.inventory_items.count({ where }),
-  ]);
-
-  return { data: getInventoryPage(data, skip, take), total };
+    });
+    const byId = new Map(data.map((item) => [item.id, item]));
+    return { data: page.map((row) => byId.get(row.id)).filter(Boolean), total: rows.length };
+  });
 };
 
 export const findById = async (id) => {
@@ -717,13 +776,24 @@ export function buildInventoryMovementFilters({
   search,
   technologyOnly = false,
 }) {
+  // Los eventos manuales usan el ID central; el logger anterior usa el ID legacy.
+  const itemId = Prisma.sql`CASE
+    WHEN al.entity_type = 'BD_INVENTORY' AND al.source IN
+      ('inventory.create', 'inventory.update', 'inventory.classification-sync', 'inventory_transfer_requests.approve')
+      THEN al.entity_id
+    WHEN al.source IS NULL THEN (
+      SELECT lim.item_id FROM legacy_inventory_map lim WHERE lim.bd_inventory_id = al.entity_id
+    )
+    ELSE NULL
+  END`;
   const baseConditions = [
     Prisma.sql`al.entity_type IN ('BD_INVENTORY', 'INVENTORY_DEVICES')`,
+    Prisma.sql`${itemId} IS NOT NULL`,
   ];
 
   if (technologyOnly) {
     baseConditions.push(
-      Prisma.sql`al.entity_id IN (
+      Prisma.sql`${itemId} IN (
         SELECT ii.id
         FROM inventory_items ii
         LEFT JOIN inventory_asset_classification_rules r ON r.id = ii.asset_classification_rule_id
@@ -733,7 +803,7 @@ export function buildInventoryMovementFilters({
     );
   }
 
-  if (inventoryId) baseConditions.push(Prisma.sql`al.entity_id = ${inventoryId}`);
+  if (inventoryId) baseConditions.push(Prisma.sql`${itemId} = ${inventoryId}`);
   if (action) baseConditions.push(Prisma.sql`al.action = ${action}::"ActivityAction"`);
   if (from) baseConditions.push(Prisma.sql`al.created_at >= ${from}`);
   if (to) baseConditions.push(Prisma.sql`al.created_at <= ${to}`);
@@ -755,14 +825,14 @@ export function buildInventoryMovementFilters({
     : Prisma.sql`TRUE`;
   const searchCount = searchTerm
     ? Prisma.sql`(
-        al.entity_id::text ILIKE ${searchTerm} ESCAPE E'\\\\'
+        (${itemId})::text ILIKE ${searchTerm} ESCAPE E'\\\\'
         OR COALESCE(al.old_values::text, '') ILIKE ${searchTerm} ESCAPE E'\\\\'
         OR COALESCE(al.new_values::text, '') ILIKE ${searchTerm} ESCAPE E'\\\\'
         OR COALESCE(u.nombre_completo, '') ILIKE ${searchTerm} ESCAPE E'\\\\'
       )`
     : Prisma.sql`TRUE`;
 
-  return { base, searchScoped, searchCount };
+  return { base, searchScoped, searchCount, itemId };
 }
 
 export function buildInventoryMovementPageQuery(filters, limit, skip) {
@@ -771,7 +841,7 @@ export function buildInventoryMovementPageQuery(filters, limit, skip) {
       SELECT
         al.id,
         al.entity_type,
-        al.entity_id,
+        ${filters.itemId} AS entity_id,
         al.action,
         al.old_values,
         al.new_values,
@@ -783,7 +853,7 @@ export function buildInventoryMovementPageQuery(filters, limit, skip) {
         u.id AS actor_id,
         u.nombre_completo AS actor_name,
         LEAD(al.created_at) OVER (
-          PARTITION BY al.entity_id
+          PARTITION BY ${filters.itemId}
           ORDER BY al.created_at DESC, al.id DESC
         ) AS previous_movement_at
       FROM "activity_logs" al
@@ -933,7 +1003,7 @@ export const findAdministrativeAreasByIds = async (ids = []) => {
 export const findCurrentInventoryByIds = async (ids = []) => {
   if (!ids.length) return [];
 
-  return prisma.bd_inventory.findMany({
+  return prisma.inventory_items.findMany({
     where: { id: { in: ids } },
     select: {
       id: true,
@@ -948,7 +1018,7 @@ export const findCurrentInventoryByIds = async (ids = []) => {
       departments: { select: { name: true } },
       administrative_area: { select: { name: true } },
       status: { select: { name: true } },
-      inventory_devices: {
+      device_details: {
         include: {
           device: { select: { name: true } },
           brand: { select: { name: true } },

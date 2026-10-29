@@ -1,3 +1,4 @@
+import useAuth from '../../../../shared/hooks/useAuth';
 import { Pencil, Save, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
@@ -50,6 +51,9 @@ const fuelTypes = [
 ];
 
 export default function VehicleCatalogManager() {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission('inventory_classification_rules.create');
+  const canUpdate = hasPermission('inventory_classification_rules.update');
   const [catalog, setCatalog] = useState([]);
   const [brands, setBrands] = useState([]);
   const [models, setModels] = useState([]);
@@ -148,7 +152,7 @@ export default function VehicleCatalogManager() {
               Relaciona una marca y un modelo existentes con año, tipo y combustible.
             </p>
           </div>
-          <button
+          {canCreate && <button
             type="button"
             onClick={() => {
               setEditingId(null);
@@ -159,7 +163,7 @@ export default function VehicleCatalogManager() {
             className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white"
           >
             Agregar vehículo
-          </button>
+          </button>}
         </div>
       </header>
       {error && !showForm && (
@@ -320,13 +324,13 @@ export default function VehicleCatalogManager() {
                   <td className="p-3">{entry.vehicle_type}</td>
                   <td className="p-3">{entry.fuel_type}</td>
                   <td className="p-3">
-                    <button
+                    {canUpdate && <button
                       aria-label="Editar"
                       onClick={() => edit(entry)}
                       className="rounded p-1 text-blue-700"
                     >
                       <Pencil size={16} />
-                    </button>
+                    </button>}
                   </td>
                 </tr>
               ))

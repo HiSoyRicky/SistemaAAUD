@@ -75,10 +75,8 @@ function isClassificationCompatible(typeCode, classificationCode) {
 
 export default function ClassificationRulesManager() {
   const { hasPermission } = useAuth();
-  const canCreate =
-    hasPermission('inventory_classification_rules.create') || hasPermission('inventory.update');
-  const canUpdate =
-    hasPermission('inventory_classification_rules.update') || hasPermission('inventory.update');
+  const canCreate = hasPermission('inventory_classification_rules.create');
+  const canUpdate = hasPermission('inventory_classification_rules.update');
   const [rules, setRules] = useState([]);
   const [devices, setDevices] = useState([]);
   const [deviceAssetTypeProfiles, setDeviceAssetTypeProfiles] = useState({});
@@ -358,6 +356,7 @@ export default function ClassificationRulesManager() {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (editingId ? !canUpdate : !canCreate) return;
     if (form.scope === 'DEVICE' && !form.device_id) {
       setFormError('Seleccione un device para una regla específica.');
       return;
@@ -450,15 +449,13 @@ export default function ClassificationRulesManager() {
           </p>
           <h2 className="text-2xl font-semibold text-slate-800">Reglas de clasificación</h2>
         </div>
-        {canCreate && (
-          <button
+          {canCreate && <button
             type="button"
             onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" /> Nueva regla
-          </button>
-        )}
+          </button>}
       </div>
 
       {message && (
@@ -792,16 +789,14 @@ export default function ClassificationRulesManager() {
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex gap-2">
-                        {canUpdate && (
-                          <button
+                          {canUpdate && <button
                             type="button"
                             onClick={() => openEdit(rule)}
-                            className="rounded-md border border-slate-300 p-2 text-slate-600 hover:bg-slate-100"
+                            className="rounded-md border border-slate-300 p-2 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                             title="Editar"
                           >
                             <Edit3 className="h-4 w-4" />
-                          </button>
-                        )}
+                          </button>}
                       </div>
                     </td>
                   </tr>

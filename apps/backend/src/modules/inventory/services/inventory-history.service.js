@@ -200,17 +200,17 @@ export const getHistory = async (query, scope = {}) => {
         classification: row.asset_classification_rule?.classification?.code_new || null,
         asset_type: row.asset_classification_rule?.asset_type?.code || null,
         extension: row.asset_classification_rule?.extension?.code || null,
-                technology: row.inventory_devices
+                technology: row.device_details
                   ? {
-                      device: row.inventory_devices.device?.name || null,
-                      brand: row.inventory_devices.brand?.name || null,
-                      model: row.inventory_devices.model?.name || null,
-                      ip: row.inventory_devices.ip || null,
+                      device: row.device_details.device?.name || null,
+                      brand: row.device_details.brand?.name || null,
+                      model: row.device_details.model?.name || null,
+                      ip: row.device_details.ip || null,
                     }
                   : null,
-        device: row.inventory_devices?.device?.name || row.devices?.name || null,
-        brand: row.inventory_devices?.brand?.name || row.brands?.name || null,
-        model: row.inventory_devices?.model?.name || row.models?.name || null,
+        device: row.device_details?.device?.name || null,
+        brand: row.device_details?.brand?.name || null,
+        model: row.device_details?.model?.name || null,
       },
     ])
   );

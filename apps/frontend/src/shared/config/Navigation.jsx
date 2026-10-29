@@ -19,7 +19,7 @@ export const getNavigation = (userType, hasPermission = () => true) => {
       label: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
-      permission: 'incidents.read',
+      permission: ['incidents.read', 'inventory.read', 'toners.read', 'warehouse_stock.read'],
     },
     {
       label: 'Incidencias',

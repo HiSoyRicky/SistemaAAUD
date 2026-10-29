@@ -850,7 +850,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         locked={isFieldLocked('id_brand')}
                         onToggle={() => toggleField('id_brand')}
                         belowAction={
-                          !hasPermission('brands.create') && (
+                          hasPermission('creation_requests.create') && hasPermission('brands.read') && !hasPermission('brands.create') && (
                             <RequestCatalogAction
                               onClick={() => requestCatalogCreation('BRAND')}
                               label="Solicitar marca"
@@ -872,7 +872,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         locked={isFieldLocked('id_model')}
                         onToggle={() => toggleField('id_model')}
                         belowAction={
-                          !hasPermission('models.create') &&
+                          hasPermission('creation_requests.create') && hasPermission('models.read') && !hasPermission('models.create') &&
                           formData.id_brand && (
                             <RequestCatalogAction
                               onClick={() =>
@@ -919,7 +919,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                           locked={isFieldLocked('id_brand')}
                           onToggle={() => toggleField('id_brand')}
                           belowAction={
-                            !hasPermission('brands.create') && (
+                            hasPermission('creation_requests.create') && hasPermission('brands.read') && !hasPermission('brands.create') && (
                               <RequestCatalogAction
                                 onClick={() => requestCatalogCreation('BRAND')}
                                 label="Solicitar marca"
@@ -940,7 +940,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                           locked={isFieldLocked('id_model')}
                           onToggle={() => toggleField('id_model')}
                           belowAction={
-                            !hasPermission('models.create') &&
+                            hasPermission('creation_requests.create') && hasPermission('models.read') && !hasPermission('models.create') &&
                             formData.id_brand && (
                               <RequestCatalogAction
                                 onClick={() =>
@@ -989,7 +989,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         locked={isFieldLocked('vehicle_catalog_brand_id')}
                         onToggle={() => toggleField('vehicle_catalog_brand_id')}
                         belowAction={
-                          !hasPermission('brands.create') && (
+                          hasPermission('creation_requests.create') && hasPermission('brands.read') && !hasPermission('brands.create') && (
                             <RequestCatalogAction
                               onClick={() => requestCatalogCreation('BRAND')}
                               label="Solicitar marca"
@@ -1019,7 +1019,7 @@ export default function InventoryFormModal({ initialData = {}, onCancel, onSubmi
                         locked={isFieldLocked('vehicle_catalog_model_id')}
                         onToggle={() => toggleField('vehicle_catalog_model_id')}
                         belowAction={
-                          !hasPermission('models.create') &&
+                          hasPermission('creation_requests.create') && hasPermission('models.read') && !hasPermission('models.create') &&
                           vehicleBrandId && (
                             <RequestCatalogAction
                               onClick={() => requestCatalogCreation('MODEL', vehicleBrandId, null)}

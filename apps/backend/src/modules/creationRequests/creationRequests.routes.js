@@ -4,7 +4,7 @@ import * as controller from './creationRequests.controller.js';
 
 const router = express.Router();
 
-router.post('/', controller.create);
+router.post('/', requirePermission('creation_requests.create'), controller.create);
 router.get('/mine', controller.listMine);
 router.get('/', requirePermission('creation_requests.review'), controller.listAll);
 router.post('/:id/approve', requirePermission('creation_requests.review'), controller.approve);

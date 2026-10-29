@@ -31,6 +31,8 @@ export const mapIncidentListItem = (incident) => ({
   reporter_email: incident.email,
   ubication_name: incident.ubications?.name || null,
   department_name: incident.departments?.name || null,
+  id_department: incident.id_department,
+  department_ubication_name: incident.departments?.ubications?.name || null,
   category_name: incident.categories?.name || null,
   ...mapDescriptionAndPrinterIps(incident.description),
   id_category: incident.id_category,

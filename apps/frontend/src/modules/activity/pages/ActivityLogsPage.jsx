@@ -31,6 +31,27 @@ const ENTITY_OPTIONS = [
   { value: 'ROLE_PERMISSIONS', label: 'Permisos de rol' },
   { value: 'USER_PERMISSIONS', label: 'Permisos de usuario' },
   { value: 'INVENTORY_TRANSFER_REQUESTS', label: 'Solicitudes de traslado' },
+  { value: 'INVENTORY_DEVICES', label: 'Datos tecnológicos del inventario' },
+  { value: 'INVENTORY_ASSET_TYPES', label: 'Tipos generales de activo' },
+  { value: 'INVENTORY_ASSET_EXTENSIONS', label: 'Extensiones de activo' },
+  { value: 'INVENTORY_ASSET_CLASSIFICATIONS', label: 'Clasificaciones patrimoniales' },
+  { value: 'INVENTORY_ASSET_CLASSIFICATION_MAPPINGS', label: 'Conversiones de clasificación' },
+  { value: 'INVENTORY_ASSET_CLASSIFICATION_RULES', label: 'Reglas de clasificación patrimonial' },
+  { value: 'CREATION_REQUESTS', label: 'Solicitudes de creación' },
+  { value: 'WAREHOUSEITEM', label: 'Artículos de almacén' },
+  { value: 'WAREHOUSESTOCK', label: 'Existencias de almacén' },
+  { value: 'WAREHOUSEMOVEMENT', label: 'Movimientos de almacén' },
+  { value: 'INVENTORY_ITEMS', label: 'Activos' },
+  { value: 'INVENTORY_ITEM_DEVICES', label: 'Datos técnicos de activos' },
+  { value: 'INVENTORY_ITEM_VEHICLES', label: 'Datos de vehículos' },
+  { value: 'INVENTORY_ITEM_PROPERTIES', label: 'Datos de propiedades' },
+  { value: 'INVENTORY_ITEM_REAL_ESTATE', label: 'Datos de terrenos' },
+  { value: 'INVENTORY_VEHICLE_CATALOG', label: 'Catálogo de vehículos' },
+  { value: 'INVENTORY_CONDITIONS', label: 'Condiciones de activos' },
+  { value: 'INVENTORY_ADMINISTRATIVE_AREAS', label: 'Áreas administradoras' },
+  { value: 'INVENTORY_PRODUCT_CATALOG', label: 'Catálogo de bienes' },
+  { value: 'INVENTORY_PRODUCT_SYNONYMS', label: 'Sinónimos de bienes' },
+  { value: 'INCIDENT_NOTIFICATION_RECIPIENTS', label: 'Destinatarios de notificaciones' },
 ];
 
 const ACTION_OPTIONS = [
@@ -158,7 +179,7 @@ function formatValue(value) {
 function getEntityLabel(entityType, entityLabel) {
   if (entityLabel) return entityLabel;
 
-  return ENTITY_LABELS[entityType] || entityType || '—';
+  return ENTITY_LABELS[entityType] || ENTITY_OPTIONS.find((option) => option.value === entityType)?.label || entityType || '—';
 }
 
 function getActionConfig(action) {
@@ -332,9 +353,7 @@ function ActionBadge({ action }) {
 // Diff
 // ─────────────────────────────────────────────────────────────────────────────
 
-function DiffCell({ diff, logId }) {
-  const [open, setOpen] = useState(false);
-
+function DiffCell({ diff, logId, open, onToggle }) {
   const changes = getDiff({ diff });
 
   if (changes.length === 0) {
@@ -342,10 +361,10 @@ function DiffCell({ diff, logId }) {
   }
 
   return (
-    <div className="min-w-[150px]">
+    <div>
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={onToggle}
         aria-expanded={open}
         aria-controls={`activity-diff-${logId}`}
         className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
@@ -357,33 +376,23 @@ function DiffCell({ diff, logId }) {
         </span>
       </button>
 
-      {open && (
-        <div
-          id={`activity-diff-${logId}`}
-          className="mt-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
-        >
-          {changes.map((change, index) => (
-            <div
-              key={`${logId}-${change.field || 'field'}-${index}`}
-              className="border-b border-slate-200 pb-2 last:border-0 last:pb-0"
-            >
-              <div className="mb-2 text-[10px] font-semibold text-slate-400">{index + 1}</div>
+    </div>
+  );
+}
 
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
-                <span className="min-w-0 whitespace-pre-wrap break-words rounded-md bg-rose-50 px-2 py-1 text-rose-700 line-through">
-                  {formatValue(change.from)}
-                </span>
-
-                <span className="text-slate-400">→</span>
-
-                <span className="min-w-0 whitespace-pre-wrap break-words rounded-md bg-emerald-50 px-2 py-1 text-emerald-700">
-                  {formatValue(change.to)}
-                </span>
-              </div>
-            </div>
-          ))}
+function DiffDetails({ diff, logId }) {
+  return (
+    <div id={`activity-diff-${logId}`} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:grid-cols-3">
+      {getDiff({ diff }).map((change, index) => (
+        <div key={`${logId}-${change.field || 'field'}-${index}`} className="min-w-0 rounded-lg border border-slate-200 bg-white p-3">
+          <div className="mb-2 text-xs font-semibold text-slate-700">{change.field || `Campo ${index + 1}`}</div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 text-xs">
+            <div className="min-w-0"><span className="mb-1 block text-[10px] font-medium text-slate-500">Antes</span><span className="block whitespace-pre-wrap break-words rounded-md bg-rose-50 px-2 py-1 text-rose-700">{formatValue(change.from)}</span></div>
+            <span className="mt-5 text-slate-400" aria-hidden="true">→</span>
+            <div className="min-w-0"><span className="mb-1 block text-[10px] font-medium text-slate-500">Después</span><span className="block whitespace-pre-wrap break-words rounded-md bg-emerald-50 px-2 py-1 text-emerald-700">{formatValue(change.to)}</span></div>
+          </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -709,7 +718,9 @@ function TableHeader({ children }) {
 }
 
 function LogRow({ log }) {
+  const [open, setOpen] = useState(false);
   return (
+    <>
     <tr className="group transition-colors hover:bg-slate-50/70">
       <td className="whitespace-nowrap px-4 py-4 align-top">
         <div className="font-mono text-xs font-medium text-slate-700">
@@ -766,9 +777,11 @@ function LogRow({ log }) {
       </td>
 
       <td className="px-4 py-4 align-top">
-        <DiffCell diff={log.diff} logId={log.id} />
+        <DiffCell diff={log.diff} logId={log.id} open={open} onToggle={() => setOpen((value) => !value)} />
       </td>
     </tr>
+    {open && <tr><td colSpan={7} className="px-4 pb-4"><DiffDetails diff={log.diff} logId={log.id} /></td></tr>}
+    </>
   );
 }
 

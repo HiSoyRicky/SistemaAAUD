@@ -36,9 +36,9 @@ router.get(
 router.get('/classification-rules/manage', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), validateListClassificationRules, classificationRulesController.list);
 router.get('/classification-rules/device-profiles', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), classificationRulesController.getDeviceAssetTypeProfiles);
 router.get('/classification-rules/:id', requireAnyPermission('inventory_classification_rules.read', 'inventory.read'), validateClassificationRuleId, classificationRulesController.getById);
-router.post('/classification-rules', requireAnyPermission('inventory_classification_rules.create', 'inventory.update'), validateCreateClassificationRule, classificationRulesController.create);
-router.put('/classification-rules/:id', requireAnyPermission('inventory_classification_rules.update', 'inventory.update'), validateUpdateClassificationRule, classificationRulesController.update);
-router.patch('/classification-rules/:id/status', requireAnyPermission('inventory_classification_rules.update', 'inventory.update'), validateClassificationRuleId, classificationRulesController.setActive);
+router.post('/classification-rules', requirePermission('inventory_classification_rules.create'), validateCreateClassificationRule, classificationRulesController.create);
+router.put('/classification-rules/:id', requirePermission('inventory_classification_rules.update'), validateUpdateClassificationRule, classificationRulesController.update);
+router.patch('/classification-rules/:id/status', requirePermission('inventory_classification_rules.update'), validateClassificationRuleId, classificationRulesController.setActive);
 router.delete('/classification-rules/:id', requirePermission('inventory_classification_rules.delete'), validateClassificationRuleId, classificationRulesController.remove);
 
 router.get('/history', requirePermission('inventory.read'), controller.getHistory);

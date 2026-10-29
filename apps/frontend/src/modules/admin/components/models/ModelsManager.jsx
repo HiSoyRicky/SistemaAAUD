@@ -11,6 +11,9 @@ import ModelsTable from './ModelsTable';
 export default function ModelsManager() {
   const { hasPermission } = useAuth();
   const canCreateModel = hasPermission('models.create');
+  const canRequest = hasPermission('creation_requests.create') && hasPermission('models.read');
+  const canUpdate = hasPermission('models.update');
+  const canDelete = hasPermission('models.delete');
   const [models, setModels] = useState([]);
   const [brands, setBrands] = useState([]);
   const [devices, setDevices] = useState([]);
@@ -261,20 +264,22 @@ export default function ModelsManager() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold">Gestión de Modelos</h2>
-        <button
-          type="button"
-          onClick={() => {
-            setEditingId(null);
-            setNewModel('');
-            setSelectedBrand('');
-            setSelectedDevice('');
-            setErrorMessage('');
-            setModalOpen(true);
-          }}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          {canCreateModel ? '+ Agregar modelo' : '+ Solicitar modelo'}
-        </button>
+        {(canCreateModel || canRequest) && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditingId(null);
+              setNewModel('');
+              setSelectedBrand('');
+              setSelectedDevice('');
+              setErrorMessage('');
+              setModalOpen(true);
+            }}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            {canCreateModel ? '+ Agregar modelo' : '+ Solicitar modelo'}
+          </button>
+        )}
       </div>
 
       <label className="block max-w-xs text-sm font-medium">
@@ -288,7 +293,7 @@ export default function ModelsManager() {
           }}
           className="mt-1 w-full rounded border px-2 py-2"
         >
-          <option value="TECHNOLOGY">Equipos tecnológicos</option>
+          <option value="TECHNOLOGY">Activos no vehiculares</option>
           <option value="VEHICLE">Vehículos</option>
         </select>
       </label>
@@ -315,6 +320,8 @@ export default function ModelsManager() {
       </div>
 
       <ModelsTable
+        canUpdate={canUpdate}
+        canDelete={canDelete}
         models={paginatedModels}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
@@ -362,7 +369,7 @@ export default function ModelsManager() {
           <p className="text-sm text-slate-500">
             {catalogType === 'VEHICLE'
               ? 'Completa los datos del modelo de vehículo.'
-              : 'Selecciona el dispositivo y la marca antes de escribir el modelo.'}
+              : 'Selecciona el activo no vehicular y la marca antes de escribir el modelo.'}
           </p>
           {errorMessage && (
             <p
@@ -374,7 +381,7 @@ export default function ModelsManager() {
           )}
           {catalogType === 'TECHNOLOGY' && (
             <label className="block text-sm font-semibold text-slate-700">
-              Dispositivo
+              Activo no vehicular
               <select
                 required
                 value={editingId ? editingDevice : selectedDevice}

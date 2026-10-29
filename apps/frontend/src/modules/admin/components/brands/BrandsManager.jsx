@@ -12,6 +12,9 @@ import BrandsTable from './BrandsTable';
 export default function BrandsManager() {
   const { hasPermission } = useAuth();
   const canCreateBrand = hasPermission('brands.create');
+  const canRequest = hasPermission('creation_requests.create') && hasPermission('brands.read');
+  const canUpdate = hasPermission('brands.update');
+  const canDelete = hasPermission('brands.delete');
   const [brands, setBrands] = useState([]);
   const [newBrand, setNewBrand] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -183,7 +186,7 @@ export default function BrandsManager() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold">Gestión de Marcas</h2>
-        <button
+        {(canCreateBrand || canRequest) && <button
           type="button"
           onClick={() => {
             setEditingId(null);
@@ -194,7 +197,7 @@ export default function BrandsManager() {
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           <Plus size={17} /> {canCreateBrand ? 'Nueva marca' : 'Solicitar marca'}
-        </button>
+        </button>}
       </div>
 
       {successMessage && (
@@ -221,6 +224,8 @@ export default function BrandsManager() {
       </div>
 
       <BrandsTable
+        canUpdate={canUpdate}
+        canDelete={canDelete}
         brands={paginatedBrands}
         editBrand={editBrand}
         deleteBrand={deleteBrand}

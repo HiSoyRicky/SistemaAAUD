@@ -5,6 +5,8 @@ const Warehouse = {
   createItem: (data) => api.post('/api/warehouse/items', data).then((res) => res.data),
   updateItem: (id, data) => api.put(`/api/warehouse/items/${id}`, data).then((res) => res.data),
   fetchStock: (params = {}) => api.get('/api/warehouse/stock', { params }).then((res) => res.data),
+  fetchStockAlerts: () => api.get('/api/warehouse/stock/alerts').then((res) => res.data),
+  fetchStockSummary: () => api.get('/api/warehouse/stock/summary').then((res) => res.data),
   fetchMovements: (params = {}) =>
     api.get('/api/warehouse/movements', { params }).then((res) => res.data),
   createMovement: (data) => api.post('/api/warehouse/movements', data).then((res) => res.data),

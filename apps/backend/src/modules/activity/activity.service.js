@@ -54,6 +54,29 @@ const ENTITY_LABELS = {
   inventory_asset_classification_rules: 'Regla de clasificación patrimonial',
 };
 
+// Nombres usados por Prisma en el almacén y por los módulos del inventario central.
+const ADDITIONAL_ENTITIES = {
+  WarehouseItem: 'Artículo de almacén',
+  WarehouseStock: 'Existencia de almacén',
+  WarehouseMovement: 'Movimiento de almacén',
+  creation_requests: 'Solicitud de creación',
+  inventory_items: 'Activo',
+  inventory_item_devices: 'Datos técnicos de activo',
+  inventory_item_vehicles: 'Datos de vehículo',
+  inventory_item_properties: 'Datos de propiedad',
+  inventory_item_real_estate: 'Datos de terreno',
+  inventory_vehicle_catalog: 'Catálogo de vehículos',
+  inventory_conditions: 'Condición de activo',
+  inventory_administrative_areas: 'Área administradora',
+  inventory_product_catalog: 'Catálogo de bienes',
+  inventory_product_synonyms: 'Sinónimo de bien',
+  incident_notification_recipients: 'Destinatario de notificaciones',
+};
+for (const [entity, label] of Object.entries(ADDITIONAL_ENTITIES)) {
+  ENTITY_LABELS[entity] = label;
+  ENTITY_LABELS[entity.toUpperCase()] = label;
+}
+
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
@@ -139,12 +162,15 @@ function parseOptionalDate(value, fieldName) {
   return parsed;
 }
 
-function buildFilters(query) {
+export function buildFilters(query) {
   const rawEntityType =
     String(query?.entityType || '')
       .trim()
       .toUpperCase() || null;
-  const entityTypes = rawEntityType ? ENTITY_ALIASES[rawEntityType] || [rawEntityType] : null;
+  const additionalEntity = Object.keys(ADDITIONAL_ENTITIES).find((entity) => entity.toUpperCase() === rawEntityType);
+  const entityTypes = rawEntityType
+    ? ENTITY_ALIASES[rawEntityType] || (additionalEntity ? [additionalEntity, rawEntityType] : [rawEntityType])
+    : null;
   const action =
     String(query?.action || '')
       .trim()
@@ -190,7 +216,8 @@ async function formatLog(log) {
       log.entity_type,
       log.entity_id,
       log.old_values,
-      log.new_values
+      log.new_values,
+      log.source
     ),
     action: log.action,
     user: log.user

@@ -123,6 +123,7 @@ function IncidentsPage() {
     return cards;
   }, [metrics, userType]);
   const canManageIncidents = hasPermission('incidents.read');
+  const canCreateIncidents = hasPermission('incidents.create');
   const canUseActions = canManageIncidents;
 
   return (
@@ -151,7 +152,7 @@ function IncidentsPage() {
 
           {canUseActions && (
             <div className="flex flex-wrap gap-2">
-              <button
+              {canCreateIncidents && <button
                 type="button"
                 onClick={() => setShowIncidentForm((prev) => !prev)}
                 className={`inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold text-white transition ${
@@ -162,7 +163,7 @@ function IncidentsPage() {
               >
                 {showIncidentForm ? <X size={16} /> : <PlusCircle size={16} />}
                 {showIncidentForm ? 'Cerrar formulario' : 'Nueva incidencia'}
-              </button>
+              </button>}
 
               {canManageIncidents && (
                 <>
@@ -219,7 +220,7 @@ function IncidentsPage() {
           <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
         </section>
       ) : (
-        showIncidentForm && (
+        canCreateIncidents && showIncidentForm && (
           <section className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
             <IncidentForm onSubmit={handleAddIncident} loggedUserName={loggedUserName} />
           </section>

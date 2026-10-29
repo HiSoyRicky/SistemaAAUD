@@ -9,6 +9,9 @@ import useAuth from '../../../../shared/hooks/useAuth';
 export default function DevicesManager() {
   const { hasPermission } = useAuth();
   const canCreateDevice = hasPermission('devices.create');
+  const canRequest = hasPermission('creation_requests.create') && hasPermission('devices.read');
+  const canUpdate = hasPermission('devices.update');
+  const canDelete = hasPermission('devices.delete');
   const [devices, setDevices] = useState([]);
   const [newDevice, setNewDevice] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -141,6 +144,9 @@ export default function DevicesManager() {
   return (
     <div>
       <DevicesTable
+        canCreate={canCreateDevice || canRequest}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
         devices={devices}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

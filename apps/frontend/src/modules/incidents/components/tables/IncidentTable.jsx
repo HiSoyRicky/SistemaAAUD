@@ -253,7 +253,7 @@ function IncidentTable({
                             )}
 
                           {/* Botón Resolver */}
-                          {userType === 'tecnico' && incident.id_status !== 3 && (
+                          {canUpdateIncidents && userType === 'tecnico' && incident.id_status !== 3 && (
                             <ActionButton
                               type={'resolve'}
                               title="Resolver"

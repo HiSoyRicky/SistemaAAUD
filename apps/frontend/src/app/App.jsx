@@ -345,7 +345,7 @@ function App() {
             <PrivateRoute
               allowedUserTypes={['admin', 'tecnico', 'consultor', 'trabajador', 'custom']}
             >
-              <AnyPermissionRoute permissions={['incidents.read', 'inventory.read']}>
+              <AnyPermissionRoute permissions={['incidents.read', 'inventory.read', 'toners.read', 'warehouse_stock.read']}>
                 <PrivateLayout>
                   <Dashboard />
                 </PrivateLayout>
@@ -410,7 +410,15 @@ function App() {
         {/* Ruta 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        closeButton
+        icon
+        toastClassName="!mb-3 !min-h-[4.25rem] !w-[min(26rem,calc(100vw-2rem))] !overflow-hidden !rounded-2xl !border !border-slate-200 !bg-white !px-5 !py-4 !text-base !font-medium !text-slate-800 !shadow-[0_12px_36px_-12px_rgba(15,23,42,0.35)]"
+        bodyClassName="!m-0 !px-1 !py-0"
+        progressClassName="!h-1 !bg-blue-500"
+      />
     </>
   );
 }

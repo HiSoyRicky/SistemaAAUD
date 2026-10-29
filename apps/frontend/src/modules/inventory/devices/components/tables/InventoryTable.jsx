@@ -40,6 +40,7 @@ function InventoryTable({
     'border-x border-slate-100 px-4 py-3 text-center align-middle text-sm text-slate-700';
   const thClass =
     'border-x border-slate-100 px-4 py-3 text-center align-middle text-xs font-bold uppercase tracking-wide text-slate-500';
+  const assetTypeCellClass = `${tdClass} w-36 min-w-36 max-w-36 break-words`;
   const filterClass =
     'mt-2 h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-xs font-medium normal-case tracking-normal text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
   const hasDataForColumn = (key) => {
@@ -91,9 +92,9 @@ function InventoryTable({
   const filters = serverPagination ? serverFilters || {} : localFilters;
 
   const getOptions = (key, currentValues) =>
-    [...new Set((serverPagination ? filterOptions[key] || [] : currentValues).filter(Boolean))].sort(
-      (a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' })
-    );
+    [
+      ...new Set((serverPagination ? filterOptions[key] || [] : currentValues).filter(Boolean)),
+    ].sort((a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' }));
 
   // aplicar filtros antes de paginar
   const locallyFilteredInventory = inventory.filter((item) => {
@@ -150,7 +151,10 @@ function InventoryTable({
       'ubication_name',
       filteredInventory.map((i) => i.ubication_name)
     ),
-    department_name: getOptions('department_name', filteredInventory.map((i) => i.department_name)),
+    department_name: getOptions(
+      'department_name',
+      filteredInventory.map((i) => i.department_name)
+    ),
     administrative_area_name: getOptions(
       'administrative_area_name',
       filteredInventory.map((i) => i.administrative_area_name)
@@ -181,15 +185,46 @@ function InventoryTable({
     ),
   };
 
-  const showIpColumn = isColumnVisible('ip');
   const isAssetScope = scope === 'bienes';
-  const isVehicleFilter = isAssetScope && String(filters.asset_type_name || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() === 'VEHICULO';
+  const isVehicleFilter =
+    isAssetScope &&
+    String(filters.asset_type_name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase() === 'VEHICULO';
+  const showIpColumn = isColumnVisible('ip');
   const showDeviceName = !isVehicleFilter && isColumnVisible('device_name');
   const showSerie = !isVehicleFilter && isColumnVisible('serie');
   const showVehicleField = (key) => isVehicleFilter && isColumnVisible(key);
+  const realEstateFields = [
+    ['cadastral_number', 'Número catastral'],
+    ['area_m2', 'Área (m²)'],
+    ['address', 'Dirección'],
+    ['location_geo', 'Ubicación geográfica'],
+  ].filter(([key]) =>
+    isAssetScope && filters.asset_type_name === 'Terreno o inmueble' &&
+    filteredInventory.some((item) => {
+      const value = item.real_estate_details?.[key];
+      return value !== null && value !== undefined && String(value).trim() !== '';
+    })
+  );
   const classificationLabel = (item) => item.classification?.description || 'Sin clasificación';
-  const assetTypeLabel = (item) => item.asset_type?.name || 'Sin clasificar';
+  const assetTypeLabel = (item) => {
+    if (item.real_estate_details) return 'Terreno o inmueble';
+    if (item.property_details)
+      return item.classification?.description || item.asset_type?.name || 'Propiedad';
+    return item.asset_type?.name || 'Sin clasificar';
+  };
+  const assetTypeFilterValue = (item) =>
+    item.real_estate_details
+      ? 'Terreno o inmueble'
+      : item.property_details
+        ? item.classification?.description || item.asset_type?.name || 'Propiedad'
+        : item.asset_type_name;
+  const assetTypeOptions = getOptions(
+    'asset_type_name',
+    serverPagination ? filterOptions.asset_types || [] : inventory.map(assetTypeFilterValue)
+  );
   const extensionLabel = (item) => item.extension?.type || 'Sin extensión';
   const visibleColumnCount =
     [
@@ -209,6 +244,7 @@ function InventoryTable({
         : ['serie']),
     ].filter((key) => isColumnVisible(key)).length +
     (showIpColumn && !isVehicleFilter ? 1 : 0) +
+    realEstateFields.length +
     (isAssetScope ? 1 : 0) +
     1;
 
@@ -221,7 +257,6 @@ function InventoryTable({
   const paginatedItems = serverPagination
     ? filteredInventory
     : filteredInventory.slice(startIndex, endIndex);
-
 
   const getStatusClasses = (statusName) => {
     const status = statusName?.toUpperCase() || '';
@@ -263,13 +298,13 @@ function InventoryTable({
   return (
     <div className="relative w-full">
       <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse divide-y divide-slate-200">
+        <table className="w-full min-w-[1100px] table-fixed border-collapse divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
               {/* Encabezados de la tabla */}
               {isColumnVisible('tag') && <th className={thClass}>Marbete</th>}
               {isAssetScope && (
-                <th className={tdClass}>
+                <th className={assetTypeCellClass}>
                   <div className="flex flex-col gap-1">
                     <span>Tipo</span>
                     <select
@@ -278,7 +313,7 @@ function InventoryTable({
                       className={filterClass}
                     >
                       <option value="">Todos</option>
-                      {options.asset_type_name.map((val) => (
+                      {assetTypeOptions.map((val) => (
                         <option key={val} value={val}>
                           {val}
                         </option>
@@ -326,7 +361,7 @@ function InventoryTable({
               {showDeviceName && (
                 <th className={tdClass}>
                   <div className="flex flex-col gap-1">
-                    <span>Equipo</span>
+                    <span>Activos</span>
 
                     <select
                       value={filters.device_name}
@@ -344,7 +379,7 @@ function InventoryTable({
                   </div>
                 </th>
               )}
-              {isColumnVisible('brand_name') && (
+              {(isColumnVisible('brand_name') || isVehicleFilter) && (
                 <th className={tdClass}>
                   <div className="flex flex-col gap-1">
                     <span>Marca</span>
@@ -365,7 +400,7 @@ function InventoryTable({
                   </div>
                 </th>
               )}
-              {isColumnVisible('model_name') && (
+              {(isColumnVisible('model_name') || isVehicleFilter) && (
                 <th className={tdClass}>
                   <div className="flex flex-col gap-1">
                     <span>Modelo</span>
@@ -387,9 +422,10 @@ function InventoryTable({
               {showSerie && <th className={thClass}>Serie</th>}
               {showIpColumn && !isVehicleFilter && <th className={thClass}>IP</th>}
               {showVehicleField('vehicle_model_year') && <th className={thClass}>Año</th>}
-              {showVehicleField('vehicle_plate') && <th className={thClass}>Placa</th>}
+              {isVehicleFilter && <th className={thClass}>Placa</th>}
               {showVehicleField('vehicle_type') && <th className={thClass}>Tipo de vehículo</th>}
               {showVehicleField('vehicle_fuel') && <th className={thClass}>Combustible</th>}
+              {realEstateFields.map(([key, label]) => <th key={key} className={thClass}>{label}</th>)}
 
               <th className={thClass}>Acciones</th>
             </tr>
@@ -416,7 +452,7 @@ function InventoryTable({
                       <td className={`${tdClass} ${statusClasses.text}`}>{item.tag}</td>
                     )}
 
-                    {isAssetScope && <td className={tdClass}>{assetTypeLabel(item)}</td>}
+                    {isAssetScope && <td className={assetTypeCellClass}>{assetTypeLabel(item)}</td>}
 
                     {isColumnVisible('ubication_name') && (
                       <td className={tdClass}>{item.ubication_name || '-'}</td>
@@ -428,25 +464,36 @@ function InventoryTable({
 
                     {isColumnVisible('user') && <td className={tdClass}>{item.user || '-'}</td>}
 
-                    {showDeviceName && (
-                      <td className={tdClass}>{item.device_name || '—'}</td>
-                    )}
+                    {showDeviceName && <td className={tdClass}>{item.device_name || '—'}</td>}
 
-                    {isColumnVisible('brand_name') && (
+                    {(isColumnVisible('brand_name') || isVehicleFilter) && (
                       <td className={tdClass}>{item.brand_name || '—'}</td>
                     )}
 
-                    {isColumnVisible('model_name') && (
+                    {(isColumnVisible('model_name') || isVehicleFilter) && (
                       <td className={tdClass}>{item.model_name || '—'}</td>
                     )}
 
                     {showSerie && <td className={tdClass}>{item.serie || '—'}</td>}
 
-                    {showIpColumn && !isVehicleFilter && <td className={tdClass}>{item.ip || '—'}</td>}
-                    {showVehicleField('vehicle_model_year') && <td className={tdClass}>{item.vehicle_details?.model_year || '—'}</td>}
-                    {showVehicleField('vehicle_plate') && <td className={tdClass}>{item.vehicle_details?.plate || '—'}</td>}
-                    {showVehicleField('vehicle_type') && <td className={tdClass}>{item.vehicle_details?.vehicle_type || '—'}</td>}
-                    {showVehicleField('vehicle_fuel') && <td className={tdClass}>{item.vehicle_details?.fuel_type || '—'}</td>}
+                    {showIpColumn && !isVehicleFilter && (
+                      <td className={tdClass}>{item.ip || '—'}</td>
+                    )}
+                    {showVehicleField('vehicle_model_year') && (
+                      <td className={tdClass}>{item.vehicle_details?.model_year || '—'}</td>
+                    )}
+                    {isVehicleFilter && (
+                      <td className={tdClass}>{item.vehicle_details?.plate || '—'}</td>
+                    )}
+                    {showVehicleField('vehicle_type') && (
+                      <td className={tdClass}>{item.vehicle_details?.vehicle_type || '—'}</td>
+                    )}
+                    {showVehicleField('vehicle_fuel') && (
+                      <td className={tdClass}>{item.vehicle_details?.fuel_type || '—'}</td>
+                    )}
+                    {realEstateFields.map(([key]) => (
+                      <td key={key} className={tdClass}>{item.real_estate_details?.[key] ?? '—'}</td>
+                    ))}
 
                     {/* Acciones */}
                     <td className={tdClass}>

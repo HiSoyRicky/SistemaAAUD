@@ -6,6 +6,9 @@ import Pagination from '../../../../shared/components/ui/Pagination';
 import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
 
 export default function DevicesTable({
+  canCreate,
+  canUpdate,
+  canDelete,
   currentPage,
   itemsPerPage,
   editingId,
@@ -76,7 +79,7 @@ export default function DevicesTable({
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Gestión de Activos</h2>
-        <button
+        {canCreate && <button
           type="button"
           onClick={() => {
             setErrorMessage('');
@@ -88,7 +91,7 @@ export default function DevicesTable({
         >
           <Plus size={17} />
           {addActionLabel === 'Solicitar creación' ? addActionLabel : 'Crear activo'}
-        </button>
+        </button>}
       </div>
 
       {successMessage && (
@@ -136,7 +139,7 @@ export default function DevicesTable({
               <td className="px-3 py-1 border">{d.name}</td>
               <td className="flex justify-center gap-2 px-3 py-1 text-center border">
                 <>
-                  <ActionButton
+                  {canUpdate && <ActionButton
                     type={'edit'}
                     title="Editar activo"
                     onClick={() => {
@@ -144,12 +147,12 @@ export default function DevicesTable({
                       editDevice(d.id, d.name);
                       setFormOpen(true);
                     }}
-                  ></ActionButton>
-                  <ActionButton
+                  ></ActionButton>}
+                  {canDelete && <ActionButton
                     type="delete"
                     title="Eliminar activo"
                     onClick={() => deleteDevice(d.id)}
-                  />
+                  />}
                 </>
               </td>
             </tr>

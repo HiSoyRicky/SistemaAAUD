@@ -2,6 +2,28 @@ import { prisma } from '../../config/prisma.js';
 import AppError from '../../common/utils/AppError.js';
 import { Prisma } from '@prisma/client';
 
+export const getStockSummary = async (db = prisma) => {
+  const [items, availableItems] = await Promise.all([
+    db.warehouseItem.count({ where: { stock: { some: {} } } }),
+    db.warehouseItem.count({ where: { stock: { some: { quantity: { gt: 0 } } } } }),
+  ]);
+  return { items, availableItems };
+};
+
+export const findStockAlerts = async (db = prisma) => {
+  const rows = await db.$queryRaw`
+    SELECT i.id, i.code, i.name, i.unit, i.min_stock,
+           COALESCE(SUM(s.quantity), 0) AS quantity
+    FROM warehouse_items i
+    LEFT JOIN warehouse_stock s ON s.item_id = i.id
+    WHERE i.active = true
+    GROUP BY i.id
+    HAVING COALESCE(SUM(s.quantity), 0) <= i.min_stock
+    ORDER BY COALESCE(SUM(s.quantity), 0), i.name, i.id
+  `;
+  return rows.map(({ quantity, ...item }) => ({ item, quantity: Number(quantity) }));
+};
+
 const itemSelect = {
   id: true,
   code: true,

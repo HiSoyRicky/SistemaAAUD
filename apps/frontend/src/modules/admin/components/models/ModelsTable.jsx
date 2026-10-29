@@ -1,6 +1,6 @@
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 
-export default function ModelsTable({ models, currentPage, itemsPerPage, brands, devices, editModel, deleteModel, catalogType }) {
+export default function ModelsTable({ canUpdate, canDelete, models, currentPage, itemsPerPage, brands, devices, editModel, deleteModel, catalogType }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200">
       <table className="w-full text-left text-sm">
@@ -18,7 +18,7 @@ export default function ModelsTable({ models, currentPage, itemsPerPage, brands,
               <td className="px-4 py-3 font-medium text-slate-800">{model.name}</td>
               <td className="px-4 py-3">{brands.find((brand) => Number(brand.id) === Number(model.id_brand))?.name || 'S/M'}</td>
               <td className="px-4 py-3">{catalogType === 'VEHICLE' ? 'Vehículo' : devices.find((device) => Number(device.id) === Number(model.id_device))?.name || 'S/D'}</td>
-              <td className="px-4 py-3"><div className="flex justify-center gap-2"><ActionButton type="edit" title="Editar modelo" onClick={() => editModel(model)} /><ActionButton type="delete" title="Eliminar modelo" onClick={() => deleteModel(model.id)} /></div></td>
+              <td className="px-4 py-3"><div className="flex justify-center gap-2">{canUpdate && <ActionButton type="edit" title="Editar modelo" onClick={() => editModel(model)} />}{canDelete && <ActionButton type="delete" title="Eliminar modelo" onClick={() => deleteModel(model.id)} />}</div></td>
             </tr>
           ))}
         </tbody>
