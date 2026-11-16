@@ -1,128 +1,21 @@
-import SuccessMessage from '@/shared/common/SuccessMessage';
 import ActionButton from '@/shared/components/ui/ActionButton';
-import Pagination from '@/shared/components/ui/Pagination';
 
-export default function UbicationsManager({
-  newUbication,
-  setNewUbication,
-  addUbication,
-  editUbication,
-  saveUbication,
-  editingId,
-  editingName,
-  setEditingName,
-  currentPage,
-  itemsPerPage,
-  paginatedUbications,
-  totalPages,
-  setCurrentPage,
-  search,
-  setSearch,
-  message,
-  setMessage,
-  setSuccessMessage,
-}) {
+export default function UbicationsTable({ ubications, currentPage, itemsPerPage, canUpdate, editUbication }) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Gestión de Ubicación</h2>
-      </div>
-
-      {/* Agregar */}
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          value={newUbication}
-          onChange={(e) => setNewUbication(e.target.value)}
-          placeholder="Nueva ubicación"
-          className="px-2 py-1 border rounded"
-        />
-        <button
-          type="button"
-          onClick={addUbication}
-          className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
-        >
-          Agregar
-        </button>
-      </div>
-
-      {/* Barra de búsqueda */}
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Buscar ubicación..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-2 py-1 border rounded"
-        />
-      </div>
-
-      {message && (
-        <SuccessMessage
-          message={message}
-          type={setSuccessMessage}
-          onClose={() => setMessage('')}
-          duration={3000}
-        />
-      )}
-
-      {/* Tabla */}
-      <div className="max-w-full overflow-x-auto" role="region" aria-label="Tabla de resultados" tabIndex={0}>
-      <table className="w-full min-w-[36rem] text-sm border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="px-2 text-center border">#</th>
-            <th className="px-3 py-1 border">Nombre</th>
-            <th className="px-3 py-1 text-center border">Acciones</th>
-          </tr>
+    <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200" role="region" aria-label="Ubicaciones" tabIndex={0}>
+      <table className="w-full min-w-[36rem] text-sm">
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <tr><th className="px-3 py-3 text-center">#</th><th className="px-4 py-3 text-left">Nombre</th><th className="px-3 py-3 text-center">Acciones</th></tr>
         </thead>
         <tbody>
-          {paginatedUbications.map((u, index) => (
-            <tr key={u.id}>
-              {/* Enumeración consecutiva */}
-              <td className="px-3 py-1 text-center border">
-                {(currentPage - 1) * itemsPerPage + index + 1}
-              </td>
-
-              <td className="px-3 py-1 border">
-                {editingId === u.id ? (
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                ) : (
-                  u.name
-                )}
-              </td>
-              <td className="flex justify-center gap-2 px-3 py-1 text-center border">
-                {editingId === u.id ? (
-                  <ActionButton
-                    type={'save'}
-                    title="Guardar"
-                    onClick={() => saveUbication(u.id)}
-                  ></ActionButton>
-                ) : (
-                  <ActionButton
-                    type={'edit'}
-                    title="Editar"
-                    onClick={() => editUbication(u.id, u.name)}
-                  ></ActionButton>
-                )}
-              </td>
-            </tr>
-          ))}
+          {ubications.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-500">No hay ubicaciones para mostrar.</td></tr>}
+          {ubications.map((item, index) => <tr key={item.id} className="border-t border-slate-100">
+            <td className="px-3 py-3 text-center text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+            <td className="px-4 py-3 font-medium text-slate-800">{item.name}</td>
+            <td className="px-3 py-3 text-center">{canUpdate && <ActionButton type="edit" title="Editar ubicación" onClick={() => editUbication(item)} />}</td>
+          </tr>)}
         </tbody>
       </table>
-      </div>
-
-      {/* Paginación */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={(page) => setCurrentPage(page)}
-      />
     </div>
   );
 }

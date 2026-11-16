@@ -4,8 +4,12 @@ import { useEffect, useState } from 'react';
 import api from '../../../../shared/api/apiClient';
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 import Pagination from '../../../../shared/components/ui/Pagination';
+import useAuth from '../../../../shared/hooks/useAuth';
 
 export default function StatusesManager() {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission('status.create');
+  const canUpdate = hasPermission('status.update');
   const [statuses, setStatuses] = useState([]);
   const [newStatus, setNewStatus] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -74,7 +78,7 @@ export default function StatusesManager() {
       <h2 className="mb-4 text-xl font-semibold">Gestión de Estados</h2>
 
       {/* Agregar */}
-      <div className="flex gap-2 mb-4">
+      {canCreate && <div className="flex gap-2 mb-4">
         <input
           type="text"
           value={newStatus}
@@ -89,7 +93,7 @@ export default function StatusesManager() {
         >
           Agregar
         </button>
-      </div>
+      </div>}
 
       {successMessage && (
         <div className="p-2 mb-4 text-green-800 bg-green-200 border border-green-800 rounded">
@@ -127,7 +131,7 @@ export default function StatusesManager() {
                 )}
               </td>
               <td className="flex justify-center gap-2 px-3 py-1 text-center border">
-                {editingId === s.id ? (
+                {canUpdate && (editingId === s.id ? (
                   <ActionButton
                     type="save"
                     title="Guardar estado"
@@ -139,7 +143,7 @@ export default function StatusesManager() {
                     title="Editar estado"
                     onClick={() => editStatus(s.id, s.name)}
                   />
-                )}
+                ))}
               </td>
             </tr>
           ))}

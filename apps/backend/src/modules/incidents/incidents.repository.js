@@ -10,6 +10,7 @@ const listSelect = {
   email: true,
   description: true,
   id_category: true,
+  id_department: true,
   other_category_detail: true,
   id_status: true,
   creation_date: true,
@@ -28,7 +29,7 @@ const listSelect = {
     select: { name: true },
   },
   departments: {
-    select: { name: true },
+    select: { name: true, ubications: { select: { name: true } } },
   },
   users_bd_incidents_id_technicianTousers: {
     select: { nombre_completo: true },

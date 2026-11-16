@@ -17,7 +17,10 @@ test('construye filtros SQL parametrizados para activo, acción, fechas y actor'
   });
 
   assert.match(filters.base.sql, /entity_type IN/);
-  assert.match(filters.base.sql, /entity_id =/);
+  assert.match(filters.base.sql, /legacy_inventory_map/);
+  assert.match(filters.base.sql, /al\.source IS NULL/);
+  assert.match(filters.base.sql, /inventory\.classification-sync/);
+  assert.match(filters.base.sql, /END =/);
   assert.match(filters.base.sql, /ActivityAction/);
   assert.match(filters.base.sql, /created_at >=/);
   assert.match(filters.base.sql, /created_at <=/);
@@ -42,6 +45,8 @@ test('página SQL usa LEAD en orden descendente para obtener el movimiento anter
   const query = buildInventoryMovementPageQuery(filters, 25, 50);
 
   assert.match(query.sql, /LEAD\(al\.created_at\)/);
+  assert.match(query.sql, /lim\.item_id/);
+  assert.match(query.sql, /END AS entity_id/);
   assert.match(query.sql, /ORDER BY al\.created_at DESC, al\.id DESC/);
   assert.match(query.sql, /ORDER BY created_at DESC, id DESC/);
   assert.match(query.sql, /LIMIT \? OFFSET \?/);

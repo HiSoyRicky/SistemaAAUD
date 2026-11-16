@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import useAuth from '../../../../shared/hooks/useAuth';
 import Pagination from '../../../../shared/components/ui/Pagination';
 import ModalLayer from '../../../../shared/components/ui/ModalLayer';
+import Modal from '../../../../shared/components/ui/Modal';
 import Warehouse from '../../../warehouse/services/warehouse.api';
 
 const UNIT_OPTIONS = [
@@ -75,6 +76,7 @@ export default function WarehouseItemsManager() {
   const { hasPermission } = useAuth();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
+  const [catalogTab, setCatalogTab] = useState('active');
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -82,13 +84,20 @@ export default function WarehouseItemsManager() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
+  const [itemToChangeStatus, setItemToChangeStatus] = useState(null);
+  const [savingStatus, setSavingStatus] = useState(false);
   const canCreate = hasPermission('warehouse_items.create');
   const canUpdate = hasPermission('warehouse_items.update');
 
   const load = async () => {
     try {
       setLoading(true);
-      const response = await Warehouse.fetchItems({ search, page, limit: 25 });
+      const response = await Warehouse.fetchItems({
+        search,
+        active: catalogTab === 'active',
+        page,
+        limit: 25,
+      });
       setMeta({ total: response?.total || 0, totalPages: response?.totalPages || 1 });
       setItems(response?.data || []);
     } catch (error) {
@@ -98,8 +107,8 @@ export default function WarehouseItemsManager() {
     }
   };
 
-  useEffect(() => { load(); }, [search, page]);
-  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => { load(); }, [search, page, catalogTab]);
+  useEffect(() => { setPage(1); }, [search, catalogTab]);
 
   const closeForm = () => {
     setForm(emptyForm);
@@ -143,12 +152,16 @@ export default function WarehouseItemsManager() {
     setShowForm(true);
   };
   const toggle = async (item) => {
+    setSavingStatus(true);
     try {
       await Warehouse.updateItem(item.id, { active: !item.active });
       toast.success(item.active ? 'Insumo desactivado' : 'Insumo activado');
+      setItemToChangeStatus(null);
       await load();
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setSavingStatus(false);
     }
   };
 
@@ -187,6 +200,23 @@ export default function WarehouseItemsManager() {
         placeholder="Buscar por código o nombre"
         className="h-10 w-full rounded-md border border-slate-300 px-3"
       />
+      <div className="flex gap-2 border-b border-slate-200" role="tablist" aria-label="Estado de insumos">
+        {[
+          ['active', 'Activos'],
+          ['inactive', 'Desactivados'],
+        ].map(([tab, label]) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={catalogTab === tab}
+            onClick={() => setCatalogTab(tab)}
+            className={`border-b-2 px-4 py-2 text-sm font-semibold ${catalogTab === tab ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {showForm && (
         <ModalLayer>
         <div
@@ -323,7 +353,7 @@ export default function WarehouseItemsManager() {
                   <td className="px-4 py-3">{item.unit}</td>
                   <td className="px-4 py-3">{item.category || 'Sin categoría'}</td>
                   <td className="px-4 py-3">{item.min_stock ?? 0}</td>
-                  <td className="px-4 py-3">{item.active ? 'Activo' : 'Inactivo'}</td>
+                  <td className="px-4 py-3">{item.active ? 'Activo' : 'Desactivado'}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       {canUpdate && (
@@ -340,7 +370,7 @@ export default function WarehouseItemsManager() {
                         <button
                           type="button"
                           title={item.active ? 'Desactivar' : 'Activar'}
-                          onClick={() => toggle(item)}
+                          onClick={() => setItemToChangeStatus(item)}
                           className="rounded-md p-2 text-slate-600 hover:bg-slate-100"
                         >
                           <Power size={17} />
@@ -355,6 +385,26 @@ export default function WarehouseItemsManager() {
         </table>
       </div>
       <Pagination currentPage={page} totalPages={meta.totalPages} onPageChange={setPage} />
+      <Modal open={Boolean(itemToChangeStatus)} onClose={() => !savingStatus && setItemToChangeStatus(null)} title={itemToChangeStatus?.active ? 'Desactivar insumo' : 'Activar insumo'} size="md" constrainToViewport>
+        {itemToChangeStatus && (
+          <div className="space-y-5">
+            <p className="text-sm text-slate-700">
+              ¿Estás seguro de que deseas {itemToChangeStatus.active ? 'desactivar' : 'activar'} este insumo?
+            </p>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="font-semibold text-slate-900">{itemToChangeStatus.name}</p>
+              <p className="mt-1 text-sm text-slate-600">Código: {itemToChangeStatus.code || 'Sin código'} · Unidad: {itemToChangeStatus.unit}</p>
+              <p className="mt-1 text-sm text-slate-600">Categoría: {itemToChangeStatus.category || 'Sin categoría'} · Stock mínimo: {itemToChangeStatus.min_stock ?? 0}</p>
+            </div>
+            <div className="flex flex-wrap justify-end gap-3">
+              <button type="button" disabled={savingStatus} onClick={() => setItemToChangeStatus(null)} className="h-10 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50">Cancelar</button>
+              <button type="button" disabled={savingStatus} onClick={() => toggle(itemToChangeStatus)} className={`h-10 rounded-md px-4 text-sm font-semibold text-white disabled:opacity-50 ${itemToChangeStatus.active ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                {savingStatus ? (itemToChangeStatus.active ? 'Desactivando...' : 'Activando...') : `${itemToChangeStatus.active ? 'Desactivar' : 'Activar'} insumo`}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

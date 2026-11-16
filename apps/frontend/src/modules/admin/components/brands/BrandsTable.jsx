@@ -1,6 +1,6 @@
 import ActionButton from '../../../../shared/components/ui/ActionButton';
 
-export default function BrandsTable({ brands, editBrand, deleteBrand, currentPage = 1, itemsPerPage = 10 }) {
+export default function BrandsTable({ canUpdate, canDelete, brands, editBrand, deleteBrand, currentPage = 1, itemsPerPage = 10 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200">
       <table className="w-full text-left text-sm">
@@ -12,7 +12,7 @@ export default function BrandsTable({ brands, editBrand, deleteBrand, currentPag
             <tr key={brand.id} className="hover:bg-slate-50">
               <td className="px-4 py-3 text-center text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
               <td className="px-4 py-3 font-medium text-slate-800">{brand.name}</td>
-              <td className="px-4 py-3"><div className="flex justify-center gap-2"><ActionButton type="edit" title="Editar marca" onClick={() => editBrand(brand.id, brand.name)} /><ActionButton type="delete" title="Eliminar marca" onClick={() => deleteBrand(brand)} /></div></td>
+              <td className="px-4 py-3"><div className="flex justify-center gap-2">{canUpdate && <ActionButton type="edit" title="Editar marca" onClick={() => editBrand(brand.id, brand.name)} />}{canDelete && <ActionButton type="delete" title="Eliminar marca" onClick={() => deleteBrand(brand)} />}</div></td>
             </tr>
           ))}
         </tbody>

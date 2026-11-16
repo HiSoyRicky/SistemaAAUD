@@ -3,9 +3,31 @@ import test from 'node:test';
 import {
   buildInventorySearchWhere,
   collectInventoryAssetTypeIds,
+  findPage,
   getInventoryPage,
   sortInventoryRows,
 } from '../src/modules/inventory/inventory.repository.js';
+
+test('carga los detalles solo de la página, conservando el orden natural y el alcance', async () => {
+  const rows = [
+    { id: 3, tag: 'AA-10' },
+    { id: 2, tag: 'AA-2', asset_classification_rule: null },
+    { id: 4, tag: 'AA-2', asset_classification_rule: { classification: { id: 1 } } },
+    { id: 1, tag: 'AA-1' },
+  ];
+  const queries = [];
+  const db = { inventory_items: { findMany: async (query) => {
+    queries.push(query);
+    return query.select ? [...rows] : [{ id: 2 }, { id: 4 }];
+  } } };
+  const client = { $transaction: (callback) => callback(db) };
+  const result = await findPage({ search: '', filters: {}, scope: { technologyOnly: true }, skip: 1, take: 2 }, client);
+  assert.deepEqual(result.data.map((item) => item.id), [4, 2]);
+  assert.equal(result.total, 4);
+  assert.deepEqual(queries[1].where.AND[1].id.in, [4, 2]);
+  assert.deepEqual(queries[1].where.AND[0], queries[0].where);
+  assert.ok(queries[0].select.asset_classification_rule.select.classification);
+});
 
 test('paginación local preserva orden, no duplica y no omite filas entre páginas', () => {
   const rows = [

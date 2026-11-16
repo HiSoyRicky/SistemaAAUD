@@ -17,6 +17,14 @@ export const listStock = catchAsync(async (req, res) => {
   res.json(await service.listStock(req.query));
 });
 
+export const stockSummary = catchAsync(async (_req, res) => {
+  res.json(await service.getStockSummary());
+});
+
+export const stockAlerts = catchAsync(async (_req, res) => {
+  res.json(await service.listStockAlerts());
+});
+
 export const listMovements = catchAsync(async (req, res) => {
   res.json(await service.listMovements(req.query));
 });

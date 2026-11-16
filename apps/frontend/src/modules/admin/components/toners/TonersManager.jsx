@@ -1,3 +1,4 @@
+import useAuth from '../../../../shared/hooks/useAuth';
 // TonersManager.jsx
 
 import { useEffect, useState } from 'react';
@@ -10,6 +11,10 @@ import TonersTable from './TonersTable';
 import normalizeCatalogName from '../../../../shared/utils/normalizeCatalogName';
 
 export default function TonersManager() {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission('toners.create');
+  const canUpdate = hasPermission('toners.update');
+  const canDelete = hasPermission('toners.delete');
   const [toners, setToners] = useState([]);
   const [models, setModels] = useState([]);
 
@@ -194,7 +199,7 @@ export default function TonersManager() {
         </div>
       )}
 
-      <button type="button" onClick={() => setShowCreateModal(true)} className="rounded bg-blue-600 px-4 py-2 font-semibold text-white">Crear tóner</button>
+      {canCreate && <button type="button" onClick={() => setShowCreateModal(true)} className="rounded bg-blue-600 px-4 py-2 font-semibold text-white">Crear tóner</button>}
       <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} title="Crear tóner" size="lg">
       <TonerForm
         models={models}
@@ -230,6 +235,8 @@ export default function TonersManager() {
       </Modal>
 
       <TonersTable
+        canUpdate={canUpdate}
+        canDelete={canDelete}
         toners={sortedToners}
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import UbiDepSelector from '../../../../../shared/common/UbiDepSelector';
 import ModalLayer from '../../../../../shared/components/ui/ModalLayer';
 
+const MIN_DISCARD_REASON_LENGTH = 30;
+const MAX_DISCARD_REASON_LENGTH = 300;
+
 function normalizeText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -40,13 +43,17 @@ export default function PrintWizardModal({
   const [docType, setDocType] = useState('transfer');
   const [step, setStep] = useState(1);
   const [localDevice, setLocalDevice] = useState(null);
+  const [discardReason, setDiscardReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const discardReasonLength = discardReason.trim().length;
+  const discardReasonRemaining = Math.max(MIN_DISCARD_REASON_LENGTH - discardReasonLength, 0);
 
   useEffect(() => {
     if (!open) return;
     setDocType(allowTransfer ? 'transfer' : 'delete');
     setStep(1);
     setLocalDevice(device ? { ...device } : null);
+    setDiscardReason('');
   }, [allowTransfer, open, device]);
 
   // Cerrar con ESC
@@ -118,11 +125,15 @@ export default function PrintWizardModal({
   const handleConfirmPrint = async () => {
     if (!localDevice) return;
 
+    const observation = discardReason.trim();
+    if (docType === 'delete' && observation.length < MIN_DISCARD_REASON_LENGTH) return;
+
     try {
       setSubmitting(true);
       await onPrint?.({
         docType,
-        payload: localDevice,
+        payload:
+          docType === 'delete' ? { ...localDevice, observation } : localDevice,
       });
     } catch (error) {
       console.error('Error printing document:', error);
@@ -402,9 +413,43 @@ export default function PrintWizardModal({
                       {docType === 'delete' && (
                         <div className="p-3 mt-3 text-sm text-red-900 border border-red-100 rounded-xl bg-red-50">
                           <div className="font-semibold">Documento de descarte</div>
-                          <div className="mt-1 text-red-800/90">
-                            Confirma que este equipo está listo para proceso de descarte.
-                          </div>
+                          <p className="mt-1 text-red-800/90">
+                            Ingresa el motivo que aparecerá en Observación.
+                          </p>
+                          <label
+                            htmlFor="discardReason"
+                            className="block mt-3 mb-1 font-semibold text-red-900"
+                          >
+                            Motivo de descarte (obligatorio)
+                          </label>
+                          <textarea
+                            id="discardReason"
+                            rows={3}
+                            required
+                            aria-required="true"
+                            aria-describedby="discardReasonCount discardReasonRecommendation"
+                            value={discardReason}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              if (value.trim().length <= MAX_DISCARD_REASON_LENGTH) {
+                                setDiscardReason(value);
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-red-200 rounded-lg focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                            placeholder="Describe el motivo del descarte del equipo"
+                          />
+                          <p id="discardReasonCount" className="mt-1 text-xs text-gray-700" aria-live="polite">
+                            Caracteres ingresados: {discardReasonLength} / {MAX_DISCARD_REASON_LENGTH}.
+                          </p>
+                          {discardReasonRemaining > 0 && (
+                            <p className="mt-1 text-xs text-gray-700" aria-live="polite">
+                              Te faltan {discardReasonRemaining} caracteres para el mínimo obligatorio de{' '}
+                              {MIN_DISCARD_REASON_LENGTH}.
+                            </p>
+                          )}
+                          <p id="discardReasonRecommendation" className="mt-1 text-xs text-gray-700">
+                            Recomendado: entre 80 y {MAX_DISCARD_REASON_LENGTH} caracteres; el mínimo obligatorio es {MIN_DISCARD_REASON_LENGTH}.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -441,7 +486,10 @@ export default function PrintWizardModal({
                 <button
                   type="button"
                   onClick={handleConfirmPrint}
-                  disabled={submitting}
+                  disabled={
+                    submitting ||
+                    (docType === 'delete' && discardReasonLength < MIN_DISCARD_REASON_LENGTH)
+                  }
                   className={[
                     'rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60',
                     docType === 'transfer'

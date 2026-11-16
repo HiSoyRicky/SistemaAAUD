@@ -136,10 +136,9 @@ export default function NotificationRecipientsManager() {
               <tr key={recipient.id}>
                 <td className="px-4 py-2 text-slate-700">{recipient.email}</td>
                 <td className="px-4 py-2 text-center">
-                  <button
+                  {canUpdate ? <button
                     type="button"
                     onClick={() => handleToggleActive(recipient)}
-                    disabled={!canUpdate}
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
                       recipient.active
                         ? 'bg-emerald-100 text-emerald-700'
@@ -147,7 +146,7 @@ export default function NotificationRecipientsManager() {
                     }`}
                   >
                     {recipient.active ? 'Activo' : 'Inactivo'}
-                  </button>
+                  </button> : <span>{recipient.active ? 'Activo' : 'Inactivo'}</span>}
                 </td>
                 <td className="px-4 py-2 text-center">
                   {canDelete && (

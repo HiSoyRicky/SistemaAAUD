@@ -32,6 +32,16 @@ router.put(
 );
 
 router.get(
+  '/stock/alerts',
+  requirePermission('warehouse_stock.read'),
+  controller.stockAlerts
+);
+router.get(
+  '/stock/summary',
+  requirePermission('warehouse_stock.read'),
+  controller.stockSummary
+);
+router.get(
   '/stock',
   requirePermission('warehouse_stock.read'),
   validateListWarehouse,

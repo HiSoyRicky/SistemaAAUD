@@ -78,8 +78,9 @@ function InventoryPage({ scope = 'equipos' }) {
   const { authData, userType, loggedUserName, loggedUserId, hasPermission } = useAuth();
 
   const canCreateInventory = hasPermission('inventory.create');
-  const canRequestInventory = hasPermission('inventory.read');
+  const canRequestInventory = hasPermission('inventory.read') && hasPermission('creation_requests.create');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryLimit, setInventoryLimit] = useState(20);
   const [inventoryMeta, setInventoryMeta] = useState({ total: 0, totalPages: 1 });
@@ -203,13 +204,19 @@ function InventoryPage({ scope = 'equipos' }) {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => void loadDevices(search), 250);
-    return () => { clearTimeout(timer); deviceRequest.current += 1; };
-  }, [search, inventoryPage, inventoryLimit, inventoryFilters]);
+    if (search === debouncedSearch) return undefined;
+    const timer = setTimeout(() => {
+      setInventoryPage(1);
+      setDebouncedSearch(search);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search, debouncedSearch]);
 
   useEffect(() => {
-    setInventoryPage(1);
-  }, [search, inventoryFilters]);
+    if (search !== debouncedSearch) return undefined;
+    void loadDevices(debouncedSearch);
+    return () => { deviceRequest.current += 1; };
+  }, [search, debouncedSearch, inventoryPage, inventoryLimit, inventoryFilters]);
 
   useEffect(() => {
     void loadPendingTransfers();
@@ -245,11 +252,12 @@ function InventoryPage({ scope = 'equipos' }) {
   }, []);
 
   useEffect(() => {
+    if (search !== debouncedSearch) return undefined;
     let cancelled = false;
     const fetchFilterOptions = async () => {
       try {
         const data = await Inventory.fetchFilterOptions({
-          search,
+          search: debouncedSearch,
           ubication: inventoryFilters.ubication_name,
           department: inventoryFilters.department_name,
           administrative_area: inventoryFilters.administrative_area_name,
@@ -268,10 +276,21 @@ function InventoryPage({ scope = 'equipos' }) {
           administrative_area_name: (data.administrative_areas || []).map((item) => item.name),
           user: data.users || [],
           device_name: (data.devices || []).map((item) => item.name),
-          brand_name: (data.brands || []).map((item) => item.name),
-          model_name: (data.models || []).map((item) => item.name),
+          brand_name: [
+            ...new Set([
+              ...(data.brands || []).map((item) => item.name),
+              ...(data.vehicle_brands || []).map((item) => item.name),
+            ]),
+          ],
+          model_name: [
+            ...new Set([
+              ...(data.models || []).map((item) => item.name),
+              ...(data.vehicle_models || []).map((item) => item.name),
+            ]),
+          ],
           status_name: (data.statuses || []).map((item) => item.name),
-          asset_type_name: (data.asset_types || []).map((item) => item.name),
+          asset_type_name: data.asset_types || [],
+          asset_types: data.asset_types || [],
         };
 
         setFilterOptions(nextOptions);
@@ -282,6 +301,7 @@ function InventoryPage({ scope = 'equipos' }) {
         );
 
         if (staleKeys.length) {
+          setInventoryPage(1);
           setInventoryFilters((prev) => {
             const cleared = staleKeys.filter((key) => prev[key] === inventoryFilters[key]);
 
@@ -296,10 +316,11 @@ function InventoryPage({ scope = 'equipos' }) {
       }
     };
 
-    const timer = setTimeout(() => void fetchFilterOptions(), 250);
-    return () => { cancelled = true; clearTimeout(timer); };
+    void fetchFilterOptions();
+    return () => { cancelled = true; };
   }, [
     search,
+    debouncedSearch,
     inventoryFilters.ubication_name,
     inventoryFilters.department_name,
     inventoryFilters.administrative_area_name,
@@ -320,7 +341,7 @@ function InventoryPage({ scope = 'equipos' }) {
       await Inventory.updateDevice(editingDevice.id, updatedData);
 
       // Mantiene la búsqueda y los filtros activos tras guardar los cambios.
-      await loadDevices(search);
+      await loadDevices(debouncedSearch);
 
       setEditingDevice(null);
 
@@ -505,6 +526,11 @@ function InventoryPage({ scope = 'equipos' }) {
         onClose={() => setPrintModalOpen(false)}
         onPrint={async ({ docType, payload }) => {
           try {
+            if (docType === 'delete') {
+              await Inventory.updateDevice(payload.id, { observation: payload.observation });
+              await loadDevices(debouncedSearch);
+            }
+
             setPrintType(docType);
 
             if (docType === 'transfer') {
@@ -522,7 +548,10 @@ function InventoryPage({ scope = 'equipos' }) {
             setPendingPrint(true);
           } catch (error) {
             addNotification(
-              error.response?.data?.message || 'No se pudo registrar la solicitud de traslado ❌',
+              error.response?.data?.message ||
+                (docType === 'delete'
+                  ? 'No se pudo guardar la observación del descarte ❌'
+                  : 'No se pudo registrar la solicitud de traslado ❌'),
               'error'
             );
             throw error;

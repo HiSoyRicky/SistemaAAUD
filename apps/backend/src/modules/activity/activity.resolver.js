@@ -24,6 +24,13 @@ async function getResolutionTables() {
     inventories,
     toners,
     incidents,
+    classifications,
+    assetTypes,
+    extensions,
+    administrativeAreas,
+    conditions,
+    classificationRules,
+    vehicleCatalog,
   ] = await Promise.all([
     prisma.status.findMany({ select: { id: true, name: true } }),
     prisma.departments.findMany({ select: { id: true, name: true } }),
@@ -80,6 +87,13 @@ async function getResolutionTables() {
         description: true,
       },
     }),
+    prisma.inventory_asset_classifications.findMany({ select: { id: true, code_new: true, description: true } }),
+    prisma.inventory_asset_types.findMany({ select: { id: true, name: true } }),
+    prisma.inventory_asset_extensions.findMany({ select: { id: true, name: true } }),
+    prisma.inventory_administrative_areas.findMany({ select: { id: true, name: true } }),
+    prisma.inventory_conditions.findMany({ select: { id: true, name: true } }),
+    prisma.inventory_asset_classification_rules.findMany({ select: { id: true, classification: { select: { code_new: true, description: true } }, device: { select: { name: true } } } }),
+    prisma.inventory_vehicle_catalog.findMany({ select: { id: true, model_year: true, vehicle_type: true, brand: { select: { name: true } }, model: { select: { name: true } } } }),
   ]);
 
   const usersById = Object.fromEntries(users.map((r) => [r.id, r.nombre_completo]));
@@ -133,11 +147,22 @@ async function getResolutionTables() {
   _cache = {
     id_status: Object.fromEntries(statuses.map((r) => [r.id, r.name])),
     id_department: Object.fromEntries(departments.map((r) => [r.id, r.name])),
+    department_id: Object.fromEntries(departments.map((r) => [r.id, r.name])),
     id_ubication: Object.fromEntries(ubications.map((r) => [r.id, r.name])),
+    ubication_id: Object.fromEntries(ubications.map((r) => [r.id, r.name])),
     id_user: usersById,
     id_technician: usersById,
     id_category: Object.fromEntries(categories.map((r) => [r.id, r.name])),
     id_device: devicesById,
+    device_id: devicesById,
+    classification_id: Object.fromEntries(classifications.map((r) => [r.id, `${r.code_new} · ${r.description}`])),
+    asset_type_id: Object.fromEntries(assetTypes.map((r) => [r.id, r.name])),
+    extension_id: Object.fromEntries(extensions.map((r) => [r.id, r.name])),
+    administrative_area_id: Object.fromEntries(administrativeAreas.map((r) => [r.id, r.name])),
+    id_administrative_area: Object.fromEntries(administrativeAreas.map((r) => [r.id, r.name])),
+    id_condition: Object.fromEntries(conditions.map((r) => [r.id, r.name])),
+    asset_classification_rule_id: Object.fromEntries(classificationRules.map((r) => [r.id, [r.device?.name, r.classification.code_new, r.classification.description].filter(Boolean).join(' · ')])),
+    vehicle_catalog_id: Object.fromEntries(vehicleCatalog.map((r) => [r.id, [r.brand.name, r.model.name, r.model_year, r.vehicle_type].filter(Boolean).join(' · ')])),
     id_brand: brandsById,
     id_model: modelsById,
     id_printer_model: modelsById,
@@ -149,7 +174,6 @@ async function getResolutionTables() {
     updated_by: usersById,
     document_uploaded_by: usersById,
     id_permission: permissionsById,
-    inventory_id: inventoryById,
     id_inventory: inventoryById,
     id_toner: tonersById,
     id_incident: incidentsById,
@@ -178,6 +202,13 @@ async function getResolutionTables() {
 
 const FIELD_LABELS = {
   id: 'ID interno',
+  item_id: 'Artículo',
+  ubication_id: 'Ubicación',
+  department_id: 'Departamento',
+  created_by: 'Creado por',
+  code: 'Código',
+  unit: 'Unidad',
+  category: 'Categoría',
   id_status: 'Estado',
   id_department: 'Departamento',
   id_ubication: 'Ubicación',
@@ -185,6 +216,16 @@ const FIELD_LABELS = {
   id_user: 'Usuario',
   id_category: 'Categoría',
   asset_classification_rule_id: 'Regla de clasificación',
+  classification_id: 'Clasificación patrimonial',
+  asset_type_id: 'Tipo de activo',
+  extension_id: 'Extensión del activo',
+  administrative_area_id: 'Área administradora',
+  device_id: 'Bien',
+  is_default: 'Regla predeterminada',
+  vehicle_catalog_id: 'Configuración de vehículo',
+  fuel_type: 'Combustible',
+  vehicle_type: 'Tipo de vehículo',
+  model_year: 'Año del modelo',
   other_category_detail: 'Detalle de categoría',
   id_device: 'Tipo de equipo',
   id_brand: 'Marca',
@@ -487,6 +528,7 @@ function isDateField(key) {
 }
 
 function resolveFieldValue(tables, key, rawValue) {
+  if (rawValue === null || rawValue === undefined || rawValue === '') return '—';
   const resolver = tables[key];
 
   if (!resolver) {
@@ -589,7 +631,7 @@ function buildArrayDiff(tables, oldValues, newValues, action, entityType) {
   }));
 }
 
-function buildFieldChange(tables, key, oldRaw, newRaw, action) {
+export function buildFieldChange(tables, key, oldRaw, newRaw, action) {
   if (IGNORED_FIELDS.has(key)) {
     return null;
   }
@@ -637,8 +679,32 @@ export async function buildDiff(oldValues, newValues, action, entityType) {
   return changes.length > 0 ? changes : null;
 }
 
-export async function buildRecordLabel(entityType, entityId, oldValues, newValues) {
+export function inventoryRecordLabel(tables, oldValues, newValues) {
+  const values = { ...(oldValues || {}), ...(newValues || {}) };
+  if (!values.tag) return null;
+
+  return [
+    values.tag,
+    values.description,
+    values.serie && `Serie ${values.serie}`,
+    values.user && `Asignado a ${values.user}`,
+    ...['id_device', 'id_brand', 'id_model'].map((key) =>
+      values[key] && tables[key]?.[values[key]]
+    ),
+  ].filter(Boolean).join(' · ');
+}
+
+export async function buildRecordLabel(entityType, entityId, oldValues, newValues, source) {
   const tables = await getResolutionTables();
+  const isInventory = ['BD_INVENTORY', 'bd_inventory'].includes(entityType);
+  if (isInventory) {
+    const snapshotLabel = inventoryRecordLabel(tables, oldValues, newValues);
+    if (snapshotLabel) return snapshotLabel;
+    // Los eventos nuevos usan IDs de inventory_items, no de bd_inventory.
+    if (source?.startsWith('inventory.') || source === 'inventory_transfer_requests.approve') {
+      return null;
+    }
+  }
   const recordResolver = tables.record?.[entityType];
 
   if (recordResolver && entityId && recordResolver[entityId]) {
@@ -671,7 +737,7 @@ export async function buildRecordLabel(entityType, entityId, oldValues, newValue
     entityType === 'INVENTORY_TRANSFER_REQUESTS' ||
     entityType === 'inventory_transfer_requests'
   ) {
-    return `Activo: ${resolveFieldValue(tables, 'inventory_id', values.inventory_id)}`;
+    return values.inventory_id ? `Activo ID:${values.inventory_id}` : null;
   }
 
   if (entityType === 'TONERS' || entityType === 'toners') {

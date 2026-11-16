@@ -277,6 +277,9 @@ export const listStock = async (query = {}) => {
   });
 };
 
+export const getStockSummary = () => repository.getStockSummary();
+export const listStockAlerts = () => repository.findStockAlerts();
+
 export const listMovements = async (query = {}) => {
   const pagination = parsePagination(query);
   const where = buildMovementWhere(query);

@@ -77,7 +77,7 @@ function TonerTableRow({ toner, tdClass, canCreateMovement, onMovement }) {
 }
 
 function TonerTable({ toners = [], onRefresh }) {
-  const { userType } = useAuth();
+  const { hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
@@ -134,7 +134,7 @@ function TonerTable({ toners = [], onRefresh }) {
     }
   };
 
-  const canCreateMovement = ['admin', 'tecnico', 'consultor'].includes(userType);
+  const canCreateMovement = hasPermission('toner_movements.create');
   const metrics = useMemo(() => {
     const totalModels = toners.length;
     const totalStock = toners.reduce((sum, toner) => sum + Number(toner.stock || 0), 0);
