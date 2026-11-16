@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-11-16
+
+### Added
+
+- feat: Actualización de impresión al imprimir descarte
+- feat: mejorar inventario y administración
+- feat(deploy): preparar registro append-only de historial de despliegues
+- feat(deploy): agregar plan conservador de retención sin borrado
+- feat(deploy): agregar inventario de releases en modo solo lectura
+- feat: implementar releases atomicos y mantenimiento AAUD
+
+### Fixed
+
+- fix(deploy): validar DocumentRoot sin sudo
+- fix(deploy): corregir deteccion de Apache sin sudo
+
+
+
 ## [1.6.1] - 2026-10-27
 
 ### Fixed
