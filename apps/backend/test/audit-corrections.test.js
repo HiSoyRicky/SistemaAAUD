@@ -47,6 +47,7 @@ import { updatedIncidentSelect } from '../src/modules/incidents/incidentUpdateSe
 import { synchronizeIncidentTicketNumberSequence } from '../src/modules/incidents/ticketSequence.js';
 import { createPendingTransferRequest } from '../src/modules/inventoryTransferRequests/inventoryTransferRequests.service.js';
 import { canChangePassword } from '../src/modules/users/users.service.js';
+import { loginLimiter } from '../src/app.js';
 
 test('el registro público permanece deshabilitado sin invocar persistencia', async () => {
   let statusCode;
@@ -422,6 +423,40 @@ test('el rate limit público permite tres solicitudes válidas por IP y rechaza 
     results.push(await run('192.0.2.10'));
   }
   assert.deepEqual(results.map(({ status }) => status), [200, 200, 200, 429]);
+});
+
+test('el rate limit de login permite cinco intentos por IP y bloquea el sexto', async () => {
+  const run = (ip, forwardedFor = undefined) => new Promise((resolve, reject) => {
+    const req = {
+      ip,
+      method: 'POST',
+      originalUrl: '/api/auth/login',
+      headers: forwardedFor ? { 'x-forwarded-for': forwardedFor } : {},
+      socket: { remoteAddress: ip },
+      app: { get: () => false },
+    };
+    const headers = {};
+    const res = {
+      statusCode: 200,
+      set(name, value) { headers[name.toLowerCase()] = value; return this; },
+      setHeader(name, value) { headers[name.toLowerCase()] = value; },
+      getHeader(name) { return headers[name.toLowerCase()]; },
+      send(body) { resolve({ status: this.statusCode, headers, body }); },
+      status(code) { this.statusCode = code; return this; },
+      json(body) { resolve({ status: this.statusCode, headers, body }); },
+      end() { resolve({ status: this.statusCode, headers }); },
+    };
+    loginLimiter(req, res, (error) => error ? reject(error) : resolve({ status: res.statusCode, headers }));
+  });
+
+  const ip = '198.51.100.27';
+  const results = [];
+  for (let index = 0; index < 6; index += 1) {
+    results.push(await run(ip, '203.0.113.99'));
+  }
+  assert.deepEqual(results.map(({ status }) => status), [200, 200, 200, 200, 200, 429]);
+  assert.equal(results[5].headers['retry-after'] !== undefined, true);
+  assert.deepEqual((await run('198.51.100.28')).status, 200);
 });
 
 test('los catálogos de ubicación y departamento son públicos solo para lectura', () => {

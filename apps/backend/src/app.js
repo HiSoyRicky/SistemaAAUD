@@ -48,9 +48,12 @@ app.use(
   })
 );
 
-const loginLimiter = rateLimit({
+export const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { trustProxy: false },
   handler: (req, res) => {
     const retryAfter = Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000);
 

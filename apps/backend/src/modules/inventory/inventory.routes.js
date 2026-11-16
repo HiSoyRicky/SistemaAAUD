@@ -49,6 +49,7 @@ router.put(
   '/:id',
   requireAnyPermission(
     'inventory.update',
+    'inventory.update_observation',
     'inventory.update_location',
     'inventory.update_department',
     'inventory.update_assignee'

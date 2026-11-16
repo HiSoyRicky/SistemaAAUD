@@ -253,11 +253,14 @@ export const AuthProvider = ({ children }) => {
           timeout: 10000,
         });
 
-        nextPermissions = normalizePermissionCodes(permissionsResponse.data?.permissions || []);
+        if (!Array.isArray(permissionsResponse.data?.permissions)) {
+          throw new Error('La respuesta de permisos no es válida.');
+        }
+        nextPermissions = normalizePermissionCodes(permissionsResponse.data.permissions);
       } catch (permissionError) {
         console.error('No se pudieron cargar los permisos del usuario:', permissionError);
+        throw new Error('No se pudieron cargar tus permisos. Intenta iniciar sesión nuevamente.');
       }
-      console.log('PERMISOS RECIBIDOS:', nextPermissions);
 
       localStorage.setItem('token', token);
       const type = resolveUserType({

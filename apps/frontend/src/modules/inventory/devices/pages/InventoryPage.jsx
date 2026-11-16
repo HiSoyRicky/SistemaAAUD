@@ -526,6 +526,11 @@ function InventoryPage({ scope = 'equipos' }) {
         onClose={() => setPrintModalOpen(false)}
         onPrint={async ({ docType, payload }) => {
           try {
+            if (docType === 'delete') {
+              await Inventory.updateDevice(payload.id, { observation: payload.observation });
+              await loadDevices(debouncedSearch);
+            }
+
             setPrintType(docType);
 
             if (docType === 'transfer') {
@@ -543,7 +548,10 @@ function InventoryPage({ scope = 'equipos' }) {
             setPendingPrint(true);
           } catch (error) {
             addNotification(
-              error.response?.data?.message || 'No se pudo registrar la solicitud de traslado ❌',
+              error.response?.data?.message ||
+                (docType === 'delete'
+                  ? 'No se pudo guardar la observación del descarte ❌'
+                  : 'No se pudo registrar la solicitud de traslado ❌'),
               'error'
             );
             throw error;

@@ -40,6 +40,7 @@ export const HISTORY_FIELD_LABELS = {
   transferdate: 'Fecha de traslado',
 };
 export const INVENTORY_FIELD_PERMISSIONS = {
+  observation: 'inventory.update_observation',
   classification_rule_id: 'inventory.update',
   id_ubication: 'inventory.update_location',
   id_department: 'inventory.update_department',
@@ -59,6 +60,7 @@ export const INVENTORY_FIELD_PERMISSIONS = {
   vehicle_mileage: 'inventory.update',
 };
 export const INVENTORY_FIELD_LABELS = {
+  observation: 'Observación',
   classification_rule_id: 'Clasificación patrimonial',
   id_ubication: 'Ubicación',
   id_department: 'Departamento',

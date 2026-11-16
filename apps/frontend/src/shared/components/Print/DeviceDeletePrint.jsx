@@ -144,7 +144,13 @@ const DeletePrint = forwardRef(function DeletePrint({ device = {}, fecha = [] },
                 className="p-2 font-semibold text-left align-top border border-black"
                 style={{ height: '200px' }}
               >
-                Razón de descarte:
+                <div>Observación:</div>
+                <div
+                  className="mt-2 font-normal whitespace-pre-wrap"
+                  style={{ overflowWrap: 'anywhere' }}
+                >
+                  {device.observation || ''}
+                </div>
               </td>
             </tr>
 

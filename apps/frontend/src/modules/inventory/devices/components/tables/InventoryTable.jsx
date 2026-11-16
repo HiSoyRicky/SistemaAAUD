@@ -196,13 +196,21 @@ function InventoryTable({
   const showDeviceName = !isVehicleFilter && isColumnVisible('device_name');
   const showSerie = !isVehicleFilter && isColumnVisible('serie');
   const showVehicleField = (key) => isVehicleFilter && isColumnVisible(key);
+  const selectedAssetType = String(filters.asset_type_name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const isRealEstateFilter =
+    selectedAssetType === 'terreno o inmueble' ||
+    selectedAssetType.includes('urbanizad') ||
+    selectedAssetType.includes('inmueble');
   const realEstateFields = [
     ['cadastral_number', 'Número catastral'],
     ['area_m2', 'Área (m²)'],
     ['address', 'Dirección'],
     ['location_geo', 'Ubicación geográfica'],
   ].filter(([key]) =>
-    isAssetScope && filters.asset_type_name === 'Terreno o inmueble' &&
+    isAssetScope && isRealEstateFilter &&
     filteredInventory.some((item) => {
       const value = item.real_estate_details?.[key];
       return value !== null && value !== undefined && String(value).trim() !== '';

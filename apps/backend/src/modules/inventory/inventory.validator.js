@@ -83,6 +83,7 @@ const createInventoryBodySchema = z.object({
 
 const updateInventoryBodySchema = z.object({
   tag: zOptionalNonEmptyField('El campo tag no puede estar vacío'),
+  observation: zOptionalNullableString('El campo observation debe ser texto'),
   description: zOptionalNonEmptyField('El campo description no puede estar vacío'),
   id_ubication: zOptionalInt('El campo id_ubication debe ser un número entero', {
     nullable: true,
